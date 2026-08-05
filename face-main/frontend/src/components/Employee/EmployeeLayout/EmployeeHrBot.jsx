@@ -9,6 +9,8 @@ const EmployeeHrBot = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const launcherRef = useRef(null);
+  const botPanelRef = useRef(null);
   const timeoutRef = useRef(null);
 
   const userId =
@@ -30,6 +32,28 @@ const EmployeeHrBot = () => {
         timeoutRef.current = null;
       }
     }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handleOutsideClick = (event) => {
+      const target = event.target;
+      const clickedPanel = botPanelRef.current?.contains(target);
+      const clickedLauncher = launcherRef.current?.contains(target);
+
+      if (!clickedPanel && !clickedLauncher) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
   }, [isOpen]);
 
   const handlePdfDownload = async (url) => {
@@ -141,6 +165,7 @@ const EmployeeHrBot = () => {
   return (
     <>
       <button
+        ref={launcherRef}
         type="button"
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-[9998] h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-white shadow-[0_16px_34px_rgba(37,99,235,0.34)] hover:-translate-y-1 hover:shadow-[0_20px_42px_rgba(37,99,235,0.42)] transition-all duration-300 flex items-center justify-center"
@@ -151,9 +176,9 @@ const EmployeeHrBot = () => {
 
       {isOpen && (
         <div className="fixed bottom-24 right-6 z-[9999] w-[calc(100vw-3rem)] max-w-md">
-          <div className="bg-white border border-blue-100 rounded-2xl h-[70vh] max-h-[620px] flex flex-col shadow-[0_24px_60px_rgba(15,23,42,0.22)] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-blue-100/80 bg-gradient-to-r from-slate-50 to-blue-50">
-              <h2 className="text-xl font-bold text-slate-900 flex items-center">
+          <div ref={botPanelRef} className="employee-hr-bot-modal bg-white border border-blue-100 rounded-2xl h-[70vh] max-h-[620px] flex flex-col shadow-[0_24px_60px_rgba(15,23,42,0.22)] overflow-hidden">
+            <div className="employee-hr-bot-header flex items-center justify-between p-4 border-b border-blue-100/80 bg-gradient-to-r from-slate-50 to-blue-50">
+              <h2 className="employee-hr-bot-title text-[17px] font-semibold tracking-tight text-slate-900 flex items-center">
                 <Bot className="w-5 h-5 mr-2 text-indigo-600" />
                 HR Assistant
               </h2>

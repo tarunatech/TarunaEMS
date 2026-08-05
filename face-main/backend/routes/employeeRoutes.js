@@ -46,7 +46,7 @@ const employeeValidation = [
     .isLength({ min: 2, max: 50 })
     .withMessage('Position must be between 2 and 50 characters'),
   body('workInfo.department')
-    .isIn(['Engineering', 'Product', 'Design', 'HR', 'Marketing', 'Sales', 'Finance', 'Operations'])
+    .isMongoId()
     .withMessage('Please select a valid department'),
   body('salaryInfo.basicSalary')
     .isNumeric()

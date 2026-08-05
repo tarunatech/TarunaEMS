@@ -27,6 +27,13 @@ const getFullImageUrl = (path) => {
   return baseUrl.replace('/api', '') + path;
 };
 
+const getDepartmentId = (department) => {
+  if (!department) return '';
+  if (typeof department === 'object') {
+    return department._id || department.id || '';
+  }
+  return department;
+};
 
 // ================================
 // EXTRACTED AddEmployeeModal Component
@@ -1078,7 +1085,15 @@ const EmployeeManagement = () => {
   const handleEditEmployee = async (e) => {
     e.preventDefault();
     try {
-      const response = await employeeAPI.updateEmployee(selectedEmployee._id, selectedEmployee);
+      const employeePayload = {
+        ...selectedEmployee,
+        workInfo: {
+          ...selectedEmployee.workInfo,
+          department: getDepartmentId(selectedEmployee.workInfo?.department)
+        }
+      };
+
+      const response = await employeeAPI.updateEmployee(selectedEmployee._id, employeePayload);
       if (response.data.success) {
         await fetchEmployees();
         setShowEditModal(false);
@@ -1270,7 +1285,7 @@ const EmployeeManagement = () => {
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Department *</label>
                   <select
-                    value={typeof selectedEmployee.workInfo?.department === 'object' ? selectedEmployee.workInfo.department._id : selectedEmployee.workInfo?.department || ''}
+                    value={getDepartmentId(selectedEmployee.workInfo?.department)}
                     onChange={(e) => updateSelectedEmployee('workInfo', e.target.value, 'department')}
                     className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
@@ -1826,7 +1841,7 @@ const EmployeeManagement = () => {
             resetForm={resetForm}
           />
         )}
-        {showEditModal && <EditModal />}
+        {showEditModal && EditModal()}
         {showViewModal && <ViewModal />}
       </div>
     </AdminLayout>

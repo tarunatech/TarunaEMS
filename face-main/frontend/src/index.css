@@ -1661,3 +1661,18 @@ html.theme-dark .employee-chat-compose input:focus {
   border-color: rgba(129, 140, 248, 0.7) !important;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16) !important;
 }
+
+/* Employee HR bot dark-mode header contrast */
+html.theme-dark .employee-hr-bot-modal {
+  background: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.24) !important;
+}
+
+html.theme-dark .employee-hr-bot-header {
+  background: #eaf1fb !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+}
+
+html.theme-dark .employee-hr-bot-title {
+  color: #0f172a !important;
+}
