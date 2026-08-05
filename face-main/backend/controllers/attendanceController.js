@@ -1224,12 +1224,40 @@ export const getAttendanceSummary = async (req, res) => {
       },
       { $unwind: '$employeeData' },
       {
+        $lookup: {
+          from: 'departments',
+          localField: 'employeeData.workInfo.department',
+          foreignField: '_id',
+          as: 'departmentData'
+        }
+      },
+      {
+        $addFields: {
+          departmentName: {
+            $ifNull: [
+              { $arrayElemAt: ['$departmentData.name', 0] },
+              {
+                $cond: [
+                  { $eq: [{ $type: '$employeeData.workInfo.department' }, 'string'] },
+                  '$employeeData.workInfo.department',
+                  'Unknown Department'
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
         $group: {
-          _id: '$employeeData.workInfo.department',
+          _id: '$departmentName',
+          departmentName: { $first: '$departmentName' },
           present: { $sum: { $cond: [{ $eq: ['$status', 'Present'] }, 1, 0] } },
           late: { $sum: { $cond: [{ $eq: ['$status', 'Late'] }, 1, 0] } },
           total: { $sum: 1 }
         }
+      },
+      {
+        $sort: { departmentName: 1 }
       }
     ]);
 
@@ -1381,4 +1409,3 @@ export const getEmployeeAttendanceStats = async (req, res) => {
     });
   }
 };
-

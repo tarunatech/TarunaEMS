@@ -142,7 +142,7 @@ const WelcomeSection = ({
             <button
               onClick={manualRefresh}
               disabled={loading}
-              className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/90 px-2 py-2 text-sm font-bold text-indigo-700 shadow-lg shadow-slate-950/10 transition-all duration-300 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-slate-900 px-2 py-2 text-sm font-bold text-indigo-700 shadow-lg shadow-slate-950/10 transition-all duration-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               {loading ? 'Refreshing...' : ''}

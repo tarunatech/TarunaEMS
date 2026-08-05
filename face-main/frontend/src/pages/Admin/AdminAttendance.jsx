@@ -12,7 +12,8 @@ const AdminAttendance = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [attendanceSummary, setAttendanceSummary] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [selectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [filters, setFilters] = useState({
     startDate: new Date().toISOString().slice(0, 10),
     endDate: new Date().toISOString().slice(0, 10),
@@ -43,6 +44,11 @@ const AdminAttendance = () => {
     fetchAttendanceData();
     fetchAttendanceSummary();
   }, [filters, pagination.current, selectedDate]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const fetchAttendanceData = async () => {
     try {
@@ -124,12 +130,12 @@ const AdminAttendance = () => {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'present': return 'text-green-400 bg-green-400/20';
-      case 'late': return 'text-yellow-400 bg-yellow-400/20';
-      case 'half day': return 'text-orange-400 bg-orange-400/20';
-      case 'absent': return 'text-red-400 bg-red-400/20';
-      case 'work from home': return 'text-blue-400 bg-blue-400/20';
-      default: return 'text-secondary-400 bg-secondary-400/20';
+      case 'present': return 'text-emerald-700 bg-emerald-50 border border-emerald-200';
+      case 'late': return 'text-amber-700 bg-amber-50 border border-amber-200';
+      case 'half day': return 'text-orange-700 bg-orange-50 border border-orange-200';
+      case 'absent': return 'text-red-700 bg-red-50 border border-red-200';
+      case 'work from home': return 'text-blue-700 bg-blue-50 border border-blue-200';
+      default: return 'text-slate-700 bg-slate-100 border border-slate-200';
     }
   };
 
@@ -151,10 +157,27 @@ const AdminAttendance = () => {
     });
   };
 
-  const formatWorkingTime = (minutes) => {
-    if (!minutes || minutes === 0) return '0h 0m';
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+  const getWorkingMinutes = (recordOrMinutes, checkInTime, checkOutTime) => {
+    if (typeof recordOrMinutes === 'object' && recordOrMinutes !== null) {
+      if (recordOrMinutes.workingHours > 0) return recordOrMinutes.workingHours;
+      if (recordOrMinutes.checkInTime && !recordOrMinutes.checkOutTime) {
+        return Math.max(0, Math.round((currentTime - new Date(recordOrMinutes.checkInTime).getTime()) / (1000 * 60)));
+      }
+      return 0;
+    }
+
+    if (recordOrMinutes > 0) return recordOrMinutes;
+    if (checkInTime && !checkOutTime) {
+      return Math.max(0, Math.round((currentTime - new Date(checkInTime).getTime()) / (1000 * 60)));
+    }
+    return 0;
+  };
+
+  const formatWorkingTime = (recordOrMinutes, checkInTime, checkOutTime) => {
+    const totalMinutes = getWorkingMinutes(recordOrMinutes, checkInTime, checkOutTime);
+    if (!totalMinutes || totalMinutes === 0) return '0h 0m';
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
     return `${hours}h ${mins}m`;
   };
 
@@ -170,7 +193,7 @@ const AdminAttendance = () => {
         record.employeeData?.workInfo?.department || '',
         formatTime(record.checkInTime),
         formatTime(record.checkOutTime),
-        formatWorkingTime(record.workingHours),
+        formatWorkingTime(record),
         record.status
       ])
     ];
@@ -190,7 +213,7 @@ const AdminAttendance = () => {
 
   return (
     <AdminLayout>
-        <div className="w-full min-h-[calc(100vh-7rem)] space-y-4 sm:space-y-6">
+        <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="glass-morphism neon-border rounded-2xl p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between">
@@ -239,13 +262,15 @@ const AdminAttendance = () => {
                 <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
               </div>
             </div>
-            <div className="glass-morphism neon-border rounded-2xl p-4 sm:p-6">
+            <div className="premium-stat-card rounded-2xl p-4 sm:p-6 border-emerald-200 bg-gradient-to-br from-white to-emerald-50/70">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-500 text-xs sm:text-sm">Present</p>
-                  <p className="text-xl sm:text-2xl font-bold text-emerald-600">{attendanceSummary.overallStats?.present || 0}</p>
+                  <p className="text-emerald-800 text-xs sm:text-sm font-semibold">Present Employees</p>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-emerald-700 leading-tight">{attendanceSummary.overallStats?.present || 0}</p>
                 </div>
-                <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-600" />
+                <div className="h-10 w-10 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/20">
+                  <CheckCircle className="w-6 h-6 text-white" />
+                </div>
               </div>
             </div>
             <div className="glass-morphism neon-border rounded-2xl p-4 sm:p-6">
@@ -260,7 +285,7 @@ const AdminAttendance = () => {
             <div className="glass-morphism neon-border rounded-2xl p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-secondary-400 text-xs sm:text-sm">Half Day</p>
+                  <p className="text-slate-500 text-xs sm:text-sm">Half Day</p>
                   <p className="text-xl sm:text-2xl font-bold text-orange-400">{attendanceSummary.overallStats?.halfDay || 0}</p>
                 </div>
                 <Timer className="w-6 h-6 sm:w-8 sm:h-8 text-orange-400" />
@@ -269,7 +294,7 @@ const AdminAttendance = () => {
             <div className="glass-morphism neon-border rounded-2xl p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-secondary-400 text-xs sm:text-sm">Absent</p>
+                  <p className="text-slate-500 text-xs sm:text-sm">Absent</p>
                   <p className="text-xl sm:text-2xl font-bold text-red-400">{attendanceSummary.overallStats?.absent || 0}</p>
                 </div>
                 <XCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-400" />
@@ -280,33 +305,33 @@ const AdminAttendance = () => {
 
         {/* Filters */}
         {showFilters && (
-          <div className="glass-morphism neon-border rounded-2xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Filters & Search</h3>
+          <div className="premium-panel rounded-2xl p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Filters & Search</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div>
-                <label className="block text-xs sm:text-sm text-secondary-400 mb-1 sm:mb-2">Start Date</label>
+                <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Start Date</label>
                 <input
                   type="date"
                   value={filters.startDate}
                   onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-secondary-800 border border-secondary-600 rounded-lg text-white focus:outline-none focus:border-neon-pink text-xs sm:text-sm"
+                  className="premium-input w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm text-secondary-400 mb-1 sm:mb-2">End Date</label>
+                <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">End Date</label>
                 <input
                   type="date"
                   value={filters.endDate}
                   onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-secondary-800 border border-secondary-600 rounded-lg text-white focus:outline-none focus:border-neon-pink text-xs sm:text-sm"
+                  className="premium-input w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm text-secondary-400 mb-1 sm:mb-2">Department</label>
+                <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Department</label>
                 <select
                   value={filters.department}
                   onChange={(e) => handleFilterChange('department', e.target.value)}
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-secondary-800 border border-secondary-600 rounded-lg text-white focus:outline-none focus:border-neon-pink text-xs sm:text-sm"
+                  className="premium-input w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
                 >
                   <option value="">All Departments</option>
                   {departments.map(dept => (
@@ -315,11 +340,11 @@ const AdminAttendance = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-xs sm:text-sm text-secondary-400 mb-1 sm:mb-2">Status</label>
+                <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Status</label>
                 <select
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-secondary-800 border border-secondary-600 rounded-lg text-white focus:outline-none focus:border-neon-pink text-xs sm:text-sm"
+                  className="premium-input w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
                 >
                   <option value="">All Status</option>
                   <option value="Present">Present</option>
@@ -331,15 +356,15 @@ const AdminAttendance = () => {
               </div>
             </div>
             <div className="mt-3 sm:mt-4">
-              <label className="block text-xs sm:text-sm text-secondary-400 mb-1 sm:mb-2">Search Employee</label>
+              <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Search Employee</label>
               <div className="relative">
-                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-3 sm:w-4 h-3 sm:h-4 text-secondary-400" />
+                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-3 sm:w-4 h-3 sm:h-4 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Search by name or employee ID..."
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
-                  className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 bg-secondary-800 border border-secondary-600 rounded-lg text-white placeholder-secondary-400 focus:outline-none focus:border-neon-pink text-xs sm:text-sm"
+                  className="premium-input w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none text-xs sm:text-sm"
                 />
               </div>
             </div>
@@ -347,10 +372,10 @@ const AdminAttendance = () => {
         )}
 
         {/* Attendance Records Table */}
-        <div className="glass-morphism neon-border rounded-2xl p-6">
+        <div className="premium-panel rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-900">Attendance Records</h2>
-            <p className="text-secondary-400">
+            <p className="text-slate-500 text-sm">
               Showing {attendanceRecords.length} of {pagination.total} records
             </p>
           </div>
@@ -359,35 +384,35 @@ const AdminAttendance = () => {
             {/* Mobile Cards */}
             <div className="md:hidden grid gap-3 sm:gap-4 p-3 sm:p-4">
               {loading ? (
-                <div className="col-span-full text-center py-8 text-secondary-400">
+                <div className="col-span-full text-center py-8 text-slate-500">
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black/30"></div>
                     <span className="text-xs sm:text-sm">Loading attendance records...</span>
                   </div>
                 </div>
               ) : attendanceRecords.length === 0 ? (
-                <div className="col-span-full text-center py-8 text-secondary-400">
+                <div className="col-span-full text-center py-8 text-slate-500">
                   <div className="flex flex-col items-center space-y-2">
-                    <Users className="w-6 h-6 sm:w-8 sm:h-8 text-secondary-400" />
+                    <Users className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400" />
                     <span className="text-xs sm:text-sm">No attendance records found</span>
                     <span className="text-xs">Try adjusting your filters</span>
                   </div>
                 </div>
               ) : (
                 attendanceRecords.map((record) => (
-                  <div key={record._id} className="bg-secondary-800/30 border border-secondary-700 rounded-xl p-3 sm:p-4 hover:bg-secondary-800/50 transition-colors">
+                  <div key={record._id} className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm hover:border-blue-200 hover:bg-blue-50/40 transition-colors">
                     <div className="flex items-start justify-between mb-2 sm:mb-3">
                       <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-neon-pink to-neon-purple rounded-lg flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm shadow-blue-500/20">
                           <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-white font-medium text-xs sm:text-sm truncate">
+                          <p className="text-slate-900 font-medium text-xs sm:text-sm truncate">
                             {record.employeeData?.personalInfo ?
                               `${record.employeeData.personalInfo.firstName} ${record.employeeData.personalInfo.lastName}` :
                               record.userData?.name || 'Unknown'}
                           </p>
-                          <p className="text-xs text-secondary-400 truncate">
+                          <p className="text-xs text-slate-500 truncate">
                             ID: {record.userData?.employeeId || 'N/A'} • {typeof record.employeeData?.workInfo?.department === 'object' ? record.employeeData.workInfo.department?.name : record.employeeData?.workInfo?.department || 'N/A'}
                           </p>
                         </div>
@@ -395,21 +420,21 @@ const AdminAttendance = () => {
                       <div className="flex items-center space-x-1 ml-1 sm:ml-2">
                         <button
                           onClick={() => setViewingRecord(record)}
-                          className="p-1 sm:p-1.5 text-secondary-400 hover:text-neon-purple hover:bg-neon-purple/10 rounded-lg transition-colors"
+                          className="p-1 sm:p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                           title="View Details"
                         >
                           <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                         </button>
                         <button
                           onClick={() => handleEditRecord(record)}
-                          className="p-1 sm:p-1.5 text-secondary-400 hover:text-neon-pink hover:bg-neon-pink/10 rounded-lg transition-colors"
+                          className="p-1 sm:p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit Record"
                         >
                           <Edit3 className="w-3 h-3 sm:w-4 sm:h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteRecord(record._id)}
-                          className="p-1 sm:p-1.5 text-secondary-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                          className="p-1 sm:p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete Record"
                         >
                           <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -418,36 +443,41 @@ const AdminAttendance = () => {
                     </div>
                     <div className="space-y-1 sm:space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-secondary-400 text-xs">Date</span>
-                        <span className="text-white text-xs sm:text-sm">{formatDate(record.date)}</span>
+                        <span className="text-slate-500 text-xs">Date</span>
+                        <span className="text-slate-800 text-xs sm:text-sm">{formatDate(record.date)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-secondary-400 text-xs">Check In</span>
-                        <span className="text-white text-xs sm:text-sm">{formatTime(record.checkInTime)}</span>
+                        <span className="text-slate-500 text-xs">Check In</span>
+                        <span className="text-slate-800 text-xs sm:text-sm">{formatTime(record.checkInTime)}</span>
                         {record.isLate && (
                           <span className="text-red-400 text-xs ml-1">{record.lateMinutes}m late</span>
                         )}
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-secondary-400 text-xs">Check Out</span>
-                        <span className="text-white text-xs sm:text-sm">{formatTime(record.checkOutTime)}</span>
+                        <span className="text-slate-500 text-xs">Check Out</span>
+                        <span className="text-slate-800 text-xs sm:text-sm">{formatTime(record.checkOutTime)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-secondary-400 text-xs">Working Time</span>
-                        <span className="text-neon-pink text-xs sm:text-sm font-medium">{formatWorkingTime(record.workingHours)}</span>
+                        <span className="text-slate-500 text-xs">Working Time</span>
+                        <div className="text-right">
+                          <span className="rounded-lg bg-blue-50 px-2 py-1 text-blue-800 text-xs sm:text-sm font-bold border border-blue-100">{formatWorkingTime(record)}</span>
+                          {record.checkInTime && !record.checkOutTime && (
+                            <div className="mt-1 text-[11px] font-medium text-emerald-700">Live</div>
+                          )}
+                        </div>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-secondary-400 text-xs">Status</span>
+                        <span className="text-slate-500 text-xs">Status</span>
                         <span className={`text-xs px-1 sm:px-2 py-1 rounded-full ${getStatusColor(record.status)}`}>
                           {record.status}
                         </span>
                         {record.isManualEntry && (
-                          <span className="text-yellow-400 text-xs ml-1">Manual</span>
+                          <span className="text-amber-600 text-xs ml-1">Manual</span>
                         )}
                       </div>
-                      <div className="flex justify-between items-center pt-1 sm:pt-2 border-t border-secondary-700">
-                        <span className="text-secondary-400 text-xs">Location</span>
-                        <span className="text-secondary-400 text-xs truncate max-w-24 sm:max-w-32">
+                      <div className="flex justify-between items-center pt-1 sm:pt-2 border-t border-slate-200">
+                        <span className="text-slate-500 text-xs">Location</span>
+                        <span className="text-slate-500 text-xs truncate max-w-24 sm:max-w-32">
                           {record.checkInLocation?.address || 'Unavailable'}
                         </span>
                       </div>
@@ -462,32 +492,32 @@ const AdminAttendance = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-secondary-600">
-                      <th className="pb-3 text-secondary-400 font-medium">Employee</th>
-                      <th className="pb-3 text-secondary-400 font-medium">Date</th>
-                      <th className="pb-3 text-secondary-400 font-medium">Check In</th>
-                      <th className="pb-3 text-secondary-400 font-medium">Check Out</th>
-                      <th className="pb-3 text-secondary-400 font-medium">Working Time</th>
-                      <th className="pb-3 text-secondary-400 font-medium">Status</th>
-                      <th className="pb-3 text-secondary-400 font-medium">Location</th>
-                      <th className="pb-3 text-secondary-400 font-medium">Actions</th>
+                    <tr className="border-b border-slate-200">
+                      <th className="pb-3 text-slate-500 font-semibold text-sm">Employee</th>
+                      <th className="pb-3 text-slate-500 font-semibold text-sm">Date</th>
+                      <th className="pb-3 text-slate-500 font-semibold text-sm">Check In</th>
+                      <th className="pb-3 text-slate-500 font-semibold text-sm">Check Out</th>
+                      <th className="pb-3 text-slate-500 font-semibold text-sm">Working Time</th>
+                      <th className="pb-3 text-slate-500 font-semibold text-sm">Status</th>
+                      <th className="pb-3 text-slate-500 font-semibold text-sm">Location</th>
+                      <th className="pb-3 text-slate-500 font-semibold text-sm">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-secondary-700">
+                  <tbody className="divide-y divide-slate-100">
                     {loading ? (
                       <tr>
-                        <td colSpan="8" className="py-8 text-center text-secondary-400">
+                        <td colSpan="8" className="py-8 text-center text-slate-500">
                           <div className="flex items-center justify-center space-x-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-neon-pink"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                             <span>Loading attendance records...</span>
                           </div>
                         </td>
                       </tr>
                     ) : attendanceRecords.length === 0 ? (
                       <tr>
-                        <td colSpan="8" className="py-8 text-center text-secondary-400">
+                        <td colSpan="8" className="py-8 text-center text-slate-500">
                           <div className="flex flex-col items-center space-y-2">
-                            <Users className="w-8 h-8 text-secondary-400" />
+                            <Users className="w-8 h-8 text-slate-400" />
                             <span>No attendance records found</span>
                             <span className="text-xs">Try adjusting your filters</span>
                           </div>
@@ -495,47 +525,52 @@ const AdminAttendance = () => {
                       </tr>
                     ) : (
                       attendanceRecords.map((record) => (
-                        <tr key={record._id} className="hover:bg-secondary-800/20 transition-colors">
+                        <tr key={record._id} className="premium-table-row transition-colors">
                           <td className="py-3">
                             <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-gradient-to-r from-neon-pink to-neon-purple rounded-lg flex items-center justify-center">
+                              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm shadow-blue-500/20">
                                 <User className="w-4 h-4 text-white" />
                               </div>
                               <div>
-                                <p className="text-white font-medium">
+                                <p className="text-slate-900 font-medium">
                                   {record.employeeData?.personalInfo ? 
                                     `${record.employeeData.personalInfo.firstName} ${record.employeeData.personalInfo.lastName}` :
                                     record.userData?.name || 'Unknown'}
                                 </p>
-                                <p className="text-xs text-secondary-400">
+                                <p className="text-xs text-slate-500">
                                   ID: {record.userData?.employeeId || 'N/A'} • {typeof record.employeeData?.workInfo?.department === 'object' ? record.employeeData.workInfo.department?.name : record.employeeData?.workInfo?.department || 'N/A'}
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td className="py-3 text-white">{formatDate(record.date)}</td>
+                          <td className="py-3 text-slate-700">{formatDate(record.date)}</td>
                           <td className="py-3">
-                            <div className="text-white">{formatTime(record.checkInTime)}</div>
+                            <div className="text-slate-700">{formatTime(record.checkInTime)}</div>
                             {record.isLate && (
                               <div className="text-xs text-red-400">
                                 {record.lateMinutes}m late
                               </div>
                             )}
                           </td>
-                          <td className="py-3 text-white">{formatTime(record.checkOutTime)}</td>
-                          <td className="py-3 text-neon-pink font-medium">
-                            {formatWorkingTime(record.workingHours)}
+                          <td className="py-3 text-slate-700">{formatTime(record.checkOutTime)}</td>
+                          <td className="py-3">
+                            <span className="inline-flex min-w-[4.5rem] items-center justify-center rounded-lg bg-blue-50 px-2.5 py-1 text-sm font-bold text-blue-800 border border-blue-100">
+                              {formatWorkingTime(record)}
+                            </span>
+                            {record.checkInTime && !record.checkOutTime && (
+                              <div className="mt-1 text-xs font-medium text-emerald-700">Live</div>
+                            )}
                           </td>
                           <td className="py-3">
                             <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(record.status)}`}>
                               {record.status}
                             </span>
                             {record.isManualEntry && (
-                              <div className="text-xs text-yellow-400 mt-1">Manual Entry</div>
+                              <div className="text-xs text-amber-600 mt-1">Manual Entry</div>
                             )}
                           </td>
                           <td className="py-3">
-                            <div className="flex items-center text-secondary-400 text-xs">
+                            <div className="flex items-center text-slate-500 text-xs">
                               <MapPin className="w-3 h-3 mr-1" />
                               <span className="truncate max-w-24">
                                 {record.checkInLocation?.address || 'Location unavailable'}
@@ -546,21 +581,21 @@ const AdminAttendance = () => {
                             <div className="flex items-center space-x-2">
                               <button
                                 onClick={() => setViewingRecord(record)}
-                                className="p-1 text-secondary-400 hover:text-neon-purple transition-colors"
+                                className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
                                 title="View Details"
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleEditRecord(record)}
-                                className="p-1 text-secondary-400 hover:text-neon-pink transition-colors"
+                                className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
                                 title="Edit Record"
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleDeleteRecord(record._id)}
-                                className="p-1 text-secondary-400 hover:text-red-400 transition-colors"
+                                className="p-1 text-slate-400 hover:text-red-600 transition-colors"
                                 title="Delete Record"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -578,25 +613,25 @@ const AdminAttendance = () => {
 
           {/* Pagination */}
           {pagination.pages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-6 border-t border-secondary-600 gap-4 sm:gap-0">
-              <div className="text-secondary-400 text-xs sm:text-sm text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-6 border-t border-slate-200 gap-4 sm:gap-0">
+              <div className="text-slate-500 text-xs sm:text-sm text-center sm:text-left">
                 Page {pagination.current} of {pagination.pages} ({pagination.total} total records)
               </div>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setPagination(prev => ({ ...prev, current: Math.max(1, prev.current - 1) }))}
                   disabled={pagination.current === 1}
-                  className="px-2 sm:px-3 py-1 bg-secondary-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary-600 transition-colors text-xs sm:text-sm"
+                  className="px-2 sm:px-3 py-1 bg-white text-slate-700 rounded border border-slate-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors text-xs sm:text-sm"
                 >
                   Previous
                 </button>
-                <span className="px-2 sm:px-3 py-1 bg-neon-pink/20 text-neon-pink rounded text-xs sm:text-sm">
+                <span className="px-2 sm:px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded text-xs sm:text-sm">
                   {pagination.current}
                 </span>
                 <button
                   onClick={() => setPagination(prev => ({ ...prev, current: Math.min(prev.pages, prev.current + 1) }))}
                   disabled={pagination.current === pagination.pages}
-                  className="px-2 sm:px-3 py-1 bg-secondary-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary-600 transition-colors text-xs sm:text-sm"
+                  className="px-2 sm:px-3 py-1 bg-white text-slate-700 rounded border border-slate-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors text-xs sm:text-sm"
                 >
                   Next
                 </button>
@@ -609,17 +644,17 @@ const AdminAttendance = () => {
         {viewingRecord && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
             {/* Enhanced backdrop with blur */}
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => setViewingRecord(null)} />
+            <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-md" onClick={() => setViewingRecord(null)} />
 
             {/* Modal content */}
-            <div className="relative glass-morphism neon-border rounded-xl sm:rounded-2xl p-2 sm:p-3 w-full max-w-full max-h-[90vh] overflow-y-auto sm:max-w-2xl shadow-2xl">
-              <h3 className="text-base sm:text-lg font-bold text-white mb-3">Attendance Details</h3>
+            <div className="relative premium-panel rounded-xl sm:rounded-2xl p-4 sm:p-5 w-full max-w-full max-h-[90vh] overflow-y-auto sm:max-w-2xl shadow-2xl">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3">Attendance Details</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2 sm:space-y-3">
                   <div>
-                    <label className="block text-xs text-secondary-400 mb-1">Employee</label>
-                    <p className="text-white text-xs sm:text-sm">
+                    <label className="block text-xs text-slate-500 mb-1">Employee</label>
+                    <p className="text-slate-900 text-xs sm:text-sm">
                       {viewingRecord.employeeData?.personalInfo ? 
                         `${viewingRecord.employeeData.personalInfo.firstName} ${viewingRecord.employeeData.personalInfo.lastName}` :
                         viewingRecord.userData?.name || 'Unknown'}
@@ -627,27 +662,32 @@ const AdminAttendance = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-xs text-secondary-400 mb-1">Date</label>
-                    <p className="text-white text-xs sm:text-sm">{formatDate(viewingRecord.date)}</p>
+                    <label className="block text-xs text-slate-500 mb-1">Date</label>
+                    <p className="text-slate-900 text-xs sm:text-sm">{formatDate(viewingRecord.date)}</p>
                   </div>
                   
                   <div>
-                    <label className="block text-xs text-secondary-400 mb-1">Check In Time</label>
-                    <p className="text-white text-xs sm:text-sm">{formatTime(viewingRecord.checkInTime)}</p>
+                    <label className="block text-xs text-slate-500 mb-1">Check In Time</label>
+                    <p className="text-slate-900 text-xs sm:text-sm">{formatTime(viewingRecord.checkInTime)}</p>
                   </div>
                   
                   <div>
-                    <label className="block text-xs text-secondary-400 mb-1">Check Out Time</label>
-                    <p className="text-white text-xs sm:text-sm">{formatTime(viewingRecord.checkOutTime)}</p>
+                    <label className="block text-xs text-slate-500 mb-1">Check Out Time</label>
+                    <p className="text-slate-900 text-xs sm:text-sm">{formatTime(viewingRecord.checkOutTime)}</p>
                   </div>
                   
                   <div>
-                    <label className="block text-xs text-secondary-400 mb-1">Working Hours</label>
-                    <p className="text-neon-pink font-medium text-xs sm:text-sm">{formatWorkingTime(viewingRecord.workingHours)}</p>
+                    <label className="block text-xs text-slate-500 mb-1">Working Hours</label>
+                    <p className="inline-flex rounded-lg bg-blue-50 px-2.5 py-1 text-blue-800 font-bold text-xs sm:text-sm border border-blue-100">
+                      {formatWorkingTime(viewingRecord)}
+                    </p>
+                    {viewingRecord.checkInTime && !viewingRecord.checkOutTime && (
+                      <p className="mt-1 text-xs font-medium text-emerald-700">Live since check-in</p>
+                    )}
                   </div>
                   
                   <div>
-                    <label className="block text-xs text-secondary-400 mb-1">Status</label>
+                    <label className="block text-xs text-slate-500 mb-1">Status</label>
                     <span className={`text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full ${getStatusColor(viewingRecord.status)}`}>
                       {viewingRecord.status}
                     </span>
@@ -656,52 +696,52 @@ const AdminAttendance = () => {
 
                 <div className="space-y-2 sm:space-y-3">
                   <div>
-                    <label className="block text-xs text-secondary-400 mb-1">Check In Location</label>
-                    <p className="text-white text-xs">
+                    <label className="block text-xs text-slate-500 mb-1">Check In Location</label>
+                    <p className="text-slate-900 text-xs">
                       {viewingRecord.checkInLocation?.address || 'Address not available'}
                     </p>
-                    <p className="text-xs text-secondary-400">
+                    <p className="text-xs text-slate-500">
                       {viewingRecord.checkInLocation?.latitude}, {viewingRecord.checkInLocation?.longitude}
                     </p>
                   </div>
                   
                   {viewingRecord.checkOutLocation && (
                     <div>
-                      <label className="block text-xs text-secondary-400 mb-1">Check Out Location</label>
-                      <p className="text-white text-xs">
+                      <label className="block text-xs text-slate-500 mb-1">Check Out Location</label>
+                      <p className="text-slate-900 text-xs">
                         {viewingRecord.checkOutLocation.address || 'Address not available'}
                       </p>
-                      <p className="text-xs text-secondary-400">
+                      <p className="text-xs text-slate-500">
                         {viewingRecord.checkOutLocation.latitude}, {viewingRecord.checkOutLocation.longitude}
                       </p>
                     </div>
                   )}
                   
                   <div>
-                    <label className="block text-xs text-secondary-400 mb-1">Device Info</label>
-                    <p className="text-white text-xs">
+                    <label className="block text-xs text-slate-500 mb-1">Device Info</label>
+                    <p className="text-slate-900 text-xs">
                       {viewingRecord.deviceInfo?.browser || 'Unknown'} on {viewingRecord.deviceInfo?.platform || 'Unknown'}
                     </p>
                   </div>
                   
                   {viewingRecord.notes && (
                     <div>
-                      <label className="block text-xs text-secondary-400 mb-1">Notes</label>
-                      <p className="text-white text-xs">{viewingRecord.notes}</p>
+                      <label className="block text-xs text-slate-500 mb-1">Notes</label>
+                      <p className="text-slate-900 text-xs">{viewingRecord.notes}</p>
                     </div>
                   )}
                   
                   {viewingRecord.isLate && (
                     <div>
-                      <label className="block text-xs text-secondary-400 mb-1">Late Information</label>
-                      <p className="text-red-400 text-xs">{viewingRecord.lateMinutes} minutes late</p>
+                      <label className="block text-xs text-slate-500 mb-1">Late Information</label>
+                      <p className="text-red-600 text-xs">{viewingRecord.lateMinutes} minutes late</p>
                     </div>
                   )}
                   
                   {viewingRecord.isManualEntry && (
                     <div>
-                      <label className="block text-xs text-secondary-400 mb-1">Manual Entry Reason</label>
-                      <p className="text-yellow-400 text-xs">
+                      <label className="block text-xs text-slate-500 mb-1">Manual Entry Reason</label>
+                      <p className="text-amber-600 text-xs">
                         {viewingRecord.manualEntryReason || 'No reason provided'}
                       </p>
                     </div>
@@ -712,7 +752,7 @@ const AdminAttendance = () => {
               <div className="flex justify-end mt-4">
                 <button
                   onClick={() => setViewingRecord(null)}
-                  className="px-2 sm:px-3 py-1.5 bg-secondary-700 hover:bg-secondary-600 text-white font-medium rounded-lg transition-colors text-xs sm:text-sm"
+                  className="px-2 sm:px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition-colors text-xs sm:text-sm"
                 >
                   Close
                 </button>
@@ -723,27 +763,27 @@ const AdminAttendance = () => {
 
         {/* Edit Record Modal */}
         {editingRecord && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
-            <div className="glass-morphism neon-border rounded-xl sm:rounded-2xl p-2 sm:p-3 w-full max-w-full sm:max-w-md">
-              <h3 className="text-base sm:text-lg font-bold text-white mb-3">Edit Attendance Record</h3>
+          <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-md flex items-center justify-center z-50 p-2 sm:p-4">
+            <div className="premium-panel rounded-xl sm:rounded-2xl p-4 sm:p-5 w-full max-w-full sm:max-w-md">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3">Edit Attendance Record</h3>
               
               <div className="space-y-2 sm:space-y-3">
                 <div>
-                  <label className="block text-xs text-secondary-400 mb-1">Employee</label>
-                  <p className="text-white text-xs sm:text-sm">
+                  <label className="block text-xs text-slate-500 mb-1">Employee</label>
+                  <p className="text-slate-900 text-xs sm:text-sm">
                     {editingRecord.employeeData?.personalInfo ? 
                       `${editingRecord.employeeData.personalInfo.firstName} ${editingRecord.employeeData.personalInfo.lastName}` :
                       editingRecord.userData?.name || 'Unknown'}
                   </p>
-                  <p className="text-xs text-secondary-400">{formatDate(editingRecord.date)}</p>
+                  <p className="text-xs text-slate-500">{formatDate(editingRecord.date)}</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs text-secondary-400 mb-1">Status</label>
+                  <label className="block text-xs text-slate-500 mb-1">Status</label>
                   <select
                     value={editForm.status}
                     onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-                    className="w-full px-2 py-1.5 bg-secondary-800 border border-secondary-600 rounded-lg text-white focus:outline-none focus:border-neon-pink text-xs sm:text-sm"
+                    className="premium-input w-full px-2 py-1.5 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
                   >
                     <option value="Present">Present</option>
                     <option value="Late">Late</option>
@@ -754,12 +794,12 @@ const AdminAttendance = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-secondary-400 mb-1">Notes</label>
+                  <label className="block text-xs text-slate-500 mb-1">Notes</label>
                   <textarea
                     value={editForm.notes}
                     onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
                     rows="3"
-                    className="w-full px-2 py-1.5 bg-secondary-800 border border-secondary-600 rounded-lg text-white placeholder-secondary-400 focus:outline-none focus:border-neon-pink text-xs sm:text-sm"
+                    className="premium-input w-full px-2 py-1.5 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none text-xs sm:text-sm"
                     placeholder="Add any additional notes..."
                   />
                 </div>
@@ -770,20 +810,20 @@ const AdminAttendance = () => {
                       type="checkbox"
                       checked={editForm.isManualEntry}
                       onChange={(e) => setEditForm(prev => ({ ...prev, isManualEntry: e.target.checked }))}
-                      className="rounded border-secondary-600 text-neon-pink focus:ring-neon-pink"
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-secondary-400 text-xs">Manual Entry</span>
+                    <span className="text-slate-600 text-xs">Manual Entry</span>
                   </label>
                 </div>
 
                 {editForm.isManualEntry && (
                   <div>
-                    <label className="block text-xs text-secondary-400 mb-1">Manual Entry Reason</label>
+                    <label className="block text-xs text-slate-500 mb-1">Manual Entry Reason</label>
                     <input
                       type="text"
                       value={editForm.manualEntryReason}
                       onChange={(e) => setEditForm(prev => ({ ...prev, manualEntryReason: e.target.value }))}
-                      className="w-full px-2 py-1.5 bg-secondary-800 border border-secondary-600 rounded-lg text-white placeholder-secondary-400 focus:outline-none focus:border-neon-pink text-xs sm:text-sm"
+                      className="premium-input w-full px-2 py-1.5 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none text-xs sm:text-sm"
                       placeholder="Reason for manual entry..."
                     />
                   </div>
@@ -793,13 +833,13 @@ const AdminAttendance = () => {
               <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2 mt-4">
                 <button
                   onClick={handleUpdateRecord}
-                  className="flex-1 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-neon-pink to-neon-purple text-white font-medium rounded-lg hover-glow transition-all duration-300 text-xs sm:text-sm"
+                  className="premium-primary-button flex-1 px-2 sm:px-3 py-1.5 font-medium rounded-lg transition-all duration-300 text-xs sm:text-sm"
                 >
                   Update Record
                 </button>
                 <button
                   onClick={() => setEditingRecord(null)}
-                  className="flex-1 px-2 sm:px-3 py-1.5 bg-secondary-700 hover:bg-secondary-600 text-white font-medium rounded-lg transition-colors text-xs sm:text-sm"
+                  className="flex-1 px-2 sm:px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium rounded-lg transition-colors text-xs sm:text-sm"
                 >
                   Cancel
                 </button>
@@ -810,27 +850,27 @@ const AdminAttendance = () => {
 
         {/* Department-wise Summary (if available) */}
         {attendanceSummary && attendanceSummary.departmentStats && attendanceSummary.departmentStats.length > 0 && (
-          <div className="glass-morphism neon-border rounded-2xl p-6">
+          <div className="premium-panel rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">Department-wise Attendance</h2>
-              <Building2 className="w-5 h-5 text-neon-purple" />
+              <h2 className="text-xl font-bold text-slate-900">Department-wise Attendance</h2>
+              <Building2 className="w-5 h-5 text-indigo-600" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {attendanceSummary.departmentStats.map((dept, index) => (
-                <div key={index} className="p-4 bg-secondary-800/30 rounded-lg">
-                  <h4 className="text-white font-medium mb-2">{dept._id || 'Unknown Department'}</h4>
+                <div key={index} className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm hover:border-blue-200 hover:bg-blue-50/40 transition-colors">
+                  <h4 className="text-slate-900 font-medium mb-2">{dept.departmentName || dept._id || 'Unknown Department'}</h4>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-secondary-400">Present:</span>
-                    <span className="text-green-400 font-medium">{dept.present}</span>
+                    <span className="text-slate-500">Present:</span>
+                    <span className="text-emerald-600 font-medium">{dept.present}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-secondary-400">Late:</span>
-                    <span className="text-yellow-400 font-medium">{dept.late}</span>
+                    <span className="text-slate-500">Late:</span>
+                    <span className="text-amber-600 font-medium">{dept.late}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-secondary-400">Total:</span>
-                    <span className="text-white font-medium">{dept.total}</span>
+                    <span className="text-slate-500">Total:</span>
+                    <span className="text-slate-900 font-medium">{dept.total}</span>
                   </div>
                 </div>
               ))}

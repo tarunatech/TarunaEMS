@@ -15,6 +15,20 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+const ModalShell = ({ title, onClose, children, className = '' }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4">
+    <div className={`premium-panel max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl p-4 sm:p-6 ${className}`}>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
+        <button onClick={onClose} className="text-slate-500 hover:text-slate-900">
+          <X className="h-6 w-6" />
+        </button>
+      </div>
+      {children}
+    </div>
+  </div>
+);
+
 const DepartmentManagement = () => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +36,7 @@ const DepartmentManagement = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [creatingDepartment, setCreatingDepartment] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
 
   const [newDepartment, setNewDepartment] = useState({
@@ -38,9 +53,9 @@ const DepartmentManagement = () => {
 
   const statusOptions = ['Active', 'Inactive', 'Restructuring'];
 
-  const fetchDepartments = async () => {
+  const fetchDepartments = async ({ showPageLoader = true } = {}) => {
     try {
-      setLoading(true);
+      if (showPageLoader) setLoading(true);
       const response = await departmentAPI.getDepartments();
       if (response.data.success) {
         setDepartments(response.data.data);
@@ -49,7 +64,7 @@ const DepartmentManagement = () => {
       console.error('Error fetching departments:', error);
       toast.error('Failed to fetch departments');
     } finally {
-      setLoading(false);
+      if (showPageLoader) setLoading(false);
     }
   };
 
@@ -76,9 +91,10 @@ const DepartmentManagement = () => {
     }
 
     try {
+      setCreatingDepartment(true);
       const response = await departmentAPI.createDepartment(newDepartment);
       if (response.data.success) {
-        await fetchDepartments();
+        await fetchDepartments({ showPageLoader: false });
         resetForm();
         setShowAddModal(false);
         toast.success('Department created successfully!');
@@ -86,6 +102,8 @@ const DepartmentManagement = () => {
     } catch (error) {
       console.error('Error creating department:', error);
       toast.error(error.response?.data?.message || 'Failed to create department');
+    } finally {
+      setCreatingDepartment(false);
     }
   };
 
@@ -170,20 +188,6 @@ const DepartmentManagement = () => {
       goals: updatedGoals,
     });
   };
-
-  const ModalShell = ({ title, onClose, children, className = '' }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4">
-      <div className={`premium-panel max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl p-4 sm:p-6 ${className}`}>
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-900">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
 
   const fieldClass =
     'premium-input w-full rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400';
@@ -474,7 +478,7 @@ const DepartmentManagement = () => {
                   </label>
                   <input
                     type="text"
-                    defaultValue={newDepartment.name}
+                    value={newDepartment.name}
                     onChange={(e) =>
                       setNewDepartment((prev) => ({ ...prev, name: e.target.value }))
                     }
@@ -488,7 +492,7 @@ const DepartmentManagement = () => {
                   </label>
                   <input
                     type="text"
-                    defaultValue={newDepartment.code}
+                    value={newDepartment.code}
                     onChange={(e) =>
                       setNewDepartment((prev) => ({
                         ...prev,
@@ -504,7 +508,7 @@ const DepartmentManagement = () => {
                 <div className="md:col-span-2">
                   <label className="mb-2 block text-sm font-medium text-slate-600">Description</label>
                   <textarea
-                    defaultValue={newDepartment.description}
+                    value={newDepartment.description}
                     onChange={(e) =>
                       setNewDepartment((prev) => ({
                         ...prev,
@@ -522,7 +526,7 @@ const DepartmentManagement = () => {
                   </label>
                   <input
                     type="text"
-                    defaultValue={newDepartment.manager}
+                    value={newDepartment.manager}
                     onChange={(e) =>
                       setNewDepartment((prev) => ({
                         ...prev,
@@ -537,7 +541,7 @@ const DepartmentManagement = () => {
                   <label className="mb-2 block text-sm font-medium text-slate-600">Location</label>
                   <input
                     type="text"
-                    defaultValue={newDepartment.location}
+                    value={newDepartment.location}
                     onChange={(e) =>
                       setNewDepartment((prev) => ({
                         ...prev,
@@ -552,7 +556,7 @@ const DepartmentManagement = () => {
                   <label className="mb-2 block text-sm font-medium text-slate-600">Budget</label>
                   <input
                     type="number"
-                    defaultValue={newDepartment.budget}
+                    value={newDepartment.budget}
                     onChange={(e) =>
                       setNewDepartment((prev) => ({
                         ...prev,
@@ -567,7 +571,7 @@ const DepartmentManagement = () => {
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-600">Status</label>
                   <select
-                    defaultValue={newDepartment.status}
+                    value={newDepartment.status}
                     onChange={(e) =>
                       setNewDepartment((prev) => ({
                         ...prev,
@@ -589,7 +593,7 @@ const DepartmentManagement = () => {
                   </label>
                   <input
                     type="date"
-                    defaultValue={newDepartment.establishedDate}
+                    value={newDepartment.establishedDate}
                     onChange={(e) =>
                       setNewDepartment((prev) => ({
                         ...prev,
@@ -620,7 +624,7 @@ const DepartmentManagement = () => {
                 <div key={index} className="flex items-center space-x-2">
                   <input
                     type="text"
-                    defaultValue={goal}
+                    value={goal}
                     onChange={(e) => updateGoal(index, e.target.value)}
                     className="premium-input flex-1 rounded-xl px-4 py-2 text-slate-900"
                     placeholder={`Goal ${index + 1}`}
@@ -639,19 +643,21 @@ const DepartmentManagement = () => {
             <div className="flex justify-end space-x-4 border-t border-slate-200 pt-6">
               <button
                 type="button"
+                disabled={creatingDepartment}
                 onClick={() => {
                   resetForm();
                   setShowAddModal(false);
                 }}
-                className="rounded-lg border border-slate-300 px-6 py-3 text-slate-700 transition-colors hover:bg-slate-50"
+                className="rounded-lg border border-slate-300 px-6 py-3 text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-60"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="premium-primary-button rounded-xl px-6 py-3 font-semibold transition-all duration-300"
+                disabled={creatingDepartment}
+                className="premium-primary-button rounded-xl px-6 py-3 font-semibold transition-all duration-300 disabled:opacity-60"
               >
-                Create Department
+                {creatingDepartment ? 'Creating...' : 'Create Department'}
               </button>
             </div>
           </form>

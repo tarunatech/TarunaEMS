@@ -17,27 +17,48 @@ router.use(protect);
 
 // Validation middleware for purchase order creation
 const purchaseOrderValidation = [
-  body('supplier')
+  body('client')
+    .optional({ nullable: true, checkFalsy: true })
     .isMongoId()
-    .withMessage('Invalid supplier ID'),
-  body('deliveryDate')
-    .isISO8601()
-    .withMessage('Invalid delivery date'),
-  body('lineItems')
-    .isArray({ min: 1 })
-    .withMessage('At least one line item is required'),
-  body('lineItems.*.item')
+    .withMessage('Invalid client ID'),
+  body('clientName')
+    .optional()
     .trim()
     .isLength({ min: 1 })
-    .withMessage('Item name is required'),
-  body('lineItems.*.quantity')
-    .isNumeric()
-    .isFloat({ min: 1 })
-    .withMessage('Quantity must be a positive number'),
-  body('lineItems.*.unitPrice')
+    .withMessage('Client name is required'),
+  body('project')
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage('Project is required'),
+  body('serviceType')
+    .trim()
+    .isLength({ min: 1, max: 60 })
+    .withMessage('Service type is required'),
+  body('vendor')
+    .trim()
+    .isLength({ min: 1, max: 80 })
+    .withMessage('Vendor is required'),
+  body('serviceName')
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage('Service name is required'),
+  body('billingCycle')
+    .isIn(['Monthly', 'Quarterly', 'Half-Yearly', 'Yearly', 'One Time'])
+    .withMessage('Invalid billing cycle'),
+  body('purchaseDate')
+    .isISO8601()
+    .withMessage('Invalid purchase date'),
+  body('renewalDate')
+    .isISO8601()
+    .withMessage('Invalid renewal date'),
+  body('amount')
     .isNumeric()
     .isFloat({ min: 0 })
-    .withMessage('Unit price must be a non-negative number')
+    .withMessage('Amount must be a non-negative number'),
+  body('status')
+    .optional()
+    .isIn(['Active', 'Pending', 'Expired', 'Cancelled'])
+    .withMessage('Invalid status')
 ];
 
 // Validation middleware for supplier creation

@@ -14,8 +14,9 @@ const dayBookSchema = new mongoose.Schema({
     slots: [{
         slotType: {
             type: String,
-            enum: ['10:00 AM - 1:00 PM', '1:00 PM - 2:00 PM', '2:00 PM - 7:00 PM'],
-            required: true
+            required: true,
+            trim: true,
+            maxlength: [40, 'Time slot cannot exceed 40 characters']
         },
         workType: {
             type: String,

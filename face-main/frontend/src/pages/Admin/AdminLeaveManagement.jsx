@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import ReactCalendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 import api from '../../utils/api';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import {
-  Calendar,
+  Calendar as CalendarIcon,
   Clock,
   CheckCircle,
   XCircle,
@@ -30,7 +32,9 @@ const AdminLeaveManagement = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [leaveTypeFilter, setLeaveTypeFilter] = useState('');
   const [selectedLeave, setSelectedLeave] = useState(null);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchLeaves = async () => {
@@ -121,6 +125,146 @@ const AdminLeaveManagement = () => {
       case 'emergency': return 'bg-orange-100 text-orange-700 border border-orange-200';
       default: return 'bg-purple-100 text-purple-700 border border-purple-200';
     }
+  };
+
+  const getEmployeeName = (employee) => {
+    if (!employee) return 'Unknown Employee';
+    if (employee.fullName) return employee.fullName;
+    if (employee.personalInfo?.firstName || employee.personalInfo?.lastName) {
+      return `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`.trim();
+    }
+    return employee.user?.name || 'Unknown Employee';
+  };
+
+  const isSameDate = (a, b) => a.toDateString() === b.toDateString();
+
+  const getLeavesForDate = (date) => {
+    return leaves.filter((leave) => {
+      const start = new Date(leave.startDate);
+      const end = new Date(leave.endDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      return date >= start && date <= end;
+    });
+  };
+
+  const getCalendarStatusClass = (dayLeaves) => {
+    if (dayLeaves.some((leave) => leave.status?.toLowerCase() === 'pending')) return 'admin-leave-calendar-pending';
+    if (dayLeaves.some((leave) => leave.status?.toLowerCase() === 'approved')) return 'admin-leave-calendar-approved';
+    if (dayLeaves.some((leave) => leave.status?.toLowerCase() === 'rejected')) return 'admin-leave-calendar-rejected';
+    if (dayLeaves.some((leave) => leave.status?.toLowerCase() === 'cancelled')) return 'admin-leave-calendar-cancelled';
+    return null;
+  };
+
+  const LeaveCalendarModal = () => {
+    const selectedDayLeaves = getLeavesForDate(selectedCalendarDate);
+
+    const tileClassName = ({ date, view }) => {
+      if (view !== 'month') return null;
+
+      const dayLeaves = getLeavesForDate(date);
+      const statusClass = getCalendarStatusClass(dayLeaves);
+      const selectedClass = isSameDate(date, selectedCalendarDate) ? 'admin-leave-calendar-selected' : '';
+
+      return [statusClass, selectedClass].filter(Boolean).join(' ');
+    };
+
+    const tileContent = ({ date, view }) => {
+      if (view !== 'month') return null;
+
+      const count = getLeavesForDate(date).length;
+      if (!count) return null;
+
+      return (
+        <span className="admin-leave-calendar-count">
+          {count}
+        </span>
+      );
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-sm">
+        <div className="premium-panel w-full max-w-5xl overflow-hidden rounded-2xl shadow-2xl">
+          <div className="flex items-center justify-between border-b border-slate-200 p-5">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Leave Calendar</h2>
+              <p className="text-sm text-slate-500">View all leave requests by date and status</p>
+            </div>
+            <button
+              onClick={() => setShowCalendarModal(false)}
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              aria-label="Close leave calendar"
+            >
+              <XCircle className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="grid max-h-[80vh] gap-6 overflow-y-auto p-5 lg:grid-cols-[1.35fr_0.9fr]">
+            <div>
+              <div className="mb-4 flex flex-wrap gap-3 text-sm">
+                {[
+                  ['Approved', 'bg-emerald-500'],
+                  ['Pending', 'bg-amber-500'],
+                  ['Rejected', 'bg-red-500'],
+                  ['Cancelled', 'bg-slate-400'],
+                ].map(([label, color]) => (
+                  <div key={label} className="flex items-center gap-2 text-slate-600">
+                    <span className={`h-3 w-3 rounded-full ${color}`} />
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              <ReactCalendar
+                value={selectedCalendarDate}
+                onChange={setSelectedCalendarDate}
+                tileClassName={tileClassName}
+                tileContent={tileContent}
+                className="admin-leave-calendar"
+              />
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-slate-500">Selected Date</p>
+                <h3 className="text-xl font-bold text-slate-900">
+                  {selectedCalendarDate.toLocaleDateString()}
+                </h3>
+              </div>
+
+              {selectedDayLeaves.length === 0 ? (
+                <div className="rounded-xl border border-slate-200 bg-white p-5 text-center text-slate-500">
+                  No leave requests on this date
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {selectedDayLeaves.map((leave) => (
+                    <button
+                      key={leave._id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedLeave(leave);
+                        setShowModal(true);
+                      }}
+                      className="w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:bg-blue-50"
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <p className="font-semibold text-slate-900">{getEmployeeName(leave.employee)}</p>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs ${getStatusColor(leave.status)}`}>
+                          {leave.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-500">{leave.leaveType} | {leave.totalDays} days</p>
+                      <p className="mt-1 line-clamp-2 text-sm text-slate-600">{leave.reason}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const LeaveDetailModal = () => {
@@ -251,10 +395,19 @@ const AdminLeaveManagement = () => {
             <h1 className="premium-page-title text-3xl font-bold">Leave Management</h1>
             <p className="text-slate-500">Manage employee leave requests and approvals</p>
           </div>
-          <button className="premium-primary-button px-6 py-3 font-semibold rounded-xl transition-all duration-200 flex items-center">
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              onClick={() => setShowCalendarModal(true)}
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              Leave Calendar
+            </button>
+            <button className="premium-primary-button px-6 py-3 font-semibold rounded-xl transition-all duration-200 flex items-center">
+              <Download className="w-4 h-4 mr-2" />
+              Export Report
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -336,7 +489,7 @@ const AdminLeaveManagement = () => {
             </div>
 
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
               <select
                 value={leaveTypeFilter}
                 onChange={(e) => setLeaveTypeFilter(e.target.value)}
@@ -549,7 +702,7 @@ const AdminLeaveManagement = () => {
 
           {!loading && leaves.length === 0 && (
             <div className="p-12 text-center">
-              <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <CalendarIcon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-slate-900 mb-2">No leave applications found</h3>
               <p className="text-slate-500">
                 {searchTerm || statusFilter || leaveTypeFilter
@@ -562,6 +715,7 @@ const AdminLeaveManagement = () => {
       </div>
 
       {showModal && <LeaveDetailModal />}
+      {showCalendarModal && <LeaveCalendarModal />}
     </AdminLayout>
   );
 };

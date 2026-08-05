@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Building2, Briefcase, Calendar, Save, Camera, CreditCard, DollarSign, FileText, MapPin, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
-import { authAPI } from '../../utils/api';
+import { authAPI, getApiFileUrl } from '../../utils/api';
 
 const EmployeeProfile = () => {
   const [profile, setProfile] = useState({
@@ -37,6 +37,8 @@ const EmployeeProfile = () => {
         const userData = response.data.data.user;
         const employeeData = response.data.data.employee;
 
+        const savedProfileImage = userData.profileImage || employeeData?.user?.profileImage || '';
+
         setProfile({
           name: userData.name || (employeeData?.personalInfo ? `${employeeData.personalInfo.firstName} ${employeeData.personalInfo.lastName}` : '') || localStorage.getItem('userName') || '',
           email: userData.email || employeeData?.contactInfo?.personalEmail || localStorage.getItem('userEmail') || '',
@@ -44,7 +46,7 @@ const EmployeeProfile = () => {
           department: employeeData?.workInfo?.department?.name || localStorage.getItem('userDepartment') || '',
           employeeId: userData.employeeId || employeeData?.employeeId || localStorage.getItem('employeeId') || '',
           joiningDate: employeeData?.workInfo?.joiningDate || '',
-          profileImage: userData.profileImage || '',
+          profileImage: savedProfileImage,
           position: employeeData?.workInfo?.position || '',
           // Detailed sections mapping
           personalInfo: employeeData?.personalInfo || {},
@@ -54,8 +56,9 @@ const EmployeeProfile = () => {
           salaryInfo: employeeData?.salaryInfo || {},
           documents: employeeData?.documents || {}
         });
-        if (userData.profileImage) {
-          localStorage.setItem('userImage', userData.profileImage);
+        if (savedProfileImage) {
+          localStorage.setItem('userImage', savedProfileImage);
+          sessionStorage.setItem('userImage', savedProfileImage);
         }
       }
     } catch (error) {
@@ -128,6 +131,11 @@ const EmployeeProfile = () => {
         toast.success('Profile picture updated', { id: toastId });
         const newImagePath = response.data.data.profileImage;
         setProfile(prev => ({ ...prev, profileImage: newImagePath }));
+        localStorage.setItem('userImage', newImagePath);
+        sessionStorage.setItem('userImage', newImagePath);
+        window.dispatchEvent(new CustomEvent('profile-image-updated', {
+          detail: { profileImage: newImagePath }
+        }));
       }
     } catch (error) {
       console.error('Image upload error:', error);
@@ -135,12 +143,7 @@ const EmployeeProfile = () => {
     }
   };
 
-  const getFullImageUrl = (path) => {
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-    return baseUrl.replace('/api', '') + path;
-  };
+  const getFullImageUrl = (path) => getApiFileUrl(path) || null;
 
   if (loading) {
     return (
@@ -154,7 +157,7 @@ const EmployeeProfile = () => {
 
   return (
     <EmployeeLayout>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 bg-[#F8FAFC]">
+      <div className="employee-profile-page max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 bg-[#F8FAFC]">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">My Profile</h1>
           <p className="text-slate-500 mt-1">View and update your information</p>
@@ -170,10 +173,7 @@ const EmployeeProfile = () => {
                     src={getFullImageUrl(profile.profileImage)}
                     alt="Profile"
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.style.display = 'none';
-                    }}
+                    onError={() => setProfile(prev => ({ ...prev, profileImage: '' }))}
                   />
                 ) : (
                   <User className="w-10 h-10 text-white" />

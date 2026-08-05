@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import GroupChatModal from '../../components/Employee/GroupChat/GroupChatModal';
 import toast from 'react-hot-toast';
-import { employeeAPI, authAPI, attendanceAPI, payslipAPI } from '../../utils/api';
+import { employeeAPI, authAPI, attendanceAPI, payslipAPI, getApiFileUrl } from '../../utils/api';
 import API from '../../utils/api';
 import { geolocationUtils } from '../../utils/geolocationUtils';
 import io from 'socket.io-client';
@@ -44,6 +44,19 @@ const getWelcomeHero = (date) => {
   };
 };
 
+const getPersonDisplayName = (person, fallback = 'Employee') => {
+  const clean = (value) => (typeof value === 'string' ? value.trim() : '');
+  const directName = clean(person?.name);
+  const fullName = clean(person?.fullName);
+  const userName = clean(person?.user?.name);
+  const firstName = clean(person?.personalInfo?.firstName || person?.user?.personalInfo?.firstName);
+  const lastName = clean(person?.personalInfo?.lastName || person?.user?.personalInfo?.lastName);
+  const personalName = [firstName, lastName].filter(Boolean).join(' ');
+
+  return [directName, fullName, userName, personalName]
+    .find((name) => name && !/^unknown( user)?$/i.test(name)) || fallback;
+};
+
 const EmployeeDashboard = () => {
   const routeLocation = useLocation();
   const navigate = useNavigate();
@@ -69,6 +82,8 @@ const EmployeeDashboard = () => {
   const [botMessages, setBotMessages] = useState([]);
   const [selectedPeer, setSelectedPeer] = useState(null);
   const [peers, setPeers] = useState([]);
+  const [peerActivity, setPeerActivity] = useState({});
+  const [unreadCounts, setUnreadCounts] = useState({});
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [newMessage, setNewMessage] = useState('');
@@ -78,18 +93,122 @@ const EmployeeDashboard = () => {
   const [socketConnected, setSocketConnected] = useState(false);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const selectedPeerRef = useRef(null);
+  const showChatModalRef = useRef(false);
   const botMessagesEndRef = useRef(null);
   const botMessagesContainerRef = useRef(null);
   const botTimeoutRef = useRef(null);
   const isUserScrolledUp = useRef(false);
   const typingTimeoutRef = useRef(null);
   const welcomeHero = useMemo(() => getWelcomeHero(currentTime), [currentTime]);
-
+ const [profile, setProfile] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    department: '',
+    position: '',
+    employeeId: '',
+    joiningDate: '',
+    profileImage: '',
+    // Detailed sections
+    personalInfo: {},
+    contactInfo: {},
+    workInfo: {},
+    bankInfo: {},
+    salaryInfo: {},
+    documents: {}
+  });
   const openTeamChat = useCallback(() => {
     setShowGroupChatModal(false);
     setShowBotModal(false);
     setShowChatModal(true);
   }, []);
+
+  useEffect(() => {
+    selectedPeerRef.current = selectedPeer;
+  }, [selectedPeer]);
+
+  useEffect(() => {
+    showChatModalRef.current = showChatModal;
+  }, [showChatModal]);
+
+  const getPeerId = useCallback((peer) => String(peer?._id || peer?.user?._id || ''), []);
+
+  const getUnreadStorageKey = useCallback(() => {
+    const currentUserId = employeeData?.id || employeeData?._id || localStorage.getItem('userId') || 'unknown';
+    return `teamChatUnreadCounts:${currentUserId}`;
+  }, [employeeData]);
+
+  const getMessageTime = useCallback((message) => {
+    const rawTime = message?.timestamp || message?.createdAt || new Date().toISOString();
+    const parsedTime = new Date(rawTime).getTime();
+    return Number.isNaN(parsedTime) ? Date.now() : parsedTime;
+  }, []);
+
+  const recordPeerActivity = useCallback((peerId, message) => {
+    if (!peerId) return;
+
+    setPeerActivity((prev) => ({
+      ...prev,
+      [peerId]: {
+        lastMessageAt: getMessageTime(message),
+        lastMessage: message?.text || '',
+      },
+    }));
+  }, [getMessageTime]);
+
+  const handleSelectPeer = useCallback((peer) => {
+    const peerId = getPeerId(peer);
+    setSelectedPeer(peer);
+
+    if (peerId) {
+      setUnreadCounts((prev) => ({ ...prev, [peerId]: 0 }));
+    }
+  }, [getPeerId]);
+
+  useEffect(() => {
+    if (!employeeData) return;
+
+    try {
+      const storedCounts = localStorage.getItem(getUnreadStorageKey());
+      if (storedCounts) {
+        setUnreadCounts(JSON.parse(storedCounts));
+      }
+    } catch (error) {
+      console.warn('Failed to load chat unread counts:', error);
+    }
+  }, [employeeData, getUnreadStorageKey]);
+
+  useEffect(() => {
+    if (!employeeData) return;
+
+    try {
+      localStorage.setItem(getUnreadStorageKey(), JSON.stringify(unreadCounts));
+    } catch (error) {
+      console.warn('Failed to save chat unread counts:', error);
+    }
+  }, [employeeData, getUnreadStorageKey, unreadCounts]);
+
+  const sortedPeers = useMemo(() => {
+    return [...peers].sort((a, b) => {
+      const aId = getPeerId(a);
+      const bId = getPeerId(b);
+      const aUnread = unreadCounts[aId] || 0;
+      const bUnread = unreadCounts[bId] || 0;
+      const aTime = peerActivity[aId]?.lastMessageAt || 0;
+      const bTime = peerActivity[bId]?.lastMessageAt || 0;
+
+      if (aTime !== bTime) return bTime - aTime;
+      if (aUnread !== bUnread) return bUnread - aUnread;
+      if (a.isOnline && !b.isOnline) return -1;
+      if (!a.isOnline && b.isOnline) return 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }, [peers, peerActivity, unreadCounts, getPeerId]);
+
+  const totalUnreadTeamMessages = useMemo(() => {
+    return Object.values(unreadCounts).reduce((sum, count) => sum + Number(count || 0), 0);
+  }, [unreadCounts]);
 
   const openGroupChats = useCallback(() => {
     setShowChatModal(false);
@@ -150,9 +269,15 @@ const EmployeeDashboard = () => {
 
         if (profileResponse.data && profileResponse.data.success) {
           const employee = profileResponse.data.data;
+          const savedProfileImage = employee.profileImage || employee.user?.profileImage || '';
+          if (savedProfileImage) {
+            localStorage.setItem('userImage', savedProfileImage);
+            sessionStorage.setItem('userImage', savedProfileImage);
+          }
           // Ensure we have the user ID as id, and employee ID as employeeId
           setEmployeeData({
             ...employee,
+            profileImage: savedProfileImage,
             id: employee.id || employee.user?._id || employee._id,
             employeeId: employee.employeeId || employee._id
           });
@@ -221,12 +346,7 @@ const EmployeeDashboard = () => {
     getCurrentLocation();
   }, []);
 
-  const getFullImageUrl = (path) => {
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-    return baseUrl.replace('/api', '') + path;
-  };
+  const getFullImageUrl = (path) => getApiFileUrl(path) || null;
 
   const getCurrentLocation = async () => {
     try {
@@ -500,6 +620,21 @@ const EmployeeDashboard = () => {
           return;
         }
 
+        const currentUserId = String(employeeData.id || employeeData._id);
+        const senderId = String(msg.from || '');
+        const recipientId = String(msg.to || '');
+        const peerId = senderId === currentUserId ? recipientId : senderId;
+        const selectedPeerId = getPeerId(selectedPeerRef.current);
+
+        recordPeerActivity(peerId, msg);
+
+        if (peerId && senderId !== currentUserId && (!showChatModalRef.current || selectedPeerId !== peerId)) {
+          setUnreadCounts((prev) => ({
+            ...prev,
+            [peerId]: (prev[peerId] || 0) + 1,
+          }));
+        }
+
         setChatMessages(prev => {
           if (msg.clientMessageId) {
             const tempIndex = prev.findIndex(m => m.clientMessageId === msg.clientMessageId);
@@ -554,7 +689,7 @@ const EmployeeDashboard = () => {
     }
     // Removed: Socket no longer disconnects when modals close
     // Socket stays connected for real-time presence throughout the session
-  }, [employeeData]);
+  }, [employeeData, getPeerId, recordPeerActivity]);
 
   useEffect(() => {
     const params = new URLSearchParams(routeLocation.search);
@@ -587,14 +722,28 @@ const EmployeeDashboard = () => {
           const res = await employeeAPI.get('/messages/chat-users');
           if (res.data.success) {
             setPeers(res.data.data);
+            setPeerActivity((prev) => {
+              const next = { ...prev };
+              res.data.data.forEach((user) => {
+                const peerId = getPeerId(user);
+                if (!peerId) return;
+
+                if (user.lastMessageAt) {
+                  next[peerId] = {
+                    lastMessageAt: new Date(user.lastMessageAt).getTime(),
+                    lastMessage: user.lastMessage || '',
+                  };
+                } else if (!next[peerId]) {
+                  next[peerId] = { lastMessageAt: 0, lastMessage: '' };
+                }
+              });
+              return next;
+            });
             res.data.data.forEach(user => {
               if (user.isOnline) {
                 setOnlineUsers(prev => new Set(prev).add(user._id));
               }
             });
-            if (res.data.data.length > 0 && !selectedPeer) {
-              setSelectedPeer(res.data.data[0]);
-            }
           }
         } catch (err) {
           console.error('Failed to load chat users:', err);
@@ -603,7 +752,7 @@ const EmployeeDashboard = () => {
       };
       fetchChatUsers();
     }
-  }, [showChatModal, employeeData]);
+  }, [showChatModal, employeeData, getPeerId]);
 
   useEffect(() => {
     if (selectedPeer && employeeData) {
@@ -628,10 +777,7 @@ const EmployeeDashboard = () => {
               return {
                 _id: msg._id,
                 from: msgFromId,
-                fromName: msg.from?.fullName ||
-                  (msg.from?.personalInfo?.firstName && msg.from?.personalInfo?.lastName
-                    ? `${msg.from.personalInfo.firstName} ${msg.from.personalInfo.lastName}`
-                    : 'Unknown'),
+                fromName: getPersonDisplayName(msg.from, ''),
                 to: msg.to?._id || msg.to,
                 text: msg.text,
                 timestamp: msg.timestamp,
@@ -640,6 +786,9 @@ const EmployeeDashboard = () => {
               };
             });
             setChatMessages(normalized);
+            if (normalized.length > 0) {
+              recordPeerActivity(peerId, normalized[normalized.length - 1]);
+            }
           }
         } catch (err) {
           console.error('Failed to load chat history:', err);
@@ -653,7 +802,7 @@ const EmployeeDashboard = () => {
     } else {
       setChatMessages([]);
     }
-  }, [selectedPeer, employeeData]);
+  }, [selectedPeer, employeeData, recordPeerActivity]);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedPeer) {
@@ -678,14 +827,16 @@ const EmployeeDashboard = () => {
     const clientMessageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const message = {
       from: currentUserId,
-      fromName: `${employeeData.personalInfo.firstName} ${employeeData.personalInfo.lastName}`,
+      fromName: getPersonDisplayName(employeeData, 'Employee'),
       to: peerId,
       text: newMessage.trim(),
       timestamp: new Date().toISOString(),
       clientMessageId
     };
 
+    recordPeerActivity(peerId, message);
     setChatMessages(prev => [...prev, { ...message, _id: clientMessageId, self: true, pending: true }]);
+    setUnreadCounts((prev) => ({ ...prev, [peerId]: 0 }));
     setNewMessage('');
 
     try {
@@ -795,16 +946,16 @@ const EmployeeDashboard = () => {
   if (loading) {
     return (
       <EmployeeLayout onOpenTeamChat={openTeamChat} onOpenGroupChats={openGroupChats}>
-        <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-blue-100/80 bg-gradient-to-br from-white via-sky-50 to-indigo-50 shadow-[0_12px_30px_rgba(15,23,42,0.07)]">
+        <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           <div className="flex flex-col items-center gap-4">
-            <div className="rounded-full bg-white/80 p-3 shadow-[0_10px_24px_rgba(37,99,235,0.14)] ring-1 ring-blue-100">
-              <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <div className="rounded-full bg-indigo-50 p-3 ring-1 ring-indigo-100">
+              <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
             </div>
-            <p className="text-base font-semibold text-slate-700">Loading your dashboard...</p>
+            <p className="text-[13.5px] font-medium text-slate-600">Loading your dashboard…</p>
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 animate-bounce rounded-full bg-blue-600" style={{ animationDelay: '0ms' }} />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-cyan-400" style={{ animationDelay: '150ms' }} />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-500" style={{ animationDelay: '300ms' }} />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500" style={{ animationDelay: '0ms' }} />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-400" style={{ animationDelay: '150ms' }} />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-300" style={{ animationDelay: '300ms' }} />
             </div>
           </div>
         </div>
@@ -822,30 +973,10 @@ const EmployeeDashboard = () => {
     : (rawDepartment || 'General');
   const displayEmployeeId = employeeData?.employeeId || employeeData?.user?.employeeId || 'N/A';
   const employeeStatAccents = [
-    {
-      icon: 'from-blue-500 to-indigo-600',
-      ring: 'ring-blue-100/80',
-      glow: 'shadow-blue-500/25',
-      wash: 'rgba(59,130,246,0.10)'
-    },
-    {
-      icon: 'from-emerald-500 to-teal-600',
-      ring: 'ring-emerald-100/80',
-      glow: 'shadow-emerald-500/25',
-      wash: 'rgba(16,185,129,0.10)'
-    },
-    {
-      icon: 'from-amber-500 to-orange-600',
-      ring: 'ring-amber-100/80',
-      glow: 'shadow-amber-500/25',
-      wash: 'rgba(245,158,11,0.10)'
-    },
-    {
-      icon: 'from-pink-500 to-rose-600',
-      ring: 'ring-pink-100/80',
-      glow: 'shadow-pink-500/25',
-      wash: 'rgba(236,72,153,0.10)'
-    }
+    { icon: 'text-indigo-500', chip: 'bg-indigo-50 ring-indigo-100' },
+    { icon: 'text-emerald-500', chip: 'bg-emerald-50 ring-emerald-100' },
+    { icon: 'text-amber-500', chip: 'bg-amber-50 ring-amber-100' },
+    { icon: 'text-rose-500', chip: 'bg-rose-50 ring-rose-100' }
   ];
 
   const handleCloseChatModal = () => {
@@ -875,11 +1006,11 @@ const EmployeeDashboard = () => {
       {/* Entrance animation keyframes — purely presentational, no logic impact */}
       <style>{`
         @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(14px); }
+          from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
         }
         .animate-enter {
-          animation: fadeSlideUp 0.5s ease-out both;
+          animation: fadeSlideUp 0.4s ease-out both;
         }
         @keyframes ambientWaveDrift {
           0% { transform: translate3d(-8%, 0, 0) scaleX(1.04); }
@@ -926,86 +1057,82 @@ const EmployeeDashboard = () => {
           animation: ambientParticleFloat 11s ease-in-out infinite;
         }
       `}</style>
-      <div className="space-y-6 bg-[#F8FAFC]">
+      <div className="space-y-5 bg-slate-50">
         {/* Welcome Section */}
         <div
-          className="relative min-h-[260px] overflow-hidden rounded-[28px] border border-slate-700/60 bg-slate-950 p-6 shadow-[0_20px_44px_rgba(15,23,42,0.22)] animate-enter transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_26px_56px_rgba(15,23,42,0.28)] md:p-10"
+          className="relative min-h-[220px] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0C0F1] p-6 animate-enter transition-shadow duration-300 hover:shadow-[0_16px_36px_rgba(15,23,42,0.18)] md:p-9"
           style={{ animationDelay: '0ms' }}
         >
           <video
             key={welcomeHero.video}
             src={welcomeHero.video}
             aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover opacity-90"
+            className="absolute inset-0 h-full w-full object-cover opacity-80"
             autoPlay
             muted
             loop
             playsInline
             preload="metadata"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/88 via-slate-900/58 to-slate-950/46" />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/36 via-slate-950/18 to-slate-950/78" />
-          <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-slate-950/52 via-slate-900/24 to-transparent" />
-          <div className="absolute left-0 right-0 bottom-0 h-16 bg-gradient-to-t from-slate-950/56 via-slate-900/18 to-transparent" />
-          <div className="welcome-wave absolute -left-24 bottom-4 h-28 w-[125%] rounded-[50%] border-t border-cyan-200/10 bg-[radial-gradient(ellipse_at_center,rgba(56,189,248,0.14),transparent_62%)] blur-sm" />
-          <div className="welcome-wave-slow absolute -left-32 bottom-12 h-36 w-[135%] rounded-[50%] border-t border-indigo-200/10 bg-[radial-gradient(ellipse_at_center,rgba(129,140,248,0.12),transparent_66%)] blur-md" />
-          <div className="welcome-wave-float absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_70%_35%,rgba(147,197,253,0.12),transparent_26%)]" />
-          <div className="welcome-shimmer absolute -top-8 bottom-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/18 to-transparent blur-xl" />
-          <div className="welcome-particle absolute left-[18%] top-[22%] h-1.5 w-1.5 rounded-full bg-cyan-200/45" />
-          <div className="welcome-particle absolute left-[48%] top-[16%] h-1 w-1 rounded-full bg-indigo-200/40" style={{ animationDelay: '2.8s', animationDuration: '14s' }} />
-          <div className="welcome-particle absolute right-[18%] bottom-[26%] h-1.5 w-1.5 rounded-full bg-white/35" style={{ animationDelay: '5.2s', animationDuration: '16s' }} />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0C0F17]/92 via-[#0C0F17]/62 to-[#0C0F17]/50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0C0F17]/40 via-[#0C0F17]/16 to-[#0C0F17]/80" />
+          <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#0C0F17]/55 via-[#0C0F17]/22 to-transparent" />
+          <div className="absolute left-0 right-0 bottom-0 h-16 bg-gradient-to-t from-[#0C0F17]/60 via-[#0C0F17]/16 to-transparent" />
+          <div className="welcome-wave absolute -left-24 bottom-4 h-28 w-[125%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.14),transparent_62%)] blur-sm" />
+          <div className="welcome-wave-slow absolute -left-32 bottom-12 h-36 w-[135%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(129,140,248,0.10),transparent_66%)] blur-md" />
+          <div className="welcome-shimmer absolute -top-8 bottom-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent blur-xl" />
 
-          <div className="relative z-10 flex min-h-[188px] flex-col justify-between gap-8 md:flex-row md:items-center">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-              <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-600 shadow-[0_16px_32px_rgba(79,70,229,0.36)] transition-transform duration-300 hover:scale-105">
+          <div className="relative z-10 flex min-h-[160px] flex-col justify-between gap-7 md:flex-row md:items-center">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl ring-1 ring-white/10">
                 {(employeeData?.profileImage || employeeData?.user?.profileImage) ? (
                   <img
-                    src="/emp_mountain.png"
+                    src={getFullImageUrl(employeeData.profileImage || employeeData.user?.profileImage)}
                     alt="Profile"
-                    className="h-full w-full object-cover"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = 'none';
+                    }}
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <User className="h-10 w-10 text-white" />
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600">
+                    <User className="h-8 w-8 text-white" />
                   </div>
                 )}
               </div>
               <div>
-                <p className="mb-4 text-xs font-bold uppercase tracking-[0.42em] text-cyan-100 drop-shadow-[0_2px_8px_rgba(15,23,42,0.9)]">
+                <p className="mb-2.5 text-[10.5px] font-semibold uppercase tracking-[0.28em] text-indigo-300/90">
                   {welcomeHero.message}
                 </p>
-                <h1 className="mb-3 text-4xl font-extrabold leading-tight text-white drop-shadow-[0_4px_14px_rgba(15,23,42,0.9)] md:text-4xl">
-                  Welcome,<br className="hidden sm:block" />{' '}
-                  <span className="bg-gradient-to-r from-white via-cyan-100 to-sky-200 bg-clip-text text-transparent">{displayName}!</span>
+                <h1 className="mb-2 text-[28px] font-semibold leading-tight tracking-tight text-white md:text-[32px]">
+                  Welcome, <span className="text-white">{displayName}</span>
                 </h1>
-               <p className="mb-5 text-lg font-semibold text-slate-50 drop-shadow-[0_2px_8px_rgba(15,23,42,0.85)]">
-  {displayPosition}
-  <span className="mx-2 text-slate-200">•</span>
-  {displayDepartment}
-</p>
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="rounded-xl border border-white/30 bg-slate-950/46 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-md">
-                    Employee ID: <span className="text-cyan-100">{displayEmployeeId}</span>
+                <p className="mb-4 text-[13.5px] font-medium text-slate-300">
+                  {displayPosition}
+                  <span className="mx-2 text-slate-600">•</span>
+                  {displayDepartment}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-lg bg-white/[0.06] px-3 py-1 text-[12px] font-medium text-slate-200 ring-1 ring-white/10">
+                    ID <span className="text-white font-semibold">{displayEmployeeId}</span>
                   </span>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/40 bg-emerald-950/44 px-4 py-2 text-sm font-bold text-emerald-100 shadow-sm backdrop-blur-md">
-                    <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.8)]" />
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-[12px] font-semibold text-emerald-300 ring-1 ring-emerald-400/20">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                     Online
                   </span>
-                  {/* <span className="rounded-full border border-white/25 bg-slate-950/46 px-4 py-2 text-sm font-semibold text-slate-100 shadow-sm backdrop-blur-md">
-                    Available
-                  </span> */}
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-start border-white/10 md:items-end md:border- md:pl-10">
-              <p className="font-mono text-4xl font-extrabold leading-none tracking-wider text-white drop-shadow-[0_5px_18px_rgba(15,23,42,0.92)] md:text-6xl">
+            <div className="flex flex-col items-start md:items-end md:pl-8">
+              <p className="font-mono text-3xl font-semibold leading-none tracking-wide text-white md:text-5xl">
                 {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </p>
-              <p className="mt-2 text-base font-bold text-cyan-50 drop-shadow-[0_2px_8px_rgba(15,23,42,0.85)]">
+              <p className="mt-2 text-[13px] font-medium text-slate-400">
                 {currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
-              <p className="mt-7 rounded-full border border-white/30 bg-slate-950/44 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-md">
-                Last updated: {lastUpdated.toLocaleTimeString()}
+              <p className="mt-5 rounded-full bg-white/[0.05] px-3 py-1 text-[11.5px] font-medium text-slate-400 ring-1 ring-white/10">
+                Last updated {lastUpdated.toLocaleTimeString()}
               </p>
             </div>
           </div>
@@ -1013,26 +1140,22 @@ const EmployeeDashboard = () => {
 
         {/* Quick Stats */}
         {dashboardStats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {dashboardStats.map((stat, index) => (
               <div
                 key={index}
-                className="dashboard-stat-card relative overflow-hidden bg-[#F8FAFC] border border-blue-100/80 rounded-2xl shadow-[0_12px_28px_rgba(15,23,42,0.07)] p-6 animate-enter transition-all duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_18px_38px_rgba(30,64,175,0.12)]"
-                style={{ animationDelay: `${80 + index * 80}ms` }}
+                className="dashboard-stat-card relative overflow-hidden bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-5 animate-enter transition-all duration-150 hover:border-slate-300 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]"
+                style={{ animationDelay: `${60 + index * 60}ms` }}
               >
-                <div
-                  className="dashboard-card-wash absolute -top-14 -right-14 h-32 w-32 rounded-full transition-transform duration-300"
-                  style={{ background: employeeStatAccents[index % employeeStatAccents.length].wash }}
-                />
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`relative w-12 h-12 bg-gradient-to-r ${employeeStatAccents[index % employeeStatAccents.length].icon} rounded-xl flex items-center justify-center shadow-lg ${employeeStatAccents[index % employeeStatAccents.length].glow} ring-4 ${employeeStatAccents[index % employeeStatAccents.length].ring}`}>
-                    <stat.icon className="w-6 h-6 text-white" />
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ring-1 ${employeeStatAccents[index % employeeStatAccents.length].chip}`}>
+                    <stat.icon className={`w-[18px] h-[18px] ${employeeStatAccents[index % employeeStatAccents.length].icon}`} strokeWidth={1.75} />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-1">{stat.value}</h3>
-                  <p className="text-slate-500 text-sm mb-2">{stat.title}</p>
-                  <p className="text-xs text-indigo-600 font-semibold">{stat.change}</p>
+                  <h3 className="text-[22px] font-semibold text-slate-900 mb-0.5 tracking-tight">{stat.value}</h3>
+                  <p className="text-slate-500 text-[13px] mb-2">{stat.title}</p>
+                  <p className="text-[11.5px] text-indigo-600 font-medium">{stat.change}</p>
                 </div>
               </div>
             ))}
@@ -1041,117 +1164,117 @@ const EmployeeDashboard = () => {
 
         {/* Attendance Section */}
         <div
-          className="dashboard-panel bg-[#F8FAFC] border border-blue-100/80 rounded-2xl shadow-[0_12px_28px_rgba(15,23,42,0.07)] p-6 animate-enter transition-all duration-300 hover:border-indigo-200 hover:shadow-[0_18px_38px_rgba(30,64,175,0.12)]"
-          style={{ animationDelay: '160ms' }}
+          className="dashboard-panel bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 animate-enter transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]"
+          style={{ animationDelay: '140ms' }}
         >
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900">Today's Attendance</h2>
-            <Clock className="w-5 h-5 text-indigo-600" />
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-[15px] font-semibold text-slate-900">Today's attendance</h2>
+            <Clock className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
           </div>
           <div className="flex flex-col md:flex-row md:items-center justify-between">
-            <div className="flex items-center space-x-4 mb-4 md:mb-0">
-              <div className={`w-4 h-4 rounded-full ${hasCheckedIn ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+            <div className="flex items-center space-x-3 mb-4 md:mb-0">
+              <div className={`w-2.5 h-2.5 rounded-full ${hasCheckedIn ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
               <div>
-                <p className="text-slate-900 font-medium">
-                  Status: <span className={hasCheckedIn ? 'text-green-600' : 'text-red-600'}>
-                    {hasCheckedIn ? (hasCheckedOut ? 'Completed for today' : 'Checked In') : 'Not Marked'}
+                <p className="text-slate-900 text-[13.5px] font-medium">
+                  Status: <span className={hasCheckedIn ? 'text-emerald-600' : 'text-red-600'}>
+                    {hasCheckedIn ? (hasCheckedOut ? 'Completed for today' : 'Checked in') : 'Not marked'}
                   </span>
                 </p>
                 {todayAttendance && (
-                  <div className="text-sm text-slate-500 space-y-1">
+                  <div className="text-[12.5px] text-slate-500 space-y-0.5 mt-1">
                     {todayAttendance.checkInTime && <p>Check-in: {new Date(todayAttendance.checkInTime).toLocaleTimeString()}</p>}
                     {hasCheckedIn && !hasCheckedOut && realTimeWorkingTime > 0 && (
-                      <p className="text-green-600">Working Time: {Math.floor(realTimeWorkingTime / 60)}h {realTimeWorkingTime % 60}m</p>
+                      <p className="text-emerald-600">Working time: {Math.floor(realTimeWorkingTime / 60)}h {realTimeWorkingTime % 60}m</p>
                     )}
                     {todayAttendance.checkOutTime && <p>Check-out: {new Date(todayAttendance.checkOutTime).toLocaleTimeString()}</p>}
                   </div>
                 )}
                 {location && (
-                  <p className="text-xs text-slate-500 flex items-center mt-1">
-                    <MapPin className="w-3 h-3 mr-1" /> Location ready
+                  <p className="text-[11.5px] text-slate-400 flex items-center mt-1">
+                    <MapPin className="w-3 h-3 mr-1" strokeWidth={1.75} /> Location ready
                   </p>
                 )}
               </div>
             </div>
             {!hasCheckedIn && (
-              <div className="flex flex-col space-y-2">
+              <div className="flex flex-col space-y-1.5">
                 <button
                   onClick={markAttendance}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white font-semibold rounded-xl shadow-[0_12px_24px_rgba(79,70,229,0.24)] hover:shadow-[0_16px_30px_rgba(79,70,229,0.30)] hover:scale-[1.02] transition-all duration-200 flex items-center justify-center"
+                  className="px-5 py-2.5 bg-indigo-600 text-white text-[13.5px] font-medium rounded-lg hover:bg-indigo-500 transition-colors duration-150 flex items-center justify-center"
                 >
-                  <Camera className="w-4 h-4 mr-2" /> Mark Attendance with Face Verification
+                  <Camera className="w-4 h-4 mr-2" strokeWidth={1.75} /> Mark attendance with face verification
                 </button>
-                <p className="text-xs text-slate-500 text-center">
-                  Face verification (Optional)
+                <p className="text-[11.5px] text-slate-400 text-center">
+                  Face verification (optional)
                 </p>
               </div>
             )}
             {hasCheckedIn && !hasCheckedOut && (
               <button
                 onClick={() => window.location.href = '/employee/attendance'}
-                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200"
+                className="px-5 py-2.5 bg-red-500 text-white text-[13.5px] font-medium rounded-lg hover:bg-red-600 transition-colors duration-150"
               >
-                <Clock className="w-4 h-4 mr-2 inline" /> Check Out
+                <Clock className="w-4 h-4 mr-2 inline" strokeWidth={1.75} /> Check out
               </button>
             )}
           </div>
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div
-            className="dashboard-panel bg-[#F8FAFC] border border-blue-100/80 rounded-2xl shadow-[0_12px_28px_rgba(15,23,42,0.07)] p-6 animate-enter transition-all duration-300 hover:border-indigo-200 hover:shadow-[0_18px_38px_rgba(30,64,175,0.12)]"
-            style={{ animationDelay: '220ms' }}
+            className="dashboard-panel bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 animate-enter transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]"
+            style={{ animationDelay: '180ms' }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900">Profile Summary</h2>
-              <User className="w-5 h-5 text-indigo-600" />
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-[15px] font-semibold text-slate-900">Profile summary</h2>
+              <User className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
             </div>
-            <div className="space-y-4">
-              <div className="dashboard-soft-row flex justify-between items-center p-3 bg-[#F1F5F9] border border-blue-100/60 rounded-xl transition-all duration-200 hover:bg-blue-50 hover:border-indigo-200">
-                <span className="text-slate-500">Employee ID</span>
-                <span className="text-slate-900 font-medium">{displayEmployeeId}</span>
+            <div className="space-y-2">
+              <div className="dashboard-soft-row flex justify-between items-center px-3.5 py-2.5 bg-slate-50 rounded-lg transition-colors duration-150 hover:bg-slate-100">
+                <span className="text-slate-500 text-[13px]">Employee ID</span>
+                <span className="text-slate-900 text-[13px] font-medium">{displayEmployeeId}</span>
               </div>
-              <div className="dashboard-soft-row flex justify-between items-center p-3 bg-[#F1F5F9] border border-blue-100/60 rounded-xl transition-all duration-200 hover:bg-blue-50 hover:border-indigo-200">
-                <span className="text-slate-500">Department</span>
-                <span className="text-slate-900 font-medium">{displayDepartment}</span>
+              <div className="dashboard-soft-row flex justify-between items-center px-3.5 py-2.5 bg-slate-50 rounded-lg transition-colors duration-150 hover:bg-slate-100">
+                <span className="text-slate-500 text-[13px]">Department</span>
+                <span className="text-slate-900 text-[13px] font-medium">{displayDepartment}</span>
               </div>
-              <div className="dashboard-soft-row flex justify-between items-center p-3 bg-[#F1F5F9] border border-blue-100/60 rounded-xl transition-all duration-200 hover:bg-blue-50 hover:border-indigo-200">
-                <span className="text-slate-500">Join Date</span>
-                <span className="text-slate-900 font-medium">
+              <div className="dashboard-soft-row flex justify-between items-center px-3.5 py-2.5 bg-slate-50 rounded-lg transition-colors duration-150 hover:bg-slate-100">
+                <span className="text-slate-500 text-[13px]">Join date</span>
+                <span className="text-slate-900 text-[13px] font-medium">
                   {employeeData?.workInfo?.joiningDate ? new Date(employeeData.workInfo.joiningDate).toLocaleDateString() : 'N/A'}
                 </span>
               </div>
-              <div className="dashboard-soft-row flex justify-between items-center p-3 bg-[#F1F5F9] border border-blue-100/60 rounded-xl transition-all duration-200 hover:bg-blue-50 hover:border-indigo-200">
-                <span className="text-slate-500">Email</span>
-                <span className="text-slate-900 font-medium">{employeeData?.contactInfo?.personalEmail || employeeData?.user?.email || 'N/A'}</span>
+              <div className="dashboard-soft-row flex justify-between items-center px-3.5 py-2.5 bg-slate-50 rounded-lg transition-colors duration-150 hover:bg-slate-100">
+                <span className="text-slate-500 text-[13px]">Email</span>
+                <span className="text-slate-900 text-[13px] font-medium">{employeeData?.contactInfo?.personalEmail || employeeData?.user?.email || 'N/A'}</span>
               </div>
-              <div className="dashboard-soft-row flex justify-between items-center p-3 bg-[#F1F5F9] border border-blue-100/60 rounded-xl transition-all duration-200 hover:bg-blue-50 hover:border-indigo-200">
-                <span className="text-slate-500">Phone</span>
-                <span className="text-slate-900 font-medium">{employeeData?.contactInfo?.phone || 'N/A'}</span>
+              <div className="dashboard-soft-row flex justify-between items-center px-3.5 py-2.5 bg-slate-50 rounded-lg transition-colors duration-150 hover:bg-slate-100">
+                <span className="text-slate-500 text-[13px]">Phone</span>
+                <span className="text-slate-900 text-[13px] font-medium">{employeeData?.contactInfo?.phone || 'N/A'}</span>
               </div>
             </div>
           </div>
 
           <div
-            className="dashboard-panel bg-[#F8FAFC] border border-blue-100/80 rounded-2xl shadow-[0_12px_28px_rgba(15,23,42,0.07)] p-6 animate-enter transition-all duration-300 hover:border-indigo-200 hover:shadow-[0_18px_38px_rgba(30,64,175,0.12)]"
-            style={{ animationDelay: '260ms' }}
+            className="dashboard-panel bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 animate-enter transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]"
+            style={{ animationDelay: '220ms' }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900">Latest Notices</h2>
-              <Bell className="w-5 h-5 text-indigo-600" />
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-[15px] font-semibold text-slate-900">Latest notices</h2>
+              <Bell className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
             </div>
-            <div className="space-y-4 max-h-80 overflow-y-auto">
+            <div className="space-y-2.5 max-h-80 overflow-y-auto">
               {recentNotices.map((notice) => (
-                <div key={notice.id} className="dashboard-sub-card p-4 border border-blue-100/80 bg-[#F8FAFC] rounded-xl transition-all duration-200 hover:border-indigo-300 hover:bg-blue-50 hover:shadow-[0_10px_24px_rgba(30,64,175,0.10)]">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-slate-900 font-medium">{notice.title}</h4>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${getPriorityColor(notice.priority)}`}>
+                <div key={notice.id} className="dashboard-sub-card p-3.5 border border-slate-200/70 bg-slate-50/60 rounded-lg transition-colors duration-150 hover:bg-slate-100/70">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h4 className="text-slate-900 text-[13px] font-medium">{notice.title}</h4>
+                    <span className={`text-[10.5px] px-2 py-0.5 rounded-full font-medium ${getPriorityColor(notice.priority)}`}>
                       {notice.priority}
                     </span>
                   </div>
-                  <p className="text-slate-500 text-sm mb-2">{notice.message}</p>
-                  <p className="text-xs text-indigo-600">{new Date(notice.date).toLocaleDateString()}</p>
+                  <p className="text-slate-500 text-[12.5px] mb-1.5">{notice.message}</p>
+                  <p className="text-[11px] text-slate-400">{new Date(notice.date).toLocaleDateString()}</p>
                 </div>
               ))}
             </div>
@@ -1159,51 +1282,56 @@ const EmployeeDashboard = () => {
         </div>
 
         <div
-          className="dashboard-panel bg-[#F8FAFC] border border-blue-100/80 rounded-2xl shadow-[0_12px_28px_rgba(15,23,42,0.07)] p-6 animate-enter transition-all duration-300 hover:border-indigo-200 hover:shadow-[0_18px_38px_rgba(30,64,175,0.12)]"
-          style={{ animationDelay: '300ms' }}
+          className="dashboard-panel bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 animate-enter transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]"
+          style={{ animationDelay: '260ms' }}
         >
-          <h2 className="text-xl font-bold text-slate-900 mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <h2 className="text-[15px] font-semibold text-slate-900 mb-5">Quick actions</h2>
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             <button
               onClick={() => window.location.href = '/employee/attendance'}
-              className="dashboard-sub-card p-4 rounded-xl border border-blue-100/80 bg-[#F8FAFC] hover:border-indigo-300 hover:bg-blue-50 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(30,64,175,0.10)] transition-all duration-200 group"
+              className="dashboard-sub-card p-4 rounded-lg border border-slate-200/70 bg-slate-50/40 hover:border-indigo-200 hover:bg-indigo-50/60 transition-colors duration-150 group"
             >
-              <Clock className="w-8 h-8 text-slate-400 group-hover:text-blue-600 mx-auto mb-2 transition-colors duration-200" />
-              <p className="text-sm text-slate-500 group-hover:text-slate-900 transition-colors duration-200">My Attendance</p>
+              <Clock className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors duration-150" strokeWidth={1.75} />
+              <p className="text-[12px] text-slate-500 group-hover:text-slate-900 transition-colors duration-150">My Attendance</p>
             </button>
             <button
               onClick={() => window.location.href = '/employee/leaves'}
-              className="dashboard-sub-card p-4 rounded-xl border border-blue-100/80 bg-[#F8FAFC] hover:border-indigo-300 hover:bg-indigo-50 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(30,64,175,0.10)] transition-all duration-200 group"
+              className="dashboard-sub-card p-4 rounded-lg border border-slate-200/70 bg-slate-50/40 hover:border-indigo-200 hover:bg-indigo-50/60 transition-colors duration-150 group"
             >
-              <Calendar className="w-8 h-8 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors duration-200" />
-              <p className="text-sm text-slate-500 group-hover:text-slate-900 transition-colors duration-200">Apply Leave</p>
+              <Calendar className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors duration-150" strokeWidth={1.75} />
+              <p className="text-[12px] text-slate-500 group-hover:text-slate-900 transition-colors duration-150">Apply Leave</p>
             </button>
             <button
               onClick={handleViewPayslip}
-              className="dashboard-sub-card p-4 rounded-xl border border-blue-100/80 bg-[#F8FAFC] hover:border-indigo-300 hover:bg-blue-50 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(30,64,175,0.10)] transition-all duration-200 group">
-              <FileText className="w-8 h-8 text-slate-400 group-hover:text-blue-600 mx-auto mb-2 transition-colors duration-200" />
-              <p className="text-sm text-slate-500 group-hover:text-slate-900 transition-colors duration-200">View Payslip</p>
+              className="dashboard-sub-card p-4 rounded-lg border border-slate-200/70 bg-slate-50/40 hover:border-indigo-200 hover:bg-indigo-50/60 transition-colors duration-150 group">
+              <FileText className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors duration-150" strokeWidth={1.75} />
+              <p className="text-[12px] text-slate-500 group-hover:text-slate-900 transition-colors duration-150">View Payslip</p>
             </button>
             <button
               onClick={openTeamChat}
-              className="dashboard-sub-card p-4 rounded-xl border border-blue-100/80 bg-[#F8FAFC] hover:border-indigo-300 hover:bg-indigo-50 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(30,64,175,0.10)] transition-all duration-200 group"
+              className="dashboard-sub-card relative p-4 rounded-lg border border-slate-200/70 bg-slate-50/40 hover:border-indigo-200 hover:bg-indigo-50/60 transition-colors duration-150 group"
             >
-              <MessageCircle className="w-8 h-8 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors duration-200" />
-              <p className="text-sm text-slate-500 group-hover:text-slate-900 transition-colors duration-200">Chat with Team</p>
+              {totalUnreadTeamMessages > 0 && (
+                <span className="absolute right-2.5 top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-500 px-1.5 text-[10.5px] font-semibold leading-none text-white">
+                  {totalUnreadTeamMessages > 99 ? '99+' : totalUnreadTeamMessages}
+                </span>
+              )}
+              <MessageCircle className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors duration-150" strokeWidth={1.75} />
+              <p className="text-[12px] text-slate-500 group-hover:text-slate-900 transition-colors duration-150">Chat with Team</p>
             </button>
             <button
               onClick={openGroupChats}
-              className="dashboard-sub-card p-4 rounded-xl border border-blue-100/80 bg-[#F8FAFC] hover:border-indigo-300 hover:bg-blue-50 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(30,64,175,0.10)] transition-all duration-200 group"
+              className="dashboard-sub-card p-4 rounded-lg border border-slate-200/70 bg-slate-50/40 hover:border-indigo-200 hover:bg-indigo-50/60 transition-colors duration-150 group"
             >
-              <Users className="w-8 h-8 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors duration-200" />
-              <p className="text-sm text-slate-500 group-hover:text-slate-900 transition-colors duration-200">Group Chats</p>
+              <Users className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors duration-150" strokeWidth={1.75} />
+              <p className="text-[12px] text-slate-500 group-hover:text-slate-900 transition-colors duration-150">Group Chats</p>
             </button>
             <button
               onClick={() => setShowBotModal(true)}
-              className="dashboard-sub-card p-4 rounded-xl border border-blue-100/80 bg-[#F8FAFC] hover:border-indigo-300 hover:bg-blue-50 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(30,64,175,0.10)] transition-all duration-200 group"
+              className="dashboard-sub-card p-4 rounded-lg border border-slate-200/70 bg-slate-50/40 hover:border-indigo-200 hover:bg-indigo-50/60 transition-colors duration-150 group"
             >
-              <Bot className="w-8 h-8 text-slate-400 group-hover:text-blue-600 mx-auto mb-2 transition-colors duration-200" />
-              <p className="text-sm text-slate-500 group-hover:text-slate-900 transition-colors duration-200">HR Bot</p>
+              <Bot className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors duration-150" strokeWidth={1.75} />
+              <p className="text-[12px] text-slate-500 group-hover:text-slate-900 transition-colors duration-150">HR Bot</p>
             </button>
           </div>
         </div>
@@ -1212,41 +1340,51 @@ const EmployeeDashboard = () => {
         {showChatModal && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[99998]" onClick={handleCloseChatModal} />
-            <div className="relative z-[99999] bg-[#F8FAFC] border border-blue-100/80 rounded-2xl w-full max-w-4xl h-[80vh] flex flex-col shadow-[0_20px_44px_rgba(15,23,42,0.16)] animate-enter" style={{ animationDuration: '0.25s' }}>
-              <div className="flex items-center justify-between p-4 border-b border-blue-100/80">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center">
-                  <MessageCircle className="w-5 h-5 mr-2 text-indigo-600" />
+            <div className="employee-chat-modal relative z-[99999] bg-white border border-slate-200 rounded-2xl w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl shadow-slate-900/10 animate-enter overflow-hidden" style={{ animationDuration: '0.2s' }}>
+              <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                <h2 className="text-[15px] font-semibold text-slate-900 flex items-center">
+                  <MessageCircle className="w-4 h-4 mr-2 text-indigo-600" strokeWidth={1.75} />
                   Employee Chat
                 </h2>
-                <button onClick={handleCloseChatModal} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
-                  <X className="w-5 h-5" />
+                <button onClick={handleCloseChatModal} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">
+                  <X className="w-[18px] h-[18px]" />
                 </button>
               </div>
               <div className="flex flex-1 overflow-hidden">
-                <div className="w-1/3 border-r border-slate-200 overflow-y-auto">
-                  <div className="p-3 text-sm text-slate-500 font-medium">Colleagues ({peers.length})</div>
+                <div className="employee-chat-sidebar w-1/3 border-r border-slate-100 overflow-y-auto">
+                  <div className="p-3 text-[12px] text-slate-500 font-medium">Colleagues ({peers.length})</div>
                   {peers.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400 text-sm">No colleagues available</div>
+                    <div className="p-4 text-center text-slate-400 text-[13px]">No colleagues available</div>
                   ) : (
-                    peers.map(peer => {
+                    sortedPeers.map(peer => {
                       const isOnline = onlineUsers.has(peer._id);
-                      const peerName = peer.name || 'Unknown';
+                      const peerName = getPersonDisplayName(peer, 'Employee');
+                      const peerId = getPeerId(peer);
+                      const unreadCount = unreadCounts[peerId] || 0;
+                      const lastMessage = peerActivity[peerId]?.lastMessage || '';
                       return (
                         <div
                           key={peer._id}
-                          onClick={() => setSelectedPeer(peer)}
-                          className={`p-3 border-l-4 cursor-pointer transition-all duration-200 ${selectedPeer?._id === peer._id
-                            ? 'border-blue-600 bg-blue-50 text-slate-900'
+                          onClick={() => handleSelectPeer(peer)}
+                          className={`employee-chat-peer p-3 border-l-2 cursor-pointer transition-colors duration-150 ${selectedPeer?._id === peer._id
+                            ? 'border-indigo-500 bg-indigo-50/60 text-slate-900'
                             : 'border-transparent text-slate-500 hover:bg-slate-50'
                             }`}
                         >
                           <div className="flex items-center justify-between">
-                            <div className="font-medium truncate">{peerName}</div>
-                            <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ml-2 ${isOnline ? 'bg-green-500' : 'bg-slate-300'}`} title={isOnline ? 'Online' : 'Offline'} />
+                            <div className="text-[13px] font-medium truncate">{peerName}</div>
+                            <div className="ml-2 flex flex-shrink-0 items-center gap-2">
+                              {unreadCount > 0 && (
+                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-500 px-1.5 text-[10.5px] font-semibold leading-none text-white">
+                                  {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                              )}
+                              <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} title={isOnline ? 'Online' : 'Offline'} />
+                            </div>
                           </div>
-                          <div className="text-xs text-slate-400 flex items-center gap-1">
-                            <span>{peer.position || peer.workInfo?.position || 'Employee'}</span>
-                            {isOnline && <span className="text-green-600">• Online</span>}
+                          <div className="text-[11.5px] text-slate-400 flex items-center gap-1 min-w-0 mt-0.5">
+                            <span className="truncate">{lastMessage || peer.position || peer.workInfo?.position || 'Employee'}</span>
+                            {isOnline && <span className="text-emerald-600">• Online</span>}
                           </div>
                         </div>
                       );
@@ -1256,28 +1394,28 @@ const EmployeeDashboard = () => {
                 <div className="flex-1 flex flex-col">
                   {selectedPeer ? (
                     <>
-                      <div className="p-3 border-b border-blue-100/80 bg-slate-50">
+                      <div className="employee-chat-header p-3 border-b border-slate-100 bg-slate-50/60">
                         <div className="flex items-center gap-2">
-                          <div className="font-bold text-slate-900">{selectedPeer.name || 'Unknown User'}</div>
-                          <div className={`w-2 h-2 rounded-full ${onlineUsers.has(selectedPeer._id) ? 'bg-green-500' : 'bg-slate-300'}`} />
+                          <div className="text-[13.5px] font-semibold text-slate-900">{getPersonDisplayName(selectedPeer, 'Employee')}</div>
+                          <div className={`w-1.5 h-1.5 rounded-full ${onlineUsers.has(selectedPeer._id) ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                         </div>
-                        <div className="text-sm text-slate-500 flex items-center gap-2">
+                        <div className="text-[12px] text-slate-500 flex items-center gap-2">
                           <span>{selectedPeer.position || selectedPeer.workInfo?.position || 'Employee'}</span>
                           {onlineUsers.has(selectedPeer._id) ? (
                             typingUsers.has(selectedPeer._id) ? (
-                              <span className="text-blue-600 animate-pulse">typing...</span>
+                              <span className="text-indigo-600 animate-pulse">typing…</span>
                             ) : (
-                              <span className="text-green-600">Online</span>
+                              <span className="text-emerald-600">Online</span>
                             )
                           ) : (
                             <span className="text-slate-400">Offline</span>
                           )}
                         </div>
                       </div>
-                      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 relative">
+                      <div className="employee-chat-messages flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/40 relative">
                         {loadingChat ? (
                           <div className="flex items-center justify-center h-full">
-                            <div className="text-slate-400">Loading chat history...</div>
+                            <div className="text-slate-400 text-[13px]">Loading chat history…</div>
                           </div>
                         ) : (
                           <>
@@ -1293,22 +1431,22 @@ const EmployeeDashboard = () => {
                               if (filteredMessages.length === 0) {
                                 return (
                                   <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                                    <MessageCircle className="w-16 h-16 mb-3 opacity-30" />
-                                    <p className="text-sm">No messages yet</p>
-                                    <p className="text-xs mt-1">Start a conversation with {selectedPeer.name || 'this colleague'}</p>
+                                    <MessageCircle className="w-12 h-12 mb-3 opacity-25" strokeWidth={1.5} />
+                                    <p className="text-[13px]">No messages yet</p>
+                                    <p className="text-[11.5px] mt-1">Start a conversation with {getPersonDisplayName(selectedPeer, 'this colleague')}</p>
                                   </div>
                                 );
                               }
                               return filteredMessages.map((msg, idx) => (
                                 <div key={msg._id || `msg-${idx}`} className={`flex ${msg.self ? 'justify-end' : 'justify-start'}`}>
-                                  <div className={`max-w-xs md:max-w-md p-3 rounded-lg shadow-sm ${msg.self ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-900'}`}>
+                                  <div className={`employee-chat-bubble max-w-xs md:max-w-md px-3.5 py-2.5 rounded-xl ${msg.self ? 'employee-chat-bubble-self bg-indigo-600 text-white' : 'employee-chat-bubble-peer bg-white border border-slate-200 text-slate-900'}`}>
                                     {!msg.self && (
-                                      <div className="text-xs text-slate-400 mb-1 font-medium">
-                                        {msg.fromName || selectedPeer.name || 'Unknown'}
+                                      <div className="text-[11px] text-slate-400 mb-0.5 font-medium">
+                                        {msg.fromName || getPersonDisplayName(selectedPeer, 'Employee')}
                                       </div>
                                     )}
-                                    <div className="text-sm break-words">{msg.text}</div>
-                                    <div className={`text-xs mt-1 ${msg.self ? 'text-blue-100' : 'text-slate-400'}`}>
+                                    <div className="text-[13px] break-words">{msg.text}</div>
+                                    <div className={`text-[10.5px] mt-1 ${msg.self ? 'text-indigo-200' : 'text-slate-400'}`}>
                                       {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                   </div>
@@ -1319,7 +1457,7 @@ const EmployeeDashboard = () => {
                           </>
                         )}
                       </div>
-                      <div className="p-3 border-t border-slate-200">
+                      <div className="employee-chat-compose p-3 border-t border-slate-100">
                         <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex">
                           <input
                             type="text"
@@ -1331,22 +1469,22 @@ const EmployeeDashboard = () => {
                                 sendMessage();
                               }
                             }}
-                            placeholder="Type a message..."
-                            className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-l-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                            placeholder="Type a message…"
+                            className="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-l-lg text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors duration-150"
                             autoComplete="off"
                           />
                           <button
                             type="submit"
                             disabled={!newMessage.trim()}
-                            className="px-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-r-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity duration-200"
+                            className="px-4 bg-indigo-600 text-white rounded-r-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-500 transition-colors duration-150"
                           >
-                            <Send className="w-4 h-4" />
+                            <Send className="w-4 h-4" strokeWidth={1.75} />
                           </button>
                         </form>
                       </div>
                     </>
                   ) : (
-                    <div className="flex-1 flex items-center justify-center text-slate-400">
+                    <div className="flex-1 flex items-center justify-center text-slate-400 text-[13px]">
                       Select a colleague to start chatting
                     </div>
                   )}
@@ -1360,19 +1498,19 @@ const EmployeeDashboard = () => {
         {showBotModal && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={handleCloseBotModal} />
-            <div className="relative bg-white border border-slate-200 rounded-2xl w-full max-w-md h-[70vh] flex flex-col shadow-xl animate-enter" style={{ animationDuration: '0.25s' }}>
-              <div className="flex items-center justify-between p-4 border-b border-blue-100/80">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center">
-                  <Bot className="w-5 h-5 mr-2 text-indigo-600" />
+            <div className="relative bg-white border border-slate-200 rounded-2xl w-full max-w-md h-[70vh] flex flex-col shadow-2xl shadow-slate-900/10 animate-enter" style={{ animationDuration: '0.2s' }}>
+              <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                <h2 className="text-[15px] font-semibold text-slate-900 flex items-center">
+                  <Bot className="w-4 h-4 mr-2 text-indigo-600" strokeWidth={1.75} />
                   HR Assistant
                 </h2>
-                <button onClick={handleCloseBotModal} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
-                  <X className="w-5 h-5" />
+                <button onClick={handleCloseBotModal} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">
+                  <X className="w-[18px] h-[18px]" />
                 </button>
               </div>
               <div
                 ref={botMessagesContainerRef}
-                className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 relative"
+                className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/40 relative"
                 onScroll={() => {
                   if (botMessagesContainerRef.current) {
                     const { scrollTop, clientHeight, scrollHeight } = botMessagesContainerRef.current;
@@ -1382,26 +1520,26 @@ const EmployeeDashboard = () => {
               >
                 {botMessages.length === 0 && !loadingBot ? (
                   <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                    <Bot className="w-16 h-16 mb-3 opacity-30" />
-                    <p className="text-sm">Hi! I'm your HR Assistant</p>
-                    <p className="text-xs mt-1 text-center px-4">Ask me about leave policies, attendance, salary slips, or any HR-related questions.</p>
+                    <Bot className="w-12 h-12 mb-3 opacity-25" strokeWidth={1.5} />
+                    <p className="text-[13px]">Hi! I'm your HR Assistant</p>
+                    <p className="text-[11.5px] mt-1 text-center px-4">Ask me about leave policies, attendance, salary slips, or any HR-related questions.</p>
                   </div>
                 ) : (
                   <>
                     {botMessages.map((msg, idx) => (
                       <div
                         key={msg._id || idx}
-                        className={`max-w-xs p-3 rounded-lg shadow-sm ${msg.self
-                          ? 'ml-auto bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                        className={`max-w-xs px-3.5 py-2.5 rounded-xl ${msg.self
+                          ? 'ml-auto bg-indigo-600 text-white'
                           : msg.fromBot
-                            ? 'mr-auto bg-blue-50 border border-blue-200 text-slate-900'
+                            ? 'mr-auto bg-indigo-50 border border-indigo-100 text-slate-900'
                             : 'mr-auto bg-white border border-slate-200 text-slate-900'
                           }`}
                       >
-                        <div className="text-sm">
+                        <div className="text-[13px]">
                           {renderMessageText(msg.text)}
                         </div>
-                        <div className={`text-xs mt-1 ${msg.self ? 'text-blue-100' : 'text-blue-500'}`}>
+                        <div className={`text-[10.5px] mt-1 ${msg.self ? 'text-indigo-200' : 'text-indigo-500'}`}>
                           {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
@@ -1410,13 +1548,13 @@ const EmployeeDashboard = () => {
                   </>
                 )}
                 {loadingBot && (
-                  <div className="flex items-center text-slate-400 p-3">
-                    <Loader2 className="w-4 h-4 mr-2 text-blue-600 animate-spin" />
-                    Bot is thinking...
+                  <div className="flex items-center text-slate-400 text-[13px] p-3">
+                    <Loader2 className="w-4 h-4 mr-2 text-indigo-600 animate-spin" />
+                    Bot is thinking…
                   </div>
                 )}
               </div>
-              <div className="p-3 border-t border-slate-200">
+              <div className="p-3 border-t border-slate-100">
                 <div className="flex">
                   <input
                     type="text"
@@ -1428,16 +1566,16 @@ const EmployeeDashboard = () => {
                         sendBotMessage();
                       }
                     }}
-                    placeholder="Ask HR Assistant..."
-                    className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-l-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    placeholder="Ask HR Assistant…"
+                    className="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-l-lg text-[13px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors duration-150"
                     disabled={loadingBot}
                   />
                   <button
                     onClick={sendBotMessage}
                     disabled={!newBotMessage.trim() || loadingBot}
-                    className="px-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-r-lg disabled:opacity-50 transition-opacity duration-200"
+                    className="px-4 bg-indigo-600 text-white rounded-r-lg disabled:opacity-40 hover:bg-indigo-500 transition-colors duration-150"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-4 h-4" strokeWidth={1.75} />
                   </button>
                 </div>
               </div>
@@ -1449,35 +1587,35 @@ const EmployeeDashboard = () => {
         {showPayslipModal && employeeData && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[99998]" onClick={() => setShowPayslipModal(false)} />
-            <div className="relative z-[99999] bg-white border border-slate-200 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl animate-enter" style={{ animationDuration: '0.25s' }}>
-              <div className="flex items-center justify-between p-4 border-b border-blue-100/80">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center">
-                  <FileText className="w-5 h-5 mr-2 text-indigo-600" />
-                  Salary Slip - {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
+            <div className="relative z-[99999] bg-white border border-slate-200 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-slate-900/10 animate-enter" style={{ animationDuration: '0.2s' }}>
+              <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                <h2 className="text-[15px] font-semibold text-slate-900 flex items-center">
+                  <FileText className="w-4 h-4 mr-2 text-indigo-600" strokeWidth={1.75} />
+                  Salary Slip — {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
                 </h2>
-                <button onClick={() => setShowPayslipModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
-                  <X className="w-5 h-5" />
+                <button onClick={() => setShowPayslipModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">
+                  <X className="w-[18px] h-[18px]" />
                 </button>
               </div>
-              <div className="p-6 space-y-6">
+              <div className="p-6 space-y-5">
                 {payslipLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
                   </div>
                 ) : !currentPayslip ? (
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <FileText className="w-8 h-8 text-slate-400" />
+                    <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FileText className="w-6 h-6 text-slate-400" strokeWidth={1.75} />
                     </div>
-                    <p className="text-slate-600 text-lg font-medium">No payslip generated for current month</p>
-                    <p className="text-slate-400 text-sm mt-2">Please contact HR for more information</p>
+                    <p className="text-slate-700 text-[14px] font-medium">No payslip generated for current month</p>
+                    <p className="text-slate-400 text-[12.5px] mt-1.5">Please contact HR for more information</p>
                   </div>
                 ) : (
                   <>
                     {/* Employee Info */}
-                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-slate-900 mb-3">Employee Details</h3>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="bg-slate-50 border border-slate-200/70 rounded-lg p-4">
+                      <h3 className="text-[13.5px] font-semibold text-slate-900 mb-3">Employee Details</h3>
+                      <div className="grid grid-cols-2 gap-3 text-[12.5px]">
                         <div>
                           <span className="text-slate-500">Name:</span>
                           <span className="text-slate-900 ml-2">{currentPayslip.employeeName || 'N/A'}</span>
@@ -1501,9 +1639,9 @@ const EmployeeDashboard = () => {
 
                     {/* Attendance Info */}
                     {currentPayslip.attendance && (
-                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold text-blue-600 mb-3">Attendance Summary</h3>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="bg-slate-50 border border-slate-200/70 rounded-lg p-4">
+                        <h3 className="text-[13.5px] font-semibold text-indigo-600 mb-3">Attendance Summary</h3>
+                        <div className="grid grid-cols-2 gap-3 text-[12.5px]">
                           <div className="flex justify-between">
                             <span className="text-slate-500">Working Days:</span>
                             <span className="text-slate-900">{currentPayslip.attendance.workingDays || 0}</span>
@@ -1525,9 +1663,9 @@ const EmployeeDashboard = () => {
                     )}
 
                     {/* Earnings */}
-                    <div className="bg-green-50 border border-green-100 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-green-700 mb-3">Earnings</h3>
-                      <div className="space-y-2 text-sm">
+                    <div className="bg-emerald-50/60 border border-emerald-100 rounded-lg p-4">
+                      <h3 className="text-[13.5px] font-semibold text-emerald-700 mb-3">Earnings</h3>
+                      <div className="space-y-1.5 text-[12.5px]">
                         <div className="flex justify-between">
                           <span className="text-slate-600">Basic Salary</span>
                           <span className="text-slate-900">₹{(currentPayslip.earnings?.basicSalary || 0).toLocaleString()}</span>
@@ -1560,9 +1698,9 @@ const EmployeeDashboard = () => {
                           <span className="text-slate-600">Other Allowances</span>
                           <span className="text-slate-900">₹{(currentPayslip.earnings?.otherAllowances || 0).toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between border-t border-green-200 pt-2 font-semibold">
-                          <span className="text-green-700">Gross Earnings</span>
-                          <span className="text-green-700">₹{(currentPayslip.grossEarnings || 0).toLocaleString()}</span>
+                        <div className="flex justify-between border-t border-emerald-200 pt-2 font-semibold">
+                          <span className="text-emerald-700">Gross Earnings</span>
+                          <span className="text-emerald-700">₹{(currentPayslip.grossEarnings || 0).toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -1572,9 +1710,9 @@ const EmployeeDashboard = () => {
                 {/* Deductions */}
                 {currentPayslip && (
                   <>
-                    <div className="bg-red-50 border border-red-100 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-red-700 mb-3">Deductions</h3>
-                      <div className="space-y-2 text-sm">
+                    <div className="bg-red-50/60 border border-red-100 rounded-lg p-4">
+                      <h3 className="text-[13.5px] font-semibold text-red-700 mb-3">Deductions</h3>
+                      <div className="space-y-1.5 text-[12.5px]">
                         <div className="flex justify-between">
                           <span className="text-slate-600">Provident Fund (PF)</span>
                           <span className="text-slate-900">₹{(currentPayslip.deductions?.pf || 0).toLocaleString()}</span>
@@ -1611,18 +1749,18 @@ const EmployeeDashboard = () => {
                     </div>
 
                     {/* Net Salary */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                    <div className="bg-indigo-50/60 rounded-lg p-4 border border-indigo-100">
                       <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-slate-900">Net Salary</span>
-                        <span className="text-2xl font-bold text-blue-600">₹{(currentPayslip.netSalary || 0).toLocaleString()}</span>
+                        <span className="text-[14px] font-semibold text-slate-900">Net Salary</span>
+                        <span className="text-[20px] font-semibold text-indigo-600">₹{(currentPayslip.netSalary || 0).toLocaleString()}</span>
                       </div>
                     </div>
 
                     {/* Bank Info */}
                     {currentPayslip.bankInfo && (
-                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold text-slate-900 mb-3">Bank Details</h3>
-                        <div className="space-y-2 text-sm">
+                      <div className="bg-slate-50 border border-slate-200/70 rounded-lg p-4">
+                        <h3 className="text-[13.5px] font-semibold text-slate-900 mb-3">Bank Details</h3>
+                        <div className="space-y-1.5 text-[12.5px]">
                           <div className="flex justify-between">
                             <span className="text-slate-500">Bank Name:</span>
                             <span className="text-slate-900">{currentPayslip.bankInfo.bankName || 'N/A'}</span>
@@ -1641,19 +1779,19 @@ const EmployeeDashboard = () => {
 
                     {/* Remarks */}
                     {currentPayslip.remarks && (
-                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold text-slate-900 mb-2">Remarks</h3>
-                        <p className="text-slate-600 text-sm">{currentPayslip.remarks}</p>
+                      <div className="bg-slate-50 border border-slate-200/70 rounded-lg p-4">
+                        <h3 className="text-[13.5px] font-semibold text-slate-900 mb-2">Remarks</h3>
+                        <p className="text-slate-600 text-[12.5px]">{currentPayslip.remarks}</p>
                       </div>
                     )}
 
                     {/* Download Button */}
-                    <div className="flex justify-center pt-4">
+                    <div className="flex justify-center pt-2">
                       <button
                         onClick={handleDownloadPayslip}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-[13.5px] font-medium rounded-lg hover:bg-indigo-500 transition-colors duration-150"
                       >
-                        <Download className="w-5 h-5" />
+                        <Download className="w-4 h-4" strokeWidth={1.75} />
                         Download Payslip PDF
                       </button>
                     </div>
@@ -1661,7 +1799,7 @@ const EmployeeDashboard = () => {
                 )}
 
 
-                <p className="text-xs text-slate-400 text-center">This is a computer generated payslip and does not require a signature.</p>
+                <p className="text-[11px] text-slate-400 text-center">This is a computer generated payslip and does not require a signature.</p>
               </div>
             </div>
           </div>

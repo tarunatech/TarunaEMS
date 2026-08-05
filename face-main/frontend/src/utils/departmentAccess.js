@@ -11,14 +11,18 @@ const MODULE_PATH_MAP = {
   tasks: ['/employee/tasks'],
   problems: ['/employee/problems'],
   sales: ['/employee/sales', '/employee/leads'],
+  salesPipeline: ['/employee/sales-pipeline'],
+  hrInterviews: ['/employee/hr-interviews'],
 };
 
 const DEPARTMENT_RULES = {
-  bde: [...COMMON_MODULE_KEYS, 'sales', 'tasks'],
-  businessdevelopment: [...COMMON_MODULE_KEYS, 'sales', 'tasks'],
-  businessdevelopmentexecutive: [...COMMON_MODULE_KEYS, 'sales', 'tasks'],
+  bde: [...COMMON_MODULE_KEYS, 'sales', 'salesPipeline', 'tasks'],
+  businessdevelopment: [...COMMON_MODULE_KEYS, 'sales', 'salesPipeline', 'tasks'],
+  businessdevelopmentexecutive: [...COMMON_MODULE_KEYS, 'sales', 'salesPipeline', 'tasks'],
   developer: [...COMMON_MODULE_KEYS, 'tasks', 'problems'],
   development: [...COMMON_MODULE_KEYS, 'tasks', 'problems'],
+  hr: [...COMMON_MODULE_KEYS, 'hrInterviews'],
+  humanresources: [...COMMON_MODULE_KEYS, 'hrInterviews'],
   designing: [...COMMON_MODULE_KEYS, 'tasks'],
   design: [...COMMON_MODULE_KEYS, 'tasks'],
 };

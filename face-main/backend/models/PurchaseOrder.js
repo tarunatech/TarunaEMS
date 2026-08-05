@@ -1,30 +1,31 @@
 import mongoose from 'mongoose';
 
-const lineItemSchema = new mongoose.Schema({
-  item: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  description: {
-    type: String,
-    trim: true
-  },
-  quantity: {
-    type: Number,
-    required: true,
-    min: 1
-  },
-  unitPrice: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  total: {
-    type: Number,
-    default: 0
-  }
-});
+export const SERVICE_TYPES = [
+  'Domain',
+  'Hosting',
+  'VPS Server',
+  'Cloud Server',
+  'SSL Certificate',
+  'Business Email',
+  'API Subscription',
+  'Software License',
+  'Other'
+];
+
+export const SERVICE_VENDORS = [
+  'GoDaddy',
+  'Namecheap',
+  'Hostinger',
+  'AWS',
+  'Azure',
+  'Google Cloud',
+  'Cloudflare',
+  'DigitalOcean',
+  'OpenAI',
+  'Twilio',
+  'Razorpay',
+  'Other'
+];
 
 const purchaseOrderSchema = new mongoose.Schema({
   poNumber: {
@@ -32,29 +33,81 @@ const purchaseOrderSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  supplier: {
+  client: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Supplier',
+    ref: 'Lead'
+  },
+  clientName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  project: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: [100, 'Project name cannot exceed 100 characters']
+  },
+  serviceType: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: [60, 'Service type cannot exceed 60 characters']
+  },
+  vendor: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: [80, 'Vendor cannot exceed 80 characters']
+  },
+  serviceName: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: [120, 'Service name cannot exceed 120 characters']
+  },
+  billingCycle: {
+    type: String,
+    enum: ['Monthly', 'Quarterly', 'Half-Yearly', 'Yearly', 'One Time'],
     required: true
   },
-  status: {
-    type: String,
-    enum: ['Draft', 'PendingApproval', 'Approved', 'Ordered', 'Received', 'Closed'],
-    default: 'Draft'
-  },
-  deliveryDate: {
+  purchaseDate: {
     type: Date,
     required: true
   },
-  paymentTerms: {
+  renewalDate: {
+    type: Date,
+    required: true
+  },
+  amount: {
+    type: Number,
+    required: true,
+    min: [0, 'Amount cannot be negative']
+  },
+  status: {
     type: String,
-    trim: true
+    enum: ['Active', 'Pending', 'Expired', 'Cancelled'],
+    default: 'Active'
   },
   notes: {
     type: String,
     trim: true
   },
-  lineItems: [lineItemSchema],
+
+  // Legacy fields kept optional so older records do not break existing reads.
+  supplier: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Supplier'
+  },
+  deliveryDate: Date,
+  paymentTerms: String,
+  lineItems: [{
+    item: String,
+    description: String,
+    quantity: Number,
+    unitPrice: Number,
+    total: Number
+  }],
   totalAmount: {
     type: Number,
     default: 0
@@ -72,19 +125,19 @@ const purchaseOrderSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for performance - poNumber is unique
 purchaseOrderSchema.index({ poNumber: 1 }, { unique: true });
 purchaseOrderSchema.index({ status: 1 });
-purchaseOrderSchema.index({ supplier: 1 });
+purchaseOrderSchema.index({ vendor: 1 });
+purchaseOrderSchema.index({ serviceType: 1 });
+purchaseOrderSchema.index({ purchaseDate: -1 });
+purchaseOrderSchema.index({ renewalDate: 1 });
 purchaseOrderSchema.index({ createdAt: -1 });
 
-// Pre-save middleware to calculate totals
 purchaseOrderSchema.pre('save', function(next) {
-  this.totalAmount = this.lineItems.reduce((sum, item) => sum + (item.total || 0), 0);
-  this.grandTotal = this.totalAmount; // Add tax logic here if needed
+  this.totalAmount = this.amount || 0;
+  this.grandTotal = this.amount || 0;
+  this.deliveryDate = this.renewalDate;
   next();
 });
 
-const PurchaseOrder = mongoose.model('PurchaseOrder', purchaseOrderSchema);
-
-export default PurchaseOrder;
+export default mongoose.model('PurchaseOrder', purchaseOrderSchema);

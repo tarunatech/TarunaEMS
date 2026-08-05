@@ -56,6 +56,10 @@ export const submitDayBook = async (req, res) => {
         const { slots, status } = req.body;
         const employee = await Employee.findOne({ user: req.user.id });
 
+        if (!Array.isArray(slots) || slots.some(slot => !slot.slotType?.trim())) {
+            return res.status(400).json({ success: false, message: 'Each slot must include a valid time range' });
+        }
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 

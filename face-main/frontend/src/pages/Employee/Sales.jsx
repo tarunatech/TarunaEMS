@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, DollarSign, Target, Award, Activity, 
   UserCheck, Phone, Download, Bell, Plus, AlertCircle,
   Eye, Calendar, CheckCircle, XCircle, Edit3, Trash2,
-  Loader2
+  GitBranch, Loader2
 } from 'lucide-react';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
 import { leadAPI } from '../../utils/api';
@@ -19,6 +20,7 @@ const SalesPage = () => {
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [showWonModal, setShowWonModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+  const navigate = useNavigate();
   const [newLead, setNewLead] = useState({
     firstName: '',
     lastName: '',
@@ -34,6 +36,7 @@ const SalesPage = () => {
     notes: ''
   });
   const [meetingData, setMeetingData] = useState({
+    leadId: '',
     type: 'Call',
     scheduledDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
     duration: 30,
@@ -140,12 +143,39 @@ const SalesPage = () => {
   const handleScheduleMeeting = async (e) => {
     e.preventDefault();
     try {
-      await leadAPI.addMeeting(selectedLead._id, meetingData);
+      const leadForMeeting = selectedLead || leads.find(lead => lead._id === meetingData.leadId);
+      if (!leadForMeeting?._id) {
+        toast.error('Please select a lead');
+        return;
+      }
+
+      const scheduledDate = new Date(meetingData.scheduledDate);
+      if (Number.isNaN(scheduledDate.getTime()) || scheduledDate <= new Date()) {
+        toast.error('Please choose a future meeting date and time');
+        return;
+      }
+
+      const payload = {
+        type: meetingData.type,
+        scheduledDate: scheduledDate.toISOString(),
+        duration: Number(meetingData.duration) || 30,
+        agenda: meetingData.agenda?.trim()
+      };
+
+      await leadAPI.addMeeting(leadForMeeting._id, payload);
       toast.success('Meeting scheduled!');
       fetchLeads();
       setShowMeetingModal(false);
+      setSelectedLead(null);
+      setMeetingData({
+        leadId: '',
+        type: 'Call',
+        scheduledDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+        duration: 30,
+        agenda: ''
+      });
     } catch (err) {
-      toast.error('Failed to schedule meeting');
+      toast.error(err.response?.data?.errors?.[0]?.msg || err.response?.data?.message || 'Failed to schedule meeting');
     }
   };
 
@@ -187,9 +217,9 @@ const SalesPage = () => {
           animation: fadeSlideUp 0.4s ease-out both;
         }
       `}</style>
-      <div className="space-y-4 sm:space-y-6 bg-slate-50">
+      <div className="employee-sales-page space-y-4 sm:space-y-6 bg-slate-50">
         {/* Dashboard Stats */}
-        <div className="animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-3 sm:p-4 md:p-6">
+        <div className="employee-sales-panel animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-3 sm:p-4 md:p-6">
           <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-3 sm:mb-4 flex items-center">
             <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-600" />
             My Sales Performance
@@ -211,14 +241,19 @@ const SalesPage = () => {
               toast.error('No leads available');
               return;
             }
-            setSelectedLead(leads[0]);
+            setSelectedLead(null);
+            setMeetingData(prev => ({
+              ...prev,
+              leadId: '',
+              scheduledDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16)
+            }));
             setShowMeetingModal(true);
           }} />
           <ActionButton icon={Download} label="Export Report" onClick={() => toast.success('Report exported')} />
         </div>
 
         {/* Leads Table */}
-        <div className="animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-3 sm:p-4 md:p-6" style={{ animationDelay: '80ms' }}>
+        <div className="employee-sales-panel animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-3 sm:p-4 md:p-6" style={{ animationDelay: '80ms' }}>
           <div className="flex justify-between items-center mb-3 sm:mb-4">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">My Leads & Opportunities</h2>
             <span className="text-slate-500 text-xs sm:text-sm">{leads.length} leads</span>
@@ -240,7 +275,7 @@ const SalesPage = () => {
             <>
               {/* Desktop Table */}
               <div className="hidden sm:block overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="employee-sales-table w-full text-sm">
                   <thead className="bg-white border-b border-slate-200 sticky top-0 z-10">
                     <tr>
                       <th className="text-left py-3 text-slate-600 font-semibold">Lead</th>
@@ -262,12 +297,12 @@ const SalesPage = () => {
                           {formatCurrency(lead.estimatedValue)}
                         </td>
                         <td className="py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(lead.status)}`}>
+                          <span className={`employee-sales-chip px-2 py-1 rounded-full text-xs ${getStatusColor(lead.status)}`}>
                             {lead.status}
                           </span>
                         </td>
                         <td className="py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(lead.priority)}`}>
+                          <span className={`employee-sales-chip px-2 py-1 rounded-full text-xs ${getPriorityColor(lead.priority)}`}>
                             {lead.priority}
                           </span>
                         </td>
@@ -288,6 +323,11 @@ const SalesPage = () => {
                             <button
                               onClick={() => {
                                 setSelectedLead(lead);
+                                setMeetingData(prev => ({
+                                  ...prev,
+                                  leadId: lead._id,
+                                  scheduledDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16)
+                                }));
                                 setShowMeetingModal(true);
                               }}
                               className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
@@ -322,6 +362,15 @@ const SalesPage = () => {
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
+                            <button
+                              onClick={() => {
+                                navigate(`/employee/sales-pipeline?leadId=${lead._id}`);
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                              title="View Pipeline"
+                            >
+                              <GitBranch className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -333,7 +382,7 @@ const SalesPage = () => {
               {/* Mobile Cards */}
               <div className="block sm:hidden space-y-4">
                 {leads.map(lead => (
-                  <div key={lead._id} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                  <div key={lead._id} className="employee-sales-card bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <p className="text-slate-900 font-medium text-base">{lead.firstName} {lead.lastName}</p>
@@ -352,6 +401,11 @@ const SalesPage = () => {
                         <button
                           onClick={() => {
                             setSelectedLead(lead);
+                            setMeetingData(prev => ({
+                              ...prev,
+                              leadId: lead._id,
+                              scheduledDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16)
+                            }));
                             setShowMeetingModal(true);
                           }}
                           className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
@@ -386,6 +440,15 @@ const SalesPage = () => {
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => {
+                            navigate(`/employee/sales-pipeline?leadId=${lead._id}`);
+                          }}
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                          title="View Pipeline"
+                        >
+                          <GitBranch className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
@@ -395,13 +458,13 @@ const SalesPage = () => {
                       </div>
                       <div>
                         <p className="text-slate-500">Status</p>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(lead.status)}`}>
+                        <span className={`employee-sales-chip px-2 py-1 rounded-full text-xs ${getStatusColor(lead.status)}`}>
                           {lead.status}
                         </span>
                       </div>
                       <div>
                         <p className="text-slate-500">Priority</p>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(lead.priority)}`}>
+                        <span className={`employee-sales-chip px-2 py-1 rounded-full text-xs ${getPriorityColor(lead.priority)}`}>
                           {lead.priority}
                         </span>
                       </div>
@@ -449,12 +512,12 @@ const SalesPage = () => {
             <InfoRow label="Phone" value={selectedLead.phone} />
             <InfoRow label="Company" value={selectedLead.company || '—'} />
             <InfoRow label="Status" value={
-              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(selectedLead.status)}`}>
+              <span className={`employee-sales-chip px-2 py-1 rounded-full text-xs ${getStatusColor(selectedLead.status)}`}>
                 {selectedLead.status}
               </span>
             } />
             <InfoRow label="Priority" value={
-              <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(selectedLead.priority)}`}>
+              <span className={`employee-sales-chip px-2 py-1 rounded-full text-xs ${getPriorityColor(selectedLead.priority)}`}>
                 {selectedLead.priority}
               </span>
             } />
@@ -466,9 +529,25 @@ const SalesPage = () => {
       )}
 
       {/* Meeting Modal */}
-      {showMeetingModal && selectedLead && (
+      {showMeetingModal && (selectedLead || leads.length > 0) && (
         <Modal title="Schedule Meeting" onClose={() => setShowMeetingModal(false)}>
           <form onSubmit={handleScheduleMeeting} className="space-y-4">
+            <Select
+              label="Lead"
+              value={selectedLead?._id || meetingData.leadId}
+              onChange={(v) => {
+                const lead = leads.find(item => item._id === v);
+                setSelectedLead(lead || null);
+                setMeetingData({ ...meetingData, leadId: v });
+              }}
+              options={[
+                { value: '', label: 'Select Lead' },
+                ...leads.map(lead => ({
+                  value: lead._id,
+                  label: `${lead.firstName} ${lead.lastName}${lead.company ? ` - ${lead.company}` : ''}`
+                }))
+              ]}
+            />
             <Select label="Meeting Type" value={meetingData.type} onChange={(v) => setMeetingData({...meetingData, type: v})} options={[
               { value: 'Call', label: 'Call' },
               { value: 'Video Meeting', label: 'Video Meeting' },
@@ -501,13 +580,14 @@ const SalesPage = () => {
           </form>
         </Modal>
       )}
+
     </EmployeeLayout>
   );
 };
 
 // Helper Components
 const StatCard = ({ title, value, progress, color = 'blue', subtitle }) => (
-  <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+  <div className="employee-sales-stat bg-slate-50 border border-slate-200 p-3 rounded-lg">
     <p className="text-xs text-slate-500">{title}</p>
     <p className="text-lg font-bold text-slate-900 mt-1">{value}</p>
     {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
@@ -525,7 +605,7 @@ const StatCard = ({ title, value, progress, color = 'blue', subtitle }) => (
 const ActionButton = ({ icon: Icon, label, onClick }) => (
   <button 
     onClick={onClick}
-    className="p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 group text-left"
+    className="employee-sales-action p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 group text-left"
   >
     <Icon className="w-6 h-6 text-slate-400 group-hover:text-blue-600 mb-2" />
     <p className="text-sm text-slate-500 group-hover:text-slate-900">{label}</p>
@@ -534,7 +614,7 @@ const ActionButton = ({ icon: Icon, label, onClick }) => (
 
 const Modal = ({ title, children, onClose }) => (
   <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-    <div className="bg-white border border-slate-200 rounded-xl shadow-xl p-3 sm:p-4 w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="employee-sales-modal bg-white border border-slate-200 rounded-xl shadow-xl p-3 sm:p-4 w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
       <div className="flex justify-between items-center mb-3 sm:mb-4">
         <h3 className="text-base sm:text-lg font-bold text-slate-900">{title}</h3>
         <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200">

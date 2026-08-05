@@ -368,11 +368,11 @@ const EmployeeAttendance = () => {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'present': return 'text-green-700 bg-green-100';
+      case 'present': return 'text-emerald-700 bg-emerald-100';
       case 'late': return 'text-amber-700 bg-amber-100';
-      case 'half day': return 'text-orange-700 bg-orange-100';
+      case 'half day': return 'text-amber-700 bg-amber-100';
       case 'absent': return 'text-red-700 bg-red-100';
-      case 'work from home': return 'text-blue-700 bg-blue-100';
+      case 'work from home': return 'text-indigo-700 bg-indigo-100';
       default: return 'text-slate-600 bg-slate-100';
     }
   };
@@ -405,30 +405,30 @@ const EmployeeAttendance = () => {
           animation: fadeSlideUp 0.4s ease-out both;
         }
       `}</style>
-      <div className="w-full min-h-[calc(100vh-5rem)] space-y-6 bg-slate-50">
-        <div className="animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-4 md:p-6">
+      <div className="employee-attendance-page w-full min-h-[calc(100vh-5rem)] space-y-5 bg-slate-50">
+        <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 md:p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
-                My <span className="text-blue-600">Attendance</span>
+              <h1 className="text-[24px] font-semibold tracking-tight text-slate-900 mb-1">
+                My <span className="text-indigo-600">Attendance</span>
               </h1>
-              <p className="text-slate-500 text-sm md:text-base">Track your daily attendance with video face verification</p>
+              <p className="text-[13px] text-slate-500">Track your daily attendance with video face verification</p>
             </div>
             <div className="text-left md:text-right">
-              <p className="text-lg md:text-2xl font-bold text-slate-900">{currentTime.toLocaleTimeString()}</p>
-              <p className="text-slate-500 text-xs md:text-sm">
+              <p className="text-[22px] font-semibold tracking-tight text-slate-900">{currentTime.toLocaleTimeString()}</p>
+              <p className="text-[12px] text-slate-500">
                 {currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-6" style={{ animationDelay: '80ms' }}>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900">Today's Attendance</h2>
+        <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '80ms' }}>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-[15px] font-semibold text-slate-900">Today's Attendance</h2>
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${hasCheckedIn ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
-              <span className="text-sm text-slate-500">
+              <div className={`w-2.5 h-2.5 rounded-full ${hasCheckedIn ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+              <span className="text-[12.5px] text-slate-500">
                 {hasCheckedIn ? (hasCheckedOut ? 'Completed' : 'Checked In') : 'Not Marked'}
               </span>
             </div>
@@ -436,20 +436,20 @@ const EmployeeAttendance = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div className="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <MapPin className={`w-5 h-5 ${currentLocation ? 'text-green-600' : 'text-red-600'}`} />
+              <div className="attendance-soft-row flex items-center space-x-3 p-3 bg-slate-50 border border-slate-200/80 rounded-lg">
+                <MapPin strokeWidth={1.75} className={`w-[18px] h-[18px] ${currentLocation ? 'text-emerald-600' : 'text-red-600'}`} />
                 <div className="flex-1">
-                  <p className="text-slate-900 text-sm font-medium">
+                  <p className="text-slate-900 text-[13px] font-medium">
                     {locationLoading ? 'Getting location...' : currentLocation ? 'Location Ready' : 'Location Required'}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-[12px] text-slate-500">
                     {currentLocation ? currentLocation.address : 'Enable location services'}
                   </p>
                 </div>
                 {!currentLocation && (
                   <button
                     onClick={getCurrentLocation}
-                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-all duration-200"
+                    className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[12px] font-medium hover:bg-indigo-100 transition-colors duration-150"
                   >
                     {locationLoading ? 'Getting...' : 'Get Location'}
                   </button>
@@ -462,9 +462,9 @@ const EmployeeAttendance = () => {
                     <button
                       onClick={openFaceVerification}
                       disabled={!currentLocation || loading}
-                      className="w-full px-4 md:px-6 py-3 md:py-4 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:hover:scale-100 text-sm md:text-base min-h-[48px] touch-manipulation"
+                      className="w-full px-4 md:px-6 py-3 md:py-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-500 transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-50 text-[13px] md:text-[13.5px] min-h-[48px] touch-manipulation"
                     >
-                      <Video className="w-5 h-5 flex-shrink-0" />
+                      <Video strokeWidth={1.75} className="w-[18px] h-[18px] flex-shrink-0" />
                       <span>{loading ? 'Processing...' : 'Check In with Video Verification (Optional)'}</span>
                     </button>
                     <button
@@ -504,9 +504,9 @@ const EmployeeAttendance = () => {
                         }
                       }}
                       disabled={!currentLocation || loading}
-                      className="w-full px-4 md:px-6 py-3 md:py-4 bg-white border border-blue-300 text-blue-700 font-semibold rounded-lg hover:bg-blue-50 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 text-sm md:text-base min-h-[48px] touch-manipulation"
+                      className="w-full px-4 md:px-6 py-3 md:py-4 bg-white border border-slate-200/80 text-slate-600 font-semibold rounded-lg hover:bg-slate-50 transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-50 text-[13px] md:text-[13.5px] min-h-[48px] touch-manipulation"
                     >
-                      <Clock className="w-5 h-5 flex-shrink-0" />
+                      <Clock strokeWidth={1.75} className="w-[18px] h-[18px] flex-shrink-0" />
                       <span>{loading ? 'Processing...' : 'Check In Without Face'}</span>
                     </button>
                   </>
@@ -514,23 +514,23 @@ const EmployeeAttendance = () => {
                   <button
                     onClick={handleCheckOut}
                     disabled={!currentLocation || loading}
-                    className="w-full px-4 md:px-6 py-3 md:py-4 bg-white border border-red-300 text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 text-sm md:text-base min-h-[48px] touch-manipulation"
+                    className="w-full px-4 md:px-6 py-3 md:py-4 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-50 text-[13px] md:text-[13.5px] min-h-[48px] touch-manipulation"
                   >
-                    <XCircle className="w-5 h-5 flex-shrink-0" />
+                    <XCircle strokeWidth={1.75} className="w-[18px] h-[18px] flex-shrink-0" />
                     <span>{loading ? 'Checking out...' : 'Check Out'}</span>
                   </button>
                 ) : (
-                  <div className="w-full px-4 md:px-6 py-3 md:py-4 bg-blue-50 border border-blue-200 text-slate-900 font-semibold rounded-lg flex items-center justify-center space-x-2 text-sm md:text-base min-h-[48px]">
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <div className="w-full px-4 md:px-6 py-3 md:py-4 bg-emerald-50 border border-emerald-100 text-slate-900 font-semibold rounded-lg flex items-center justify-center space-x-2 text-[13px] md:text-[13.5px] min-h-[48px]">
+                    <CheckCircle strokeWidth={1.75} className="w-[18px] h-[18px] text-emerald-600 flex-shrink-0" />
                     <span>Attendance Completed</span>
                   </div>
                 )}
               </div>
 
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="attendance-note-panel p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
                 <div className="flex items-start space-x-2">
-                  <ShieldCheck className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-xs text-blue-700">
+                  <ShieldCheck strokeWidth={1.75} className="w-4 h-4 text-indigo-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-[12px] text-indigo-700">
                     <p className="font-medium mb-1">Video Verification with Liveness Detection</p>
                     <p>Your live video is analyzed to ensure you are physically present. Static images and spoofing attempts are blocked.</p>
                   </div>
@@ -540,28 +540,28 @@ const EmployeeAttendance = () => {
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
-                  <p className="text-slate-500 text-xs">Check In</p>
-                  <p className="text-slate-900 font-bold">
+                <div className="attendance-soft-row p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
+                  <p className="text-slate-500 text-[12px]">Check In</p>
+                  <p className="text-slate-900 font-semibold">
                     {todayAttendance ? formatTime(todayAttendance.checkInTime) : '--:--'}
                   </p>
                 </div>
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
-                  <p className="text-slate-500 text-xs">Check Out</p>
-                  <p className="text-slate-900 font-bold">
+                <div className="attendance-soft-row p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
+                  <p className="text-slate-500 text-[12px]">Check Out</p>
+                  <p className="text-slate-900 font-semibold">
                     {todayAttendance ? formatTime(todayAttendance.checkOutTime) : '--:--'}
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
-                  <p className="text-slate-500 text-xs">Working Time</p>
-                  <p className="text-blue-600 font-bold">
+                <div className="attendance-soft-row p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
+                  <p className="text-slate-500 text-[12px]">Working Time</p>
+                  <p className="text-indigo-600 font-semibold">
                     {hasCheckedIn && !hasCheckedOut ? formatWorkingTime(realTimeWorkingTime) : (workingTime ? workingTime.total : '00:00')}
                   </p>
                 </div>
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
-                  <p className="text-slate-500 text-xs">Status</p>
+                <div className="attendance-soft-row p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
+                  <p className="text-slate-500 text-[12px]">Status</p>
                   <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(todayAttendance?.status)}`}>
                     {todayAttendance?.status || 'Not Marked'}
                   </span>
@@ -573,48 +573,48 @@ const EmployeeAttendance = () => {
 
         {attendanceStats && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            <div className="animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-4 md:p-6 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200" style={{ animationDelay: '120ms' }}>
+            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '120ms' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-500 text-xs md:text-sm">Total Days</p>
-                  <p className="text-xl md:text-2xl font-bold text-slate-900">{attendanceStats.totalDays}</p>
+                  <p className="text-slate-500 text-[12px]">Total Days</p>
+                  <p className="text-[22px] font-semibold tracking-tight text-slate-900">{attendanceStats.totalDays}</p>
                 </div>
-                <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-blue-600 flex-shrink-0" />
+                <TrendingUp strokeWidth={1.75} className="w-5 h-5 text-slate-400 flex-shrink-0" />
               </div>
             </div>
-            <div className="animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-4 md:p-6 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200" style={{ animationDelay: '160ms' }}>
+            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '160ms' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-500 text-xs md:text-sm">Present Days</p>
-                  <p className="text-xl md:text-2xl font-bold text-green-600">{attendanceStats.presentDays}</p>
+                  <p className="text-slate-500 text-[12px]">Present Days</p>
+                  <p className="text-[22px] font-semibold tracking-tight text-emerald-600">{attendanceStats.presentDays}</p>
                 </div>
-                <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-green-600 flex-shrink-0" />
+                <CheckCircle strokeWidth={1.75} className="w-5 h-5 text-slate-400 flex-shrink-0" />
               </div>
             </div>
-            <div className="animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-4 md:p-6 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200" style={{ animationDelay: '200ms' }}>
+            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '200ms' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-500 text-xs md:text-sm">Late Days</p>
-                  <p className="text-xl md:text-2xl font-bold text-amber-600">{attendanceStats.lateDays}</p>
+                  <p className="text-slate-500 text-[12px]">Late Days</p>
+                  <p className="text-[22px] font-semibold tracking-tight text-amber-600">{attendanceStats.lateDays}</p>
                 </div>
-                <AlertCircle className="w-6 h-6 md:w-8 md:h-8 text-amber-600 flex-shrink-0" />
+                <AlertCircle strokeWidth={1.75} className="w-5 h-5 text-slate-400 flex-shrink-0" />
               </div>
             </div>
-            <div className="animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-4 md:p-6 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200" style={{ animationDelay: '240ms' }}>
+            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '240ms' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-500 text-xs md:text-sm">Half Days</p>
-                  <p className="text-xl md:text-2xl font-bold text-orange-600">{attendanceStats.halfDays}</p>
+                  <p className="text-slate-500 text-[12px]">Half Days</p>
+                  <p className="text-[22px] font-semibold tracking-tight text-amber-600">{attendanceStats.halfDays}</p>
                 </div>
-                <Timer className="w-6 h-6 md:w-8 md:h-8 text-orange-600 flex-shrink-0" />
+                <Timer strokeWidth={1.75} className="w-5 h-5 text-slate-400 flex-shrink-0" />
               </div>
             </div>
           </div>
         )}
 
-        <div className="animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-6" style={{ animationDelay: '280ms' }}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-slate-900">Attendance History</h2>
+        <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '280ms' }}>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-[15px] font-semibold text-slate-900">Attendance History</h2>
             <input
               type="month"
               value={selectedMonth}
@@ -622,37 +622,37 @@ const EmployeeAttendance = () => {
                 setSelectedMonth(e.target.value);
                 setTimeout(fetchAttendanceHistory, 100);
               }}
-              className="bg-white text-slate-900 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+              className="bg-white text-slate-900 border border-slate-200/80 rounded-lg px-3 py-2 text-[13px] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-colors duration-150"
             />
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+              <Loader2 strokeWidth={1.75} className="w-6 h-6 text-indigo-600 animate-spin" />
             </div>
           ) : attendanceHistory.length === 0 ? (
             <div className="text-center py-8">
               <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center">
-                <CalendarX className="w-7 h-7 text-slate-400" />
+                <CalendarX strokeWidth={1.75} className="w-6 h-6 text-slate-400" />
               </div>
-              <p className="text-slate-500 font-medium">No attendance records for this month</p>
+              <p className="text-[13px] text-slate-500 font-medium">No attendance records for this month</p>
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {attendanceHistory.map((record) => (
-                <div key={record._id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-blue-50 transition-all duration-200">
+                <div key={record._id} className="attendance-soft-row flex items-center justify-between p-3 bg-slate-50 border border-slate-200/80 rounded-lg hover:bg-slate-100 transition-colors duration-150">
                   <div className="flex items-center space-x-3">
                     <div className="text-center">
-                      <p className="text-slate-900 font-medium">{formatDate(record.date)}</p>
+                      <p className="text-slate-900 text-[13px] font-medium">{formatDate(record.date)}</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4 text-sm">
+                  <div className="flex items-center space-x-4 text-[13px]">
                     <div className="text-center">
-                      <p className="text-slate-500 text-xs">In</p>
+                      <p className="text-slate-500 text-[12px]">In</p>
                       <p className="text-slate-900">{formatTime(record.checkInTime)}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-slate-500 text-xs">Out</p>
+                      <p className="text-slate-500 text-[12px]">Out</p>
                       <p className="text-slate-900">{formatTime(record.checkOutTime)}</p>
                     </div>
                     <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(record.status)}`}>
@@ -672,18 +672,18 @@ const EmployeeAttendance = () => {
           <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={closeFaceVerification} />
 
           {/* Modal content */}
-          <div className="relative bg-white border border-slate-200 rounded-xl shadow-xl p-6 max-w-lg w-full">
+          <div className="relative bg-white border border-slate-200/80 rounded-2xl shadow-[0_18px_44px_rgba(15,23,42,0.18)] p-6 max-w-lg w-full">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
-                <Camera className="w-5 h-5 text-blue-600" />
+              <h3 className="text-[15px] font-semibold text-slate-900 flex items-center space-x-2">
+                <Camera strokeWidth={1.75} className="w-4 h-4 text-slate-400" />
                 <span>Face Verification</span>
               </h3>
               <button
                 onClick={closeFaceVerification}
                 disabled={isVerifying}
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200 disabled:opacity-50"
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150 disabled:opacity-50"
               >
-                <X className="w-5 h-5" />
+                <X strokeWidth={1.75} className="w-[18px] h-[18px]" />
               </button>
             </div>
 
@@ -700,8 +700,8 @@ const EmployeeAttendance = () => {
               {!cameraReady && (
                 <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60">
                   <div className="text-white text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-                    <p>Starting camera...</p>
+                    <Loader2 strokeWidth={1.75} className="w-6 h-6 animate-spin mx-auto mb-2" />
+                    <p className="text-[13px] font-medium">Starting camera...</p>
                   </div>
                 </div>
               )}
@@ -709,11 +709,11 @@ const EmployeeAttendance = () => {
               {isVerifying && (
                 <div className="absolute inset-0 flex items-center justify-center bg-slate-900/70">
                   <div className="text-white text-center">
-                    <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" />
-                    <p className="font-medium">{livenessMessage}</p>
+                    <Loader2 strokeWidth={1.75} className="w-8 h-8 animate-spin mx-auto mb-4" />
+                    <p className="text-[13px] font-medium">{livenessMessage}</p>
                     <div className="w-48 h-2 bg-white/20 rounded-full mt-4 mx-auto">
                       <div
-                        className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                        className="h-full bg-indigo-500 rounded-full transition-all duration-300"
                         style={{ width: `${verificationProgress}%` }}
                       ></div>
                     </div>
@@ -722,10 +722,10 @@ const EmployeeAttendance = () => {
               )}
 
               {verificationStatus === 'success' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-green-600/60">
+                <div className="absolute inset-0 flex items-center justify-center bg-emerald-600/60">
                   <div className="text-center">
-                    <CheckCircle className="w-16 h-16 text-white mx-auto" />
-                    <p className="text-white font-bold mt-2">Verified!</p>
+                    <CheckCircle strokeWidth={1.75} className="w-12 h-12 text-white mx-auto" />
+                    <p className="text-white text-[13px] font-semibold mt-2">Verified!</p>
                   </div>
                 </div>
               )}
@@ -733,17 +733,17 @@ const EmployeeAttendance = () => {
               {verificationStatus === 'failed' && (
                 <div className="absolute inset-0 flex items-center justify-center bg-red-600/60">
                   <div className="text-center">
-                    <XCircle className="w-16 h-16 text-white mx-auto" />
-                    <p className="text-white font-bold mt-2">Verification Failed</p>
-                    <p className="text-white text-sm mt-1">{livenessMessage}</p>
+                    <XCircle strokeWidth={1.75} className="w-12 h-12 text-white mx-auto" />
+                    <p className="text-white text-[13px] font-semibold mt-2">Verification Failed</p>
+                    <p className="text-white text-[12px] mt-1">{livenessMessage}</p>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center space-x-2 mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <div className={`w-3 h-3 rounded-full ${cameraReady ? 'bg-green-500' : 'bg-amber-500'} animate-pulse`}></div>
-              <span className="text-sm text-slate-500">
+            <div className="flex items-center space-x-2 mb-4 p-3 bg-slate-50 border border-slate-200/80 rounded-lg">
+              <div className={`w-2.5 h-2.5 rounded-full ${cameraReady ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+              <span className="text-[13px] text-slate-500">
                 {cameraReady ? 'Look at the camera and click verify' : 'Starting camera...'}
               </span>
             </div>
@@ -751,22 +751,22 @@ const EmployeeAttendance = () => {
             <button
               onClick={captureVideoFramesAndVerify}
               disabled={!cameraReady || isVerifying}
-              className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              className="w-full px-6 py-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-500 transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isVerifying ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 strokeWidth={1.75} className="w-[18px] h-[18px] animate-spin" />
                   <span>Verifying...</span>
                 </>
               ) : (
                 <>
-                  <ShieldCheck className="w-5 h-5" />
+                  <ShieldCheck strokeWidth={1.75} className="w-[18px] h-[18px]" />
                   <span>Verify & Check In</span>
                 </>
               )}
             </button>
 
-            <p className="text-xs text-slate-500 mt-3 text-center">
+            <p className="text-[12px] text-slate-500 mt-3 text-center">
               Your face will be verified against your registered profile
             </p>
           </div>

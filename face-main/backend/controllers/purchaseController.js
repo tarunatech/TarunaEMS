@@ -1,58 +1,76 @@
-import mongoose from 'mongoose';
 import PurchaseOrder from '../models/PurchaseOrder.js';
 import Supplier from '../models/Supplier.js';
+import Lead from '../models/Lead.js';
 
-// Get all purchase orders with filters
+const buildClientName = (client) => {
+  if (!client) return '';
+  return client.company || [client.firstName, client.lastName].filter(Boolean).join(' ') || client.email || '';
+};
+
+// Get all IT service purchase records with filters
 export const getPurchaseOrders = async (req, res) => {
   try {
-    const { status, supplier, startDate, endDate, search, page = 1, limit = 50 } = req.query;
+    const {
+      status,
+      vendor,
+      supplier,
+      serviceType,
+      renewalMonth,
+      startDate,
+      endDate,
+      search,
+      page = 1,
+      limit = 50
+    } = req.query;
 
     const query = {};
+    if (status && status !== 'all') query.status = status;
+    if (serviceType && serviceType !== 'all') query.serviceType = serviceType;
+    if (vendor || supplier) query.vendor = vendor || supplier;
 
-    // Status filter
-    if (status && status !== 'all') {
-      query.status = status;
-    }
-
-    // Supplier filter
-    if (supplier && supplier.trim() !== '' && mongoose.Types.ObjectId.isValid(supplier.trim())) {
-      query.supplier = supplier.trim();
-    }
-
-    // Date range filter (on createdAt)
     if (startDate || endDate) {
-      query.createdAt = {};
+      query.purchaseDate = {};
       if (startDate) {
         const start = new Date(startDate);
-        if (!isNaN(start.getTime())) {
+        if (!Number.isNaN(start.getTime())) {
           start.setUTCHours(0, 0, 0, 0);
-          query.createdAt.$gte = start;
+          query.purchaseDate.$gte = start;
         }
       }
       if (endDate) {
         const end = new Date(endDate);
-        if (!isNaN(end.getTime())) {
+        if (!Number.isNaN(end.getTime())) {
           end.setUTCHours(23, 59, 59, 999);
-          query.createdAt.$lte = end;
+          query.purchaseDate.$lte = end;
         }
       }
     }
 
-    // Search filter
+    if (renewalMonth) {
+      const [year, month] = renewalMonth.split('-').map(Number);
+      if (year && month) {
+        query.renewalDate = {
+          $gte: new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0)),
+          $lte: new Date(Date.UTC(year, month, 0, 23, 59, 59, 999))
+        };
+      }
+    }
+
     if (search) {
       query.$or = [
         { poNumber: { $regex: search, $options: 'i' } },
-        { 'lineItems.item': { $regex: search, $options: 'i' } },
-        { 'lineItems.description': { $regex: search, $options: 'i' } }
+        { clientName: { $regex: search, $options: 'i' } },
+        { project: { $regex: search, $options: 'i' } },
+        { serviceName: { $regex: search, $options: 'i' } }
       ];
     }
 
     const purchaseOrders = await PurchaseOrder.find(query)
-      .populate('supplier', 'name email phone')
+      .populate('client', 'leadId firstName lastName company email interestedProducts')
       .populate('createdBy', 'name email')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .sort({ renewalDate: 1, createdAt: -1 })
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit));
 
     const total = await PurchaseOrder.countDocuments(query);
 
@@ -61,250 +79,156 @@ export const getPurchaseOrders = async (req, res) => {
       data: {
         purchaseOrders,
         pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(total / limit),
+          currentPage: Number(page),
+          totalPages: Math.ceil(total / Number(limit)),
           totalPurchaseOrders: total,
-          hasNext: page < Math.ceil(total / limit),
-          hasPrev: page > 1
+          hasNext: Number(page) < Math.ceil(total / Number(limit)),
+          hasPrev: Number(page) > 1
         }
       }
     });
-
   } catch (error) {
-    console.error('Get purchase orders error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Get IT service purchases error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Get all suppliers
+// Existing supplier endpoints are retained for compatibility, now labelled as providers in UI.
 export const getSuppliers = async (req, res) => {
   try {
     const suppliers = await Supplier.find({ isActive: true })
       .select('name email phone address')
       .sort({ name: 1 });
 
-    res.json({
-      success: true,
-      data: {
-        suppliers
-      }
-    });
-
+    res.json({ success: true, data: { suppliers } });
   } catch (error) {
-    console.error('Get suppliers error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Get providers error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Create new supplier
 export const createSupplier = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Admin only.'
-      });
+      return res.status(403).json({ success: false, message: 'Access denied. Admin only.' });
     }
 
     const { name, email, phone, address } = req.body;
-
-    // Validate required fields
     if (!name) {
-      return res.status(400).json({
-        success: false,
-        message: 'Supplier name is required'
-      });
+      return res.status(400).json({ success: false, message: 'Provider name is required' });
     }
 
-    // Check if supplier already exists (only check provided fields)
-    const orConditions = [];
-    if (email) orConditions.push({ email });
-    if (phone) orConditions.push({ phone });
+    const provider = new Supplier({ name, email, phone, address, createdBy: req.user.id });
+    await provider.save();
 
-    if (orConditions.length > 0) {
-      const existingSupplier = await Supplier.findOne({ $or: orConditions });
-      if (existingSupplier) {
-        return res.status(400).json({
-          success: false,
-          message: 'Supplier with this email or phone already exists'
-        });
-      }
-    }
-
-    const supplier = new Supplier({
-      name,
-      email,
-      phone,
-      address,
-      createdBy: req.user.id
-    });
-
-    await supplier.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'Supplier created successfully',
-      data: supplier
-    });
-
+    res.status(201).json({ success: true, message: 'Provider created successfully', data: provider });
   } catch (error) {
-    console.error('Create supplier error:', error);
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Create provider error:', error);
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
-// Create new purchase order
 export const createPurchaseOrder = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Admin only.'
-      });
+      return res.status(403).json({ success: false, message: 'Access denied. Admin only.' });
     }
 
-    const { supplier, ...poData } = req.body;
-
-    // Validate supplier exists
-    const supplierDoc = await Supplier.findById(supplier);
-    if (!supplierDoc) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid supplier'
-      });
-    }
-
-    // Generate PO number
     const poNumber = `PO-${Date.now()}`;
+    let clientName = req.body.clientName;
+
+    if (req.body.client) {
+      const client = await Lead.findById(req.body.client);
+      if (!client) return res.status(400).json({ success: false, message: 'Invalid client' });
+      clientName = buildClientName(client);
+    }
 
     const purchaseOrder = new PurchaseOrder({
-      ...poData,
+      ...req.body,
       poNumber,
-      supplier,
+      clientName,
+      client: req.body.client || undefined,
+      amount: Number(req.body.amount || 0),
+      totalAmount: Number(req.body.amount || 0),
+      grandTotal: Number(req.body.amount || 0),
       createdBy: req.user.id
     });
 
     await purchaseOrder.save();
-    await purchaseOrder.populate('supplier', 'name email phone');
+    await purchaseOrder.populate('client', 'leadId firstName lastName company email interestedProducts');
     await purchaseOrder.populate('createdBy', 'name email');
 
     res.status(201).json({
       success: true,
-      message: 'Purchase order created successfully',
+      message: 'IT service purchase created successfully',
       data: purchaseOrder
     });
-
   } catch (error) {
-    console.error('Create purchase order error:', error);
-    if (error.code === 11000) { // Duplicate key
-      res.status(400).json({
-        success: false,
-        message: 'PO number already exists'
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: error.message
-      });
-    }
+    console.error('Create IT service purchase error:', error);
+    res.status(error.code === 11000 ? 400 : 500).json({
+      success: false,
+      message: error.code === 11000 ? 'PO number already exists' : error.message
+    });
   }
 };
 
-// Update purchase order
 export const updatePurchaseOrder = async (req, res) => {
   try {
     const purchaseOrder = await PurchaseOrder.findById(req.params.id);
-
     if (!purchaseOrder) {
-      return res.status(404).json({
-        success: false,
-        message: 'Purchase order not found'
-      });
+      return res.status(404).json({ success: false, message: 'Purchase record not found' });
     }
 
-    // Check ownership or admin access
     if (purchaseOrder.createdBy.toString() !== req.user.id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You can only update your own purchase orders.'
-      });
+      return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    const { supplier, ...updateData } = req.body;
-
-    // Validate supplier if provided
-    if (supplier) {
-      const supplierDoc = await Supplier.findById(supplier);
-      if (!supplierDoc) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid supplier'
-        });
-      }
-      updateData.supplier = supplier;
+    let clientName = req.body.clientName;
+    if (req.body.client) {
+      const client = await Lead.findById(req.body.client);
+      if (!client) return res.status(400).json({ success: false, message: 'Invalid client' });
+      clientName = buildClientName(client);
     }
 
-    Object.assign(purchaseOrder, updateData);
+    Object.assign(purchaseOrder, {
+      ...req.body,
+      clientName,
+      client: req.body.client || undefined,
+      amount: Number(req.body.amount || 0),
+      totalAmount: Number(req.body.amount || 0),
+      grandTotal: Number(req.body.amount || 0)
+    });
+
     await purchaseOrder.save();
-    await purchaseOrder.populate('supplier', 'name email phone');
+    await purchaseOrder.populate('client', 'leadId firstName lastName company email interestedProducts');
     await purchaseOrder.populate('createdBy', 'name email');
 
     res.json({
       success: true,
-      message: 'Purchase order updated successfully',
+      message: 'IT service purchase updated successfully',
       data: purchaseOrder
     });
-
   } catch (error) {
-    console.error('Update purchase order error:', error);
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Update IT service purchase error:', error);
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
-// Delete purchase order
 export const deletePurchaseOrder = async (req, res) => {
   try {
     const purchaseOrder = await PurchaseOrder.findById(req.params.id);
-
     if (!purchaseOrder) {
-      return res.status(404).json({
-        success: false,
-        message: 'Purchase order not found'
-      });
+      return res.status(404).json({ success: false, message: 'Purchase record not found' });
     }
 
-    // Check ownership or admin access
     if (purchaseOrder.createdBy.toString() !== req.user.id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You can only delete your own purchase orders.'
-      });
+      return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
     await PurchaseOrder.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: 'Purchase order deleted successfully'
-    });
-
+    res.json({ success: true, message: 'IT service purchase deleted successfully' });
   } catch (error) {
-    console.error('Delete purchase order error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error('Delete IT service purchase error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

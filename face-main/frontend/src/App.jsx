@@ -21,6 +21,7 @@ import DepartmentManagementPage from './pages/Admin/DepartmentManagement';
 import LeadManagement from './pages/Sales/LeadManagement';
 import ProblemStatementPage from './pages/Employee/ProblemStatementPage';
 import SalesPage from './pages/Employee/Sales';
+import SalesPipelinePage from './pages/Employee/SalesPipelinePage';
 import AdminSalesDashboard from './pages/Admin/AdminSalesDashboard';
 import PurchaseOrders from './pages/Admin/PurchaseOrders';
 import AdminPayslips from './pages/Admin/AdminPayslips';
@@ -33,6 +34,8 @@ import EmployeeSettings from './pages/Employee/EmployeeSettings';
 import DayBookEntry from './pages/Employee/DayBookEntry';
 import ExpenseTracker from './pages/Admin/ExpenseTracker';
 import EmployeeExpenses from './pages/Employee/EmployeeExpenses';
+import HRInterviewSchedule from './pages/Employee/HRInterviewSchedule';
+import AdminInterviews from './pages/Admin/AdminInterviews';
 
 function App() {
   return (
@@ -120,6 +123,11 @@ function App() {
               <AdminSettings />
             </ProtectedRoute>
           } />
+          <Route path="/admin/interviews" element={
+            <ProtectedRoute role="admin">
+              <AdminInterviews />
+            </ProtectedRoute>
+          } />
 
           {/* Employee Routes - Wrapped with EmployeeProvider for persistent state */}
           <Route path="/employee/*" element={
@@ -168,6 +176,16 @@ function App() {
                 <Route path="sales" element={
                   <ProtectedRoute role="employee">
                     <SalesPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="sales-pipeline" element={
+                  <ProtectedRoute role="employee">
+                    <SalesPipelinePage />
+                  </ProtectedRoute>
+                } />
+                <Route path="hr-interviews" element={
+                  <ProtectedRoute role="employee">
+                    <HRInterviewSchedule />
                   </ProtectedRoute>
                 } />
                 <Route path="profile" element={

@@ -16,6 +16,52 @@ import {
 import { taskService } from '../../services/taskService';
 import toast from 'react-hot-toast';
 
+const toTimeInputValue = (timeText) => {
+    const match = String(timeText || '').trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return '';
+
+    let hours = Number(match[1]);
+    const minutes = match[2];
+    const meridiem = match[3].toUpperCase();
+
+    if (meridiem === 'PM' && hours !== 12) hours += 12;
+    if (meridiem === 'AM' && hours === 12) hours = 0;
+
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
+};
+
+const fromTimeInputValue = (timeValue) => {
+    if (!timeValue) return '';
+
+    const [rawHours, minutes] = timeValue.split(':');
+    const hours24 = Number(rawHours);
+    const meridiem = hours24 >= 12 ? 'PM' : 'AM';
+    const hours12 = hours24 % 12 || 12;
+
+    return `${hours12}:${minutes} ${meridiem}`;
+};
+
+const parseSlotType = (slotType) => {
+    const [start = '', end = ''] = String(slotType || '').split(' - ');
+    return {
+        startTime: toTimeInputValue(start),
+        endTime: toTimeInputValue(end)
+    };
+};
+
+const buildSlotType = (startTime, endTime, previousSlotType) => {
+    const previous = parseSlotType(previousSlotType);
+    const nextStart = startTime || previous.startTime;
+    const nextEnd = endTime || previous.endTime;
+
+    if (!nextStart || !nextEnd) return previousSlotType || '';
+    return `${fromTimeInputValue(nextStart)} - ${fromTimeInputValue(nextEnd)}`;
+};
+
+const openTimePicker = (event) => {
+    event.currentTarget.showPicker?.();
+};
+
 const DayBookEntry = ({ embedded = false, onClose }) => {
     const [dayBook, setDayBook] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -60,6 +106,18 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
         setDayBook({ ...dayBook, slots: updatedSlots });
     };
 
+    const handleSlotTimeChange = (index, field, value) => {
+        const slot = dayBook.slots[index];
+        const currentTime = parseSlotType(slot.slotType);
+        const nextSlotType = buildSlotType(
+            field === 'startTime' ? value : currentTime.startTime,
+            field === 'endTime' ? value : currentTime.endTime,
+            slot.slotType
+        );
+
+        handleSlotChange(index, 'slotType', nextSlotType);
+    };
+
     const handleSave = async (submit = false) => {
         try {
             setSaving(true);
@@ -68,6 +126,13 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                 const emptySlots = dayBook.slots.filter(s => !s.description);
                 if (emptySlots.length > 0) {
                     toast.error('Please fill in all slot descriptions before submitting');
+                    setSaving(false);
+                    return;
+                }
+
+                const emptyTimeSlots = dayBook.slots.filter(s => !s.slotType?.trim());
+                if (emptyTimeSlots.length > 0) {
+                    toast.error('Please fill in all time slots before submitting');
                     setSaving(false);
                     return;
                 }
@@ -187,7 +252,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                     <table className="w-full">
                         <thead className="bg-white border-b border-slate-200 sticky top-0 z-10">
                             <tr>
-                                <th className={`text-left ${embedded ? 'p-3' : 'p-6'} text-slate-600 font-semibold w-32`}>Time Slot</th>
+                                <th className={`text-left ${embedded ? 'p-3' : 'p-6'} text-slate-600 font-semibold w-56`}>Time Slot</th>
                                 <th className={`text-left ${embedded ? 'p-3' : 'p-6'} text-slate-600 font-semibold w-40`}>Work Type</th>
                                 <th className={`text-left ${embedded ? 'p-3' : 'p-6'} text-slate-600 font-semibold`}>Work Description & Task Linking</th>
                             </tr>
@@ -196,9 +261,31 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                             {dayBook?.slots.map((slot, index) => (
                                 <tr key={index} className="hover:bg-blue-50 transition-all duration-200">
                                     <td className={embedded ? 'p-3' : 'p-6'}>
-                                        <div className="flex items-center space-x-2">
-                                            <Clock className="w-4 h-4 text-blue-600" />
-                                            <span className="text-slate-900 font-semibold text-sm">{slot.slotType}</span>
+                                        <div className="flex items-start gap-2">
+                                            <Clock className="w-4 h-4 text-blue-600 mt-2.5 flex-shrink-0" />
+                                            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5">
+                                                <input
+                                                    type="time"
+                                                    disabled={!isEditable}
+                                                    value={parseSlotType(slot.slotType).startTime}
+                                                    onChange={(e) => handleSlotTimeChange(index, 'startTime', e.target.value)}
+                                                    onClick={openTimePicker}
+                                                    onFocus={openTimePicker}
+                                                    className="min-w-[82px] w-full cursor-pointer px-2 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    aria-label={`Start time for slot ${index + 1}`}
+                                                />
+                                                <span className="text-slate-400 text-xs">to</span>
+                                                <input
+                                                    type="time"
+                                                    disabled={!isEditable}
+                                                    value={parseSlotType(slot.slotType).endTime}
+                                                    onChange={(e) => handleSlotTimeChange(index, 'endTime', e.target.value)}
+                                                    onClick={openTimePicker}
+                                                    onFocus={openTimePicker}
+                                                    className="min-w-[82px] w-full cursor-pointer px-2 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    aria-label={`End time for slot ${index + 1}`}
+                                                />
+                                            </div>
                                         </div>
                                     </td>
                                     <td className={embedded ? 'p-3' : 'p-6'}>

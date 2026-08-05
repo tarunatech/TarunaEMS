@@ -13,6 +13,12 @@ const API = axios.create({
   timeout: 120000 // 120 second timeout for all requests (account for server cold starts and slow CPU face detection)
 });
 
+export const getApiFileUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return `${API_BASE_URL.replace(/\/api\/?$/, '')}${path}`;
+};
+
 // Get token from storage (check both localStorage and sessionStorage)
 const getToken = () => {
   return localStorage.getItem('token') ||
@@ -219,9 +225,9 @@ export const leadAPI = {
   },
 
   // Get lead statistics
-  getLeadStats: () => {
-    console.log('Fetching lead stats');
-    return API.get('/leads/stats');
+  getLeadStats: (params = {}) => {
+    console.log('Fetching lead stats', params);
+    return API.get('/leads/stats', { params });
   },
 
   // Get upcoming follow-ups
@@ -237,9 +243,9 @@ export const leadAPI = {
   },
 
   // Get upcoming meetings
-  getUpcomingMeetings: () => {
-    console.log('Fetching upcoming meetings');
-    return API.get('/leads/upcoming-meetings');
+  getUpcomingMeetings: (params = {}) => {
+    console.log('Fetching upcoming meetings', params);
+    return API.get('/leads/upcoming-meetings', { params });
   },
 
   // Add note to lead
@@ -298,6 +304,15 @@ export const leadAPI = {
     console.log('Fetching BDE employees');
     return API.get('/leads/bde-employees');
   }
+}
+
+export const salesPipelineAPI = {
+  getAll: () => API.get('/sales-pipelines'),
+  getByLead: (leadId) => API.get(`/sales-pipelines/lead/${leadId}`),
+  updateSection: (leadId, section, data) => API.patch(`/sales-pipelines/lead/${leadId}/${section}`, data),
+  transitionStage: (leadId, data) => API.patch(`/sales-pipelines/lead/${leadId}/stage`, data),
+  updateApproval: (leadId, data) => API.patch(`/sales-pipelines/lead/${leadId}/approval`, data),
+  getPendingApprovals: () => API.get('/sales-pipelines/pending-approvals')
 }
 
 // Auth API calls
@@ -583,6 +598,16 @@ export const expenseTrackerAPI = {
   createTransaction: (data) => API.post('/expense-tracker/transactions', data),
   updateTransaction: (id, data) => API.put(`/expense-tracker/transactions/${id}`, data),
   deleteTransaction: (id) => API.delete(`/expense-tracker/transactions/${id}`)
+};
+
+export const interviewAPI = {
+  getMine: () => API.get('/interviews'),
+  create: (data) => API.post('/interviews', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getAll: () => API.get('/interviews/admin'),
+  updateStatus: (id, status) => API.patch(`/interviews/admin/${id}/status`, { status }),
+  delete: (id) => API.delete(`/interviews/admin/${id}`)
 };
 
 // Payslip API calls

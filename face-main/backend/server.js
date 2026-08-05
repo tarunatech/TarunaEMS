@@ -27,6 +27,7 @@ import taskRoutes from "./routes/taskRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import departmentRoutes from "./routes/departmentRoutes.js";
 import leadsRoutes from "./routes/leadRoutes.js";
+import salesPipelineRoutes from "./routes/salesPipelineRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import problemRoutes from "./routes/problemRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
@@ -43,6 +44,7 @@ import { startTaskStatusScheduler } from "./services/taskSchedulerService.js";
 import holidayRoutes from "./routes/holidayRoutes.js";
 import dayBookRoutes from "./routes/dayBookRoutes.js";
 import expenseTrackerRoutes from "./routes/expenseTrackerRoutes.js";
+import interviewScheduleRoutes from "./routes/interviewScheduleRoutes.js";
 
 // import { createAdminIfNotExists } from './controllers/initAdmin.js';
 
@@ -114,6 +116,7 @@ app.use(
 // Static folders
 const uploadsDir = path.join(__dirname, "uploads");
 const profilePicsDir = path.join(uploadsDir, "profile-pics");
+const resumesDir = path.join(uploadsDir, "resumes");
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
@@ -121,8 +124,19 @@ if (!fs.existsSync(uploadsDir)) {
 if (!fs.existsSync(profilePicsDir)) {
   fs.mkdirSync(profilePicsDir);
 }
+if (!fs.existsSync(resumesDir)) {
+  fs.mkdirSync(resumesDir);
+}
 
-app.use("/uploads", express.static(uploadsDir));
+app.use(
+  "/uploads",
+  express.static(uploadsDir, {
+    setHeaders: (res, filePath) => {
+      const fileName = path.basename(filePath);
+      res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+    },
+  }),
+);
 
 // Logging middleware (optional)
 app.use((req, res, next) => {
@@ -149,6 +163,7 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/attendance", attendanceRoutes); // NEW: Add attendance routes
 app.use("/api/departments", departmentRoutes);
 app.use("/api/leads", leadsRoutes);
+app.use("/api/sales-pipelines", salesPipelineRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/problems", problemRoutes);
 app.use("/api/messages", messageRoutes);
@@ -162,6 +177,7 @@ app.use("/api/scheduler", schedulerRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/daybooks", dayBookRoutes);
 app.use("/api/expense-tracker", expenseTrackerRoutes);
+app.use("/api/interviews", interviewScheduleRoutes);
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   res.status(200).json({

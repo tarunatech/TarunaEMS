@@ -473,10 +473,10 @@ const handleApplyLeave = async (e) => {
         );
         if (leaveDate) {
           switch (leaveDate.status.toLowerCase()) {
-            case 'approved': return 'bg-green-100 text-green-700';
-            case 'pending': return 'bg-amber-100 text-amber-700';
-            case 'rejected': return 'bg-red-100 text-red-700';
-            case 'cancelled': return 'bg-slate-100 text-slate-600';
+            case 'approved': return 'employee-leave-calendar-approved';
+            case 'pending': return 'employee-leave-calendar-pending';
+            case 'rejected': return 'employee-leave-calendar-rejected';
+            case 'cancelled': return 'employee-leave-calendar-cancelled';
             default: return '';
           }
         }
@@ -486,7 +486,7 @@ const handleApplyLeave = async (e) => {
 
     return (
       <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white border border-slate-200 rounded-xl shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="employee-leave-calendar-modal bg-white border border-slate-200 rounded-xl shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-slate-900">Leave Calendar</h2>
             <button
@@ -520,7 +520,7 @@ const handleApplyLeave = async (e) => {
 
           <Calendar
             tileClassName={tileClassName}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-4"
+            className="employee-leave-calendar w-full rounded-lg p-4"
           />
         </div>
       </div>

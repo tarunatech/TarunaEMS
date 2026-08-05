@@ -1,6 +1,8 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import Employee from '../models/Employee.js';
 import { protect } from '../middleware/auth.js';
 import { getOnlineUserIds } from '../socket/chat.js';
 
@@ -8,9 +10,23 @@ const router = express.Router();
 
 router.use(protect);
 
+const getEmployeeDisplayName = (user, employee) => {
+  const userName = user?.name?.trim();
+  if (userName && !/^unknown( user)?$/i.test(userName)) {
+    return userName;
+  }
+
+  const firstName = employee?.personalInfo?.firstName?.trim();
+  const lastName = employee?.personalInfo?.lastName?.trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+
+  return fullName || employee?.fullName || user?.email || 'Employee';
+};
+
 router.get('/chat-users', async (req, res) => {
   try {
     const currentUserId = req.user.id;
+    const currentUserObjectId = new mongoose.Types.ObjectId(currentUserId);
     
     // Only fetch other employees (exclude admins and current user)
     const users = await User.find({ 
@@ -21,20 +37,85 @@ router.get('/chat-users', async (req, res) => {
     .select('name email employeeId profileImage role')
     .lean();
 
+    const employees = await Employee.find({ user: { $in: users.map(user => user._id) } })
+      .select('user personalInfo workInfo')
+      .populate('workInfo.department', 'name code')
+      .lean({ virtuals: true });
+
+    const employeeByUserId = new Map(
+      employees.map(employee => [employee.user.toString(), employee])
+    );
+
     const onlineUserIds = getOnlineUserIds();
+    const userIds = users.map(user => user._id);
+    const latestMessages = await Message.aggregate([
+      {
+        $match: {
+          fromBot: { $ne: true },
+          $or: [
+            { from: currentUserObjectId, to: { $in: userIds } },
+            { from: { $in: userIds }, to: currentUserObjectId }
+          ]
+        }
+      },
+      { $sort: { timestamp: -1, createdAt: -1 } },
+      {
+        $addFields: {
+          peerId: {
+            $cond: [
+              { $eq: ['$from', currentUserObjectId] },
+              '$to',
+              '$from'
+            ]
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$peerId',
+          lastMessage: { $first: '$text' },
+          lastMessageAt: { $first: '$timestamp' },
+          lastMessageFrom: { $first: '$from' }
+        }
+      }
+    ]);
+
+    const latestByPeerId = new Map(
+      latestMessages.map(message => [
+        message._id.toString(),
+        {
+          lastMessage: message.lastMessage || '',
+          lastMessageAt: message.lastMessageAt,
+          lastMessageFrom: message.lastMessageFrom?.toString()
+        }
+      ])
+    );
     
     const chatUsers = users.map(user => {
+      const latest = latestByPeerId.get(user._id.toString()) || {};
+      const employee = employeeByUserId.get(user._id.toString());
+      const department = employee?.workInfo?.department;
       return {
         _id: user._id.toString(),
-        name: user.name || 'Unknown User',
-        department: 'General',
-        position: 'Employee',
+        name: getEmployeeDisplayName(user, employee),
+        department: typeof department === 'object'
+          ? (department?.name || department?.code || 'General')
+          : (department || 'General'),
+        position: employee?.workInfo?.position || 'Employee',
+        personalInfo: employee?.personalInfo || null,
+        workInfo: employee?.workInfo || null,
         avatar: user.profileImage || null,
+        lastMessage: latest.lastMessage || '',
+        lastMessageAt: latest.lastMessageAt || null,
+        lastMessageFrom: latest.lastMessageFrom || null,
         isOnline: onlineUserIds.includes(user._id.toString())
       };
     });
 
     chatUsers.sort((a, b) => {
+      const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+      const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+      if (aTime !== bTime) return bTime - aTime;
       if (a.isOnline && !b.isOnline) return -1;
       if (!a.isOnline && b.isOnline) return 1;
       return a.name.localeCompare(b.name);

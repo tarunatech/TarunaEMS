@@ -298,7 +298,7 @@ export const updateWonLead = async (req, res) => {
 // Get all leads (with filters for sales employees)
 export const getLeads = async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, priority, source, search, includeAll } = req.query;
+    const { page = 1, limit = 20, status, priority, source, search, includeAll, startDate, endDate } = req.query;
 
     let query = {};
 
@@ -333,6 +333,17 @@ export const getLeads = async (req, res) => {
     }
     if (source && source !== 'all') {
       query.source = source;
+    }
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
     }
 
     let leads = await Lead.find(query)
@@ -505,6 +516,8 @@ export const addMeeting = async (req, res) => {
     const leadId = req.params.id;
     const meetingData = {
       ...req.body,
+      scheduledDate: new Date(req.body.scheduledDate),
+      duration: Number(req.body.duration) || 30,
       createdBy: req.user.id
     };
 
@@ -528,6 +541,11 @@ export const addMeeting = async (req, res) => {
     }
 
     lead.meetings.push(meetingData);
+    lead.nextFollowUpDate = meetingData.scheduledDate;
+    lead.lastContactDate = new Date();
+    if (lead.status === 'New') {
+      lead.status = 'Contacted';
+    }
     await lead.save();
 
     await lead.populate('meetings.createdBy', 'name email');
@@ -743,6 +761,7 @@ export const getUpcomingMeetings = async (req, res) => {
 // Get lead statistics
 export const getLeadStats = async (req, res) => {
   try {
+    const { startDate, endDate, status, priority, source } = req.query;
     let matchQuery = {};
 
     // If employee, only show their stats
@@ -755,6 +774,27 @@ export const getLeadStats = async (req, res) => {
         });
       }
       matchQuery.assignedTo = employee._id;
+    }
+
+    if (status && status !== 'all') {
+      matchQuery.status = status;
+    }
+    if (priority && priority !== 'all') {
+      matchQuery.priority = priority;
+    }
+    if (source && source !== 'all') {
+      matchQuery.source = source;
+    }
+    if (startDate || endDate) {
+      matchQuery.createdAt = {};
+      if (startDate) {
+        matchQuery.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        matchQuery.createdAt.$lte = end;
+      }
     }
 
     const [statusStats, priorityStats, sourceStats, monthlyStats, wonStats, meetingStats] = await Promise.all([
@@ -1172,4 +1212,3 @@ export const getBDEEmployees = async (req, res) => {
     });
   }
 };
-
