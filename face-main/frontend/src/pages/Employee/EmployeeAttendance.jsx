@@ -47,7 +47,7 @@ const EmployeeAttendance = () => {
 
   useEffect(() => {
     // Socket connection for real-time progress
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://face-votd.onrender.com';
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
     const token = localStorage.getItem('token');
 
     if (token && !socketRef.current) {

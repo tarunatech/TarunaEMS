@@ -58,32 +58,17 @@ const PORT = process.env.PORT || process.env.BACKEND_PORT || 3001;
 // CORS Configuration - MUST BE BEFORE OTHER MIDDLEWARE
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  "https://tarunaems.netlify.app",
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "https://ems-backend.onrender.com",
-  "https://tarunaems.vercel.app",
-  "https://face-votd.onrender.com",
-  "https://taruna-ems-main-main.vercel.app",
-  "http://localhost:5000",
-  "http://localhost:10000",
-  "http://localhost:5000",
+  ...(process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
 ].filter(Boolean);
-
-// Add Vercel production URL if known, or allow all for debugging (less secure but helps identify if CORS is the issue)
-// const corsOptions = { origin: true, ... } // Use this for debugging only
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests),
-    // specific allowed origins, Vercel preview deployments (.vercel.app),
-    // and Replit preview deployments (.replit.dev)
-    if (
-      !origin ||
-      allowedOrigins.includes(origin) ||
-      origin.endsWith(".vercel.app") ||
-      origin.endsWith(".replit.dev")
-    ) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    // and explicitly configured frontend origins.
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log("Blocked by CORS:", origin);
@@ -261,9 +246,7 @@ const startServer = async () => {
     httpServer.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Admin Panel: http://localhost:${PORT}`);
-      console.log(
-        `🔗 Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:5000"}`,
-      );
+      console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL}`);
       console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
     });
   } catch (err) {

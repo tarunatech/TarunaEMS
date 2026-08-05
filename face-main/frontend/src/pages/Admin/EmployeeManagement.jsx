@@ -23,11 +23,7 @@ import toast from 'react-hot-toast';
 const getFullImageUrl = (path) => {
   if (!path) return null;
   if (path.startsWith('http')) return path;
-  const baseUrl =
-    import.meta.env.VITE_API_URL ||
-    import.meta.env.VITE_API_BASE_URL ||
-    (import.meta.env.VITE_BACKEND_URL ? `${import.meta.env.VITE_BACKEND_URL}/api` : '') ||
-    (import.meta.env.PROD ? 'https://face-votd.onrender.com/api' : 'http://localhost:3001/api');
+  const baseUrl = import.meta.env.VITE_API_URL;
   return baseUrl.replace('/api', '') + path;
 };
 

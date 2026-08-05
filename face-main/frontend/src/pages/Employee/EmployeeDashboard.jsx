@@ -541,7 +541,7 @@ const EmployeeDashboard = () => {
     // Connect socket on dashboard load for real-time presence and messaging
     // Socket stays connected for the entire session (not just when modals are open)
     if (employeeData && !socketRef.current) {
-      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://face-votd.onrender.com';
+      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
       console.log('Connecting to socket:', SOCKET_URL);
       const socket = io(`${SOCKET_URL}/employee`, {
         auth: { token: localStorage.getItem('token') },

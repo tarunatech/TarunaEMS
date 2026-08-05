@@ -9,7 +9,10 @@ const connectDB = async () => {
   }
 
   try {
-    const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/EMS';
+    const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI or MONGO_URI is required');
+    }
     const conn = await mongoose.connect(mongoUri);
     console.log(`📦 MongoDB Connected: ${conn.connection.host}`);
 
