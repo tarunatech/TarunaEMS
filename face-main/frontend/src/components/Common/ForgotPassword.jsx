@@ -284,7 +284,7 @@ const ForgotPassword = () => {
           </div>
 
           {/* Demo info - Remove in production */}
-          {process.env.NODE_ENV === 'development' && (
+          {import.meta.env.DEV && (
             <div className="mt-4 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
               <p className="text-blue-400 text-xs">
                 <strong>Development Mode:</strong> Check console for email preview links

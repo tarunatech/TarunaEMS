@@ -64,6 +64,7 @@ const allowedOrigins = [
   "https://ems-backend.onrender.com",
   "https://tarunaems.vercel.app",
   "https://face-votd.onrender.com",
+  "https://taruna-ems-main-main.vercel.app",
   "http://localhost:5000",
   "http://localhost:10000",
   "http://localhost:5000",

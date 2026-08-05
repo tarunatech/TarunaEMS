@@ -12,7 +12,7 @@ class ErrorBoundary extends React.Component {
     };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError() {
     return { hasError: true };
   }
 
@@ -24,7 +24,7 @@ class ErrorBoundary extends React.Component {
     });
 
     // Log error to monitoring service (e.g., Sentry, LogRocket)
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       // logErrorToService(error, errorInfo);
     }
   }
@@ -58,7 +58,7 @@ class ErrorBoundary extends React.Component {
               We encountered an unexpected error. Don't worry, our team has been notified and we're working to fix it.
             </p>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className="text-left mb-6">
                 <summary className="cursor-pointer text-red-400 mb-2">
                   Error Details (Development)

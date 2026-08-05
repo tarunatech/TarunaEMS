@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.VITE_BACKEND_URL ? `${import.meta.env.VITE_BACKEND_URL}/api` : '') ||
   (import.meta.env.PROD ? 'https://face-votd.onrender.com/api' : 'http://localhost:3001/api');
 
 const API = axios.create({
@@ -28,14 +29,6 @@ const getToken = () => {
     sessionStorage.getItem('token') ||
     localStorage.getItem('authToken') ||
     sessionStorage.getItem('authToken');
-};
-
-// Get user role from storage
-const getUserRole = () => {
-  return localStorage.getItem('userRole') ||
-    sessionStorage.getItem('userRole') ||
-    localStorage.getItem('role') ||
-    sessionStorage.getItem('role');
 };
 
 // Add auth token to requests
@@ -340,7 +333,7 @@ export const authAPI = {
       if (authResponse.data.success) {
         return authResponse;
       }
-    } catch (error) {
+    } catch {
       console.log('Auth endpoint failed, trying employee endpoint');
     }
 
