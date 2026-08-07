@@ -3,7 +3,6 @@ import Attendance from '../models/Attendance.js';
 import Employee from '../models/Employee.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
-import mongoose from 'mongoose';
 
 export const OFFICE_LOCATION = {
   latitude: 22.298873262930066,
@@ -16,6 +15,8 @@ export const OFFICE_LOCATION = {
 // via the FACE_SIMILARITY_THRESHOLD environment variable to keep behavior
 // consistent across services.
 const FACE_SIMILARITY_THRESHOLD = parseFloat(process.env.FACE_SIMILARITY_THRESHOLD || '0.6');
+
+const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -1013,7 +1014,13 @@ export const getAllAttendance = async (req, res) => {
 
     // Employee filter
     if (employeeId) {
-      filter.employee = new mongoose.Types.ObjectId(employeeId);
+      if (!isUuid(employeeId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid employee ID format'
+        });
+      }
+      filter.employee = employeeId;
     }
 
     // Status filter

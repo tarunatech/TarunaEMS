@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, ShieldCheck, Users, BarChart3 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
+import { getDepartmentName } from '../../utils/departmentAccess';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -43,15 +44,8 @@ const Login = () => {
       const response = await api.post('/auth/login', loginData);
 
       if (response.data.success) {
-        let departmentName = null;
         const deptData = response.data.user.department;
-        if (deptData) {
-          if (typeof deptData === 'string') {
-            departmentName = deptData;
-          } else if (deptData.name) {
-            departmentName = deptData.name;
-          }
-        }
+        const departmentName = getDepartmentName(deptData);
 
         console.log('Department extraction debug:', { raw: deptData, extracted: departmentName });
 

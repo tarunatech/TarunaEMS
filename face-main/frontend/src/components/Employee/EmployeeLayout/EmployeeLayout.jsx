@@ -28,28 +28,23 @@ import {
   ClipboardList,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { allowedKeysForDepartment, normalizeDepartment } from '../../../utils/departmentAccess';
+import { allowedKeysForDepartment, getDepartmentName, normalizeDepartment } from '../../../utils/departmentAccess';
 import { getApiFileUrl } from '../../../utils/api';
 import logo from "../../../assets/logo.jpg";
 import EmployeeHrBot from "./EmployeeHrBot";
 import { useTheme } from "../../../hooks/useTheme";
 
 const getStoredDepartment = () => {
-  const stored = localStorage.getItem('userDepartment') ||
-    sessionStorage.getItem('userDepartment') ||
-    '';
+  const stored = getDepartmentName(
+    localStorage.getItem('userDepartment'),
+    sessionStorage.getItem('userDepartment')
+  );
 
-  // Filter out ObjectIds (24 character hex strings) - we only want actual department names
-  if (stored && stored.match(/^[a-f0-9]{24}$/i)) {
-    console.warn('Sidebar: Ignoring ObjectId stored as department:', stored);
-    return '';
-  }
-
-  return stored;
+  return stored || '';
 };
 
 const getStoredEmployeeData = () => {
-  const storedDepartment = localStorage.getItem('userDepartment');
+  const storedDepartment = getStoredDepartment();
   const storedName = localStorage.getItem('userName');
   const storedEmail = localStorage.getItem('userEmail');
   const storedEmployeeId = localStorage.getItem('employeeId');
@@ -263,7 +258,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
   const initials = `${emp.personalInfo?.firstName?.[0] || ''}${emp.personalInfo?.lastName?.[0] || ''}`.toUpperCase();
 
   return (
-    <div className="min-h-screen flex bg-slate-50 relative">
+    <div className="min-h-screen flex bg-slate-50 relative overflow-x-hidden">
       {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-50 transform ${
@@ -423,13 +418,13 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
       </div>
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col transition-[margin] duration-200 ${isCollapsed ? "lg:ml-[76px]" : "lg:ml-[248px]"}`}>
+      <div className={`min-w-0 flex-1 flex flex-col transition-[margin] duration-200 ${isCollapsed ? "lg:ml-[76px]" : "lg:ml-[248px]"}`}>
         {/* Header */}
         <header className={`bg-white/95 backdrop-blur-sm h-14 z-40 sticky top-0 border-b transition-shadow duration-150 ${
           scrolled ? "border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04)]" : "border-slate-100"
         }`}>
-          <div className="flex items-center justify-between h-full px-5">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between h-full gap-2 px-3 sm:px-5">
+            <div className="flex min-w-0 items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden text-slate-500 hover:text-slate-900 transition-colors duration-150"
@@ -437,7 +432,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
                 <Menu className="w-5 h-5" />
               </button>
 
-              <h2 className="hidden lg:block text-[15px] font-semibold text-slate-900 tracking-tight">
+              <h2 className="block truncate text-[14px] font-semibold text-slate-900 tracking-tight sm:text-[15px] lg:block">
                 {sidebarItems.find((item) => item.path === location.pathname)?.name || "Dashboard"}
               </h2>
             </div>
@@ -458,7 +453,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
                 </button>
 
                 {notificationDropdown && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-slate-200/80 shadow-xl shadow-slate-900/[0.08] z-50 max-h-96 overflow-hidden animate-dropdown-in">
+                  <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-80 bg-white rounded-xl border border-slate-200/80 shadow-xl shadow-slate-900/[0.08] z-50 max-h-96 overflow-hidden animate-dropdown-in">
                     <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                       <h3 className="text-[13px] font-semibold text-slate-900">Notifications</h3>
                       {unreadNotifications > 0 && (
@@ -534,7 +529,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
                 </button>
 
                 {profileDropdown && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-slate-200/80 shadow-xl shadow-slate-900/[0.08] z-50 animate-dropdown-in">
+                  <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-64 bg-white rounded-xl border border-slate-200/80 shadow-xl shadow-slate-900/[0.08] z-50 animate-dropdown-in">
                     <div className="px-4 py-3.5 border-b border-slate-100">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center overflow-hidden ring-1 ring-black/5 flex-shrink-0">
@@ -596,7 +591,11 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
         </header>
 
         {/* Page Content */}
-        <main id="employee-main-scroll" className="flex-1 p-6 relative z-10 bg-slate-50 overflow-y-auto">{children}</main>
+        <main id="employee-main-scroll" className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 px-3 py-4 sm:px-5 lg:px-6">
+          <div className="mx-auto w-full max-w-[1600px] min-w-0">
+            {children}
+          </div>
+        </main>
       </div>
 
       {/* Mobile Sidebar Overlay */}

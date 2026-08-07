@@ -1,7 +1,6 @@
 import DayBook from '../models/DayBook.js';
 import Task from '../models/Task.js';
 import Employee from '../models/Employee.js';
-import mongoose from 'mongoose';
 import { sendDayBookReportEmail } from '../utils/email.js';
 
 // @desc    Get or create day book for today

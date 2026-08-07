@@ -1,5 +1,4 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
 import Employee from '../models/Employee.js';
@@ -26,7 +25,6 @@ const getEmployeeDisplayName = (user, employee) => {
 router.get('/chat-users', async (req, res) => {
   try {
     const currentUserId = req.user.id;
-    const currentUserObjectId = new mongoose.Types.ObjectId(currentUserId);
     
     // Only fetch other employees (exclude admins and current user)
     const users = await User.find({ 
@@ -53,8 +51,8 @@ router.get('/chat-users', async (req, res) => {
         $match: {
           fromBot: { $ne: true },
           $or: [
-            { from: currentUserObjectId, to: { $in: userIds } },
-            { from: { $in: userIds }, to: currentUserObjectId }
+            { from: currentUserId, to: { $in: userIds } },
+            { from: { $in: userIds }, to: currentUserId }
           ]
         }
       },
@@ -63,7 +61,7 @@ router.get('/chat-users', async (req, res) => {
         $addFields: {
           peerId: {
             $cond: [
-              { $eq: ['$from', currentUserObjectId] },
+              { $eq: ['$from', currentUserId] },
               '$to',
               '$from'
             ]

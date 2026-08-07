@@ -1,37 +1,28 @@
-import mongoose from 'mongoose';
+import { pool } from '../db/index.js';
 
 const setupShutdown = () => {
-  const gracefulShutdown = (signal) => {
-    console.log(`\n🛑 Received ${signal}. Graceful shutdown initiated...`);
+  const gracefulShutdown = async (signal) => {
+    console.log(`\nReceived ${signal}. Graceful shutdown initiated...`);
 
-    // Close server
     if (global.server) {
       global.server.close(() => {
-        console.log('✅ HTTP server closed');
+        console.log('HTTP server closed');
       });
     }
 
-    // Close database connection
-    if (mongoose.connection.readyState === 1) {
-      mongoose.connection.close()
-        .then(() => {
-          console.log('✅ MongoDB connection closed');
-          process.exit(0);
-        })
-        .catch((err) => {
-          console.error('Error closing MongoDB connection:', err);
-          process.exit(1);
-        });
-    } else {
+    try {
+      await pool.end();
+      console.log('PostgreSQL connection pool closed');
       process.exit(0);
+    } catch (err) {
+      console.error('Error closing PostgreSQL connection pool:', err);
+      process.exit(1);
     }
   };
 
-  // Handle shutdown signals
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
-  // Handle uncaught exceptions
   process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
     process.exit(1);

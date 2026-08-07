@@ -4,7 +4,6 @@ import { Server as SocketIOServer } from "socket.io";
 import helmet from "helmet";
 import cors from "cors";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
 import path from "path";
 import { fileURLToPath } from "url";
 

@@ -22,7 +22,7 @@ const AdminLayout = ({ children }) => {
   ];
 
   return (
-    <div className="min-h-screen flex bg-[#eef3f8] relative text-slate-900">
+    <div className="min-h-screen flex bg-[#eef3f8] relative text-slate-900 overflow-x-hidden">
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
@@ -30,15 +30,17 @@ const AdminLayout = ({ children }) => {
         setIsCollapsed={setIsCollapsed}
       />
 
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${isCollapsed ? "lg:ml-20" : "lg:ml-64"}`}>
+      <div className={`min-w-0 flex-1 flex flex-col transition-all duration-300 ${isCollapsed ? "lg:ml-20" : "lg:ml-64"}`}>
         <Header
           sidebarItems={sidebarItems}
           location={location}
           setSidebarOpen={setSidebarOpen}
         />
 
-        <main className="p-4 sm:p-6 pt-16 lg:pt-6 flex-1 overflow-y-auto">
-          {children}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 pt-16 sm:px-5 lg:px-6 lg:pt-6">
+          <div className="mx-auto w-full max-w-[1600px] min-w-0">
+            {children}
+          </div>
         </main>
       </div>
 

@@ -316,12 +316,13 @@ export const getUpcomingEvents = async (req, res) => {
       .limit(5);
 
     upcomingTasks.forEach(task => {
+      const taskDept = task.assignedTo?.workInfo?.department;
       upcomingEvents.push({
         id: task._id,
         title: `Task Deadline: ${task.title}`,
         date: task.dueDate,
         time: new Date(task.dueDate).toLocaleTimeString(),
-        department: task.assignedTo?.workInfo?.department || 'General',
+        department: typeof taskDept === 'object' ? taskDept.name || 'General' : taskDept || 'General',
         type: 'task',
         priority: task.priority
       });
@@ -340,12 +341,13 @@ export const getUpcomingEvents = async (req, res) => {
       .limit(5);
 
     upcomingLeaves.forEach(leave => {
+      const leaveDept = leave.employee?.workInfo?.department;
       upcomingEvents.push({
         id: leave._id,
         title: `${leave.employee?.fullName} on ${leave.leaveType} leave`,
         date: leave.startDate,
         time: 'All Day',
-        department: leave.employee?.workInfo?.department || 'General',
+        department: typeof leaveDept === 'object' ? leaveDept.name || 'General' : leaveDept || 'General',
         type: 'leave',
         duration: leave.duration
       });

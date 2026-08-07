@@ -34,7 +34,7 @@ const taskValidation = [
     .isLength({ min: 1, max: 1000 })
     .withMessage('Description must be between 1 and 1000 characters'),
   body('assignedTo')
-    .isMongoId()
+    .isUUID()
     .withMessage('Please provide a valid employee ID'),
   body('priority')
     .isIn(['Low', 'Medium', 'High', 'Critical'])

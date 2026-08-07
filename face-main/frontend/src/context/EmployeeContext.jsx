@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { authAPI } from '../utils/api';
-import { normalizeDepartment } from '../utils/departmentAccess';
+import { getDepartmentName, normalizeDepartment } from '../utils/departmentAccess';
 
 const EmployeeContext = createContext(null);
 
 const getInitialEmployeeData = () => {
-  const storedDepartment = localStorage.getItem('userDepartment');
+  const storedDepartment = getDepartmentName(localStorage.getItem('userDepartment'));
   const storedName = localStorage.getItem('userName');
   const storedEmail = localStorage.getItem('userEmail');
   const storedEmployeeId = localStorage.getItem('employeeId');
@@ -30,9 +30,10 @@ const getInitialEmployeeData = () => {
 };
 
 const getStoredDepartment = () => {
-  return localStorage.getItem('userDepartment') || 
-         sessionStorage.getItem('userDepartment') || 
-         'N/A';
+  return getDepartmentName(
+    localStorage.getItem('userDepartment'),
+    sessionStorage.getItem('userDepartment')
+  ) || 'N/A';
 };
 
 export const EmployeeProvider = ({ children }) => {
@@ -59,21 +60,16 @@ export const EmployeeProvider = ({ children }) => {
 
           // Extract department name - handle various response formats
           // NEVER overwrite a valid department name with an ObjectId
-          const storedDepartment = localStorage.getItem('userDepartment');
-          let departmentValue = null;
+          const storedDepartment = getDepartmentName(localStorage.getItem('userDepartment'));
           
           const apiDept = employeeDataFromAPI?.workInfo?.department;
           console.log('Context - API department data:', apiDept);
           
-          if (apiDept) {
-            if (typeof apiDept === 'object' && apiDept.name) {
-              // Department is an object with a name property
-              departmentValue = apiDept.name;
-            } else if (typeof apiDept === 'string' && !apiDept.match(/^[a-f0-9]{24}$/i)) {
-              // Department is a string but NOT an ObjectId (24 hex chars)
-              departmentValue = apiDept;
-            }
-          }
+          let departmentValue = getDepartmentName(
+            apiDept,
+            employeeDataFromAPI?.workInfo?.departmentName,
+            employeeDataFromAPI?.departmentName
+          );
           
           // If we couldn't extract a valid name from API, use stored value
           if (!departmentValue || departmentValue === 'N/A') {
@@ -127,7 +123,7 @@ export const EmployeeProvider = ({ children }) => {
             },
             workInfo: {
               position: 'Employee',
-              department: localStorage.getItem('userDepartment') || 'N/A',
+              department: getStoredDepartment(),
             },
             employeeId: localStorage.getItem('employeeId') || 'N/A',
             contactInfo: {
@@ -150,8 +146,14 @@ export const EmployeeProvider = ({ children }) => {
   const getDepartmentValue = () => {
     if (department && department !== 'N/A') return department;
     if (employeeData?.workInfo?.department?.name) return employeeData.workInfo.department.name;
-    if (employeeData?.workInfo?.department && typeof employeeData.workInfo.department === 'string') return employeeData.workInfo.department;
-    return localStorage.getItem('userDepartment') || 'N/A';
+    const departmentName = getDepartmentName(
+      employeeData?.workInfo?.department,
+      employeeData?.workInfo?.departmentName,
+      employeeData?.departmentName,
+      localStorage.getItem('userDepartment')
+    );
+    if (departmentName) return departmentName;
+    return 'N/A';
   };
 
   const normalizedDepartment = normalizeDepartment(getDepartmentValue());

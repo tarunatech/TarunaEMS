@@ -1,6 +1,5 @@
 // controllers/taskController.js
 import { validationResult } from 'express-validator';
-import mongoose from 'mongoose';
 import Task from '../models/Task.js';
 import Employee from '../models/Employee.js';
 import User from '../models/User.js';
@@ -251,7 +250,7 @@ export const getTaskHistory = async (req, res) => {
     }
 
     const history = await Task.aggregate([
-      { $match: { assignedTo: new mongoose.Types.ObjectId(employeeId) } },
+      { $match: { assignedTo: employeeId } },
       { $group: { _id: "$description" } },
       { $project: { description: "$_id", _id: 0 } },
       { $sort: { description: 1 } }

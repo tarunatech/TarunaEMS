@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 import Lead from '../models/Lead.js';
 import Employee from '../models/Employee.js';
 import SalesPipeline from '../models/SalesPipeline.js';

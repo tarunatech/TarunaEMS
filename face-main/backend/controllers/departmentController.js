@@ -20,7 +20,7 @@ export const getDepartments = async (req, res) => {
       .skip((page - 1) * limit)
       .lean(); // Use lean for better performance
 
-    // FIXED: Update employee counts efficiently with proper ObjectId matching
+    // Update employee counts efficiently with ID matching
     const departmentIds = departments.map(dept => dept._id);
     const employeeCounts = await Employee.aggregate([
       {

@@ -1,9 +1,10 @@
-import mongoose from 'mongoose';
 import User from '../models/User.js';
 import FaceData from '../models/FaceData.js';
 import Employee from '../models/Employee.js';
 import { sendEmail } from '../utils/email.js';
 import Department from '../models/Department.js';
+
+const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 // Create new employee
 // Updated createEmployee controller to handle face registration
@@ -204,15 +205,15 @@ export const getEmployees = async (req, res) => {
 
     const query = {};
     if (department && department !== 'all') {
-      // If department is provided, it could be either name or ObjectId
-      // First try to find department by name to get ObjectId
+      // If department is provided, it could be either name or UUID
+      // First try to find department by name to get UUID
       try {
         const deptDoc = await Department.findOne({ name: department });
         if (deptDoc) {
           query['workInfo.department'] = deptDoc._id;
         } else {
-          // If not found by name, try as ObjectId
-          if (mongoose.Types.ObjectId.isValid(department)) {
+          // If not found by name, try as UUID
+          if (isUuid(department)) {
             query['workInfo.department'] = department;
           }
         }
@@ -296,10 +297,10 @@ export const getEmployeeById = async (req, res) => {
         });
       }
     } else {
-      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      if (!isUuid(req.params.id)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid employee ID format. Must be a valid ObjectId or "me".'
+          message: 'Invalid employee ID format. Must be a valid UUID or "me".'
         });
       }
 
@@ -383,10 +384,10 @@ export const updateEmployee = async (req, res) => {
       }
     }
 
-    // Validate department ObjectId if department is being updated
+    // Validate department UUID if department is being updated
     if (req.body.workInfo?.department) {
       const departmentId = req.body.workInfo.department;
-      if (!mongoose.Types.ObjectId.isValid(departmentId)) {
+      if (!isUuid(departmentId)) {
         return res.status(400).json({
           success: false,
           message: 'Invalid department ID format'
@@ -681,7 +682,7 @@ export const getEmployeeBankingDetails = async (req, res) => {
 
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isUuid(id)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid employee ID format'

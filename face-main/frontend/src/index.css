@@ -153,6 +153,49 @@ body {
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+  text-size-adjust: 100%;
+}
+
+#root,
+.App {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th,
+td {
+  vertical-align: middle;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -279,6 +322,86 @@ button:not(:disabled):active {
   .responsive-stack {
     flex-direction: column;
   }
+
+  .premium-panel,
+  .premium-stat-card,
+  .glass-morphism,
+  .neon-border,
+  .dashboard-panel,
+  .dashboard-stat-card,
+  .attendance-soft-panel,
+  .employee-tasks-panel,
+  .employee-task-card,
+  .employee-sales-panel {
+    border-radius: 14px !important;
+  }
+
+  .premium-panel,
+  .glass-morphism,
+  .neon-border,
+  .dashboard-panel,
+  .attendance-soft-panel,
+  .employee-tasks-panel,
+  .employee-task-card,
+  .employee-sales-panel {
+    padding: 1rem !important;
+  }
+
+  .premium-page-title,
+  h1 {
+    font-size: clamp(1.35rem, 7vw, 1.9rem) !important;
+    line-height: 1.15 !important;
+    overflow-wrap: anywhere;
+  }
+
+  h2 {
+    font-size: clamp(1.05rem, 5.5vw, 1.45rem) !important;
+    line-height: 1.2 !important;
+    overflow-wrap: anywhere;
+  }
+
+  p,
+  span,
+  label,
+  button,
+  a,
+  td,
+  th {
+    overflow-wrap: anywhere;
+  }
+
+  .modal-backdrop,
+  [class*="fixed"][class*="inset-0"] {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  [class*="max-w-"][class*="max-h-[90vh]"],
+  [class*="max-w-"][class*="max-h-[85vh]"],
+  [class*="max-w-"][class*="max-h-[84vh]"],
+  .employee-tasks-modal,
+  .employee-sales-modal,
+  .employee-leave-calendar-modal {
+    width: 100% !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    max-height: calc(100dvh - 1.5rem) !important;
+  }
+
+  .react-calendar {
+    padding: 0.75rem !important;
+  }
+
+  .admin-leave-calendar .react-calendar__viewContainer,
+  .employee-leave-calendar.react-calendar .react-calendar__viewContainer {
+    padding: 0.5rem !important;
+  }
+
+  .admin-leave-calendar .react-calendar__tile,
+  .employee-leave-calendar.react-calendar .react-calendar__tile {
+    min-height: 38px !important;
+    padding: 0.35rem 0.25rem !important;
+    border-radius: 9px !important;
+  }
 }
 
 /* Improved scrollbar styling */
@@ -309,6 +432,56 @@ button:not(:disabled):active {
 
   th, td {
     padding: 0.5rem;
+  }
+
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .overflow-x-auto > table:not([class*="min-w-"]) {
+    min-width: 680px;
+  }
+
+  .overflow-x-auto > table th,
+  .overflow-x-auto > table td {
+    white-space: nowrap;
+  }
+
+  .overflow-x-auto > table td.max-w-xs,
+  .overflow-x-auto > table td.max-w-md {
+    white-space: normal;
+  }
+
+  form[class*="grid"],
+  div[class*="grid-cols-"] {
+    min-width: 0;
+  }
+
+  .section-spacing {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .flex.items-center.justify-between {
+    min-width: 0;
+  }
+
+  .flex.items-center.justify-between > * {
+    min-width: 0;
+  }
+
+  button[class*="px-6"],
+  a[class*="px-6"] {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
   }
 }
 

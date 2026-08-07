@@ -1,0 +1,70 @@
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgEnum,
+  pgTable,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
+
+export const taskPriorityEnum = pgEnum('task_priority', ['Low', 'Medium', 'High', 'Critical']);
+export const taskStatusEnum = pgEnum('task_status', ['Not Started', 'In Progress', 'Review', 'Completed', 'On Hold', 'Cancelled']);
+export const taskCategoryEnum = pgEnum('task_category', [
+  'Development',
+  'Design',
+  'Testing',
+  'Documentation',
+  'Research',
+  'Bug Fix',
+  'Feature',
+  'Maintenance',
+  'Other',
+]);
+export const recurringPatternEnum = pgEnum('task_recurring_pattern', ['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Quarterly']);
+
+export const tasks = pgTable(
+  'tasks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: varchar('title', { length: 100 }).notNull().default('Task'),
+    description: varchar('description', { length: 1000 }).notNull(),
+    assignedTo: uuid('assignedTo').notNull(),
+    assignedBy: uuid('assignedBy').notNull(),
+    project: varchar('project', { length: 50 }).notNull().default(''),
+    priority: taskPriorityEnum('priority').notNull().default('Medium'),
+    status: taskStatusEnum('status').notNull().default('Not Started'),
+    dueDate: timestamp('dueDate', { withTimezone: true }).notNull(),
+    startDate: timestamp('startDate', { withTimezone: true }).notNull().defaultNow(),
+    completedDate: timestamp('completedDate', { withTimezone: true }),
+    estimatedHours: numeric('estimatedHours', { mode: 'number' }),
+    actualHours: numeric('actualHours', { mode: 'number' }).notNull().default(0),
+    category: taskCategoryEnum('category').notNull().default('Other'),
+    tags: jsonb('tags').notNull().default([]),
+    attachments: jsonb('attachments').notNull().default([]),
+    comments: jsonb('comments').notNull().default([]),
+    subtasks: jsonb('subtasks').notNull().default([]),
+    dependencies: jsonb('dependencies').notNull().default([]),
+    progress: integer('progress').notNull().default(0),
+    isRecurring: boolean('isRecurring').notNull().default(false),
+    recurringPattern: recurringPatternEnum('recurringPattern'),
+    lastRecurringDate: timestamp('lastRecurringDate', { withTimezone: true }),
+    nextRecurringDate: timestamp('nextRecurringDate', { withTimezone: true }),
+    isSelfAssigned: boolean('isSelfAssigned').notNull().default(false),
+    createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    assignedToIdx: index('tasks_assignedTo_idx').on(table.assignedTo),
+    assignedByIdx: index('tasks_assignedBy_idx').on(table.assignedBy),
+    statusIdx: index('tasks_status_idx').on(table.status),
+    priorityIdx: index('tasks_priority_idx').on(table.priority),
+    dueDateIdx: index('tasks_dueDate_idx').on(table.dueDate),
+    projectIdx: index('tasks_project_idx').on(table.project),
+    categoryIdx: index('tasks_category_idx').on(table.category),
+    createdAtIdx: index('tasks_createdAt_idx').on(table.createdAt),
+  }),
+);

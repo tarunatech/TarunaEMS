@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { isModulePathAllowed, normalizeDepartment, COMMON_MODULE_KEYS, moduleKeyFromPath } from '../utils/departmentAccess';
+import { getDepartmentName, isModulePathAllowed, normalizeDepartment, COMMON_MODULE_KEYS, moduleKeyFromPath } from '../utils/departmentAccess';
 
 const ProtectedRoute = ({ children, role, requiredRole }) => {
   const location = useLocation();
@@ -42,14 +42,16 @@ const ProtectedRoute = ({ children, role, requiredRole }) => {
     }
     
     // For department-specific paths, check if we have a valid department
-    let department = localStorage.getItem('userDepartment') || 
-                     sessionStorage.getItem('userDepartment');
+    let department = getDepartmentName(
+      localStorage.getItem('userDepartment'),
+      sessionStorage.getItem('userDepartment')
+    );
 
     // Fallback to user object if direct storage is empty
     if (!department) {
       try {
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        department = storedUser?.department?.name || storedUser?.department;
+        department = getDepartmentName(storedUser?.department);
       } catch (err) {
         department = '';
       }

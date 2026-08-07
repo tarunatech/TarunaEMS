@@ -34,6 +34,34 @@ export const normalizeDepartment = (value) =>
     .replace(/[^a-z0-9]/gi, '')
     .toLowerCase();
 
+export const isPersistedId = (value) => {
+  const text = (value || '').toString().trim();
+  return /^[a-f0-9]{24}$/i.test(text) ||
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text);
+};
+
+export const getDepartmentName = (...candidates) => {
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+
+    if (typeof candidate === 'object') {
+      const nested = getDepartmentName(
+        candidate.name,
+        candidate.departmentName,
+        candidate.workInfo?.departmentName,
+        candidate.workInfo?.department
+      );
+      if (nested && nested !== 'N/A') return nested;
+      continue;
+    }
+
+    const text = String(candidate).trim();
+    if (text && text !== 'N/A' && !isPersistedId(text)) return text;
+  }
+
+  return null;
+};
+
 export const allowedKeysForDepartment = (department) => {
   const key = normalizeDepartment(department);
   return DEPARTMENT_RULES[key] || [...COMMON_MODULE_KEYS];

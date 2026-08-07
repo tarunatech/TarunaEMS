@@ -19,7 +19,7 @@ router.use(protect);
 const purchaseOrderValidation = [
   body('client')
     .optional({ nullable: true, checkFalsy: true })
-    .isMongoId()
+    .isUUID()
     .withMessage('Invalid client ID'),
   body('clientName')
     .optional()
