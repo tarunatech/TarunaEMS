@@ -453,7 +453,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
                 </button>
 
                 {notificationDropdown && (
-                  <div className="absolute right-0  mt-2 w-[calc(100vw-1.5rem)] max-w-80 bg-white rounded-xl border border-slate-200/80 shadow-xl shadow-slate-900/[0.08] z-50 max-h-96 overflow-hidden animate-dropdown-in">
+                  <div className="fixed left-2 top-14 z-50 mt-2 w-[calc(100vw-1.5rem)] max-w-80 -translate-x-1/2 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xl shadow-slate-900/[0.08] animate-dropdown-in md:absolute md:left-auto md:right-0 md:top-full md:translate-x-0">
                     <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                       <h3 className="text-[13px] font-semibold text-slate-900">Notifications</h3>
                       {unreadNotifications > 0 && (

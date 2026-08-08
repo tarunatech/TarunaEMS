@@ -705,6 +705,14 @@ const EmployeeManagement = () => {
   };
 
   // ✅ Draw unique hexagon instead of square
+  const getDepartmentName = (department, fallback = 'No Department') => {
+    if (!department) return fallback;
+    if (typeof department === 'object') {
+      return department.name || department.departmentName || department.code || fallback;
+    }
+    return String(department);
+  };
+
   const drawHexagon = (ctx, x, y, width, height) => {
     const centerX = x + width / 2;
     const centerY = y + height / 2;
@@ -933,9 +941,7 @@ const EmployeeManagement = () => {
       userEmail.includes(searchTerm.toLowerCase()) ||
       position.includes(searchTerm.toLowerCase()) ||
       employeeId.includes(searchTerm.toLowerCase());
-    const departmentName = typeof emp.workInfo?.department === 'object'
-      ? emp.workInfo.department.name
-      : emp.workInfo?.department;
+    const departmentName = getDepartmentName(emp.workInfo?.department, '');
     const matchesDepartment = !filterDepartment || departmentName === filterDepartment;
     return matchesSearch && matchesDepartment;
   });
@@ -1364,9 +1370,7 @@ const EmployeeManagement = () => {
                 <h3 className="text-xl font-bold text-slate-900">{selectedEmployee.fullName}</h3>
                 <p className="text-blue-600 text-base font-medium">{selectedEmployee.workInfo?.position}</p>
                 <p className="text-slate-500 text-sm">
-                  {typeof selectedEmployee.workInfo?.department === 'object'
-                    ? selectedEmployee.workInfo.department.name
-                    : selectedEmployee.workInfo?.department}
+                  {getDepartmentName(selectedEmployee.workInfo?.department, 'N/A')}
                 </p>
                 <p className="text-slate-500 text-sm">ID: {selectedEmployee.employeeId || selectedEmployee.user?.employeeId}</p>
                 {selectedEmployee.hasFaceRegistered && (
@@ -1449,9 +1453,7 @@ const EmployeeManagement = () => {
                 <div>
                   <label className="block text-sm font-medium text-slate-500 mb-2">Department</label>
                   <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">
-                    {typeof selectedEmployee.workInfo?.department === 'object'
-                      ? selectedEmployee.workInfo.department.name
-                      : selectedEmployee.workInfo?.department || 'N/A'}
+                    {getDepartmentName(selectedEmployee.workInfo?.department, 'N/A')}
                   </p>
                 </div>
                 <div>
@@ -1592,7 +1594,7 @@ const EmployeeManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">
-                  {new Set(employees.map(e => e.workInfo?.department).filter(Boolean)).size}
+                  {new Set(employees.map(e => getDepartmentName(e.workInfo?.department, '')).filter(Boolean)).size}
                 </h3>
                 <p className="text-slate-500 text-xs sm:text-sm">Departments</p>
               </div>
@@ -1685,9 +1687,7 @@ const EmployeeManagement = () => {
                   <div className="flex items-start justify-between gap-3">
                     <span className="flex-shrink-0 text-xs text-slate-500">Department</span>
                     <span className="min-w-0 text-right text-sm text-slate-900">
-                      {typeof employee.workInfo?.department === 'object'
-                        ? employee.workInfo.department.name
-                        : employee.workInfo?.department || 'No Department'}
+                      {getDepartmentName(employee.workInfo?.department)}
                     </span>
                   </div>
 
@@ -1751,9 +1751,7 @@ const EmployeeManagement = () => {
                       <td className="p-4 md:p-6 text-slate-900 text-sm">{employee.workInfo?.position}</td>
                       <td className="p-4 md:p-6">
                         <span className="px-2.5 py-1.5 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-                          {typeof employee.workInfo?.department === 'object'
-                            ? employee.workInfo.department.name
-                            : employee.workInfo?.department || 'No Department'}
+                          {getDepartmentName(employee.workInfo?.department)}
                         </span>
                       </td>
 
