@@ -121,23 +121,23 @@ const AdminHolidayCalendar = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 bg-slate-0">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Holiday & Leave Calendar</h1>
-            <p className="text-slate-500">View and manage company holidays and employee leaves</p>
+      <div className="space-y-4 sm:space-y-6 bg-slate-0">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">Holiday & Leave Calendar</h1>
+            <p className="text-sm sm:text-base text-slate-500 mt-1">View and manage company holidays and employee leaves</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 flex items-center hover:-translate-y-0.5"
+            className="w-full sm:w-auto justify-center px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 flex items-center hover:-translate-y-0.5"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Holiday
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white border border-slate-200 shadow-sm rounded-xl p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="lg:col-span-2 bg-white border border-slate-200 shadow-sm rounded-xl p-3 sm:p-6 min-w-0">
             <Calendar
               onChange={setDate}
               value={date}
@@ -146,7 +146,7 @@ const AdminHolidayCalendar = () => {
               className="admin-calendar w-full bg-transparent border-none text-slate-900"
             />
 
-            <div className="mt-6 flex items-center space-x-6 text-sm">
+            <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
                 <span className="text-slate-500">Public Holiday</span>
@@ -158,26 +158,26 @@ const AdminHolidayCalendar = () => {
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
-              <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
+          <div className="space-y-4 sm:space-y-6 min-w-0">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 flex items-center">
                 <CalendarIcon className="w-5 h-5 mr-2 text-blue-600" />
                 {date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </h2>
 
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-none sm:max-h-[28rem] sm:overflow-y-auto sm:pr-1">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Holidays</h3>
+                  <h3 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Holidays</h3>
                   {selectedDateHolidays.length > 0 ? (
                     selectedDateHolidays.map(h => (
                       <div key={h._id} className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl p-3">
-                        <div>
-                          <p className="text-slate-900 font-medium">{h.title}</p>
+                        <div className="min-w-0">
+                          <p className="text-slate-900 font-medium truncate">{h.title}</p>
                           <p className="text-xs text-slate-500">{h.type}</p>
                         </div>
                         <button
                           onClick={() => handleDeleteHoliday(h._id)}
-                          className="text-slate-500 hover:text-red-600 transition-colors"
+                          className="text-slate-500 hover:text-red-600 transition-colors flex-shrink-0"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -189,7 +189,7 @@ const AdminHolidayCalendar = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Employee Leaves</h3>
+                  <h3 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Employee Leaves</h3>
                   {selectedDateLeaves.length > 0 ? (
                     <div className="space-y-2">
                       {selectedDateLeaves.map(l => (
@@ -213,19 +213,19 @@ const AdminHolidayCalendar = () => {
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">Upcoming Holidays</h2>
+            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-4">Upcoming Holidays</h2>
               <div className="space-y-3">
                 {holidays
                   .filter(h => new Date(h.date) >= new Date())
                   .slice(0, 5)
                   .map(h => (
-                    <div key={h._id} className="flex items-center justify-between p-2 border-b border-slate-100">
-                      <div>
-                        <p className="text-slate-900 text-sm font-medium">{h.title}</p>
+                    <div key={h._id} className="flex items-center justify-between gap-3 p-2 border-b border-slate-100">
+                      <div className="min-w-0">
+                        <p className="text-slate-900 text-sm font-medium truncate">{h.title}</p>
                         <p className="text-xs text-slate-500">{new Date(h.date).toLocaleDateString()}</p>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 flex-shrink-0">
                         {h.type}
                       </span>
                     </div>
@@ -238,11 +238,11 @@ const AdminHolidayCalendar = () => {
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           <div className="absolute inset-0 bg-slate-900/20" onClick={() => setShowAddModal(false)}></div>
-          <div className="relative bg-white border border-slate-200 shadow-xl rounded-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-900">Add Company Holiday</h2>
+          <div className="relative bg-white border border-slate-200 shadow-xl rounded-2xl p-4 sm:p-6 w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto">
+            <div className="flex items-center justify-between gap-3 mb-5 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Add Company Holiday</h2>
               <button onClick={() => setShowAddModal(false)} className="text-slate-500 hover:text-slate-900">
                 <X className="w-6 h-6" />
               </button>
@@ -261,7 +261,7 @@ const AdminHolidayCalendar = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-600 mb-1">Date</label>
                   <input

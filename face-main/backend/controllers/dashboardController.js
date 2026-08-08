@@ -3,6 +3,10 @@ import Employee from '../models/Employee.js';
 import User from '../models/User.js';
 import Leave from '../models/Leave.js';
 import Task from '../models/Task.js';
+import Attendance from '../models/Attendance.js';
+import Holiday from '../models/Holiday.js';
+import Payslip from '../models/Payslip.js';
+import Department from '../models/Department.js';
 
 // @desc    Get admin dashboard statistics
 // @route   GET /api/dashboard/stats
@@ -302,6 +306,20 @@ export const getRecentActivities = async (req, res) => {
 export const getUpcomingEvents = async (req, res) => {
   try {
     const upcomingEvents = [];
+    const departmentNameCache = new Map();
+
+    const getDepartmentName = async (department) => {
+      if (!department) return 'General';
+      if (typeof department === 'object') return department.name || department.departmentName || department.code || 'General';
+
+      const departmentId = String(department);
+      if (departmentNameCache.has(departmentId)) return departmentNameCache.get(departmentId);
+
+      const departmentDoc = await Department.findById(departmentId);
+      const departmentName = departmentDoc?.name || 'General';
+      departmentNameCache.set(departmentId, departmentName);
+      return departmentName;
+    };
 
     // Get upcoming task deadlines
     const upcomingTasks = await Task.find({
@@ -315,18 +333,18 @@ export const getUpcomingEvents = async (req, res) => {
       .sort({ dueDate: 1 })
       .limit(5);
 
-    upcomingTasks.forEach(task => {
+    for (const task of upcomingTasks) {
       const taskDept = task.assignedTo?.workInfo?.department;
       upcomingEvents.push({
         id: task._id,
         title: `Task Deadline: ${task.title}`,
         date: task.dueDate,
         time: new Date(task.dueDate).toLocaleTimeString(),
-        department: typeof taskDept === 'object' ? taskDept.name || 'General' : taskDept || 'General',
+        department: await getDepartmentName(taskDept),
         type: 'task',
         priority: task.priority
       });
-    });
+    }
 
     // Get upcoming leave periods
     const upcomingLeaves = await Leave.find({
@@ -340,18 +358,18 @@ export const getUpcomingEvents = async (req, res) => {
       .sort({ startDate: 1 })
       .limit(5);
 
-    upcomingLeaves.forEach(leave => {
+    for (const leave of upcomingLeaves) {
       const leaveDept = leave.employee?.workInfo?.department;
       upcomingEvents.push({
         id: leave._id,
         title: `${leave.employee?.fullName} on ${leave.leaveType} leave`,
         date: leave.startDate,
         time: 'All Day',
-        department: typeof leaveDept === 'object' ? leaveDept.name || 'General' : leaveDept || 'General',
+        department: await getDepartmentName(leaveDept),
         type: 'leave',
         duration: leave.duration
       });
-    });
+    }
 
     // Sort events by date
     upcomingEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -508,13 +526,42 @@ export const getUserNotifications = async (req, res) => {
       const employee = await Employee.findOne({ user: req.user.id });
       
       if (employee) {
+        const now = new Date();
+        const last14Days = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+        const next14Days = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
         // Task-related notifications
         const myTasks = await Task.find({ assignedTo: employee._id });
+        const recentlyAssignedTasks = await Task.find({
+          assignedTo: employee._id,
+          createdAt: { $gte: last14Days }
+        })
+          .populate('assignedBy', 'name')
+          .sort({ createdAt: -1 })
+          .limit(8);
         const pendingTasks = myTasks.filter(t => ['Not Started', 'In Progress'].includes(t.status));
         const overdueTasks = myTasks.filter(t => 
           !['Completed', 'Cancelled'].includes(t.status) && 
           new Date(t.dueDate) < new Date()
         );
+
+        recentlyAssignedTasks
+          .filter(task => {
+            const assignedById = task.assignedBy?._id || task.assignedBy?.id || task.assignedBy;
+            return String(assignedById) !== String(req.user.id);
+          })
+          .forEach(task => {
+            const assignedByName = task.assignedBy?.name || 'Admin';
+            notifications.push({
+              id: `task-assigned-${task._id}`,
+              message: `${assignedByName} assigned you a new task: "${task.title}"`,
+              user: assignedByName,
+              time: task.createdAt,
+              type: task.priority === 'Critical' || task.priority === 'High' ? 'warning' : 'info',
+              category: 'task',
+              unread: true
+            });
+          });
 
         if (pendingTasks.length > 0) {
           notifications.push({
@@ -550,14 +597,74 @@ export const getUserNotifications = async (req, res) => {
           });
         }
 
+        // Attendance notifications
+        const recentAttendance = await Attendance.find({
+          employee: employee._id,
+          updatedAt: { $gte: last14Days }
+        }).sort({ updatedAt: -1 }).limit(8);
+
+        recentAttendance.forEach(record => {
+          const checkOutText = record.checkOutTime ? ' and check-out recorded' : '';
+          const attendanceDate = record.date || record.checkInTime || record.createdAt;
+          notifications.push({
+            id: `attendance-${record._id}`,
+            message: `Attendance marked as ${record.status}${checkOutText} for ${new Date(attendanceDate).toLocaleDateString()}`,
+            time: record.updatedAt || record.createdAt || record.checkInTime,
+            type: record.status === 'Late' || record.status === 'Half Day' ? 'warning' : 'success',
+            category: 'attendance',
+            unread: true
+          });
+        });
+
+        const adminUpdatedAttendance = recentAttendance.filter(record => record.approvedBy || record.isManualEntry);
+        adminUpdatedAttendance.slice(0, 5).forEach(record => {
+          const attendanceDate = record.date || record.checkInTime || record.createdAt;
+          notifications.push({
+            id: `attendance-admin-${record._id}`,
+            message: `Admin updated your attendance to ${record.status} for ${new Date(attendanceDate).toLocaleDateString()}`,
+            time: record.updatedAt || record.createdAt,
+            type: 'info',
+            category: 'attendance',
+            unread: true
+          });
+        });
+
         // Leave-related notifications
-        const myLeaves = await Leave.find({ employee: employee._id });
+        const myLeaves = await Leave.find({ employee: employee._id }).sort({ updatedAt: -1 });
         const pendingLeaves = myLeaves.filter(l => l.status === 'Pending');
         const approvedUpcomingLeaves = myLeaves.filter(l => 
           l.status === 'Approved' && 
-          new Date(l.startDate) > new Date() &&
+          new Date(l.startDate) > now &&
           new Date(l.startDate) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Next 7 days
         );
+
+        myLeaves
+          .filter(leave => new Date(leave.appliedDate || leave.createdAt) >= last14Days)
+          .slice(0, 5)
+          .forEach(leave => {
+            notifications.push({
+              id: `leave-applied-${leave._id}`,
+              message: `Your ${leave.leaveType.toLowerCase()} leave request was submitted for ${new Date(leave.startDate).toLocaleDateString()}`,
+              time: leave.appliedDate || leave.createdAt,
+              type: 'info',
+              category: 'leave',
+              unread: true
+            });
+          });
+
+        myLeaves
+          .filter(leave => ['Approved', 'Rejected', 'Cancelled'].includes(leave.status) && new Date(leave.actionDate || leave.updatedAt) >= last14Days)
+          .slice(0, 8)
+          .forEach(leave => {
+            notifications.push({
+              id: `leave-status-${leave._id}`,
+              message: `Your ${leave.leaveType.toLowerCase()} leave was ${leave.status.toLowerCase()} by admin`,
+              time: leave.actionDate || leave.updatedAt,
+              type: leave.status === 'Approved' ? 'success' : leave.status === 'Rejected' ? 'error' : 'warning',
+              category: 'leave',
+              unread: true
+            });
+          });
 
         if (pendingLeaves.length > 0) {
           notifications.push({
@@ -625,6 +732,39 @@ export const getUserNotifications = async (req, res) => {
             unread: true
           });
         }
+
+        // Holidays declared by admin
+        const holidays = await Holiday.find({
+          date: { $gte: now, $lte: next14Days }
+        }).sort({ date: 1 }).limit(8);
+
+        holidays.forEach(holiday => {
+          notifications.push({
+            id: `holiday-${holiday._id}`,
+            message: `${holiday.title} holiday declared on ${new Date(holiday.date).toLocaleDateString()}`,
+            time: holiday.updatedAt || holiday.createdAt || holiday.date,
+            type: 'success',
+            category: 'holiday',
+            unread: true
+          });
+        });
+
+        // Payslip alerts
+        const recentPayslips = await Payslip.find({
+          employee: employee._id,
+          createdAt: { $gte: last14Days }
+        }).sort({ createdAt: -1 }).limit(5);
+
+        recentPayslips.forEach(payslip => {
+          notifications.push({
+            id: `payslip-${payslip._id}`,
+            message: `Your payslip for ${payslip.period?.month}/${payslip.period?.year} has been generated`,
+            time: payslip.updatedAt || payslip.createdAt,
+            type: payslip.status === 'paid' ? 'success' : 'info',
+            category: 'payslip',
+            unread: true
+          });
+        });
       }
     }
 

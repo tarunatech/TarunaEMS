@@ -49,9 +49,9 @@ const UpcomingEvents = ({ events = [], loading = false }) => {
 
   if (loading) {
     return (
-      <div className="dashboard-panel bg-white border border-slate-200/70 rounded-2xl p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900">Upcoming Events</h2>
+      <div className="dashboard-panel bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900">Upcoming Events</h2>
           <Calendar className="w-5 h-5 text-blue-600 animate-pulse" />
         </div>
         <div className="space-y-4">
@@ -75,37 +75,37 @@ const UpcomingEvents = ({ events = [], loading = false }) => {
   }
 
   return (
-    <div className="dashboard-panel relative overflow-hidden bg-white border border-slate-200/70 rounded-2xl p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
+    <div className="dashboard-panel relative overflow-hidden bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
       <div className="dashboard-card-wash absolute -top-20 -right-20 h-40 w-40 rounded-full bg-pink-50" />
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="relative text-lg font-bold text-slate-950">Upcoming Events</h2>
-        <div className="relative w-9 h-9 rounded-xl bg-pink-50 border border-pink-100 flex items-center justify-center">
-          <Calendar className="w-5 h-5 text-pink-600" />
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h2 className="relative text-base sm:text-lg font-bold text-slate-950">Upcoming Events</h2>
+        <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-pink-50 border border-pink-100 flex items-center justify-center">
+          <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600" />
         </div>
       </div>
-      <div className="relative space-y-4 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300">
+      <div className="scrollbar-hide relative space-y-3 sm:space-y-4 max-h-[18rem] sm:max-h-80 overflow-y-auto overscroll-contain">
         {events.length > 0 ? (
           events.map((event, index) => (
             <div
               key={event.id || index}
-              className={`dashboard-sub-card p-4 rounded-xl border transition-all duration-200 cursor-pointer group bg-white shadow-sm ${
+              className={`dashboard-sub-card p-3 sm:p-4 rounded-xl border transition-all duration-200 cursor-pointer group bg-white shadow-sm ${
                 isEventSoon(event.date, event.time)
                   ? 'border-pink-200 bg-pink-50/60 hover:border-pink-300'
                   : 'border-slate-200 hover:border-pink-200 hover:bg-pink-50/40'
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-slate-900 font-medium group-hover:text-pink-700 transition-colors truncate flex-1">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <h4 className="text-slate-900 text-sm sm:text-base font-medium group-hover:text-pink-700 transition-colors truncate flex-1">
                   {event.title}
                 </h4>
                 {event.department && (
-                  <span className={`text-xs px-2 py-1 rounded-full ml-2 flex-shrink-0 ${getDepartmentColor(event.department)}`}>
+                  <span className={`text-[11px] sm:text-xs px-2 py-1 rounded-full flex-shrink-0 ${getDepartmentColor(event.department)}`}>
                     {event.department}
                   </span>
                 )}
               </div>
-              <div className="flex items-center justify-between text-sm text-slate-500">
-                <div className="flex items-center space-x-4">
+              <div className="flex items-start justify-between gap-2 text-xs sm:text-sm text-slate-500">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="flex items-center">
                     <Calendar className="w-3 h-3 mr-1" />
                     {formatEventDate(event.date)}

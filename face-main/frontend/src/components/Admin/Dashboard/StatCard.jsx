@@ -55,25 +55,25 @@ const StatCard = ({ stat, index }) => {
 
   return (
     <div
-      className={`dashboard-stat-card group relative overflow-hidden bg-white border border-slate-200/70 rounded-2xl p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)] hover:shadow-[0_18px_36px_rgba(15,23,42,0.12)] hover:-translate-y-1 ${accent.hover} transition-all duration-300 ${stat.path ? 'cursor-pointer' : ''}`}
+      className={`dashboard-stat-card group relative overflow-hidden bg-white border border-slate-200/70 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)] hover:shadow-[0_18px_36px_rgba(15,23,42,0.12)] hover:-translate-y-1 ${accent.hover} transition-all duration-300 ${stat.path ? 'cursor-pointer' : ''}`}
       onClick={handleClick}
     >
-      <div className={`dashboard-card-wash absolute -top-16 -right-16 h-36 w-36 rounded-full ${accent.corner} transition-transform duration-300 group-hover:scale-110`} />
-      <div className="flex items-center justify-between mb-4">
-        <div className={`relative w-12 h-12 bg-gradient-to-br ${accent.icon} border border-white/70 rounded-xl flex items-center justify-center shadow-lg ${accent.glow} ring-4 ${accent.ring}`}>
-          <stat.icon className="w-6 h-6 text-white" />
+      <div className={`dashboard-card-wash absolute -top-12 -right-12 h-28 w-28 sm:-top-16 sm:-right-16 sm:h-36 sm:w-36 rounded-full ${accent.corner} transition-transform duration-300 group-hover:scale-110`} />
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className={`relative w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br ${accent.icon} border border-white/70 rounded-xl flex items-center justify-center shadow-lg ${accent.glow} ring-2 sm:ring-4 ${accent.ring}`}>
+          <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
         </div>
         {stat.change && (
-          <span className={`relative text-xs font-bold px-2.5 py-1 rounded-full transition-colors ${getChangeStyles(stat.changeType)}`}>
+          <span className={`relative whitespace-nowrap text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full transition-colors ${getChangeStyles(stat.changeType)}`}>
             {stat.change}
           </span>
         )}
       </div>
       <div className="relative">
-        <h3 className="text-2xl font-bold text-slate-900 mb-1 transition-colors">
+        <h3 className="truncate text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 mb-0.5 sm:mb-1 transition-colors">
           {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
         </h3>
-        <p className="text-slate-500 text-sm font-medium">{stat.title}</p>
+        <p className="text-slate-500 text-[11px] sm:text-sm font-medium leading-tight">{stat.title}</p>
       </div>
     </div>
   );

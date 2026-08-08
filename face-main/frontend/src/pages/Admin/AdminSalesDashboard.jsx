@@ -165,7 +165,7 @@ const AdminSalesDashboard = () => {
       toast.success('Lead reassigned successfully!');
       setShowReassignModal(false);
       fetchData();
-    } catch (err) {
+    } catch {
       toast.error('Failed to reassign lead');
     }
   };
@@ -176,7 +176,7 @@ const AdminSalesDashboard = () => {
       await leadAPI.deleteLead(id);
       toast.success('Lead deleted');
       fetchData();
-    } catch (err) {
+    } catch {
       toast.error('Failed to delete lead');
     }
   };
@@ -228,7 +228,7 @@ const AdminSalesDashboard = () => {
 
   return (
     <AdminLayout>
-      <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-6">
+      <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -238,10 +238,10 @@ const AdminSalesDashboard = () => {
               </h1>
               <p className="text-slate-500 text-xs sm:text-sm">Monitor and manage your sales pipeline</p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl border border-slate-200 flex items-center gap-1.5 text-xs sm:text-sm transition-colors shadow-sm"
+                className="justify-center px-2 py-2 sm:px-4 bg-white hover:bg-slate-50 text-slate-700 rounded-xl border border-slate-200 flex items-center gap-1.5 text-xs sm:text-sm transition-colors shadow-sm"
               >
                 <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Filters</span>
@@ -249,14 +249,14 @@ const AdminSalesDashboard = () => {
               <button
                 onClick={exportData}
                 disabled={leads.length === 0}
-                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl border border-blue-100 flex items-center gap-1.5 text-xs sm:text-sm transition-colors disabled:opacity-50"
+                className="justify-center px-2 py-2 sm:px-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl border border-blue-100 flex items-center gap-1.5 text-xs sm:text-sm transition-colors disabled:opacity-50"
               >
                 <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Export</span>
               </button>
               <button
                 onClick={fetchData}
-                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-1.5 text-xs sm:text-sm transition-colors shadow-sm"
+                className="justify-center px-2 py-2 sm:px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-1.5 text-xs sm:text-sm transition-colors shadow-sm"
               >
                 <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Refresh</span>
@@ -267,7 +267,7 @@ const AdminSalesDashboard = () => {
 
         {/* Summary Cards */}
         {summary && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
             <StatCard 
               title="Total Revenue" 
               value={formatCurrency(summary.wonStats?.totalRevenue)} 
@@ -524,7 +524,7 @@ const AdminSalesDashboard = () => {
             </div>
 
             {/* Mobile Cards */}
-            <div className="block sm:hidden space-y-4">
+            <div className="scrollbar-hide block sm:hidden max-h-[68dvh] space-y-3 overflow-y-auto overscroll-contain pr-1">
               {loading ? (
                 <div className="text-center py-8 text-slate-500">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
@@ -539,24 +539,24 @@ const AdminSalesDashboard = () => {
                 leads.map(lead => {
                   const nextMeeting = getNextMeeting(lead);
                   return (
-                  <div key={lead._id} className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:border-blue-200 hover:bg-blue-50/40 transition-colors">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center shadow-sm shadow-blue-500/20">
+                  <div key={lead._id} className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm active:bg-blue-50/40 transition-colors">
+                    <div className="flex justify-between items-start gap-2 mb-3">
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div className="w-9 h-9 flex-shrink-0 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center shadow-sm shadow-blue-500/20">
                           <User className="w-4 h-4 text-white" />
                         </div>
-                        <div>
-                          <p className="text-slate-900 font-semibold text-base">{lead.firstName} {lead.lastName}</p>
-                          <p className="text-sm text-slate-500">{lead.company || '—'}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-slate-900 font-semibold text-sm">{lead.firstName} {lead.lastName}</p>
+                          <p className="truncate text-xs text-slate-500">{lead.company || '—'}</p>
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex flex-shrink-0 gap-">
                         <button
                           onClick={() => {
                             setSelectedLead(lead);
                             setShowViewModal(true);
                           }}
-                          className="p-2 text-slate-400 hover:text-blue-600"
+                          className="rounded-lg p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -566,13 +566,13 @@ const AdminSalesDashboard = () => {
                             setReassignTo(lead.assignedTo?._id || '');
                             setShowReassignModal(true);
                           }}
-                          className="p-2 text-slate-400 hover:text-indigo-600"
+                          className="rounded-lg p-2 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
                         >
                           <UserCheck className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(lead._id)}
-                          className="p-2 text-slate-400 hover:text-red-600"
+                          className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -581,39 +581,39 @@ const AdminSalesDashboard = () => {
                             setSelectedLead(lead);
                             setShowPipelineModal(true);
                           }}
-                          className="p-2 text-slate-400 hover:text-blue-600"
+                          className="rounded-lg p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
                           title="View Pipeline"
                         >
                           <GitBranch className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
+                    <div className="space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
+                      <div className="flex items-center justify-between gap-3">
                         <p className="text-slate-500">Status</p>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(lead.status)}`}>
+                        <span className={`inline-flex flex-shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] font-medium leading-none ${getStatusColor(lead.status)}`}>
                           {lead.status}
                         </span>
                       </div>
-                      <div>
+                      <div className="flex items-center justify-between gap-3">
                         <p className="text-slate-500">Value</p>
                         <p className="text-blue-700 font-semibold">{formatCurrency(lead.estimatedValue || lead.actualValue)}</p>
                       </div>
-                      <div>
+                      <div className="flex items-center justify-between gap-3">
                         <p className="text-slate-500">Assigned To</p>
-                        <p className="text-slate-900">
+                        <p className="truncate text-right font-medium text-slate-900">
                           {lead.assignedTo?.personalInfo
                             ? `${lead.assignedTo.personalInfo.firstName} ${lead.assignedTo.personalInfo.lastName}`
                             : 'Unassigned'}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-slate-500">Next Follow-up</p>
-                        <p className="text-slate-900">{formatDate(lead.nextFollowUpDate)}</p>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-slate-500">Follow-up</p>
+                        <p className="font-medium text-slate-900">{formatDate(lead.nextFollowUpDate)}</p>
                       </div>
-                      <div>
-                        <p className="text-slate-500">Next Meeting</p>
-                        <p className="text-slate-900">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-slate-500">Meeting</p>
+                        <p className="max-w-[60%] text-right font-medium text-slate-900">
                           {nextMeeting ? `${nextMeeting.type} - ${formatDateTime(nextMeeting.scheduledDate)}` : 'No meeting'}
                         </p>
                       </div>
@@ -668,9 +668,9 @@ const AdminSalesDashboard = () => {
       {/* View Lead Modal */}
       {showViewModal && selectedLead && (
         <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="premium-panel rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold text-slate-900">Lead Details</h3>
+          <div className="premium-panel rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[calc(100dvh-1.5rem)] overflow-y-auto">
+            <div className="flex justify-between items-start gap-3 mb-4">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-900">Lead Details</h3>
               <button
                 onClick={() => setShowViewModal(false)}
                 className="text-slate-400 hover:text-slate-700"
@@ -679,7 +679,7 @@ const AdminSalesDashboard = () => {
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
               <div className="space-y-3">
                 <div>
                   <p className="text-slate-500 text-xs">Name</p>
@@ -736,7 +736,7 @@ const AdminSalesDashboard = () => {
             </div>
             
             <div className="mt-4 pt-4 border-t border-slate-200">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3 sm:gap-4 text-sm">
                 <div>
                   <p className="text-slate-500 text-xs">Next Follow-up</p>
                   <p className="text-slate-900">{formatDate(selectedLead.nextFollowUpDate)}</p>
@@ -812,7 +812,7 @@ const AdminSalesDashboard = () => {
 const ShieldCheckIcon = ({ className }) => <CheckCircle className={className} />;
 
 // Stat Card Component
-const StatCard = ({ title, value, icon: Icon, color }) => {
+const StatCard = ({ title, value, icon, color }) => {
   const themes = {
     green: {
       value: 'text-emerald-700',
@@ -842,16 +842,16 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
   const theme = themes[color] || themes.blue;
   
   return (
-    <div className="premium-stat-card rounded-xl p-3 sm:p-4" style={{ '--stat-soft': theme.soft }}>
+    <div className="premium-stat-card rounded-xl p-3 sm:p-4 md:p-5" style={{ '--stat-soft': theme.soft }}>
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-slate-500 text-xs font-medium">{title}</p>
-          <p className={`text-lg sm:text-xl font-bold ${theme.value}`}>
+        <div className="min-w-0">
+          <p className="text-slate-500 text-[11px] sm:text-xs font-medium leading-tight">{title}</p>
+          <p className={`truncate text-lg sm:text-xl font-bold leading-tight ${theme.value}`}>
             {value}
           </p>
         </div>
-        <div className={`h-9 w-9 rounded-xl ${theme.iconBg} flex items-center justify-center shadow-sm`}>
-          <Icon className={`w-5 h-5 ${theme.icon}`} />
+        <div className={`h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 rounded-xl ${theme.iconBg} flex items-center justify-center shadow-sm`}>
+          {React.createElement(icon, { className: `w-4 h-4 sm:w-5 sm:h-5 ${theme.icon}` })}
         </div>
       </div>
     </div>

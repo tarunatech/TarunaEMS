@@ -35,9 +35,9 @@ const RecentActivities = ({ activities = [], loading = false }) => {
 
   if (loading) {
     return (
-      <div className="dashboard-panel bg-white border border-slate-200/70 rounded-2xl p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900">Recent Activities</h2>
+      <div className="dashboard-panel bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900">Recent Activities</h2>
           <Clock className="w-5 h-5 text-blue-600 animate-pulse" />
         </div>
         <div className="space-y-4">
@@ -59,28 +59,28 @@ const RecentActivities = ({ activities = [], loading = false }) => {
   }
 
   return (
-      <div className="dashboard-panel relative overflow-hidden bg-white border border-slate-200/70 rounded-2xl p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
+      <div className="dashboard-panel relative overflow-hidden bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
         <div className="dashboard-card-wash absolute -top-20 -right-20 h-40 w-40 rounded-full bg-violet-50" />
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="relative text-lg font-bold text-slate-950">Recent Activities</h2>
-          <div className="relative w-9 h-9 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center">
-            <Clock className="w-5 h-5 text-violet-600" />
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="relative text-base sm:text-lg font-bold text-slate-950">Recent Activities</h2>
+          <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
           </div>
         </div>
-      <div className="relative space-y-4 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300">
+      <div className="scrollbar-hide relative space-y-2 sm:space-y-4 max-h-[18rem] sm:max-h-80 overflow-y-auto overscroll-contain">
         {activities.length > 0 ? (
           activities.map((activity, index) => (
             <div 
               key={activity.id || index} 
-              className="dashboard-soft-row flex items-start space-x-3 p-3 rounded-xl hover:bg-violet-50/60 transition-all duration-200 cursor-pointer group"
+              className="dashboard-soft-row flex items-start space-x-3 p-2.5 sm:p-3 rounded-xl hover:bg-violet-50/60 transition-all duration-200 cursor-pointer group"
             >
               <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${getActivityTypeStyles(activity.type)} shadow-sm`}></div>
               <div className="flex-1 min-w-0">
-                <p className="text-slate-800 text-sm leading-relaxed group-hover:text-violet-700 transition-colors">
+                <p className="text-slate-800 text-xs sm:text-sm leading-relaxed group-hover:text-violet-700 transition-colors">
                   {activity.action || activity.description}
                 </p>
                 {activity.user && (
-                  <p className="text-violet-600 text-sm font-medium mt-1">
+                  <p className="text-violet-600 text-xs sm:text-sm font-medium mt-1">
                     {activity.user}
                   </p>
                 )}
@@ -91,9 +91,9 @@ const RecentActivities = ({ activities = [], loading = false }) => {
             </div>
           ))
         ) : (
-          <div className="text-center py-12">
-            <Clock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-600 text-lg">No recent activities</p>
+          <div className="text-center py-8 sm:py-12">
+            <Clock className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 mx-auto mb-3 sm:mb-4" />
+            <p className="text-slate-600 text-base sm:text-lg">No recent activities</p>
             <p className="text-slate-500 text-sm mt-2">Activities will appear here as they happen</p>
           </div>
         )}

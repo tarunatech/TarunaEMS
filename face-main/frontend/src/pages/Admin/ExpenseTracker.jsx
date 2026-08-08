@@ -185,12 +185,12 @@ const ExpenseTracker = () => {
 
   return (
     <AdminLayout>
-      <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-4 sm:space-y-6">
+        <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             {/* <p className="text-xs font-bold uppercase tracking-[0.32em] text-blue-600">Admin Only</p> */}
-            <h1 className="premium-page-title mt-2 text-2xl font-bold sm:text-3xl">Expense Tracker</h1>
-            <p className="mt-1 text-sm text-slate-500">Manage company spending and incoming client payments.</p>
+            <h1 className="premium-page-title mt-2 text-xl font-bold sm:text-2xl md:text-3xl">Expense Tracker</h1>
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">Manage company spending and incoming client payments.</p>
           </div>
           {/* <div className="flex flex-wrap gap-2">
             <button onClick={openExpenseForm} className="premium-primary-button inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold">
@@ -202,9 +202,9 @@ const ExpenseTracker = () => {
           </div> */}
         </div>
 
-        <nav className="premium-panel flex w-full flex-wrap gap-2 rounded-2xl p-2">
+        <nav className="premium-panel grid w-full grid-cols-2 gap-2 rounded-2xl p-2 sm:flex sm:flex-wrap">
           <TabButton active={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')}>Dashboard</TabButton>
-          <TabButton active={activeView === 'payments'} onClick={() => setActiveView('payments')}>Incoming Payments</TabButton>
+          <TabButton active={activeView === 'payments'} onClick={() => setActiveView('payments')}>Payments</TabButton>
           <TabButton active={activeView === 'add-expense'} onClick={openExpenseForm}>Add Expense</TabButton>
           <TabButton active={activeView === 'add-payment'} onClick={openPaymentForm}>Add Payment</TabButton>
         </nav>
@@ -269,11 +269,11 @@ const ExpenseTracker = () => {
         </section>
 
         {viewing && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-slate-950">Expense Details</h3>
-                <button onClick={() => setViewing(null)} className="rounded-lg px-3 py-1 text-slate-500 hover:bg-slate-100">Close</button>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/35 p-3 backdrop-blur-sm sm:p-4">
+            <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h3 className="text-lg font-bold text-slate-950 sm:text-xl">Expense Details</h3>
+                <button onClick={() => setViewing(null)} className="shrink-0 rounded-lg px-3 py-1 text-sm text-slate-500 hover:bg-slate-100">Close</button>
               </div>
               <div className="space-y-3 text-sm">
                 <Info label="Date" value={displayDate(viewing.date)} />
@@ -296,7 +296,7 @@ const ExpenseTracker = () => {
 const TabButton = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
-    className={`min-h-11 flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-semibold transition sm:min-w-40 ${
+    className={`min-h-11 rounded-xl px-3 py-2.5 text-center text-xs font-semibold transition sm:flex-1 sm:min-w-40 sm:px-4 sm:text-sm ${
       active
         ? 'bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white shadow-[0_10px_22px_rgba(37,99,235,0.22)]'
         : 'bg-white text-slate-600 hover:bg-blue-50 hover:text-blue-700'
@@ -307,36 +307,36 @@ const TabButton = ({ active, onClick, children }) => (
 );
 
 const SummaryCard = ({ label, value }) => (
-  <div className="premium-stat-card rounded-2xl p-4 sm:p-5">
-    <p className="text-sm text-slate-500">{label}</p>
-    <p className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">{value}</p>
+  <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-5">
+    <p className="text-xs text-slate-500 sm:text-sm">{label}</p>
+    <p className="mt-2 text-lg font-bold text-slate-900 sm:mt-3 sm:text-2xl md:text-3xl">{value}</p>
   </div>
 );
 
 const DashboardView = ({ summary, expenses, search, setSearch, loading, currency, displayDate, openExpenseForm, onRefresh, onView, onEdit, onDelete }) => (
-  <div className="premium-panel rounded-2xl p-4 sm:p-6">
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+  <div className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Expense List</h2>
-        <p className="mt-1 text-sm text-slate-500">Search, filter, and manage company expenses.</p>
+        <h2 className="text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">Expense List</h2>
+        <p className="mt-1 text-xs text-slate-500 sm:text-sm">Search, filter, and manage company expenses.</p>
       </div>
       <div className="flex gap-2">
-        <button onClick={onRefresh} className="rounded-xl border border-slate-200 bg-white p-3 text-slate-600 shadow-sm hover:bg-slate-50" aria-label="Refresh">
+        <button onClick={onRefresh} className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm hover:bg-slate-50 sm:p-3" aria-label="Refresh">
           <RefreshCw className="h-5 w-5" />
         </button>
-        <button onClick={openExpenseForm} className="premium-primary-button rounded-xl px-4 py-3 text-sm font-semibold">
+        <button onClick={openExpenseForm} className="premium-primary-button flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold sm:flex-none sm:py-3">
           Add Expense
         </button>
       </div>
     </div>
 
-    <div className="mt-6 grid gap-4 md:grid-cols-3">
+    <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4">
       <SummaryCard label="Total Received" value={currency(summary.totalReceived)} />
       <SummaryCard label="Total Spent" value={currency(summary.totalSpent)} />
       <SummaryCard label="Remaining Balance" value={currency(summary.remainingBalance)} />
     </div>
 
-    <div className="relative mt-6">
+    <div className="relative mt-4 sm:mt-6">
       <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
       <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search expenses" className="premium-input w-full rounded-xl py-3 pl-12 pr-4 text-sm text-slate-900 placeholder-slate-400" />
     </div>
@@ -346,99 +346,75 @@ const DashboardView = ({ summary, expenses, search, setSearch, loading, currency
 );
 
 const ExpenseTable = ({ expenses, loading, currency, displayDate, onView, onEdit, onDelete }) => (
-  <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[860px]">
-        <thead className="bg-slate-50/90">
-          <tr>
-            {['Date', 'Employee', 'Paid To', 'Category', 'Amount', 'Payment Method', 'Description', 'Actions'].map((head) => (
-              <th key={head} className="border-b border-slate-200 p-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{head}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan="8" className="p-8 text-center text-slate-500">Loading expenses...</td></tr>
-          ) : expenses.length === 0 ? (
-            <tr><td colSpan="8" className="p-8 text-center text-slate-500">No expenses found</td></tr>
-          ) : expenses.map((item) => (
-            <tr key={item._id} className="premium-table-row border-b border-slate-100">
-              <td className="p-4 text-slate-800">{displayDate(item.date)}</td>
-              <td className="p-4 text-slate-800">
-                {item.employee
-                  ? `${item.employee.personalInfo?.firstName || ''} ${item.employee.personalInfo?.lastName || ''}`.trim() || item.createdBy?.name || 'Employee'
-                  : item.source === 'admin' ? 'Admin' : item.createdBy?.name || '-'}
-                {item.employee?.employeeId && <p className="text-xs text-slate-500">{item.employee.employeeId}</p>}
-              </td>
-              <td className="p-4 text-slate-800">{item.paidTo}</td>
-              <td className="p-4 text-slate-800">{item.category}</td>
-              <td className="p-4 font-semibold text-slate-950">{currency(item.amount)}</td>
-              <td className="p-4 text-slate-800">{item.paymentMethod}</td>
-              <td className="p-4 text-slate-600">{item.description || '-'}</td>
-              <td className="p-4">
-                <div className="flex gap-2">
-                  <ActionButton onClick={() => onView(item)} icon={Eye}>View</ActionButton>
-                  <ActionButton onClick={() => onEdit(item)} icon={Edit3}>Edit</ActionButton>
-                  <ActionButton danger onClick={() => onDelete(item._id)} icon={Trash2}>Delete</ActionButton>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
-
-const PaymentsView = ({ payments, filters, setFilters, paymentSearch, setPaymentSearch, loading, currency, displayDate, openPaymentForm, onRefresh, onEdit, onDelete }) => (
-  <div className="premium-panel rounded-2xl p-4 sm:p-6">
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Incoming Payments</h2>
-        <p className="mt-1 text-sm text-slate-500">Track client payments received by the admin team.</p>
-      </div>
-      <div className="flex gap-2">
-        <button onClick={onRefresh} className="rounded-xl border border-slate-200 bg-white p-3 text-slate-600 shadow-sm hover:bg-slate-50" aria-label="Refresh">
-          <RefreshCw className="h-5 w-5" />
-        </button>
-        <button onClick={openPaymentForm} className="premium-primary-button rounded-xl px-4 py-3 text-sm font-semibold">
-          Add Payment
-        </button>
-      </div>
+  <div className="mt-4 sm:mt-6">
+    {/* Mobile: card list */}
+    <div className="space-y-3 md:hidden">
+      {loading ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">Loading expenses...</div>
+      ) : expenses.length === 0 ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">No expenses found</div>
+      ) : expenses.map((item) => (
+        <div key={item._id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">{item.paidTo}</p>
+              <p className="mt-0.5 text-xs text-slate-500">{displayDate(item.date)}</p>
+            </div>
+            <p className="text-base font-bold text-slate-950">₹{currency(item.amount)}</p>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+            {item.category && <span className="rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700">{item.category}</span>}
+            {item.paymentMethod && <span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">{item.paymentMethod}</span>}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            {item.employee
+              ? `${item.employee.personalInfo?.firstName || ''} ${item.employee.personalInfo?.lastName || ''}`.trim() || item.createdBy?.name || 'Employee'
+              : item.source === 'admin' ? 'Admin' : item.createdBy?.name || '-'}
+            {item.employee?.employeeId && ` · ${item.employee.employeeId}`}
+          </p>
+          {item.description && <p className="mt-2 text-sm text-slate-600">{item.description}</p>}
+          <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
+            <ActionButton onClick={() => onView(item)} icon={Eye}>View</ActionButton>
+            <ActionButton onClick={() => onEdit(item)} icon={Edit3}>Edit</ActionButton>
+            <ActionButton danger onClick={() => onDelete(item._id)} icon={Trash2}>Delete</ActionButton>
+          </div>
+        </div>
+      ))}
     </div>
 
-    <div className="mt-6 grid gap-4 md:grid-cols-2">
-      <input value={paymentSearch} onChange={(e) => setPaymentSearch(e.target.value)} placeholder="Search by client name" className="premium-input rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400" />
-      <input type="date" value={filters.startDate} onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))} className="premium-input rounded-xl px-4 py-3 text-sm text-slate-900" />
-      <input type="date" value={filters.endDate} onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))} className="premium-input rounded-xl px-4 py-3 text-sm text-slate-900" />
-      <button onClick={onRefresh} className="premium-primary-button rounded-xl px-4 py-3 text-sm font-semibold">Filter</button>
-    </div>
-
-    <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    {/* Desktop / tablet: table */}
+    <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white md:block">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px]">
-          <thead className="bg-slate-50">
+        <table className="w-full min-w-[860px]">
+          <thead className="bg-slate-50/90">
             <tr>
-              {['Date', 'Client', 'Amount', 'Method', 'Invoice', 'Remarks', 'Actions'].map((head) => (
-              <th key={head} className="border-b border-slate-200 p-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{head}</th>
+              {['Date', 'Employee', 'Paid To', 'Category', 'Amount', 'Payment Method', 'Description', 'Actions'].map((head) => (
+                <th key={head} className="border-b border-slate-200 p-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{head}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="7" className="p-8 text-center text-slate-500">Loading payments...</td></tr>
-            ) : payments.length === 0 ? (
-              <tr><td colSpan="7" className="p-8 text-center text-slate-500">No incoming payments found</td></tr>
-            ) : payments.map((item) => (
+              <tr><td colSpan="8" className="p-8 text-center text-slate-500">Loading expenses...</td></tr>
+            ) : expenses.length === 0 ? (
+              <tr><td colSpan="8" className="p-8 text-center text-slate-500">No expenses found</td></tr>
+            ) : expenses.map((item) => (
               <tr key={item._id} className="premium-table-row border-b border-slate-100">
                 <td className="p-4 text-slate-800">{displayDate(item.date)}</td>
-                <td className="p-4 text-slate-800">{item.clientName}</td>
+                <td className="p-4 text-slate-800">
+                  {item.employee
+                    ? `${item.employee.personalInfo?.firstName || ''} ${item.employee.personalInfo?.lastName || ''}`.trim() || item.createdBy?.name || 'Employee'
+                    : item.source === 'admin' ? 'Admin' : item.createdBy?.name || '-'}
+                  {item.employee?.employeeId && <p className="text-xs text-slate-500">{item.employee.employeeId}</p>}
+                </td>
+                <td className="p-4 text-slate-800">{item.paidTo}</td>
+                <td className="p-4 text-slate-800">{item.category}</td>
                 <td className="p-4 font-semibold text-slate-950">{currency(item.amount)}</td>
                 <td className="p-4 text-slate-800">{item.paymentMethod}</td>
-                <td className="p-4 text-slate-600">{item.invoiceNumber || '-'}</td>
-                <td className="p-4 text-slate-600">{item.remarks || '-'}</td>
+                <td className="p-4 text-slate-600">{item.description || '-'}</td>
                 <td className="p-4">
                   <div className="flex gap-2">
+                    <ActionButton onClick={() => onView(item)} icon={Eye}>View</ActionButton>
                     <ActionButton onClick={() => onEdit(item)} icon={Edit3}>Edit</ActionButton>
                     <ActionButton danger onClick={() => onDelete(item._id)} icon={Trash2}>Delete</ActionButton>
                   </div>
@@ -447,6 +423,99 @@ const PaymentsView = ({ payments, filters, setFilters, paymentSearch, setPayment
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+);
+
+const PaymentsView = ({ payments, filters, setFilters, paymentSearch, setPaymentSearch, loading, currency, displayDate, openPaymentForm, onRefresh, onEdit, onDelete }) => (
+  <div className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div>
+        <h2 className="text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">Incoming Payments</h2>
+        <p className="mt-1 text-xs text-slate-500 sm:text-sm">Track client payments received by the admin team.</p>
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onRefresh} className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm hover:bg-slate-50 sm:p-3" aria-label="Refresh">
+          <RefreshCw className="h-5 w-5" />
+        </button>
+        <button onClick={openPaymentForm} className="premium-primary-button flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold sm:flex-none sm:py-3">
+          Add Payment
+        </button>
+      </div>
+    </div>
+
+    <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-6 sm:grid-cols-2">
+      <input value={paymentSearch} onChange={(e) => setPaymentSearch(e.target.value)} placeholder="Search by client name" className="premium-input rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400" />
+      <input type="date" value={filters.startDate} onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))} className="premium-input rounded-xl px-4 py-3 text-sm text-slate-900" />
+      <input type="date" value={filters.endDate} onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))} className="premium-input rounded-xl px-4 py-3 text-sm text-slate-900" />
+      <button onClick={onRefresh} className="premium-primary-button rounded-xl px-4 py-3 text-sm font-semibold">Filter</button>
+    </div>
+
+    <div className="mt-4 sm:mt-6">
+      {/* Mobile: card list */}
+      <div className="space-y-3 md:hidden">
+        {loading ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">Loading payments...</div>
+        ) : payments.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">No incoming payments found</div>
+        ) : payments.map((item) => (
+          <div key={item._id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">{item.clientName}</p>
+                <p className="mt-0.5 text-xs text-slate-500">{displayDate(item.date)}</p>
+              </div>
+              <p className="text-base font-bold text-slate-950">₹{currency(item.amount)}</p>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+              {item.paymentMethod && <span className="rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700">{item.paymentMethod}</span>}
+              {item.invoiceNumber && <span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">Inv: {item.invoiceNumber}</span>}
+            </div>
+            {item.remarks && <p className="mt-2 text-sm text-slate-600">{item.remarks}</p>}
+            <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
+              <ActionButton onClick={() => onEdit(item)} icon={Edit3}>Edit</ActionButton>
+              <ActionButton danger onClick={() => onDelete(item._id)} icon={Trash2}>Delete</ActionButton>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop / tablet: table */}
+      <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px]">
+            <thead className="bg-slate-50">
+              <tr>
+                {['Date', 'Client', 'Amount', 'Method', 'Invoice', 'Remarks', 'Actions'].map((head) => (
+                <th key={head} className="border-b border-slate-200 p-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{head}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan="7" className="p-8 text-center text-slate-500">Loading payments...</td></tr>
+              ) : payments.length === 0 ? (
+                <tr><td colSpan="7" className="p-8 text-center text-slate-500">No incoming payments found</td></tr>
+              ) : payments.map((item) => (
+                <tr key={item._id} className="premium-table-row border-b border-slate-100">
+                  <td className="p-4 text-slate-800">{displayDate(item.date)}</td>
+                  <td className="p-4 text-slate-800">{item.clientName}</td>
+                  <td className="p-4 font-semibold text-slate-950">{currency(item.amount)}</td>
+                  <td className="p-4 text-slate-800">{item.paymentMethod}</td>
+                  <td className="p-4 text-slate-600">{item.invoiceNumber || '-'}</td>
+                  <td className="p-4 text-slate-600">{item.remarks || '-'}</td>
+                  <td className="p-4">
+                    <div className="flex gap-2">
+                      <ActionButton onClick={() => onEdit(item)} icon={Edit3}>Edit</ActionButton>
+                      <ActionButton danger onClick={() => onDelete(item._id)} icon={Trash2}>Delete</ActionButton>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -478,12 +547,12 @@ const PaymentForm = ({ form, setForm, saving, editing, onSubmit }) => (
 );
 
 const FormPanel = ({ title, subtitle, onSubmit, buttonText, children }) => (
-  <form onSubmit={onSubmit} className="premium-panel rounded-2xl p-4 sm:p-6">
-    <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">{title}</h2>
-    <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-    <div className="mt-6 grid gap-4 md:grid-cols-2">{children}</div>
+  <form onSubmit={onSubmit} className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
+    <h2 className="text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">{title}</h2>
+    <p className="mt-1 text-xs text-slate-500 sm:text-sm">{subtitle}</p>
+    <div className="mt-4 grid grid-cols-1 gap-4 sm:mt-6 md:grid-cols-2">{children}</div>
     <div className="mt-6 flex justify-end">
-      <button type="submit" className="premium-primary-button rounded-xl px-5 py-3 text-sm font-semibold">
+      <button type="submit" className="premium-primary-button w-full rounded-xl px-5 py-3 text-sm font-semibold sm:w-auto">
         {buttonText}
       </button>
     </div>
@@ -515,16 +584,16 @@ const TextArea = ({ label, value, onChange, className = '', ...props }) => (
 );
 
 const ActionButton = ({ children, onClick, icon: Icon, danger = false }) => (
-  <button onClick={onClick} className={`inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-semibold ${danger ? 'border-red-100 text-red-600 hover:bg-red-50' : 'border-blue-100 text-blue-600 hover:bg-blue-50'}`}>
+  <button onClick={onClick} className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-2 text-xs font-semibold sm:flex-none sm:px-3 ${danger ? 'border-red-100 text-red-600 hover:bg-red-50' : 'border-blue-100 text-blue-600 hover:bg-blue-50'}`}>
     {React.createElement(Icon, { className: 'h-4 w-4' })}
-    {children}
+    <span className="hidden sm:inline">{children}</span>
   </button>
 );
 
 const Info = ({ label, value }) => (
-  <div className="flex justify-between gap-4 border-b border-slate-100 pb-2">
+  <div className="flex flex-col gap-0.5 border-b border-slate-100 pb-2 sm:flex-row sm:justify-between sm:gap-4">
     <span className="font-semibold text-slate-500">{label}</span>
-    <span className="text-right font-semibold text-slate-900">{value}</span>
+    <span className="text-left font-semibold text-slate-900 sm:text-right">{value}</span>
   </div>
 );
 

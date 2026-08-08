@@ -252,3 +252,90 @@ html.theme-dark .admin-calendar.react-calendar .react-calendar__month-view__days
 html.theme-dark .admin-calendar.react-calendar .react-calendar__month-view__days__day--weekend abbr {
   color: #fca5a5 !important;
 }
+
+@media (max-width: 640px) {
+  .admin-calendar.react-calendar {
+    padding: 10px !important;
+    border-radius: 14px !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__navigation {
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__navigation button {
+    min-width: 36px !important;
+    min-height: 38px !important;
+    padding: 0 6px !important;
+    border-radius: 9px !important;
+    font-size: 0.85rem !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__navigation__label {
+    min-width: 0 !important;
+    font-size: 0.9rem !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__viewContainer {
+    padding: 8px !important;
+    border-radius: 12px !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__month-view__weekdays {
+    margin-bottom: 4px !important;
+    font-size: 0.65rem !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__month-view__weekdays__weekday {
+    padding: 6px 2px !important;
+    font-size: 10px !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__tile {
+    min-height: 42px !important;
+    padding: 5px 2px !important;
+    border-radius: 9px !important;
+    gap: 0.1rem !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__tile abbr {
+    width: 1.55rem !important;
+    height: 1.55rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__tile > div {
+    margin-top: 0 !important;
+    gap: 2px !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__tile > div > div {
+    width: 6px !important;
+    height: 6px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .admin-calendar.react-calendar {
+    padding: 8px !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__viewContainer {
+    padding: 6px !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__navigation button {
+    min-width: 32px !important;
+    min-height: 36px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__navigation__label {
+    font-size: 0.82rem !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__tile {
+    min-height: 38px !important;
+  }
+}

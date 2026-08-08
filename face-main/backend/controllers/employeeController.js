@@ -58,7 +58,7 @@ export const createEmployee = async (req, res) => {
       // face-api.js uses 128-dimensional descriptors (not 512 like InsightFace)
       if (faceDescriptor.length === 128 && faceDescriptor.every(val => typeof val === 'number' && !isNaN(val))) {
         validFaceDescriptor = faceDescriptor;
-        validFaceImage = faceImage || null;
+        validFaceImage = typeof faceImage === 'string' && faceImage.length <= 2048 ? faceImage : null;
         faceRegistered = true;
         console.log('✅ Valid face descriptor received:', faceDescriptor.length, 'dimensions');
       } else if (faceDescriptor.length > 0) {

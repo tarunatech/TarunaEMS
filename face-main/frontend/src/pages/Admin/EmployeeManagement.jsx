@@ -964,7 +964,6 @@ const EmployeeManagement = () => {
       if (capturedFaceData) {
         // ✅ Send average face descriptor (128-number array)
         employeeDataWithFace.faceDescriptor = capturedFaceData.averageDescriptor;
-        employeeDataWithFace.faceImage = capturedFaceData.thumbnail;
         employeeDataWithFace.hasFaceRegistered = true;
       }
       const response = await employeeAPI.createEmployee(employeeDataWithFace);

@@ -3,29 +3,15 @@ import { validationResult } from 'express-validator';
 import Task from '../models/Task.js';
 import Employee from '../models/Employee.js';
 import User from '../models/User.js';
-import { isDepartmentAllowed } from '../middleware/departmentAccess.js';
 import { sendTaskAssignmentEmail } from '../utils/email.js';
 
-const TASK_ALLOWED_DEPTS = ['developer', 'development', 'design', 'designing', 'bde', 'businessdevelopment', 'businessdevelopmentexecutive'];
-
-const guardEmployeeTaskAccess = async (req, res, allowed = TASK_ALLOWED_DEPTS) => {
+const guardEmployeeTaskAccess = async (req, res) => {
   if (req.user.role !== 'employee') return { ok: true };
 
-  const employee = await Employee.findOne({ user: req.user.id }).populate(
-    'workInfo.department',
-    'name code'
-  );
+  const employee = await Employee.findOne({ user: req.user.id });
 
   if (!employee) {
     res.status(404).json({ success: false, message: 'Employee record not found' });
-    return { ok: false };
-  }
-
-  if (!isDepartmentAllowed(employee.workInfo?.department, allowed)) {
-    res.status(403).json({
-      success: false,
-      message: 'Tasks module is not available for your department',
-    });
     return { ok: false };
   }
 

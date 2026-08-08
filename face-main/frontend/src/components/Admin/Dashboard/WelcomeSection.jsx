@@ -43,7 +43,7 @@ const WelcomeSection = ({
   }, [now]);
 
   return (
-    <div className="relative min-h-[210px] overflow-hidden bg-slate-950 border border-white/30 rounded-[28px] shadow-[0_18px_36px_rgba(15,23,42,0.2)] animate-hero-in">
+    <div className="relative min-h-[260px] sm:min-h-[210px] overflow-hidden bg-slate-950 border border-white/30 rounded-2xl sm:rounded-[28px] shadow-[0_18px_36px_rgba(15,23,42,0.2)] animate-hero-in">
       {/* Layered background */}
       <div className="absolute inset-0 pointer-events-none">
         {/* mountain photo background */}
@@ -76,15 +76,15 @@ const WelcomeSection = ({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex min-h-[210px] flex-col justify-between gap-8 p-6 md:flex-row md:items-center md:p-10">
+      <div className="relative z-10 flex min-h-[260px] sm:min-h-[210px] flex-col justify-between gap-5 sm:gap-8 p-4 sm:p-6 md:flex-row md:items-center md:p-10">
         <div className="max-w-3xl">
               <p
-            className="mb-3 text-xs font-bold uppercase tracking-[0.42em] text-slate-300 animate-fade-slide-up"
+            className="mb-2 sm:mb-3 text-[10px] sm:text-xs font-bold uppercase tracking-[0.24em] sm:tracking-[0.42em] text-slate-300 animate-fade-slide-up"
                 style={{ animationDelay: '0ms' }}
               >
             {greeting}
               </p>
-          <h1 className="mb-3 text-3xl font-extrabold leading-tight text-white drop-shadow-sm md:text-5xl">
+          <h1 className="mb-2 sm:mb-3 text-2xl sm:text-3xl font-extrabold leading-tight text-white drop-shadow-sm md:text-5xl">
                 <span
               className="animate-fade-slide-up inline-block"
                   style={{ animationDelay: '160ms' }}
@@ -96,17 +96,17 @@ const WelcomeSection = ({
                 </span>
               </h1>
               <p
-            className="mb-6 text-base text-slate-300 animate-fade-slide-up"
+            className="mb-4 sm:mb-6 text-sm sm:text-base text-slate-300 animate-fade-slide-up"
                 style={{ animationDelay: '220ms' }}
               >
                 Here's what's happening in your company today.
               </p>
 
           <div className="flex flex-wrap items-center gap-3">
-            <span className="rounded-full border border-violet-300/35 bg-violet-400/12 px-4 py-2 text-sm font-bold text-violet-200 shadow-sm backdrop-blur-md">
+            <span className="rounded-full border border-violet-300/35 bg-violet-400/12 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-violet-200 shadow-sm backdrop-blur-md">
               Administrator
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-400/12 px-4 py-2 text-sm font-bold text-emerald-200 shadow-sm backdrop-blur-md">
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-400/12 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-emerald-200 shadow-sm backdrop-blur-md">
               <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.8)]" />
               Online
             </span>
@@ -114,14 +114,14 @@ const WelcomeSection = ({
         </div>
 
         <div className="flex flex-col items-start md:items-end">
-          <div className="font-mono text-4xl font-extrabold leading-none tracking-wider text-white drop-shadow-[0_3px_14px_rgba(255,255,255,0.16)] md:text-6xl">
+          <div className="font-mono text-3xl sm:text-4xl font-extrabold leading-none tracking-wider text-white drop-shadow-[0_3px_14px_rgba(255,255,255,0.16)] md:text-6xl">
             {currentTime}
           </div>
-          <p className="mt-3 text-base font-medium text-slate-300">
+          <p className="mt-2 sm:mt-3 text-sm sm:text-base font-medium text-slate-300">
             {formattedDate}
           </p>
-          <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center md:justify-end">
-            <p className="text-sm font-medium text-slate-300">
+          <div className="mt-4 sm:mt-5 flex flex-col items-start gap-2 sm:gap-3 sm:flex-row sm:items-center md:justify-end">
+            <p className="text-xs sm:text-sm font-medium text-slate-300">
               Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : currentTime}
             </p>
             {/* <button

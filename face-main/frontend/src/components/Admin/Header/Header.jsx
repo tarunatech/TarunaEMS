@@ -95,64 +95,21 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
   // Fetch notifications with error handling
   const fetchNotifications = async () => {
     try {
-      const userRole = localStorage.getItem('userRole');
-
-      if (userRole === 'admin') {
-        // Fetch admin activities
-        // Replace in fetchNotifications
-        const response = await dashboardAPI.getUserNotifications();
-        if (response.data.success) {
-          setNotifications(
-            (response.data.data || []).map((n, index) => ({
-              id: n.id || `notification-${index}`,
-              message: n.message,
-              user: n.user,
-              time: n.time,
-              type: n.type || 'info',
-              category: n.category || 'general',
-              unread: n.unread ?? true
-            }))
-          );
-        }
-
+      const response = await dashboardAPI.getUserNotifications();
+      if (response.data.success) {
+        setNotifications(
+          (response.data.data || []).map((n, index) => ({
+            id: n.id || `notification-${index}`,
+            message: n.message,
+            user: n.user,
+            time: n.time,
+            type: n.type || 'info',
+            category: n.category || 'general',
+            unread: n.unread ?? true
+          }))
+        );
       } else {
-        // For employees, create sample notifications based on stats
-        try {
-          const response = await dashboardAPI.getEmployeeStats();
-          if (response.data.success) {
-            const employeeNotifications = [];
-
-            // Create notifications based on employee data
-            const stats = response.data;
-
-            if (stats.tasks?.pending > 0) {
-              employeeNotifications.push({
-                id: 'pending-tasks',
-                message: `You have ${stats.tasks.pending} pending tasks`,
-                time: 'Today',
-                type: 'warning',
-                category: 'tasks',
-                unread: true
-              });
-            }
-
-            if (stats.tasks?.overdue > 0) {
-              employeeNotifications.push({
-                id: 'overdue-tasks',
-                message: `You have ${stats.tasks.overdue} overdue tasks`,
-                time: 'Today',
-                type: 'error',
-                category: 'tasks',
-                unread: true
-              });
-            }
-
-            setNotifications(employeeNotifications);
-          }
-        } catch (employeeError) {
-          // If employee stats fail, set empty notifications
-          setNotifications([]);
-        }
+        setNotifications([]);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -166,7 +123,7 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
 
     try {
       await fetchNotifications();
-    } catch (error) {
+    } catch {
       toast.error('Failed to refresh notifications');
     }
   };
@@ -240,7 +197,7 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
     };
   };
 
-  const { name, email, role } = getDisplayInfo();
+  const { name, email } = getDisplayInfo();
 
   return (
     <header className="bg-white/95 backdrop-blur-xl border-b border-slate-200/80 h-14 z-40 sticky top-0 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">

@@ -14,7 +14,7 @@ import { useRealTimeUpdates } from '../../../hooks/useRealTimeUpdates';
 import { useAuth } from '../../../hooks/useAuth';
 
 const AdminDashboard = () => {
-  const { user, isAuthenticated, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const {
     stats,
     recentActivities,
@@ -35,7 +35,7 @@ const AdminDashboard = () => {
 
   // Memoized components for performance
   const statsGrid = useMemo(() => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {stats.map((stat, index) => (
         <StatCard key={stat.title} stat={stat} index={index} />
       ))}
@@ -43,7 +43,7 @@ const AdminDashboard = () => {
   ), [stats]);
 
   const contentGrid = useMemo(() => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
       <RecentActivities activities={recentActivities} loading={loading} />
       <UpcomingEvents events={upcomingEvents} loading={loading} />
     </div>
@@ -78,7 +78,7 @@ const AdminDashboard = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Control Bar */}
         {error && (
         <div className="flex items-center justify-between">

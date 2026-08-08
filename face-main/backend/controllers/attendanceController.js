@@ -846,14 +846,22 @@ export const verifyFace = async (req, res) => {
 // @access  Private (Employee)
 export const getTodayAttendance = async (req, res) => {
   try {
-    console.log('Getting today attendance for employee:', req.employee._id);
+    const employee = await Employee.findOne({ user: req.user.id });
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee record not found'
+      });
+    }
+
+    console.log('Getting today attendance for employee:', employee._id);
 
     const { startOfDay, endOfDay } = getTodayDateRange();
     console.log('Date range for today:', { startOfDay, endOfDay });
 
     // Try multiple query strategies
     let attendance = await Attendance.findOne({
-      employee: req.employee._id,
+      employee: employee._id,
       date: {
         $gte: startOfDay,
         $lte: endOfDay
@@ -865,7 +873,7 @@ export const getTodayAttendance = async (req, res) => {
 
     if (!attendance) {
       attendance = await Attendance.findOne({
-        employee: req.employee._id,
+        employee: employee._id,
         checkInTime: {
           $gte: startOfDay,
           $lte: endOfDay
@@ -902,9 +910,16 @@ export const getTodayAttendance = async (req, res) => {
 export const getAttendanceHistory = async (req, res) => {
   try {
     const { startDate, endDate, page = 1, limit = 10 } = req.query;
+    const employee = await Employee.findOne({ user: req.user.id });
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee record not found'
+      });
+    }
 
     // Build date filter
-    let dateFilter = { employee: req.employee._id };
+    let dateFilter = { employee: employee._id };
 
     if (startDate && endDate) {
       dateFilter.date = {
@@ -938,7 +953,7 @@ export const getAttendanceHistory = async (req, res) => {
       dateFilter.date;
 
     const summary = await Attendance.getAttendanceSummary(
-      req.employee._id,
+      employee._id,
       summaryDateRange.$gte,
       summaryDateRange.$lte
     );

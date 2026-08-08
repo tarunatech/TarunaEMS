@@ -234,57 +234,57 @@ const DepartmentManagement = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-4">
-          <div className="premium-stat-card rounded-2xl p-4 sm:p-6" style={{ '--stat-soft': 'rgba(99,102,241,0.10)', '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(99,102,241,0.10)', '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">{departments.length}</h3>
-                <p className="text-sm text-slate-500 sm:text-base">Total Departments</p>
+              <div className="min-w-0">
+                <h3 className="text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">{departments.length}</h3>
+                <p className="text-xs text-slate-500 sm:text-sm">Total Departments</p>
               </div>
-              <div className="premium-icon flex h-10 w-10 items-center justify-center rounded-xl sm:h-12 sm:w-12">
-                <Building className="h-5 w-5 sm:h-6 sm:w-6" />
+              <div className="premium-icon flex h-8 w-8 items-center justify-center rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
+                <Building className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-2xl p-4 sm:p-6" style={{ '--stat-soft': 'rgba(16,185,129,0.10)', '--icon-gradient': 'linear-gradient(135deg,#10b981,#0d9488)', '--icon-shadow': '0 12px 24px rgba(16,185,129,0.25)' }}>
+          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(16,185,129,0.10)', '--icon-gradient': 'linear-gradient(135deg,#10b981,#0d9488)', '--icon-shadow': '0 12px 24px rgba(16,185,129,0.25)' }}>
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">
+              <div className="min-w-0">
+                <h3 className="text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">
                   {departments.filter((d) => d.status === 'Active').length}
                 </h3>
-                <p className="text-sm text-slate-500 sm:text-base">Active</p>
+                <p className="text-xs text-slate-500 sm:text-sm">Active</p>
               </div>
-              <div className="premium-icon flex h-10 w-10 items-center justify-center rounded-xl sm:h-12 sm:w-12">
-                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" />
+              <div className="premium-icon flex h-8 w-8 items-center justify-center rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-2xl p-4 sm:p-6" style={{ '--stat-soft': 'rgba(245,158,11,0.10)', '--icon-gradient': 'linear-gradient(135deg,#f59e0b,#ea580c)', '--icon-shadow': '0 12px 24px rgba(245,158,11,0.25)' }}>
+          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(245,158,11,0.10)', '--icon-gradient': 'linear-gradient(135deg,#f59e0b,#ea580c)', '--icon-shadow': '0 12px 24px rgba(245,158,11,0.25)' }}>
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">
+              <div className="min-w-0">
+                <h3 className="text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">
                   {departments.reduce((sum, dept) => sum + (dept.employeeCount || 0), 0)}
                 </h3>
-                <p className="text-sm text-slate-500 sm:text-base">Total Employees</p>
+                <p className="text-xs text-slate-500 sm:text-sm">Total Employees</p>
               </div>
-              <div className="premium-icon flex h-10 w-10 items-center justify-center rounded-xl sm:h-12 sm:w-12">
-                <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+              <div className="premium-icon flex h-8 w-8 items-center justify-center rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-2xl p-4 sm:p-6" style={{ '--stat-soft': 'rgba(236,72,153,0.10)', '--icon-gradient': 'linear-gradient(135deg,#ec4899,#e11d48)', '--icon-shadow': '0 12px 24px rgba(236,72,153,0.25)' }}>
+          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(236,72,153,0.10)', '--icon-gradient': 'linear-gradient(135deg,#ec4899,#e11d48)', '--icon-shadow': '0 12px 24px rgba(236,72,153,0.25)' }}>
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">
+              <div className="min-w-0">
+                <h3 className="truncate text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">
                   {departments.reduce((sum, dept) => sum + (dept.budget || 0), 0).toLocaleString()}
                 </h3>
-                <p className="text-sm text-slate-500 sm:text-base">Total Budget</p>
+                <p className="text-xs text-slate-500 sm:text-sm">Total Budget</p>
               </div>
-              <div className="premium-icon flex h-10 w-10 items-center justify-center rounded-xl sm:h-12 sm:w-12">
-                <DollarSign className="h-5 w-5 sm:h-6 sm:w-6" />
+              <div className="premium-icon flex h-8 w-8 items-center justify-center rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>
@@ -372,78 +372,89 @@ const DepartmentManagement = () => {
             </table>
           </div>
 
-          <div className="md:hidden">
-            {filteredDepartments.map((department) => (
-              <div
-                key={department._id}
-                className="border-b border-slate-100 p-4 transition-all duration-200 hover:bg-indigo-50/60"
-              >
-                <div className="mb-3 flex items-center space-x-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                    <Building className="h-5 w-5 text-blue-600" />
+          <div className="scrollbar-hide md:hidden max-h-[68dvh] overflow-y-auto overscroll-contain p-3">
+            <div className="grid gap-3">
+              {filteredDepartments.map((department) => (
+                <div
+                  key={department._id}
+                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-200 active:bg-indigo-50/60"
+                >
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50">
+                        <Building className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-slate-900">{department.name}</p>
+                        <p className="text-xs text-slate-500">{department.code}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-shrink-0 items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setSelectedDepartment(department);
+                          setShowViewModal(true);
+                        }}
+                        className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                        title="View Details"
+                        aria-label={`View ${department.name}`}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedDepartment(department);
+                          setShowEditModal(true);
+                        }}
+                        className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                        title="Edit"
+                        aria-label={`Edit ${department.name}`}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteDepartment(department._id)}
+                        className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                        title="Delete"
+                        aria-label={`Delete ${department.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-slate-900">{department.name}</p>
-                    <p className="text-sm text-slate-500">{department.code}</p>
+                  <div className="space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Manager</span>
+                      <span className="truncate text-right font-medium text-slate-800">{department.manager || 'Not assigned'}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Employees</span>
+                      <span className="font-medium text-slate-800">{department.employeeCount || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Status</span>
+                      <span
+                        className={`inline-flex flex-shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium leading-none ${
+                          department.status === 'Active'
+                            ? 'bg-green-100 text-green-700'
+                            : department.status === 'Inactive'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}
+                      >
+                        {department.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Budget</span>
+                      <span className="truncate text-right font-medium text-slate-800">
+                        {department.budget ? `₹${department.budget.toLocaleString()}` : '-'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="mb-3 space-y-2">
-                  <p className="text-sm text-slate-600">
-                    <span className="text-slate-900">Manager:</span> {department.manager || 'Not assigned'}
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    <span className="text-slate-900">Employees:</span> {department.employeeCount || 0}
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    <span className="text-slate-900">Status:</span>
-                    <span
-                      className={`ml-2 rounded-full px-2 py-1 text-xs ${
-                        department.status === 'Active'
-                          ? 'bg-green-100 text-green-700'
-                          : department.status === 'Inactive'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}
-                    >
-                      {department.status}
-                    </span>
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    <span className="text-slate-900">Budget:</span>{' '}
-                    {department.budget ? `₹${department.budget.toLocaleString()}` : '-'}
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => {
-                      setSelectedDepartment(department);
-                      setShowViewModal(true);
-                    }}
-                    className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                    title="View Details"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedDepartment(department);
-                      setShowEditModal(true);
-                    }}
-                    className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                    title="Edit"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteDepartment(department._id)}
-                    className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                    title="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {filteredDepartments.length === 0 && (

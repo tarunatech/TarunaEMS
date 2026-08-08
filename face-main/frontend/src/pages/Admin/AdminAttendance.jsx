@@ -252,52 +252,52 @@ const AdminAttendance = () => {
 
         {/* Summary Cards */}
         {attendanceSummary && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
-            <div className="glass-morphism neon-border rounded-2xl p-4 sm:p-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+            <div className="glass-morphism neon-border rounded-xl sm:rounded-2xl p-3 sm:p-5 lg:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-500 text-xs sm:text-sm">Total Employees</p>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-900">{attendanceSummary.overallStats?.totalEmployees || 0}</p>
+                <div className="min-w-0">
+                  <p className="text-slate-500 text-[11px] sm:text-sm leading-tight">Total Employees</p>
+                  <p className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight mt-1">{attendanceSummary.overallStats?.totalEmployees || 0}</p>
                 </div>
-                <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
+                <Users className="w-5 h-5 sm:w-8 sm:h-8 text-blue-600 flex-shrink-0" />
               </div>
             </div>
-            <div className="premium-stat-card rounded-2xl p-4 sm:p-6 border-emerald-200 bg-gradient-to-br from-white to-emerald-50/70">
+            <div className="premium-stat-card rounded-xl sm:rounded-2xl p-3 sm:p-5 lg:p-6 border-emerald-200 bg-gradient-to-br from-white to-emerald-50/70">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-emerald-800 text-xs sm:text-sm font-semibold">Present Employees</p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-emerald-700 leading-tight">{attendanceSummary.overallStats?.present || 0}</p>
+                <div className="min-w-0">
+                  <p className="text-emerald-800 text-[11px] sm:text-sm font-semibold leading-tight">Present Employees</p>
+                  <p className="text-lg sm:text-3xl font-extrabold text-emerald-700 leading-tight mt-1">{attendanceSummary.overallStats?.present || 0}</p>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/20">
-                  <CheckCircle className="w-6 h-6 text-white" />
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/20 flex-shrink-0">
+                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
               </div>
             </div>
-            <div className="glass-morphism neon-border rounded-2xl p-4 sm:p-6">
+            <div className="glass-morphism neon-border rounded-xl sm:rounded-2xl p-3 sm:p-5 lg:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-500 text-xs sm:text-sm">Late</p>
-                  <p className="text-xl sm:text-2xl font-bold text-amber-600">{attendanceSummary.overallStats?.late || 0}</p>
+                <div className="min-w-0">
+                  <p className="text-slate-500 text-[11px] sm:text-sm leading-tight">Late</p>
+                  <p className="text-lg sm:text-2xl font-bold text-amber-600 leading-tight mt-1">{attendanceSummary.overallStats?.late || 0}</p>
                 </div>
-                <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-amber-600" />
+                <Clock className="w-5 h-5 sm:w-8 sm:h-8 text-amber-600 flex-shrink-0" />
               </div>
             </div>
-            <div className="glass-morphism neon-border rounded-2xl p-4 sm:p-6">
+            <div className="glass-morphism neon-border rounded-xl sm:rounded-2xl p-3 sm:p-5 lg:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-500 text-xs sm:text-sm">Half Day</p>
-                  <p className="text-xl sm:text-2xl font-bold text-orange-400">{attendanceSummary.overallStats?.halfDay || 0}</p>
+                <div className="min-w-0">
+                  <p className="text-slate-500 text-[11px] sm:text-sm leading-tight">Half Day</p>
+                  <p className="text-lg sm:text-2xl font-bold text-orange-400 leading-tight mt-1">{attendanceSummary.overallStats?.halfDay || 0}</p>
                 </div>
-                <Timer className="w-6 h-6 sm:w-8 sm:h-8 text-orange-400" />
+                <Timer className="w-5 h-5 sm:w-8 sm:h-8 text-orange-400 flex-shrink-0" />
               </div>
             </div>
-            <div className="glass-morphism neon-border rounded-2xl p-4 sm:p-6">
+            <div className="glass-morphism neon-border rounded-xl sm:rounded-2xl p-3 sm:p-5 lg:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-500 text-xs sm:text-sm">Absent</p>
-                  <p className="text-xl sm:text-2xl font-bold text-red-400">{attendanceSummary.overallStats?.absent || 0}</p>
+                <div className="min-w-0">
+                  <p className="text-slate-500 text-[11px] sm:text-sm leading-tight">Absent</p>
+                  <p className="text-lg sm:text-2xl font-bold text-red-400 leading-tight mt-1">{attendanceSummary.overallStats?.absent || 0}</p>
                 </div>
-                <XCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-400" />
+                <XCircle className="w-5 h-5 sm:w-8 sm:h-8 text-red-400 flex-shrink-0" />
               </div>
             </div>
           </div>
@@ -372,17 +372,17 @@ const AdminAttendance = () => {
         )}
 
         {/* Attendance Records Table */}
-        <div className="premium-panel rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="premium-panel rounded-2xl p-4 sm:p-6">
+          <div className="flex items-start justify-between gap-3 mb-4 sm:mb-6">
             <h2 className="text-xl font-bold text-slate-900">Attendance Records</h2>
-            <p className="text-slate-500 text-sm">
+            <p className="text-slate-500 text-sm text-right">
               Showing {attendanceRecords.length} of {pagination.total} records
             </p>
           </div>
 
           <>
             {/* Mobile Cards */}
-            <div className="md:hidden grid gap-3 sm:gap-4 p-3 sm:p-4">
+            <div className="scrollbar-hide md:hidden grid max-h-[62dvh] gap-3 overflow-y-auto overscroll-contain pr-1">
               {loading ? (
                 <div className="col-span-full text-center py-8 text-slate-500">
                   <div className="flex items-center justify-center space-x-2">

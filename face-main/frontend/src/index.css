@@ -242,6 +242,15 @@ td {
   transition: all 0.3s ease;
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Modal backdrop with enhanced blur */
 .modal-backdrop {
   background: rgba(15, 23, 42, 0.35);

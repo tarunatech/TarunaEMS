@@ -102,17 +102,17 @@ const QuickActions = ({ userRole = 'admin' }) => {
   };
 
   return (
-    <div className="admin-quick-actions bg-white border border-slate-200/70 rounded-2xl p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-bold text-slate-950">Quick Actions</h2>
+    <div className="admin-quick-actions bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h2 className="text-base sm:text-lg font-bold text-slate-950">Quick Actions</h2>
         {userRole === 'admin' && (
-          <span className="admin-quick-actions-badge text-xs px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
+          <span className="admin-quick-actions-badge text-[11px] sm:text-xs px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
             Admin Panel
           </span>
         )}
       </div>
       
-      <div className={`grid gap-4 ${
+      <div className={`grid gap-3 sm:gap-4 ${
         userRole === 'admin' 
           ? 'grid-cols-2 md:grid-cols-4' 
           : 'grid-cols-2 md:grid-cols-2 lg:grid-cols-4'
@@ -121,16 +121,16 @@ const QuickActions = ({ userRole = 'admin' }) => {
           <button
             key={index}
             onClick={() => handleActionClick(action.href)}
-            className="admin-quick-action-card p-4 rounded-xl border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/60 transition-all duration-300 group relative overflow-hidden bg-white shadow-sm hover:shadow-md"
+            className="admin-quick-action-card p-3 sm:p-4 rounded-xl border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/60 transition-all duration-300 group relative overflow-hidden bg-white shadow-sm hover:shadow-md"
             title={action.description}
           >
             <div className="admin-quick-action-sheen absolute inset-0 bg-gradient-to-r from-transparent via-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             
             <div className="relative z-10">
-              <div className={`mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border ${actionAccents[index % actionAccents.length]} transition-all duration-300 group-hover:scale-110`}>
-                <action.icon className="w-5 h-5" />
+              <div className={`mx-auto mb-2 sm:mb-3 flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl border ${actionAccents[index % actionAccents.length]} transition-all duration-300 group-hover:scale-110`}>
+                <action.icon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <p className="admin-quick-action-label text-sm text-slate-600 group-hover:text-slate-900 transition-colors duration-300 leading-tight">
+              <p className="admin-quick-action-label text-xs sm:text-sm text-slate-600 group-hover:text-slate-900 transition-colors duration-300 leading-tight">
                 {action.label}
               </p>
             </div>

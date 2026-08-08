@@ -183,57 +183,59 @@ const AdminLeaveManagement = () => {
     };
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-2 backdrop-blur-sm sm:p-4">
         <div className="premium-panel w-full max-w-5xl overflow-hidden rounded-2xl shadow-2xl">
-          <div className="flex items-center justify-between border-b border-slate-200 p-5">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4 sm:p-5">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Leave Calendar</h2>
-              <p className="text-sm text-slate-500">View all leave requests by date and status</p>
+              <h2 className="text-lg font-bold text-slate-900 sm:text-2xl">Leave Calendar</h2>
+              <p className="text-xs text-slate-500 sm:text-sm">View all leave requests by date and status</p>
             </div>
             <button
               onClick={() => setShowCalendarModal(false)}
-              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              className="shrink-0 rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
               aria-label="Close leave calendar"
             >
               <XCircle className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="grid max-h-[80vh] gap-6 overflow-y-auto p-5 lg:grid-cols-[1.35fr_0.9fr]">
+          <div className="grid max-h-[85vh] gap-4 overflow-y-auto p-3 sm:max-h-[80vh] sm:gap-6 sm:p-5 lg:grid-cols-[1.35fr_0.9fr]">
             <div>
-              <div className="mb-4 flex flex-wrap gap-3 text-sm">
+              <div className="mb-4 flex flex-wrap gap-2 text-xs sm:gap-3 sm:text-sm">
                 {[
                   ['Approved', 'bg-emerald-500'],
                   ['Pending', 'bg-amber-500'],
                   ['Rejected', 'bg-red-500'],
                   ['Cancelled', 'bg-slate-400'],
                 ].map(([label, color]) => (
-                  <div key={label} className="flex items-center gap-2 text-slate-600">
-                    <span className={`h-3 w-3 rounded-full ${color}`} />
+                  <div key={label} className="flex items-center gap-1.5 text-slate-600 sm:gap-2">
+                    <span className={`h-2.5 w-2.5 rounded-full sm:h-3 sm:w-3 ${color}`} />
                     <span>{label}</span>
                   </div>
                 ))}
               </div>
 
-              <ReactCalendar
-                value={selectedCalendarDate}
-                onChange={setSelectedCalendarDate}
-                tileClassName={tileClassName}
-                tileContent={tileContent}
-                className="admin-leave-calendar"
-              />
+              <div className="overflow-x-auto">
+                <ReactCalendar
+                  value={selectedCalendarDate}
+                  onChange={setSelectedCalendarDate}
+                  tileClassName={tileClassName}
+                  tileContent={tileContent}
+                  className="admin-leave-calendar w-full"
+                />
+              </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
               <div className="mb-4">
-                <p className="text-sm font-semibold text-slate-500">Selected Date</p>
-                <h3 className="text-xl font-bold text-slate-900">
+                <p className="text-xs font-semibold text-slate-500 sm:text-sm">Selected Date</p>
+                <h3 className="text-lg font-bold text-slate-900 sm:text-xl">
                   {selectedCalendarDate.toLocaleDateString()}
                 </h3>
               </div>
 
               {selectedDayLeaves.length === 0 ? (
-                <div className="rounded-xl border border-slate-200 bg-white p-5 text-center text-slate-500">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-500 sm:p-5">
                   No leave requests on this date
                 </div>
               ) : (
@@ -246,16 +248,16 @@ const AdminLeaveManagement = () => {
                         setSelectedLeave(leave);
                         setShowModal(true);
                       }}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:bg-blue-50"
+                      className="w-full rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:bg-blue-50 sm:p-4"
                     >
                       <div className="mb-2 flex items-center justify-between gap-3">
-                        <p className="font-semibold text-slate-900">{getEmployeeName(leave.employee)}</p>
+                        <p className="text-sm font-semibold text-slate-900 sm:text-base">{getEmployeeName(leave.employee)}</p>
                         <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs ${getStatusColor(leave.status)}`}>
                           {leave.status}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-500">{leave.leaveType} | {leave.totalDays} days</p>
-                      <p className="mt-1 line-clamp-2 text-sm text-slate-600">{leave.reason}</p>
+                      <p className="text-xs text-slate-500 sm:text-sm">{leave.leaveType} | {leave.totalDays} days</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-slate-600 sm:text-sm">{leave.reason}</p>
                     </button>
                   ))}
                 </div>
@@ -271,35 +273,35 @@ const AdminLeaveManagement = () => {
     const [comments, setComments] = useState('');
 
     return (
-      <div className="fixed inset-0 bg-slate-900/20 flex items-center justify-center z-50 p-4">
-        <div className="premium-panel rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-          <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900">Leave Application Details</h2>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 p-2 sm:p-4">
+        <div className="premium-panel w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4 sm:p-6">
+            <h2 className="text-lg font-bold text-slate-900 sm:text-2xl">Leave Application Details</h2>
             <button
               onClick={() => setShowModal(false)}
-              className="text-slate-500 hover:text-slate-900"
+              className="shrink-0 text-slate-500 hover:text-slate-900"
             >
               <XCircle className="w-6 h-6" />
             </button>
           </div>
 
           {selectedLeave && (
-            <div className="p-6 space-y-6">
-              <div className="flex items-center space-x-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="premium-icon w-12 h-12 rounded-full" style={{ '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
-                  <User className="w-6 h-6" />
+            <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
+              <div className="flex items-center space-x-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:space-x-4 sm:p-4">
+                <div className="premium-icon h-10 w-10 shrink-0 rounded-full sm:h-12 sm:w-12" style={{ '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
+                  <User className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">
+                <div className="min-w-0">
+                  <h3 className="truncate text-base font-bold text-slate-900 sm:text-lg">
                     {selectedLeave.employee?.fullName ||
                       selectedLeave.employee?.personalInfo?.firstName + ' ' + selectedLeave.employee?.personalInfo?.lastName ||
                       selectedLeave.employee?.user?.name}
                   </h3>
-                  <p className="text-blue-600">{selectedLeave.employee?.employeeId || selectedLeave.employee?.user?.employeeId}</p>
+                  <p className="text-sm text-blue-600">{selectedLeave.employee?.employeeId || selectedLeave.employee?.user?.employeeId}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-3">
                   <div>
                     <label className="text-sm text-slate-500">Leave Type</label>
@@ -336,13 +338,13 @@ const AdminLeaveManagement = () => {
 
               <div>
                 <label className="text-sm text-slate-500">Reason</label>
-                <p className="text-slate-900 bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1">{selectedLeave.reason}</p>
+                <p className="text-slate-900 bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1 text-sm sm:text-base">{selectedLeave.reason}</p>
               </div>
 
               {selectedLeave.approverComments && (
                 <div>
                   <label className="text-sm text-slate-500">Previous Comments</label>
-                  <p className="text-slate-900 bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1">{selectedLeave.approverComments}</p>
+                  <p className="text-slate-900 bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1 text-sm sm:text-base">{selectedLeave.approverComments}</p>
                 </div>
               )}
 
@@ -360,11 +362,11 @@ const AdminLeaveManagement = () => {
                     />
                   </div>
 
-                  <div className="flex justify-end space-x-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-end sm:space-x-4 sm:gap-0">
                     <button
                       onClick={() => handleReject(selectedLeave._id, comments)}
                       disabled={actionLoading}
-                      className="px-6 py-3 border border-red-200 text-red-700 rounded-lg bg-white hover:bg-red-50 transition-colors disabled:opacity-50 flex items-center"
+                      className="flex items-center justify-center rounded-lg border border-red-200 bg-white px-6 py-3 text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
                     >
                       {actionLoading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
                       Reject
@@ -372,7 +374,7 @@ const AdminLeaveManagement = () => {
                     <button
                       onClick={() => handleApprove(selectedLeave._id, comments)}
                       disabled={actionLoading}
-                      className="premium-primary-button px-6 py-3 font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 flex items-center"
+                      className="premium-primary-button flex items-center justify-center rounded-lg px-6 py-3 font-semibold transition-all duration-200 disabled:opacity-50"
                     >
                       {actionLoading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                       Approve
@@ -389,96 +391,96 @@ const AdminLeaveManagement = () => {
 
   return (
     <AdminLayout>
-      <div className="admin-page-shell space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="admin-page-shell space-y-4 sm:space-y-6">
+        <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="premium-page-title text-3xl font-bold">Leave Management</h1>
-            <p className="text-slate-500">Manage employee leave requests and approvals</p>
+            <h1 className="premium-page-title text-xl font-bold sm:text-2xl md:text-3xl">Leave Management</h1>
+            <p className="text-xs text-slate-500 sm:text-sm">Manage employee leave requests and approvals</p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-3">
             <button
               onClick={() => setShowCalendarModal(true)}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 sm:px-6 sm:py-3"
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              Leave Calendar
+              <CalendarIcon className="mr-1.5 h-4 w-4 sm:mr-2" />
+              <span className="whitespace-nowrap">Leave Calendar</span>
             </button>
-            <button className="premium-primary-button px-6 py-3 font-semibold rounded-xl transition-all duration-200 flex items-center">
-              <Download className="w-4 h-4 mr-2" />
-              Export Report
+            <button className="premium-primary-button flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 sm:px-6 sm:py-3">
+              <Download className="mr-1.5 h-4 w-4 sm:mr-2" />
+              <span className="whitespace-nowrap">Export Report</span>
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="premium-stat-card rounded-2xl p-6" style={{ '--stat-soft': 'rgba(99,102,241,0.10)', '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
-            <div className="flex items-center justify-between">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6">
+          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(99,102,241,0.10)', '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
+            <div className="flex items-center justify-between gap-2">
               <div>
-                <h3 className="text-2xl font-bold text-slate-900">{stats.total}</h3>
-                <p className="text-slate-500">Total Applications</p>
+                <h3 className="text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">{stats.total}</h3>
+                <p className="text-xs text-slate-500 sm:text-sm">Total Applications</p>
               </div>
-              <div className="premium-icon w-12 h-12 rounded-xl">
-                <FileText className="w-6 h-6" />
+              <div className="premium-icon h-9 w-9 shrink-0 rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-2xl p-6" style={{ '--stat-soft': 'rgba(245,158,11,0.10)', '--icon-gradient': 'linear-gradient(135deg,#f59e0b,#ea580c)', '--icon-shadow': '0 12px 24px rgba(245,158,11,0.25)' }}>
-            <div className="flex items-center justify-between">
+          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(245,158,11,0.10)', '--icon-gradient': 'linear-gradient(135deg,#f59e0b,#ea580c)', '--icon-shadow': '0 12px 24px rgba(245,158,11,0.25)' }}>
+            <div className="flex items-center justify-between gap-2">
               <div>
-                <h3 className="text-2xl font-bold text-yellow-700">{stats.pending}</h3>
-                <p className="text-slate-500">Pending</p>
+                <h3 className="text-lg font-bold text-yellow-700 sm:text-xl md:text-2xl">{stats.pending}</h3>
+                <p className="text-xs text-slate-500 sm:text-sm">Pending</p>
               </div>
-              <div className="premium-icon w-12 h-12 rounded-xl">
-                <Clock className="w-6 h-6" />
+              <div className="premium-icon h-9 w-9 shrink-0 rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-2xl p-6" style={{ '--stat-soft': 'rgba(16,185,129,0.10)', '--icon-gradient': 'linear-gradient(135deg,#10b981,#0d9488)', '--icon-shadow': '0 12px 24px rgba(16,185,129,0.25)' }}>
-            <div className="flex items-center justify-between">
+          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(16,185,129,0.10)', '--icon-gradient': 'linear-gradient(135deg,#10b981,#0d9488)', '--icon-shadow': '0 12px 24px rgba(16,185,129,0.25)' }}>
+            <div className="flex items-center justify-between gap-2">
               <div>
-                <h3 className="text-2xl font-bold text-green-700">{stats.approved}</h3>
-                <p className="text-slate-500">Approved</p>
+                <h3 className="text-lg font-bold text-green-700 sm:text-xl md:text-2xl">{stats.approved}</h3>
+                <p className="text-xs text-slate-500 sm:text-sm">Approved</p>
               </div>
-              <div className="premium-icon w-12 h-12 rounded-xl">
-                <CheckCircle className="w-6 h-6" />
+              <div className="premium-icon h-9 w-9 shrink-0 rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-2xl p-6" style={{ '--stat-soft': 'rgba(236,72,153,0.10)', '--icon-gradient': 'linear-gradient(135deg,#ec4899,#e11d48)', '--icon-shadow': '0 12px 24px rgba(236,72,153,0.25)' }}>
-            <div className="flex items-center justify-between">
+          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(236,72,153,0.10)', '--icon-gradient': 'linear-gradient(135deg,#ec4899,#e11d48)', '--icon-shadow': '0 12px 24px rgba(236,72,153,0.25)' }}>
+            <div className="flex items-center justify-between gap-2">
               <div>
-                <h3 className="text-2xl font-bold text-red-700">{stats.rejected}</h3>
-                <p className="text-slate-500">Rejected</p>
+                <h3 className="text-lg font-bold text-red-700 sm:text-xl md:text-2xl">{stats.rejected}</h3>
+                <p className="text-xs text-slate-500 sm:text-sm">Rejected</p>
               </div>
-              <div className="premium-icon w-12 h-12 rounded-xl">
-                <XCircle className="w-6 h-6" />
+              <div className="premium-icon h-9 w-9 shrink-0 rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
+                <XCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="premium-panel rounded-2xl p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-slate-400" />
               <input
                 type="text"
                 placeholder="Search employees..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="premium-input w-full pl-10 pr-4 py-3 rounded-xl text-slate-900 placeholder-slate-400"
+                className="premium-input w-full rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400"
               />
             </div>
 
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Filter className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-slate-400" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="premium-input w-full pl-10 pr-4 py-3 rounded-xl text-slate-900"
+                className="premium-input w-full rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900"
               >
                 <option value="">All Status</option>
                 <option value="Pending">Pending</option>
@@ -489,11 +491,11 @@ const AdminLeaveManagement = () => {
             </div>
 
             <div className="relative">
-              <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <CalendarIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-slate-400" />
               <select
                 value={leaveTypeFilter}
                 onChange={(e) => setLeaveTypeFilter(e.target.value)}
-                className="premium-input w-full pl-10 pr-4 py-3 rounded-xl text-slate-900"
+                className="premium-input w-full rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900"
               >
                 <option value="">All Types</option>
                 <option value="Casual">Casual</option>
@@ -510,97 +512,97 @@ const AdminLeaveManagement = () => {
                 setStatusFilter('');
                 setLeaveTypeFilter('');
               }}
-              className="px-4 py-3 border border-slate-300 text-slate-700 rounded-lg bg-white hover:bg-slate-50 transition-colors"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
             >
               Clear Filters
             </button>
           </div>
         </div>
 
-        <div className="premium-panel rounded-2xl overflow-hidden">
+        <div className="premium-panel overflow-hidden rounded-2xl">
           {loading ? (
-            <div className="p-12 text-center">
-              <Loader className="w-8 h-8 text-blue-600 mx-auto mb-4 animate-spin" />
-              <p className="text-slate-500">Loading leave applications...</p>
+            <div className="p-8 text-center sm:p-12">
+              <Loader className="mx-auto mb-4 h-8 w-8 animate-spin text-blue-600" />
+              <p className="text-sm text-slate-500">Loading leave applications...</p>
             </div>
           ) : (
             <>
-              <div className="md:hidden grid gap-4 p-4">
+              <div className="scrollbar-hide grid max-h-[68dvh] gap-3 overflow-y-auto overscroll-contain p-3 sm:gap-4 sm:p-4 md:hidden">
                 {leaves.map((leave) => (
-                  <div key={leave._id} className="bg-white border border-slate-200 rounded-xl p-4 hover:bg-indigo-50/60 transition-all duration-200 shadow-sm hover:-translate-y-0.5 hover:shadow-md">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="w-5 h-5 text-blue-600" />
+                  <div key={leave._id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-200 active:bg-indigo-50/60 sm:p-4">
+                    <div className="mb-3 flex items-start justify-between gap-2">
+                      <div className="flex min-w-0 flex-1 items-center space-x-2.5 sm:space-x-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 sm:h-10 sm:w-10">
+                          <User className="h-4 w-4 text-blue-600 sm:h-5 sm:w-5" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-slate-900 font-medium text-sm truncate">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-slate-900">
                             {leave.employee?.fullName ||
                               (leave.employee?.personalInfo?.firstName + ' ' + leave.employee?.personalInfo?.lastName) ||
                               leave.employee?.user?.name}
                           </p>
-                          <p className="text-slate-500 text-xs flex items-center">
+                          <p className="flex items-center text-xs text-slate-500">
                             <span className="truncate">{leave.employee?.employeeId || leave.employee?.user?.employeeId}</span>
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2 ml-2">
+                      <div className="ml-2 flex shrink-0 items-center space-x-1">
                         <button
                           onClick={() => {
                             setSelectedLeave(leave);
                             setShowModal(true);
                           }}
-                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
                           title="View Details"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="h-4 w-4" />
                         </button>
                         {leave.status === 'Pending' && (
                           <>
                             <button
                               onClick={() => handleApprove(leave._id)}
-                              className="p-1.5 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-green-50 hover:text-green-600"
                               title="Quick Approve"
                             >
-                              <CheckCircle className="w-4 h-4" />
+                              <CheckCircle className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleReject(leave._id, 'Application rejected')}
-                              className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
                               title="Quick Reject"
                             >
-                              <XCircle className="w-4 h-4" />
+                              <XCircle className="h-4 w-4" />
                             </button>
                           </>
                         )}
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 text-xs">Leave Type</span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${getLeaveTypeColor(leave.leaveType)}`}>
+                    <div className="space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Leave Type</span>
+                        <span className={`inline-flex flex-shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium leading-none ${getLeaveTypeColor(leave.leaveType)}`}>
                           {leave.leaveType}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 text-xs">Duration</span>
-                        <span className="text-slate-900 text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="shrink-0 text-slate-500">Duration</span>
+                        <span className="text-right font-medium text-slate-900">
                           {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 text-xs">Days</span>
-                        <span className="text-slate-900 text-sm">{leave.totalDays} days</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Days</span>
+                        <span className="font-medium text-slate-900">{leave.totalDays} days</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 text-xs">Applied Date</span>
-                        <span className="text-slate-500 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Applied</span>
+                        <span className="font-medium text-slate-900">
                           {new Date(leave.appliedDate).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 text-xs">Status</span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(leave.status)}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Status</span>
+                        <span className={`inline-flex flex-shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium leading-none ${getStatusColor(leave.status)}`}>
                           {leave.status}
                         </span>
                       </div>
@@ -614,12 +616,12 @@ const AdminLeaveManagement = () => {
                   <table className="w-full">
                     <thead className="border-b border-slate-200 bg-slate-50">
                       <tr>
-                        <th className="text-left p-6 text-slate-500 font-semibold">Employee</th>
-                        <th className="text-left p-6 text-slate-500 font-semibold">Leave Type</th>
-                        <th className="text-left p-6 text-slate-500 font-semibold">Duration</th>
-                        <th className="text-left p-6 text-slate-500 font-semibold">Applied Date</th>
-                        <th className="text-left p-6 text-slate-500 font-semibold">Status</th>
-                        <th className="text-left p-6 text-slate-500 font-semibold">Actions</th>
+                        <th className="p-6 text-left font-semibold text-slate-500">Employee</th>
+                        <th className="p-6 text-left font-semibold text-slate-500">Leave Type</th>
+                        <th className="p-6 text-left font-semibold text-slate-500">Duration</th>
+                        <th className="p-6 text-left font-semibold text-slate-500">Applied Date</th>
+                        <th className="p-6 text-left font-semibold text-slate-500">Status</th>
+                        <th className="p-6 text-left font-semibold text-slate-500">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -627,21 +629,21 @@ const AdminLeaveManagement = () => {
                         <tr key={leave._id} className="premium-table-row border-b border-slate-100">
                           <td className="p-6">
                             <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center">
-                                <User className="w-5 h-5 text-blue-600" />
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-blue-50">
+                                <User className="h-5 w-5 text-blue-600" />
                               </div>
                               <div>
-                                <p className="text-slate-900 font-medium">
+                                <p className="font-medium text-slate-900">
                                   {leave.employee?.fullName ||
                                     (leave.employee?.personalInfo?.firstName + ' ' + leave.employee?.personalInfo?.lastName) ||
                                     leave.employee?.user?.name}
                                 </p>
-                                <p className="text-slate-500 text-sm">{leave.employee?.employeeId || leave.employee?.user?.employeeId}</p>
+                                <p className="text-sm text-slate-500">{leave.employee?.employeeId || leave.employee?.user?.employeeId}</p>
                               </div>
                             </div>
                           </td>
                           <td className="p-6">
-                            <span className={`px-3 py-1 text-xs rounded-full ${getLeaveTypeColor(leave.leaveType)}`}>
+                            <span className={`rounded-full px-3 py-1 text-xs ${getLeaveTypeColor(leave.leaveType)}`}>
                               {leave.leaveType}
                             </span>
                           </td>
@@ -655,7 +657,7 @@ const AdminLeaveManagement = () => {
                             {new Date(leave.appliedDate).toLocaleDateString()}
                           </td>
                           <td className="p-6">
-                            <span className={`px-3 py-1 text-xs rounded-full ${getStatusColor(leave.status)}`}>
+                            <span className={`rounded-full px-3 py-1 text-xs ${getStatusColor(leave.status)}`}>
                               {leave.status}
                             </span>
                           </td>
@@ -666,26 +668,26 @@ const AdminLeaveManagement = () => {
                                   setSelectedLeave(leave);
                                   setShowModal(true);
                                 }}
-                                className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
                                 title="View Details"
                               >
-                                <Eye className="w-4 h-4" />
+                                <Eye className="h-4 w-4" />
                               </button>
                               {leave.status === 'Pending' && (
                                 <>
                                   <button
                                     onClick={() => handleApprove(leave._id)}
-                                    className="p-2 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                    className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-green-50 hover:text-green-600"
                                     title="Quick Approve"
                                   >
-                                    <CheckCircle className="w-4 h-4" />
+                                    <CheckCircle className="h-4 w-4" />
                                   </button>
                                   <button
                                     onClick={() => handleReject(leave._id, 'Application rejected')}
-                                    className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
                                     title="Quick Reject"
                                   >
-                                    <XCircle className="w-4 h-4" />
+                                    <XCircle className="h-4 w-4" />
                                   </button>
                                 </>
                               )}
@@ -701,10 +703,10 @@ const AdminLeaveManagement = () => {
           )}
 
           {!loading && leaves.length === 0 && (
-            <div className="p-12 text-center">
-              <CalendarIcon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 mb-2">No leave applications found</h3>
-              <p className="text-slate-500">
+            <div className="p-8 text-center sm:p-12">
+              <CalendarIcon className="mx-auto mb-4 h-10 w-10 text-slate-300 sm:h-12 sm:w-12" />
+              <h3 className="mb-2 text-base font-medium text-slate-900 sm:text-lg">No leave applications found</h3>
+              <p className="text-sm text-slate-500">
                 {searchTerm || statusFilter || leaveTypeFilter
                   ? 'Try adjusting your search filters'
                   : 'No leave applications have been submitted yet'}
