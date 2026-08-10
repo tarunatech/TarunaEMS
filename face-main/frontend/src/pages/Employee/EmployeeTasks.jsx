@@ -300,14 +300,14 @@ const EmployeeTasks = () => {
   }
 
   const TaskDetailModal = () => (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div className="fixed bottom-0 left-0 right-0 top-14 z-[10000] flex items-center justify-center p-2 sm:inset-0 sm:p-4">
       {/* Enhanced backdrop with blur */}
       <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowTaskModal(false)} />
 
       {/* Modal content */}
-      <div className="employee-tasks-modal relative bg-white border border-slate-200/80 rounded-2xl shadow-[0_18px_44px_rgba(15,23,42,0.18)] p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-[17px] font-semibold tracking-tight text-slate-900">Task Details</h2>
+      <div className="employee-tasks-modal relative flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_18px_44px_rgba(15,23,42,0.18)] sm:max-h-[calc(100dvh-1rem)]">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-3 py-2 sm:border-b-0 sm:px-6 sm:pb-0 sm:pt-6">
+          <h2 className="text-base font-semibold tracking-tight text-slate-900 sm:text-[17px]">Task Details</h2>
           <button
             onClick={() => setShowTaskModal(false)}
             className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150"
@@ -316,53 +316,54 @@ const EmployeeTasks = () => {
           </button>
         </div>
 
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2 sm:px-6 sm:py-6">
         {modalLoading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-8">
             <Loader2 strokeWidth={1.75} className="w-6 h-6 animate-spin text-indigo-600" />
           </div>
         ) : selectedTask && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-2 sm:gap-6 lg:grid-cols-3">
             {/* Main Task Info */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="employee-tasks-row p-4 bg-slate-50 border border-slate-200/80 rounded-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[15px] font-semibold text-slate-900">{selectedTask.title}</h3>
-                  <span className={`px-3 py-1 text-[12px] rounded-full ${getStatusColor(selectedTask.status)}`}>
+            <div className="space-y-2 sm:space-y-6 lg:col-span-2">
+            <div className="employee-tasks-row rounded-lg border border-slate-200/80 bg-slate-50 p-2 sm:p-4">
+  <div className="mb-1.5 flex items-start justify-between gap-3 sm:mb-4">
+                  <h3 className="text-[14px] font-semibold leading-tight text-slate-900 sm:text-[15px]">{selectedTask.title}</h3>
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] sm:px-3 sm:py-1 sm:text-[12px] ${getStatusColor(selectedTask.status)}`}>
                     {selectedTask.status}
                   </span>
                 </div>
-                <p className="text-slate-500 text-[13px] mb-4">{selectedTask.description}</p>
+                <p className="mb-2 line-clamp-2 text-[12.5px] text-slate-500 sm:mb-4 sm:line-clamp-none sm:text-[13px]">{selectedTask.description}</p>
 
-                <div className="grid grid-cols-2 gap-4 text-[13px]">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[12px] sm:gap-4 sm:text-[13px]">
                   <div>
-                    <span className="text-slate-500">Project:</span>
-                    <p className="text-slate-900 font-medium">{selectedTask.project}</p>
+                    <span className="text-slate-500">Project</span>
+                    <p className="truncate font-medium text-slate-900">{selectedTask.project || '—'}</p>
                   </div>
                   <div>
-                    <span className="text-slate-500">Category:</span>
-                    <p className="text-slate-900 font-medium">{selectedTask.category}</p>
+                    <span className="text-slate-500">Category</span>
+                    <p className="truncate font-medium text-slate-900">{selectedTask.category}</p>
                   </div>
                   <div>
-                    <span className="text-slate-500">Priority:</span>
-                    <span className={`px-2 py-1 text-[12px] rounded-full ${getPriorityColor(selectedTask.priority)}`}>
+                    <span className="mr-1 text-slate-500">Priority</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] sm:py-1 sm:text-[12px] ${getPriorityColor(selectedTask.priority)}`}>
                       {selectedTask.priority}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-500">Due Date:</span>
+                    <span className="text-slate-500">Due</span>
                     <p className={`font-medium ${isOverdue(selectedTask.dueDate, selectedTask.status) ? 'text-red-600' : 'text-slate-900'}`}>
                       {formatDate(selectedTask.dueDate)}
                     </p>
                   </div>
                   <div>
-                    <span className="text-slate-500">Assigned By:</span>
-                    <p className="text-slate-900 font-medium">
+                    <span className="text-slate-500">By</span>
+                    <p className="truncate font-medium text-slate-900">
                       {selectedTask.assignedBy?.name || 'Admin'}
                     </p>
                   </div>
                   <div>
-                    <span className="text-slate-500">Created:</span>
-                    <p className="text-slate-900 font-medium">
+                    <span className="text-slate-500">Created</span>
+                    <p className="font-medium text-slate-900">
                       {formatDate(selectedTask.createdAt)}
                     </p>
                   </div>
@@ -370,58 +371,57 @@ const EmployeeTasks = () => {
               </div>
 
               {/* Progress Section */}
-              <div className="employee-tasks-row p-4 bg-slate-50 border border-slate-200/80 rounded-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-[15px] font-semibold text-slate-900">Progress</h4>
-                  <span className="text-indigo-600 font-semibold text-[13px]">{selectedTask.progress}%</span>
-                </div>
-                <div className="w-full bg-slate-200 rounded-full h-3 mb-4">
-                  <div
-                    className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${selectedTask.progress}%` }}
-                  ></div>
-                </div>
+<div className="employee-tasks-row rounded-lg border border-slate-200/80 bg-slate-50 p-2 sm:p-4">
+  <div className="mb-2 flex items-center justify-between sm:mb-4">
+    <h4 className="text-[13px] font-semibold text-slate-900 sm:text-[15px]">Progress</h4>
+    <span className="text-indigo-600 font-semibold text-[13px]">{selectedTask.progress}%</span>
+  </div>
+  <div className="h-2 w-full rounded-full bg-slate-200 sm:h-3">
+    <div
+      className="h-full rounded-full bg-indigo-600 transition-all duration-300"
+      style={{ width: `${selectedTask.progress}%` }}
+    ></div>
+  </div>
 
-                <div className="flex items-center space-x-4">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={selectedTask.progress}
-                    onChange={(e) => updateTaskProgress(selectedTask._id, parseInt(e.target.value))}
-                    className="flex-1 accent-indigo-600"
-                    disabled={selectedTask.status === 'Completed'}
-                  />
-                  <div className="flex space-x-2">
-                    {selectedTask.status !== 'Completed' && (
-                      <>
-                        <button
-                          onClick={() => updateTaskStatus(selectedTask._id, selectedTask.status === 'In Progress' ? 'Not Started' : 'In Progress')}
-                          className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[13px] hover:bg-indigo-100 transition-colors duration-150"
-                        >
-                          {selectedTask.status === 'In Progress' ? 'Pause' : 'Start'}
-                        </button>
-                        <button
-                          onClick={() => updateTaskProgress(selectedTask._id, 100)}
-                          className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-[13px] hover:bg-emerald-100 transition-colors duration-150"
-                        >
-                          Complete
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
+  <div className="mt-2 sm:mt-4">
+    <input
+      type="range"
+      min="0"
+      max="100"
+      value={selectedTask.progress}
+      onChange={(e) => updateTaskProgress(selectedTask._id, parseInt(e.target.value))}
+      className="h-5 w-full accent-indigo-600"
+      disabled={selectedTask.status === 'Completed'}
+    />
+  </div>
+
+  {selectedTask.status !== 'Completed' && (
+    <div className="mt-1.5 grid grid-cols-2 gap-1.5 sm:mt-3 sm:flex sm:gap-2">
+      <button
+        onClick={() => updateTaskStatus(selectedTask._id, selectedTask.status === 'In Progress' ? 'Not Started' : 'In Progress')}
+        className="rounded-lg bg-indigo-50 px-3 py-1.5 text-[12px] text-indigo-700 transition-colors duration-150 hover:bg-indigo-100 sm:text-[13px]"
+      >
+        {selectedTask.status === 'In Progress' ? 'Pause' : 'Start'}
+      </button>
+      <button
+        onClick={() => updateTaskProgress(selectedTask._id, 100)}
+        className="rounded-lg bg-emerald-50 px-3 py-1.5 text-[12px] text-emerald-700 transition-colors duration-150 hover:bg-emerald-100 sm:text-[13px]"
+      >
+        Complete
+      </button>
+    </div>
+  )}
+</div>
 
               {/* Subtasks */}
               {selectedTask.subtasks && selectedTask.subtasks.length > 0 && (
-                <div className="employee-tasks-row p-4 bg-slate-50 border border-slate-200/80 rounded-lg">
-                  <h4 className="text-[15px] font-semibold text-slate-900 mb-4">
+                <div className="employee-tasks-row rounded-lg border border-slate-200/80 bg-slate-50 p-3 sm:p-4">
+                  <h4 className="mb-3 text-[15px] font-semibold text-slate-900 sm:mb-4">
                     Subtasks ({selectedTask.subtasks.filter(st => st.completed).length}/{selectedTask.subtasks.length})
                   </h4>
                   <div className="space-y-2">
                     {selectedTask.subtasks.map((subtask) => (
-                      <div key={subtask._id} className="employee-tasks-inner-row flex items-center space-x-3 p-3 bg-white border border-slate-200/80 rounded-lg">
+                      <div key={subtask._id} className="employee-tasks-inner-row flex items-center space-x-3 rounded-lg border border-slate-200/80 bg-white p-2.5 sm:p-3">
                         <input
                           type="checkbox"
                           checked={subtask.completed}
@@ -443,17 +443,17 @@ const EmployeeTasks = () => {
               )}
 
               {/* Comments Section */}
-              <div className="employee-tasks-row p-4 bg-slate-50 border border-slate-200/80 rounded-lg">
-                <h4 className="text-[15px] font-semibold text-slate-900 mb-4">
+              <div className="employee-tasks-row rounded-lg border border-slate-200/80 bg-slate-50 p-2 sm:p-4">
+                <h4 className="mb-1.5 text-[15px] font-semibold text-slate-900 sm:mb-4">
                   Comments ({selectedTask.comments?.length || 0})
                 </h4>
 
-                <div className="space-y-3 max-h-60 overflow-y-auto mb-4">
+                <div className="mb-1.5 max-h-16 space-y-1.5 overflow-y-auto sm:mb-4 sm:max-h-60 sm:space-y-3">
                   {selectedTask.comments && selectedTask.comments.length > 0 ? (
                     selectedTask.comments.map((comment) => (
-                      <div key={comment._id} className="p-3 bg-white border border-slate-200 rounded-lg">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
+                      <div key={comment._id} className="rounded-lg border border-slate-200 bg-white p-2.5 sm:p-3">
+                        <div className="mb-1.5 flex items-center space-x-2 sm:mb-2">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600">
                             <User strokeWidth={1.75} className="w-3 h-3 text-white" />
                           </div>
                           <span className="text-slate-900 font-medium text-sm">
@@ -467,24 +467,24 @@ const EmployeeTasks = () => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-slate-400 text-sm">No comments yet</p>
+                    <p className="text-sm text-slate-400">No comments yet</p>
                   )}
                 </div>
 
                 {/* Add Comment */}
-                <div className="flex space-x-3">
+                <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-2 sm:flex sm:space-x-3">
                   <input
                     type="text"
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Add a comment..."
-                    className="flex-1 px-3 py-2 bg-white border border-slate-200/80 rounded-lg text-slate-900 text-[13px] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-colors duration-150"
+                    className="min-w-0 rounded-lg border border-slate-200/80 bg-white px-3 py-1.5 text-[13px] text-slate-900 transition-colors duration-150 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 sm:flex-1 sm:py-2"
                     onKeyPress={(e) => e.key === 'Enter' && handleAddComment(selectedTask._id)}
                   />
                   <button
                     onClick={() => handleAddComment(selectedTask._id)}
                     disabled={!newComment.trim()}
-                    className="px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center rounded-lg bg-indigo-50 px-3 py-1.5 text-indigo-700 transition-colors duration-150 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 sm:py-2"
                   >
                     <Send strokeWidth={1.75} className="w-[18px] h-[18px]" />
                   </button>
@@ -493,11 +493,11 @@ const EmployeeTasks = () => {
             </div>
 
             {/* Side Info */}
-            <div className="space-y-6">
+            <div className="space-y-3 sm:space-y-6">
               {/* Time Tracking */}
-              <div className="employee-tasks-row p-4 bg-slate-50 border border-slate-200/80 rounded-lg">
-                <h4 className="text-[15px] font-semibold text-slate-900 mb-4">Time Tracking</h4>
-                <div className="space-y-3">
+              <div className="employee-tasks-row rounded-lg border border-slate-200/80 bg-slate-50 p-3 sm:p-4">
+                <h4 className="mb-3 text-[15px] font-semibold text-slate-900 sm:mb-4">Time Tracking</h4>
+                <div className="space-y-2 text-[13px] sm:space-y-3">
                   <div className="flex justify-between">
                     <span className="text-slate-500">Estimated</span>
                     <span className="text-slate-900">{selectedTask.estimatedHours || 0}h</span>
@@ -514,7 +514,7 @@ const EmployeeTasks = () => {
                   </div>
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-3 sm:mt-4">
                   {timeTracking[selectedTask._id]?.isRunning ? (
                     <button
                       onClick={() => stopTimer(selectedTask._id)}
@@ -525,47 +525,47 @@ const EmployeeTasks = () => {
                     </button>
                   ) : (
                     <button
-                      onClick={() => startTimer(selectedTask._id)}
-                      className="w-full px-4 py-2 bg-white border border-slate-200/80 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors duration-150 flex items-center justify-center disabled:opacity-50 text-[13px] font-semibold"
-                      disabled={selectedTask.status === 'Completed'}
-                    >
-                      <Play strokeWidth={1.75} className="w-[18px] h-[18px] mr-2" />
-                      Start Timer
-                    </button>
+  onClick={() => startTimer(selectedTask._id)}
+  className="w-full px-3 py-2 bg-white border border-slate-200/80 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors duration-150 flex items-center justify-center disabled:opacity-50 text-[13px] font-semibold"
+  disabled={selectedTask.status === 'Completed'}
+>
+  <Play strokeWidth={1.75} className="w-[18px] h-[18px] mr-2" />
+  Start Timer
+</button>
                   )}
                 </div>
               </div>
 
               {/* Task Actions */}
-              <div className="employee-tasks-row p-4 bg-slate-50 border border-slate-200/80 rounded-lg">
-                <h4 className="text-[15px] font-semibold text-slate-900 mb-4">Actions</h4>
-                <div className="space-y-3">
+              <div className="employee-tasks-row rounded-lg border border-slate-200/80 bg-slate-50 p-3 sm:p-4">
+                <h4 className="mb-3 text-[15px] font-semibold text-slate-900 sm:mb-4">Actions</h4>
+                <div className="grid grid-cols-2 gap-2 sm:block sm:space-y-3">
                   {selectedTask.status !== 'Completed' && (
                     <>
                       <button
                         onClick={() => updateTaskStatus(selectedTask._id, 'In Progress')}
                         disabled={selectedTask.status === 'In Progress'}
-                        className="w-full px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed text-[13px] font-semibold"
+                        className="w-full rounded-lg bg-indigo-50 px-3 py-2 text-[12px] font-semibold text-indigo-700 transition-colors duration-150 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-[13px]"
                       >
                         {selectedTask.status === 'In Progress' ? 'Already In Progress' : 'Start Task'}
                       </button>
                       <button
                         onClick={() => updateTaskStatus(selectedTask._id, 'On Hold')}
                         disabled={selectedTask.status === 'On Hold'}
-                        className="w-full px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full rounded-lg bg-amber-100 px-3 py-2 text-[12px] text-amber-700 transition-all duration-200 hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
                       >
                         {selectedTask.status === 'On Hold' ? 'Already On Hold' : 'Put On Hold'}
                       </button>
                       <button
                         onClick={() => updateTaskStatus(selectedTask._id, 'Review')}
                         disabled={selectedTask.status === 'Review'}
-                        className="w-full px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full rounded-lg bg-indigo-100 px-3 py-2 text-[12px] text-indigo-700 transition-all duration-200 hover:bg-indigo-200 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
                       >
                         {selectedTask.status === 'Review' ? 'In Review' : 'Submit for Review'}
                       </button>
                       <button
                         onClick={() => updateTaskStatus(selectedTask._id, 'Completed')}
-                        className="w-full px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors duration-150 text-[13px] font-semibold"
+                        className="w-full rounded-lg bg-emerald-50 px-2 py-1 text-[12px] font-semibold text-emerald-700 transition-colors duration-150 hover:bg-emerald-100 sm:px-2 sm:text-[13px]"
                       >
                         Mark Complete
                       </button>
@@ -587,6 +587,7 @@ const EmployeeTasks = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
@@ -865,21 +866,21 @@ const EmployeeTasks = () => {
       {showTaskModal && <TaskDetailModal />}
 
       {/* Day Book Modal */}
-      {showDayBookModal && (
-        <div className="fixed inset-y-0 left-0 right-0 lg:left-64 z-[9999] flex items-center justify-center p-3">
-          <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm" onClick={() => setShowDayBookModal(false)} />
-          <div className="employee-tasks-modal relative w-full max-w-5xl max-h-[84vh] overflow-y-auto rounded-2xl border border-slate-200/80 bg-slate-50 shadow-[0_18px_44px_rgba(15,23,42,0.18)] animate-enter">
-            <button
-              onClick={() => setShowDayBookModal(false)}
-              className="absolute right-4 top-4 z-20 p-2 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition-colors duration-150"
-              title="Close"
-            >
-              <X strokeWidth={1.75} className="w-[18px] h-[18px]" />
-            </button>
-            <DayBookEntry embedded onClose={() => setShowDayBookModal(false)} />
-          </div>
-        </div>
-      )}
+     {showDayBookModal && (
+  <div className="fixed bottom-0 left-0 right-0 top-14 z-[9999] flex items-start justify-center overflow-y-auto p-2 sm:items-center sm:p-3 lg:inset-y-0 lg:left-64">
+    <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm" onClick={() => setShowDayBookModal(false)} />
+    <div className="employee-tasks-modal relative h-full w-full max-w-5xl overflow-y-auto rounded-2xl border border-slate-200/80 bg-slate-50 shadow-[0_18px_44px_rgba(15,23,42,0.18)] animate-enter sm:h-auto sm:max-h-[84vh]">
+      <button
+        onClick={() => setShowDayBookModal(false)}
+        className="absolute right-3 top-3 z-20 p-2 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition-colors duration-150"
+        title="Close"
+      >
+        <X strokeWidth={1.75} className="w-[18px] h-[18px]" />
+      </button>
+      <DayBookEntry embedded onClose={() => setShowDayBookModal(false)} />
+    </div>
+  </div>
+)}
 
       {/* Add Task Modal */}
       {showAddModal && (

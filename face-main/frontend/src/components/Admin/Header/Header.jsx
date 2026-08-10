@@ -200,12 +200,12 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
   const { name, email } = getDisplayInfo();
 
   return (
-    <header className="bg-white/95 backdrop-blur-xl border-b border-slate-200/80 h-14 z-40 sticky top-0 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
-      <div className="flex items-center justify-between h-full px-4 sm:px-6">
+    <header className="sticky top-0 z-40 h-14 shrink-0 border-b border-slate-200/80 bg-white/95 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+      <div className="flex h-full items-center justify-between gap-2 px-3 sm:px-6">
         {/* Mobile menu button */}
         <button
           onClick={() => setSidebarOpen(true)}
-          className="lg:hidden text-slate-500 hover:text-slate-900 p-1 rounded-md transition-colors"
+          className="rounded-md p-1 text-slate-500 transition-colors hover:text-slate-900 lg:hidden"
           aria-label="Open sidebar"
         >
           <Menu className="w-6 h-6" />
@@ -220,15 +220,15 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
         </div>
 
         {/* Mobile Page Title - Only show on small screens */}
-        <div className="sm:hidden lg:hidden flex-1 text-center">
-          <h2 className="text-lg font-bold text-slate-900 truncate px-2">
+        <div className="min-w-0 flex-1 text-center sm:hidden lg:hidden">
+          <h2 className="truncate px-1 text-base font-bold text-slate-900">
             {sidebarItems.find((item) => item.path === location.pathname)?.name ||
               "Dashboard"}
           </h2>
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <div className="flex shrink-0 items-center space-x-2 sm:space-x-4">
           <NotificationBell
             unreadCount={unreadNotifications}
             notifications={notifications}

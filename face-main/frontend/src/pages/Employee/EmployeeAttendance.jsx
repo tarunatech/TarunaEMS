@@ -305,10 +305,10 @@ const EmployeeAttendance = () => {
     }
   };
 
-  const fetchAttendanceHistory = async () => {
+  const fetchAttendanceHistory = async (month = selectedMonth) => {
     try {
       setLoading(true);
-      const startDate = new Date(selectedMonth + '-01');
+      const startDate = new Date(month + '-01');
       const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
       const response = await attendanceAPI.getAttendanceHistory({
         startDate: startDate.toISOString(),
@@ -613,16 +613,17 @@ const EmployeeAttendance = () => {
         )}
 
         <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '280ms' }}>
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-[15px] font-semibold text-slate-900">Attendance History</h2>
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-[18px] font-semibold leading-tight text-slate-900 sm:text-[15px]">Attendance History</h2>
             <input
               type="month"
               value={selectedMonth}
               onChange={(e) => {
-                setSelectedMonth(e.target.value);
-                setTimeout(fetchAttendanceHistory, 100);
+                const nextMonth = e.target.value;
+                setSelectedMonth(nextMonth);
+                fetchAttendanceHistory(nextMonth);
               }}
-              className="bg-white text-slate-900 border border-slate-200/80 rounded-lg px-3 py-2 text-[13px] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-colors duration-150"
+              className="h-11 w-full rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-[13px] text-slate-900 transition-colors duration-150 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 sm:w-auto"
             />
           </div>
 
@@ -638,26 +639,24 @@ const EmployeeAttendance = () => {
               <p className="text-[13px] text-slate-500 font-medium">No attendance records for this month</p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
               {attendanceHistory.map((record) => (
-                <div key={record._id} className="attendance-soft-row flex items-center justify-between p-3 bg-slate-50 border border-slate-200/80 rounded-lg hover:bg-slate-100 transition-colors duration-150">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-center">
-                      <p className="text-slate-900 text-[13px] font-medium">{formatDate(record.date)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4 text-[13px]">
-                    <div className="text-center">
-                      <p className="text-slate-500 text-[12px]">In</p>
-                      <p className="text-slate-900">{formatTime(record.checkInTime)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-slate-500 text-[12px]">Out</p>
-                      <p className="text-slate-900">{formatTime(record.checkOutTime)}</p>
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(record.status)}`}>
+                <div key={record._id} className="attendance-soft-row rounded-lg border border-slate-200/80 bg-slate-50 p-3 transition-colors duration-150 hover:bg-slate-100">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-[14px] font-semibold leading-snug text-slate-900">{formatDate(record.date)}</p>
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs ${getStatusColor(record.status)}`}>
                       {record.status || 'Present'}
                     </span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-[13px] sm:flex sm:items-center sm:gap-6">
+                    <div className="rounded-md border border-slate-200/70 bg-white px-3 py-2 sm:border-0 sm:bg-transparent sm:p-0">
+                      <p className="text-[11px] font-medium uppercase text-slate-500">In</p>
+                      <p className="mt-0.5 font-medium text-slate-900">{formatTime(record.checkInTime)}</p>
+                    </div>
+                    <div className="rounded-md border border-slate-200/70 bg-white px-3 py-2 sm:border-0 sm:bg-transparent sm:p-0">
+                      <p className="text-[11px] font-medium uppercase text-slate-500">Out</p>
+                      <p className="mt-0.5 font-medium text-slate-900">{formatTime(record.checkOutTime)}</p>
+                    </div>
                   </div>
                 </div>
               ))}

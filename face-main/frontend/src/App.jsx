@@ -22,6 +22,7 @@ import LeadManagement from './pages/Sales/LeadManagement';
 import ProblemStatementPage from './pages/Employee/ProblemStatementPage';
 import SalesPage from './pages/Employee/Sales';
 import SalesPipelinePage from './pages/Employee/SalesPipelinePage';
+import SalesMeetings from './pages/Employee/SalesMeetings';
 import AdminSalesDashboard from './pages/Admin/AdminSalesDashboard';
 import PurchaseOrders from './pages/Admin/PurchaseOrders';
 import AdminPayslips from './pages/Admin/AdminPayslips';
@@ -181,6 +182,11 @@ function App() {
                 <Route path="sales-pipeline" element={
                   <ProtectedRoute role="employee">
                     <SalesPipelinePage />
+                  </ProtectedRoute>
+                } />
+                <Route path="sales-meetings" element={
+                  <ProtectedRoute role="employee">
+                    <SalesMeetings />
                   </ProtectedRoute>
                 } />
                 <Route path="hr-interviews" element={

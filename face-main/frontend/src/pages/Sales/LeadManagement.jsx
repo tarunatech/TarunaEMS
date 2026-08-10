@@ -59,11 +59,11 @@ const LeadManagement = () => {
   });
   const [pagination, setPagination] = useState({});
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showWonModal, setShowWonModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [editingMeeting, setEditingMeeting] = useState(null);
 
   // Data fetching functions
   const fetchLeads = async () => {
@@ -651,10 +651,10 @@ const LeadManagement = () => {
   // Meeting Modal
   const MeetingModal = () => {
     const [formData, setFormData] = useState({
-      type: 'Video Meeting',
-      scheduledDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
-      duration: 60,
-      agenda: ''
+      type: editingMeeting?.type || 'Video Meeting',
+      scheduledDate: editingMeeting?.scheduledDate ? new Date(editingMeeting.scheduledDate).toISOString().slice(0, 16) : new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+      duration: editingMeeting?.duration || 60,
+      agenda: editingMeeting?.agenda || ''
     });
 
     const handleSubmit = async (e) => {
@@ -662,11 +662,17 @@ const LeadManagement = () => {
       setSubmitting(true);
       
       try {
-        const response = await leadAPI.addMeeting(selectedLead._id, formData);
+        const response = editingMeeting
+          ? await leadAPI.updateMeeting(selectedLead._id, editingMeeting._id || editingMeeting.id, {
+              ...formData,
+              status: editingMeeting.status || 'Scheduled'
+            })
+          : await leadAPI.addMeeting(selectedLead._id, formData);
         
         if (response.data.success) {
           setShowMeetingModal(false);
-          toast.success('Meeting scheduled successfully!');
+          setEditingMeeting(null);
+          toast.success(editingMeeting ? 'Meeting updated successfully!' : 'Meeting scheduled successfully!');
           fetchLeads();
           fetchUpcomingMeetings();
         }
@@ -685,9 +691,12 @@ const LeadManagement = () => {
         <div className="bg-gray-900 rounded-xl w-full max-w-2xl border border-gray-700">
           <div className="p-6 border-b border-gray-700">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">Schedule Meeting</h2>
+              <h2 className="text-xl font-bold text-white">{editingMeeting ? 'Edit Meeting' : 'Schedule Meeting'}</h2>
               <button
-                onClick={() => setShowMeetingModal(false)}
+                onClick={() => {
+                  setShowMeetingModal(false);
+                  setEditingMeeting(null);
+                }}
                 className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg"
               >
                 <X className="w-5 h-5" />
@@ -755,7 +764,10 @@ const LeadManagement = () => {
             <div className="flex justify-end space-x-4 pt-4 border-t border-gray-700">
               <button
                 type="button"
-                onClick={() => setShowMeetingModal(false)}
+                onClick={() => {
+                  setShowMeetingModal(false);
+                  setEditingMeeting(null);
+                }}
                 className="px-6 py-2 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-800 transition-colors"
               >
                 Cancel
@@ -770,7 +782,7 @@ const LeadManagement = () => {
                 ) : (
                   <Calendar className="w-4 h-4 mr-2" />
                 )}
-                {submitting ? 'Scheduling...' : 'Schedule Meeting'}
+                {submitting ? (editingMeeting ? 'Updating...' : 'Scheduling...') : (editingMeeting ? 'Update Meeting' : 'Schedule Meeting')}
               </button>
             </div>
           </form>
@@ -832,7 +844,10 @@ const LeadManagement = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => setShowMeetingModal(true)}
+                  onClick={() => {
+                    setEditingMeeting(null);
+                    setShowMeetingModal(true);
+                  }}
                   className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-800 rounded-lg transition-all duration-300"
                   title="Schedule Meeting"
                 >
@@ -1031,7 +1046,10 @@ const LeadManagement = () => {
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-white">Meetings & Calls</h3>
                   <button
-                    onClick={() => setShowMeetingModal(true)}
+                    onClick={() => {
+                      setEditingMeeting(null);
+                      setShowMeetingModal(true);
+                    }}
                     className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 flex items-center"
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -1043,6 +1061,7 @@ const LeadManagement = () => {
                   {selectedLead.meetings && selectedLead.meetings.length > 0 ? (
                     selectedLead.meetings.map((meeting) => {
                       const MeetingIcon = getMeetingTypeIcon(meeting.type);
+                      const isPastScheduled = meeting.status === 'Scheduled' && new Date(meeting.scheduledDate) < new Date();
                       return (
                         <div key={meeting._id} className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
                           <div className="flex items-start justify-between">
@@ -1076,9 +1095,40 @@ const LeadManagement = () => {
                                 )}
                               </div>
                             </div>
-                            <button className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors">
+                            <div className="flex items-center gap-2">
+                            {isPastScheduled && (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await leadAPI.updateMeeting(selectedLead._id, meeting._id || meeting.id, { status: 'Completed' });
+                                    toast.success('Meeting marked as done');
+                                    fetchLeads();
+                                    fetchUpcomingMeetings();
+                                    setSelectedLead(prev => prev ? {
+                                      ...prev,
+                                      meetings: (prev.meetings || []).map(item =>
+                                        (item._id || item.id) === (meeting._id || meeting.id) ? { ...item, status: 'Completed' } : item
+                                      )
+                                    } : prev);
+                                  } catch (error) {
+                                    toast.error(error.response?.data?.message || 'Failed to update meeting');
+                                  }
+                                }}
+                                className="rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700 transition-colors"
+                              >
+                                Done
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                setEditingMeeting(meeting);
+                                setShowMeetingModal(true);
+                              }}
+                              className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                            >
                               <Edit className="w-4 h-4" />
                             </button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1089,7 +1139,10 @@ const LeadManagement = () => {
                       <h4 className="text-lg font-medium text-white mb-2">No meetings scheduled</h4>
                       <p className="text-gray-400 mb-4">Schedule your first meeting with this lead</p>
                       <button
-                        onClick={() => setShowMeetingModal(true)}
+                        onClick={() => {
+                          setEditingMeeting(null);
+                          setShowMeetingModal(true);
+                        }}
                         className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 flex items-center mx-auto"
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -1477,6 +1530,7 @@ const LeadManagement = () => {
                           <button
                             onClick={() => {
                               setSelectedLead(lead);
+                              setEditingMeeting(null);
                               setShowMeetingModal(true);
                             }}
                             className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded-lg transition-all duration-300"

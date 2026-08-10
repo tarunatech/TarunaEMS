@@ -767,11 +767,11 @@ const AdminPayslips = () => {
         )}
 
         {showViewModal && selectedPayslip && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
-            <div className="relative bg-white border border-slate-200 rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-slate-900">Payslip Details</h2>
+            <div className="relative flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3 sm:border-b-0 sm:px-6 sm:pb-0 sm:pt-6">
+                <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Payslip Details</h2>
                 <button
                   onClick={() => setShowViewModal(false)}
                   className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
@@ -780,8 +780,8 @@ const AdminPayslips = () => {
                 </button>
               </div>
 
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:space-y-6 sm:px-6 sm:py-6 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div className="grid grid-cols-2 gap-3 text-sm sm:gap-4 sm:text-base">
                   <div>
                     <p className="text-sm text-slate-500">Employee</p>
                     <p className="text-slate-900 font-semibold">{selectedPayslip.employeeName}</p>
@@ -793,48 +793,48 @@ const AdminPayslips = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-green-50 border border-green-100 rounded-lg p-4">
-                    <h3 className="text-green-700 font-bold mb-3">Earnings</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between"><span className="text-slate-600">Basic Salary</span><span className="text-slate-900">INR {selectedPayslip.earnings?.basicSalary?.toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">HRA</span><span className="text-slate-900">INR {selectedPayslip.earnings?.hra?.toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">Medical</span><span className="text-slate-900">INR {selectedPayslip.earnings?.medical?.toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">Transport</span><span className="text-slate-900">INR {selectedPayslip.earnings?.transport?.toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">Bonus</span><span className="text-slate-900">INR {selectedPayslip.earnings?.bonus?.toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">Overtime</span><span className="text-slate-900">INR {selectedPayslip.earnings?.overtime?.toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">Other</span><span className="text-slate-900">INR {selectedPayslip.earnings?.otherAllowances?.toLocaleString()}</span></div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
+                  <div className="rounded-lg border border-green-100 bg-green-50 p-3 sm:p-4">
+                    <h3 className="mb-2 font-bold text-green-700 sm:mb-3">Earnings</h3>
+                    <div className="space-y-1.5 text-sm sm:space-y-2">
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">Basic</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.basicSalary?.toLocaleString()}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">HRA</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.hra?.toLocaleString()}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">Medical</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.medical?.toLocaleString()}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">Transport</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.transport?.toLocaleString()}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">Bonus</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.bonus?.toLocaleString()}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">Overtime</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.overtime?.toLocaleString()}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">Other</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.otherAllowances?.toLocaleString()}</span></div>
                       <div className="border-t border-green-200 pt-2 mt-2">
-                        <div className="flex justify-between font-bold"><span className="text-green-700">Total Earnings</span><span className="text-green-700">INR {selectedPayslip.grossEarnings?.toLocaleString()}</span></div>
+                        <div className="flex justify-between gap-3 font-bold"><span className="text-green-700">Total</span><span className="text-right text-green-700">INR {selectedPayslip.grossEarnings?.toLocaleString()}</span></div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-red-50 border border-red-100 rounded-lg p-4">
-                    <h3 className="text-red-700 font-bold mb-3">Deductions</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between"><span className="text-slate-600">Provident Fund</span><span className="text-slate-900">INR {selectedPayslip.deductions?.pf?.toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">ESI</span><span className="text-slate-900">INR {selectedPayslip.deductions?.esi?.toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">Income Tax</span><span className="text-slate-900">INR {selectedPayslip.deductions?.tax?.toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">Professional Tax</span><span className="text-slate-900">INR {selectedPayslip.deductions?.professionalTax?.toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">Loan</span><span className="text-slate-900">INR {selectedPayslip.deductions?.loanDeduction?.toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">Other</span><span className="text-slate-900">INR {selectedPayslip.deductions?.otherDeductions?.toLocaleString()}</span></div>
+                  <div className="rounded-lg border border-red-100 bg-red-50 p-3 sm:p-4">
+                    <h3 className="mb-2 font-bold text-red-700 sm:mb-3">Deductions</h3>
+                    <div className="space-y-1.5 text-sm sm:space-y-2">
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">PF</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.pf?.toLocaleString()}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">ESI</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.esi?.toLocaleString()}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">Income Tax</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.tax?.toLocaleString()}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">Prof. Tax</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.professionalTax?.toLocaleString()}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">Loan</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.loanDeduction?.toLocaleString()}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-600">Other</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.otherDeductions?.toLocaleString()}</span></div>
                       <div className="border-t border-red-200 pt-2 mt-2">
-                        <div className="flex justify-between font-bold"><span className="text-red-700">Total Deductions</span><span className="text-red-700">INR {selectedPayslip.totalDeductions?.toLocaleString()}</span></div>
+                        <div className="flex justify-between gap-3 font-bold"><span className="text-red-700">Total</span><span className="text-right text-red-700">INR {selectedPayslip.totalDeductions?.toLocaleString()}</span></div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-center sm:p-4">
                   <p className="text-slate-600 text-sm">Net Salary</p>
-                  <p className="text-3xl font-bold text-slate-900">INR {selectedPayslip.netSalary?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-slate-900 sm:text-3xl">INR {selectedPayslip.netSalary?.toLocaleString()}</p>
                 </div>
 
                 {selectedPayslip.attendance && (
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                    <h3 className="text-slate-900 font-bold mb-3">Attendance Summary</h3>
-                    <div className="grid grid-cols-4 gap-4 text-center">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:p-4">
+                    <h3 className="mb-3 font-bold text-slate-900">Attendance Summary</h3>
+                    <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4 sm:gap-4">
                       <div>
                         <p className="text-2xl font-bold text-slate-900">{selectedPayslip.attendance.workingDays}</p>
                         <p className="text-xs text-slate-500">Working Days</p>
@@ -855,10 +855,10 @@ const AdminPayslips = () => {
                   </div>
                 )}
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                <div className="flex justify-end gap-3 border-t border-slate-200 pt-3 sm:pt-4">
                   <button
                     onClick={() => handleDownload(selectedPayslip._id)}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200 flex items-center space-x-2"
+                    className="flex w-full items-center justify-center space-x-2 rounded-lg bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-4 py-2.5 font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md sm:w-auto sm:px-6 sm:py-3"
                   >
                     <Download className="w-5 h-5" />
                     <span>Download PDF</span>

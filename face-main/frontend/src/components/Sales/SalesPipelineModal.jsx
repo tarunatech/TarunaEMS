@@ -28,6 +28,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
   const [pipeline, setPipeline] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeStage, setActiveStage] = useState('client_details');
   const [approvalComments, setApprovalComments] = useState('');
   const [forms, setForms] = useState(emptyForms);
 
@@ -49,6 +50,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
 
   const hydrate = (data) => {
     setPipeline(data);
+    setActiveStage(prev => prev || data.currentStage || 'client_details');
     setForms({
       clientDetails: {
         ...emptyForms.clientDetails,
@@ -138,6 +140,15 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
 
   const content = (
       <div className={`${embedded ? 'w-full' : 'max-h-[92vh] w-full max-w-5xl overflow-y-auto'} rounded-xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6`}>
+        <style>{`
+          @keyframes pipelineStageIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          .pipeline-stage-panel {
+            animation: pipelineStageIn 0.28s ease-out both;
+          }
+        `}</style>
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-bold text-slate-900">Sales Pipeline</h2>
@@ -157,10 +168,12 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
           </div>
         ) : (
           <div className="space-y-5">
-            <StageStepper currentStage={pipeline?.currentStage} />
+            <StageStepper currentStage={pipeline?.currentStage} activeStage={activeStage} onSelect={setActiveStage} />
 
-            <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="mb-3 text-sm font-bold text-slate-900">Client Details</h3>
+            <div key={activeStage} className="pipeline-stage-panel rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm sm:p-5">
+            {activeStage === 'client_details' && (
+            <section>
+              <StageHeading title="Client Details" subtitle="Core lead information and qualification notes" />
               <div className="grid gap-3 text-sm sm:grid-cols-3">
                 <Info label="Name" value={`${lead.firstName} ${lead.lastName}`} />
                 <Info label="Email" value={lead.email} />
@@ -179,9 +192,11 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
               </div>
               <SectionActions onSave={() => saveSection('clientDetails')} disabled={saving} />
             </section>
+            )}
 
-            <section className="rounded-xl border border-slate-200 bg-white p-4">
-              <h3 className="mb-3 flex items-center text-sm font-bold text-slate-900"><FileText className="mr-2 h-4 w-4 text-blue-600" />Quotation Details</h3>
+            {activeStage === 'quotation' && (
+            <section>
+              <StageHeading title="Quotation Details" subtitle="Prepare pricing, validity, and quotation notes" icon={<FileText className="h-4 w-4 text-blue-600" />} />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input label="Quotation Number" value={forms.quotation.quotationNumber} onChange={v => updateForm('quotation', 'quotationNumber', v)} />
                 <Input label="Amount" type="number" value={forms.quotation.amount} onChange={v => updateForm('quotation', 'amount', v)} />
@@ -195,9 +210,11 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                 Submit for Approval
               </button>
             </section>
+            )}
 
-            <section className="rounded-xl border border-slate-200 bg-white p-4">
-              <h3 className="mb-3 flex items-center text-sm font-bold text-slate-900"><ShieldCheck className="mr-2 h-4 w-4 text-indigo-600" />Admin Approval</h3>
+            {activeStage === 'admin_approval' && (
+            <section>
+              <StageHeading title="Admin Approval" subtitle="Track approval status and admin comments" icon={<ShieldCheck className="h-4 w-4 text-indigo-600" />} />
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <Badge status={pipeline?.approval?.status} />
                 <span className="text-xs text-slate-500">Submitted: {formatDateTime(pipeline?.approval?.submittedAt)}</span>
@@ -213,9 +230,11 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                 </div>
               )}
             </section>
+            )}
 
-            <section className="rounded-xl border border-slate-200 bg-white p-4">
-              <h3 className="mb-3 flex items-center text-sm font-bold text-slate-900"><Send className="mr-2 h-4 w-4 text-blue-600" />Sent to Client</h3>
+            {activeStage === 'sent_to_client' && (
+            <section>
+              <StageHeading title="Sent to Client" subtitle="Record when and how the quotation was sent" icon={<Send className="h-4 w-4 text-blue-600" />} />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input label="Sent At" type="datetime-local" value={forms.sentToClient.sentAt} onChange={v => updateForm('sentToClient', 'sentAt', v)} />
                 <Select label="Method" value={forms.sentToClient.method} onChange={v => updateForm('sentToClient', 'method', v)} options={['Email', 'WhatsApp', 'Portal', 'In-Person', 'Other']} />
@@ -224,18 +243,22 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
               </div>
               <SectionActions onSave={() => saveSection('sentToClient')} disabled={saving} />
             </section>
+            )}
 
-            <section className="rounded-xl border border-slate-200 bg-white p-4">
-              <h3 className="mb-3 text-sm font-bold text-slate-900">Negotiation</h3>
+            {activeStage === 'negotiation' && (
+            <section>
+              <StageHeading title="Negotiation" subtitle="Capture closing date expectations and negotiation notes" />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input label="Expected Close Date" type="date" value={forms.negotiation.expectedCloseDate} onChange={v => updateForm('negotiation', 'expectedCloseDate', v)} />
                 <Textarea label="Negotiation Notes" value={forms.negotiation.notes} onChange={v => updateForm('negotiation', 'notes', v)} />
               </div>
               <SectionActions onSave={() => saveSection('negotiation')} disabled={saving} />
             </section>
+            )}
 
-            <section className="rounded-xl border border-slate-200 bg-white p-4">
-              <h3 className="mb-3 flex items-center text-sm font-bold text-slate-900"><CheckCircle className="mr-2 h-4 w-4 text-emerald-600" />Deal Won / Closed</h3>
+            {activeStage === 'won_closed' && (
+            <section>
+              <StageHeading title="Won / Closed" subtitle="Finalize the outcome and closure details" icon={<CheckCircle className="h-4 w-4 text-emerald-600" />} />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Select label="Outcome" value={forms.outcome.status} onChange={v => updateForm('outcome', 'status', v)} options={['open', 'won', 'lost']} />
                 <Input label="Final Value" type="number" value={forms.outcome.finalValue} onChange={v => updateForm('outcome', 'finalValue', v)} />
@@ -244,6 +267,8 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
               </div>
               <SectionActions onSave={() => saveSection('outcome')} disabled={saving} />
             </section>
+            )}
+            </div>
 
             <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <h3 className="mb-3 text-sm font-bold text-slate-900">Stage History</h3>
@@ -274,18 +299,48 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
 
 const labelForStage = (stage) => stages.find(([value]) => value === stage)?.[1] || stage;
 
-const StageStepper = ({ currentStage }) => {
+const StageStepper = ({ currentStage, activeStage, onSelect }) => {
   const currentIndex = stages.findIndex(([value]) => value === currentStage);
   return (
-    <div className="grid gap-2 sm:grid-cols-6">
-      {stages.map(([value, label], index) => (
-        <div key={value} className={`rounded-xl border px-3 py-2 text-xs font-semibold ${index <= currentIndex ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-          {label}
-        </div>
-      ))}
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-2 shadow-inner">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
+        {stages.map(([value, label], index) => {
+          const isActive = activeStage === value;
+          const isReached = currentIndex >= 0 && index <= currentIndex;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onSelect(value)}
+              className={`group relative min-h-12 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition-all duration-300 ${
+                isActive
+                  ? 'border-indigo-300 bg-white text-indigo-700 shadow-md shadow-indigo-900/10 ring-2 ring-indigo-100'
+                  : isReached
+                    ? 'border-blue-100 bg-blue-50/70 text-blue-700 hover:border-blue-200 hover:bg-white'
+                    : 'border-slate-200 bg-white/70 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700'
+              }`}
+            >
+              <span className={`mb-1 block h-1 w-8 rounded-full transition-all duration-300 ${isActive ? 'bg-indigo-500' : isReached ? 'bg-blue-400' : 'bg-slate-200'}`} />
+              <span className="block leading-snug">{label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };
+
+const StageHeading = ({ title, subtitle, icon }) => (
+  <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+    <div>
+      <div className="flex items-center gap-2">
+        {icon && <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-slate-200">{icon}</span>}
+        <h3 className="text-base font-bold text-slate-950">{title}</h3>
+      </div>
+      {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+    </div>
+  </div>
+);
 
 const Badge = ({ status }) => {
   const classes = {

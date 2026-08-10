@@ -193,6 +193,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     problems: { name: "Problem Statement", icon: AlertCircle, path: "/employee/problems" },
     sales: { name: "Sales", icon: TrendingUp, path: "/employee/sales" },
     salesPipeline: { name: "Sales Pipeline", icon: GitBranch, path: "/employee/sales-pipeline" },
+    salesMeetings: { name: "Meetings", icon: Phone, path: "/employee/sales-meetings" },
     hrInterviews: { name: "Interview Schedule", icon: ClipboardList, path: "/employee/hr-interviews" },
   };
 
@@ -258,7 +259,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
   const initials = `${emp.personalInfo?.firstName?.[0] || ''}${emp.personalInfo?.lastName?.[0] || ''}`.toUpperCase();
 
   return (
-    <div className="min-h-screen flex bg-slate-50 relative overflow-x-hidden">
+    <div className="relative flex h-dvh min-h-dvh overflow-hidden bg-slate-50">
       {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-50 transform ${
@@ -420,7 +421,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
       {/* Main Content */}
       <div className={`min-w-0 flex-1 flex flex-col transition-[margin] duration-200 ${isCollapsed ? "lg:ml-[76px]" : "lg:ml-[248px]"}`}>
         {/* Header */}
-        <header className={`bg-white/95 backdrop-blur-sm h-14 z-40 sticky top-0 border-b transition-shadow duration-150 ${
+        <header className={`sticky top-0 z-40 h-14 shrink-0 border-b bg-white/95 backdrop-blur-sm transition-shadow duration-150 ${
           scrolled ? "border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04)]" : "border-slate-100"
         }`}>
           <div className="flex items-center justify-between h-full gap-2 px-3 sm:px-5">
@@ -591,7 +592,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
         </header>
 
         {/* Page Content */}
-        <main id="employee-main-scroll" className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 px-3 py-4 sm:px-5 lg:px-6">
+        <main id="employee-main-scroll" className="employee-main-scroll relative z-10 min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 px-3 py-4 sm:px-5 lg:px-6">
           <div className="mx-auto w-full max-w-[1600px] min-w-0">
             {children}
           </div>
@@ -618,6 +619,11 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
         }
         .scrollbar-none::-webkit-scrollbar { width: 0; height: 0; }
         .scrollbar-none { scrollbar-width: none; }
+        .employee-main-scroll {
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+          scroll-behavior: smooth;
+        }
       `}</style>
     </div>
   );

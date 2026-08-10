@@ -97,7 +97,7 @@ const EmployeeHolidayCalendar = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Calendar Section */}
-                    <div className="lg:col-span-2 bg-white/90 border border-blue-100 rounded-2xl p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+                    <div className="lg:col-span-2 bg-white/90 border border-blue-100 rounded-2xl p-3 sm:p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
                         <Calendar
                             onChange={setDate}
                             value={date}
@@ -106,7 +106,7 @@ const EmployeeHolidayCalendar = () => {
                             className="admin-calendar w-full bg-transparent border-none text-slate-900"
                         />
 
-                        <div className="mt-6 flex items-center space-x-6 text-sm">
+                        <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
                             <div className="flex items-center space-x-2">
                                 <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
                                 <span className="text-slate-600">Public Holiday</span>

@@ -598,7 +598,11 @@ export const updateMeeting = async (req, res) => {
     }
 
     const { leadId, meetingId } = req.params;
-    const meetingData = req.body;
+    const meetingData = {
+      ...req.body,
+      ...(req.body.scheduledDate ? { scheduledDate: new Date(req.body.scheduledDate) } : {}),
+      ...(req.body.duration ? { duration: Number(req.body.duration) } : {})
+    };
 
     const lead = await Lead.findById(leadId);
     if (!lead) {
@@ -633,6 +637,11 @@ export const updateMeeting = async (req, res) => {
       ...meetingData,
       updatedAt: new Date()
     };
+
+    const nextScheduledMeeting = lead.meetings
+      .filter(meeting => meeting.status === 'Scheduled' && new Date(meeting.scheduledDate) >= new Date())
+      .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))[0];
+    lead.nextFollowUpDate = nextScheduledMeeting?.scheduledDate || null;
 
     await lead.save();
     await lead.populate('meetings.createdBy', 'name email');

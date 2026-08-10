@@ -558,12 +558,24 @@ const EditableDropdown = ({ name, value, options, onChange, placeholder, listId,
 );
 
 const PurchaseModal = ({ title, formData, clientOptions, projectOptions, serviceTypeOptions, vendorOptions, onChange, onSubmit, onClose, submitLabel, formatCurrency }) => (
-  <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
     <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
-    <div className="relative bg-white border border-slate-200 rounded-xl shadow-xl p-4 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-      <h3 className="text-lg font-bold text-slate-900 mb-4">{title}</h3>
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="relative flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
+        <h3 className="text-base font-bold text-slate-900 sm:text-lg">{title}</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg p-1.5 text-slate-400 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700"
+          aria-label="Close purchase modal"
+        >
+          <XCircle className="h-5 w-5" />
+        </button>
+      </div>
+
+      <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3 sm:space-y-4 sm:py-4 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
           <Field label="Client *">
             <EditableDropdown
               name="clientName"
@@ -633,14 +645,15 @@ const PurchaseModal = ({ title, formData, clientOptions, projectOptions, service
         </div>
 
         <Field label="Notes">
-          <textarea name="notes" value={formData.notes} onChange={onChange} rows="3" className={modalInputClass} />
+          <textarea name="notes" value={formData.notes} onChange={onChange} rows="2" className={modalInputClass} />
         </Field>
+        </div>
 
-        <div className="flex justify-between items-center pt-2">
-          <div className="text-slate-900 font-medium">Amount: {formatCurrency(formData.amount)}</div>
-          <div className="flex gap-2">
-            <button type="button" onClick={onClose} className="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm transition-all duration-200">Cancel</button>
-            <button type="submit" className="px-3 py-2 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white rounded-lg text-sm shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200">{submitLabel}</button>
+        <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-3">
+          <div className="mb-2 text-sm font-medium text-slate-900 sm:mb-0 sm:inline-block">Amount: {formatCurrency(formData.amount)}</div>
+          <div className="grid grid-cols-2 gap-2 sm:float-right sm:flex">
+            <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50">Cancel</button>
+            <button type="submit" className="rounded-lg bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-3 py-2 text-sm text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md">{submitLabel}</button>
           </div>
         </div>
       </form>

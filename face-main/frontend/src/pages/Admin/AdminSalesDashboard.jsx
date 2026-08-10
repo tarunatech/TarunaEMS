@@ -16,8 +16,6 @@ const AdminSalesDashboard = () => {
   const [summary, setSummary] = useState(null);
   const [funnelData, setFunnelData] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [upcomingMeetings, setUpcomingMeetings] = useState([]);
-  const [pendingApprovals, setPendingApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().slice(0, 10),
@@ -32,6 +30,29 @@ const AdminSalesDashboard = () => {
   const [showPipelineModal, setShowPipelineModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [reassignTo, setReassignTo] = useState('');
+
+  const calculateDashboardStats = (leadEntries, pipelineEntries) => {
+    const wonLeads = leadEntries.filter(lead => lead.status === 'Won' || lead.wonDetails?.wonDate || lead.actualValue > 0);
+    const totalRevenue = wonLeads.reduce((sum, lead) => {
+      const finalValue = Number(lead.wonDetails?.finalValue || lead.actualValue || 0);
+      return sum + finalValue;
+    }, 0);
+
+    const targetValue = leadEntries.reduce((sum, lead) => sum + Number(lead.estimatedValue || 0), 0);
+    const activeLeads = leadEntries.filter(lead => !['Won', 'Lost'].includes(lead.status)).length;
+    const scheduledMeetings = leadEntries.flatMap(lead => lead.meetings || [])
+      .filter(meeting => meeting.status === 'Scheduled' && new Date(meeting.scheduledDate) >= new Date());
+    const pendingPipelineApprovals = pipelineEntries.filter(pipeline => pipeline.approval?.status === 'pending');
+
+    return {
+      totalRevenue,
+      targetAchievement: targetValue ? Math.round((totalRevenue / targetValue) * 100) : 0,
+      winRate: leadEntries.length ? Math.round((wonLeads.length / leadEntries.length) * 100) : 0,
+      activeLeads,
+      upcomingMeetings: scheduledMeetings.length,
+      pendingApprovals: pendingPipelineApprovals.length
+    };
+  };
 
   // Fetch BDE employees for reassign dropdown
   const fetchBDEEmployees = async () => {
@@ -49,20 +70,15 @@ const AdminSalesDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [leadsRes, summaryRes, meetingsRes, approvalsRes, pipelinesRes] = await Promise.all([
+      const [leadsRes, pipelinesRes] = await Promise.all([
         leadAPI.getLeads({ ...filters, includeAll: true }),
-        leadAPI.getLeadStats({ ...filters }),
-        leadAPI.getUpcomingMeetings({ days: 30 }),
-        salesPipelineAPI.getPendingApprovals(),
         salesPipelineAPI.getAll()
       ]);
 
       const fetchedLeads = leadsRes.data.success ? leadsRes.data.data.leads || [] : [];
       if (leadsRes.data.success) setLeads(fetchedLeads);
-      if (summaryRes.data.success) setSummary(summaryRes.data.data);
-      if (meetingsRes.data.success) setUpcomingMeetings(meetingsRes.data.data || []);
-      if (approvalsRes.data.success) setPendingApprovals(approvalsRes.data.data || []);
       const fetchedPipelines = pipelinesRes.data.success ? pipelinesRes.data.data || [] : [];
+      setSummary(calculateDashboardStats(fetchedLeads, fetchedPipelines));
       setFunnelData(buildPipelineFunnel(fetchedLeads, fetchedPipelines));
     } catch (err) {
       console.error('Failed to load sales data:', err);
@@ -270,13 +286,13 @@ const AdminSalesDashboard = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
             <StatCard 
               title="Total Revenue" 
-              value={formatCurrency(summary.wonStats?.totalRevenue)} 
+              value={formatCurrency(summary.totalRevenue)} 
               icon={DollarSign}
               color="green"
             />
             <StatCard 
               title="Target Achievement" 
-              value={`${summary.achievementRate || 0}%`} 
+              value={`${summary.targetAchievement || 0}%`} 
               icon={Target}
               color="indigo"
             />
@@ -294,13 +310,13 @@ const AdminSalesDashboard = () => {
             />
             <StatCard
               title="Upcoming Meetings"
-              value={upcomingMeetings.length}
+              value={summary.upcomingMeetings || 0}
               icon={Calendar}
               color="blue"
             />
             <StatCard
               title="Pending Approvals"
-              value={pendingApprovals.length}
+              value={summary.pendingApprovals || 0}
               icon={ShieldCheckIcon}
               color="indigo"
             />

@@ -253,16 +253,18 @@ const AdminAttendance = () => {
         {/* Summary Cards */}
         {attendanceSummary && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
-            <div className="glass-morphism neon-border rounded-xl sm:rounded-2xl p-3 sm:p-5 lg:p-6">
+            <div className="premium-stat-card rounded-xl border border-blue-200 bg-gradient-to-br from-white to-blue-50/70 p-3 sm:rounded-2xl sm:p-5 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-slate-500 text-[11px] sm:text-sm leading-tight">Total Employees</p>
-                  <p className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight mt-1">{attendanceSummary.overallStats?.totalEmployees || 0}</p>
+                  <p className="text-blue-800 text-[11px] sm:text-sm font-semibold leading-tight">Total Employees</p>
+                  <p className="text-lg sm:text-3xl font-extrabold text-blue-700 leading-tight mt-1">{attendanceSummary.overallStats?.totalEmployees || 0}</p>
                 </div>
-                <Users className="w-5 h-5 sm:w-8 sm:h-8 text-blue-600 flex-shrink-0" />
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-blue-600 shadow-lg shadow-blue-600/20 sm:h-10 sm:w-10 sm:rounded-xl">
+                  <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
               </div>
             </div>
-            <div className="premium-stat-card rounded-xl sm:rounded-2xl p-3 sm:p-5 lg:p-6 border-emerald-200 bg-gradient-to-br from-white to-emerald-50/70">
+            <div className="premium-stat-card rounded-xl border border-emerald-200 bg-gradient-to-br from-white to-emerald-50/70 p-3 sm:rounded-2xl sm:p-5 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <p className="text-emerald-800 text-[11px] sm:text-sm font-semibold leading-tight">Present Employees</p>
@@ -273,31 +275,37 @@ const AdminAttendance = () => {
                 </div>
               </div>
             </div>
-            <div className="glass-morphism neon-border rounded-xl sm:rounded-2xl p-3 sm:p-5 lg:p-6">
+            <div className="premium-stat-card rounded-xl border border-amber-200 bg-gradient-to-br from-white to-amber-50/70 p-3 sm:rounded-2xl sm:p-5 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-slate-500 text-[11px] sm:text-sm leading-tight">Late</p>
-                  <p className="text-lg sm:text-2xl font-bold text-amber-600 leading-tight mt-1">{attendanceSummary.overallStats?.late || 0}</p>
+                  <p className="text-amber-800 text-[11px] sm:text-sm font-semibold leading-tight">Late</p>
+                  <p className="text-lg sm:text-3xl font-extrabold text-amber-700 leading-tight mt-1">{attendanceSummary.overallStats?.late || 0}</p>
                 </div>
-                <Clock className="w-5 h-5 sm:w-8 sm:h-8 text-amber-600 flex-shrink-0" />
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500 shadow-lg shadow-amber-500/20 sm:h-10 sm:w-10 sm:rounded-xl">
+                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
               </div>
             </div>
-            <div className="glass-morphism neon-border rounded-xl sm:rounded-2xl p-3 sm:p-5 lg:p-6">
+            <div className="premium-stat-card rounded-xl border border-orange-200 bg-gradient-to-br from-white to-orange-50/70 p-3 sm:rounded-2xl sm:p-5 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-slate-500 text-[11px] sm:text-sm leading-tight">Half Day</p>
-                  <p className="text-lg sm:text-2xl font-bold text-orange-400 leading-tight mt-1">{attendanceSummary.overallStats?.halfDay || 0}</p>
+                  <p className="text-orange-800 text-[11px] sm:text-sm font-semibold leading-tight">Half Day</p>
+                  <p className="text-lg sm:text-3xl font-extrabold text-orange-600 leading-tight mt-1">{attendanceSummary.overallStats?.halfDay || 0}</p>
                 </div>
-                <Timer className="w-5 h-5 sm:w-8 sm:h-8 text-orange-400 flex-shrink-0" />
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-orange-500 shadow-lg shadow-orange-500/20 sm:h-10 sm:w-10 sm:rounded-xl">
+                  <Timer className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
               </div>
             </div>
-            <div className="glass-morphism neon-border rounded-xl sm:rounded-2xl p-3 sm:p-5 lg:p-6">
+            <div className="premium-stat-card rounded-xl border border-red-200 bg-gradient-to-br from-white to-red-50/70 p-3 sm:rounded-2xl sm:p-5 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-slate-500 text-[11px] sm:text-sm leading-tight">Absent</p>
-                  <p className="text-lg sm:text-2xl font-bold text-red-400 leading-tight mt-1">{attendanceSummary.overallStats?.absent || 0}</p>
+                  <p className="text-red-800 text-[11px] sm:text-sm font-semibold leading-tight">Absent</p>
+                  <p className="text-lg sm:text-3xl font-extrabold text-red-600 leading-tight mt-1">{attendanceSummary.overallStats?.absent || 0}</p>
                 </div>
-                <XCircle className="w-5 h-5 sm:w-8 sm:h-8 text-red-400 flex-shrink-0" />
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-500 shadow-lg shadow-red-500/20 sm:h-10 sm:w-10 sm:rounded-xl">
+                  <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
               </div>
             </div>
           </div>

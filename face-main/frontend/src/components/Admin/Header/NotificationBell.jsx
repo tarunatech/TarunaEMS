@@ -119,7 +119,7 @@ const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead,
         </button>
 
         {dropdownOpen && (
-          <div className="notif-dropdown-enter fixed left-1/2 top-[4.25rem] z-50 flex max-h-[70dvh] w-[calc(100vw-1.5rem)] max-w-sm -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-80 md:translate-x-0 xl:w-96 xl:max-w-none">
+          <div className="notif-dropdown-enter fixed left-2 top-[4.25rem] z-50 flex max-h-[70dvh] w-[calc(100vw-1.5rem)] max-w-sm -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-80 md:translate-x-0 xl:w-96 xl:max-w-none">
             {/* Header */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-200 p-3 sm:p-4">
               <div className="flex min-w-0 items-center gap-2">

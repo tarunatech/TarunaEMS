@@ -3,7 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 
 // Create axios instance with base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const API = axios.create({
   baseURL: API_BASE_URL,
@@ -15,8 +15,25 @@ const API = axios.create({
 
 export const getApiFileUrl = (path) => {
   if (!path) return '';
-  if (path.startsWith('http')) return path;
-  return `${API_BASE_URL.replace(/\/api\/?$/, '')}${path}`;
+  const apiOrigin = API_BASE_URL.startsWith('http')
+    ? API_BASE_URL.replace(/\/api\/?$/, '')
+    : window.location.origin;
+
+  if (/^https?:\/\//i.test(path)) {
+    try {
+      const url = new URL(path);
+      const isLocalhostUrl = ['localhost', '127.0.0.1', '0.0.0.0'].includes(url.hostname);
+      if (isLocalhostUrl && !['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname)) {
+        return `${apiOrigin}${url.pathname}${url.search}`;
+      }
+      return path;
+    } catch {
+      return path;
+    }
+  }
+
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${apiOrigin}${normalizedPath}`;
 };
 
 // Get token from storage (check both localStorage and sessionStorage)

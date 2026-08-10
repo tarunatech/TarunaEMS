@@ -278,23 +278,39 @@ html.theme-dark .admin-calendar.react-calendar .react-calendar__month-view__days
   }
 
   .admin-calendar.react-calendar .react-calendar__viewContainer {
-    padding: 8px !important;
+    padding: 10px 6px !important;
     border-radius: 12px !important;
   }
 
+  .admin-calendar.react-calendar .react-calendar__month-view__weekdays,
+  .admin-calendar.react-calendar .react-calendar__month-view__days {
+    display: grid !important;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    align-items: start !important;
+  }
+
   .admin-calendar.react-calendar .react-calendar__month-view__weekdays {
-    margin-bottom: 4px !important;
+    margin-bottom: 6px !important;
     font-size: 0.65rem !important;
   }
 
   .admin-calendar.react-calendar .react-calendar__month-view__weekdays__weekday {
-    padding: 6px 2px !important;
-    font-size: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 6px 0 !important;
+    font-size: 9px !important;
+    line-height: 1 !important;
   }
 
   .admin-calendar.react-calendar .react-calendar__tile {
-    min-height: 42px !important;
-    padding: 5px 2px !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    padding: 5px 0 !important;
     border-radius: 9px !important;
     gap: 0.1rem !important;
   }
@@ -318,11 +334,11 @@ html.theme-dark .admin-calendar.react-calendar .react-calendar__month-view__days
 
 @media (max-width: 380px) {
   .admin-calendar.react-calendar {
-    padding: 8px !important;
+    padding: 8px 6px !important;
   }
 
   .admin-calendar.react-calendar .react-calendar__viewContainer {
-    padding: 6px !important;
+    padding: 8px 4px !important;
   }
 
   .admin-calendar.react-calendar .react-calendar__navigation button {
@@ -336,6 +352,10 @@ html.theme-dark .admin-calendar.react-calendar .react-calendar__month-view__days
   }
 
   .admin-calendar.react-calendar .react-calendar__tile {
-    min-height: 38px !important;
+    min-height: 42px !important;
+  }
+
+  .admin-calendar.react-calendar .react-calendar__month-view__weekdays__weekday {
+    font-size: 8.5px !important;
   }
 }

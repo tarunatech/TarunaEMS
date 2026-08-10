@@ -192,31 +192,32 @@ const handleApplyLeave = async (e) => {
   };
 
   const ApplyLeaveModal = () => (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
       {/* Enhanced backdrop with blur */}
       <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => !submitLoading && setShowModal(false)} />
 
       {/* Modal content */}
-      <div className="relative bg-white border border-slate-200 rounded-xl shadow-xl p-4 sm:p-6 w-full max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-slate-900">Apply for Leave</h2>
+      <div className="relative flex max-h-[calc(100dvh-1rem)] w-full max-w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:max-h-[90vh] sm:max-w-2xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-3 py-2.5 sm:border-b-0 sm:px-6 sm:pb-0 sm:pt-6">
+          <h2 className="text-base font-bold text-slate-900 sm:text-2xl">Apply for Leave</h2>
           <button 
             onClick={() => setShowModal(false)}
-            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
+            className="rounded-lg p-1.5 text-slate-400 transition-all duration-200 hover:bg-slate-100 hover:text-slate-600"
             disabled={submitLoading}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleApplyLeave} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleApplyLeave} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3 pb-4 sm:space-y-6 sm:px-6 sm:py-6">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Leave Type</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700 sm:mb-2">Leave Type</label>
               <select
                 value={newLeave.leaveType}
                 onChange={(e) => setNewLeave({...newLeave, leaveType: e.target.value})}
-                className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:px-4 sm:py-3 sm:text-base"
                 required
                 disabled={submitLoading}
               >
@@ -224,12 +225,12 @@ const handleApplyLeave = async (e) => {
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="mt-1 text-xs text-slate-500 sm:text-sm">
   Available: {leaveBalance.remaining || 0} days
               </p>
             </div>
 
-            <div className="flex items-center space-x-2 pt-8">
+            <div className="flex items-center space-x-2 pt-0 md:pt-8">
               <input
                 type="checkbox"
                 id="halfDay"
@@ -244,7 +245,7 @@ const handleApplyLeave = async (e) => {
 
           {newLeave.isHalfDay && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Half Day Session</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700 sm:mb-2">Half Day Session</label>
               <div className="flex space-x-4">
                 <label className="flex items-center">
                   <input
@@ -274,21 +275,21 @@ const handleApplyLeave = async (e) => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700 sm:mb-2">Start Date</label>
               <input
                 type="date"
                 value={newLeave.startDate}
                 onChange={(e) => setNewLeave({...newLeave, startDate: e.target.value})}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                className="w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:px-4 sm:py-3 sm:text-base"
                 required
                 disabled={submitLoading}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="mb-1 block text-sm font-medium text-slate-700 sm:mb-2">
                 {newLeave.isHalfDay ? 'Date' : 'End Date'}
               </label>
               <input
@@ -296,7 +297,7 @@ const handleApplyLeave = async (e) => {
                 value={newLeave.isHalfDay ? newLeave.startDate : newLeave.endDate}
                 onChange={(e) => setNewLeave({...newLeave, endDate: newLeave.isHalfDay ? newLeave.startDate : e.target.value})}
                 min={newLeave.startDate || new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                className="w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:px-4 sm:py-3 sm:text-base"
                 required
                 disabled={newLeave.isHalfDay || submitLoading}
               />
@@ -304,7 +305,7 @@ const handleApplyLeave = async (e) => {
           </div>
 
           {newLeave.startDate && (newLeave.endDate || newLeave.isHalfDay) && (
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-2 sm:p-4">
               <p className="text-sm text-slate-500">Total Days: 
                 <span className="text-blue-600 font-medium ml-2">
                   {calculateDays(newLeave.startDate, newLeave.endDate || newLeave.startDate, newLeave.isHalfDay)} 
@@ -315,12 +316,12 @@ const handleApplyLeave = async (e) => {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Reason for Leave</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700 sm:mb-2">Reason for Leave</label>
             <input
               type="text"
               value={newLeave.reason}
               onChange={(e) => setNewLeave({...newLeave, reason: e.target.value})}
-              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 sm:px-4 sm:py-3 sm:text-base"
               placeholder="Please provide reason for your leave request..."
               required
               disabled={submitLoading}
@@ -330,18 +331,21 @@ const handleApplyLeave = async (e) => {
             <p className="text-xs text-slate-400 mt-1">{newLeave.reason.length}/500 characters (minimum 10)</p>
           </div>
 
-          <div className="flex justify-end space-x-4">
+          </div>
+
+          <div className="shrink-0 border-t border-slate-100 bg-white px-3 py-2.5 sm:flex sm:justify-end sm:gap-4 sm:border-t-0 sm:px-6 sm:pb-6 sm:pt-0">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end sm:gap-4">
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all duration-200"
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 sm:px-6 sm:py-3 sm:text-base"
               disabled={submitLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 flex items-center"
+              className="flex min-w-0 items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md disabled:opacity-50 disabled:hover:scale-100 sm:px-6 sm:py-3 sm:text-base"
               disabled={submitLoading}
             >
               {submitLoading ? (
@@ -349,8 +353,10 @@ const handleApplyLeave = async (e) => {
               ) : (
                 <Save className="w-4 h-4 mr-2" />
               )}
-              {submitLoading ? 'Submitting...' : 'Submit Application'}
+              <span className="truncate">{submitLoading ? 'Submitting...' : 'Submit'}</span>
+              <span className="hidden sm:inline">{!submitLoading && ' Application'}</span>
             </button>
+            </div>
           </div>
         </form>
       </div>
@@ -358,10 +364,10 @@ const handleApplyLeave = async (e) => {
   );
 
   const ViewLeaveModal = () => (
-    <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-slate-900">Leave Request Details</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-2 backdrop-blur-sm sm:p-4">
+      <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:max-h-[90vh]">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3 sm:border-b-0 sm:px-6 sm:pb-0 sm:pt-6">
+          <h2 className="text-lg font-bold text-slate-900 sm:text-2xl">Leave Request Details</h2>
           <button
             onClick={() => setShowViewModal(false)}
             className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
@@ -371,19 +377,19 @@ const handleApplyLeave = async (e) => {
         </div>
 
         {selectedLeave && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
+          <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3 sm:space-y-6 sm:px-6 sm:py-6">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:p-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">{selectedLeave.leaveType} Leave</h3>
-                <p className="text-slate-500">Applied on {new Date(selectedLeave.appliedDate).toLocaleDateString()}</p>
+                <h3 className="text-base font-bold text-slate-900 sm:text-lg">{selectedLeave.leaveType} Leave</h3>
+                <p className="text-xs text-slate-500 sm:text-base">Applied on {new Date(selectedLeave.appliedDate).toLocaleDateString()}</p>
               </div>
-              <span className={`px-3 py-1 text-sm rounded-full ${getStatusColor(selectedLeave.status)}`}>
+              <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs sm:px-3 sm:text-sm ${getStatusColor(selectedLeave.status)}`}>
                 {selectedLeave.status}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 md:gap-6">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
                   <label className="text-sm text-slate-500">Start Date</label>
                   <p className="text-slate-900 font-medium">{new Date(selectedLeave.startDate).toLocaleDateString()}</p>
@@ -393,7 +399,7 @@ const handleApplyLeave = async (e) => {
                   <p className="text-slate-900 font-medium">{new Date(selectedLeave.endDate).toLocaleDateString()}</p>
                 </div>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
                   <label className="text-sm text-slate-500">Total Days</label>
                   <p className="text-slate-900 font-medium">
@@ -411,13 +417,13 @@ const handleApplyLeave = async (e) => {
 
             <div>
               <label className="text-sm text-slate-500">Reason</label>
-              <p className="text-slate-900 bg-slate-50 border border-slate-200 p-3 rounded-lg mt-1">{selectedLeave.reason}</p>
+              <p className="mt-1 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 sm:p-3 sm:text-base">{selectedLeave.reason}</p>
             </div>
 
             {selectedLeave.adminComments && (
               <div>
                 <label className="text-sm text-slate-500">Admin Comments</label>
-                <p className="text-slate-900 bg-slate-50 border border-slate-200 p-3 rounded-lg mt-1">{selectedLeave.adminComments}</p>
+                <p className="mt-1 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 sm:p-3 sm:text-base">{selectedLeave.adminComments}</p>
               </div>
             )}
 
@@ -429,13 +435,13 @@ const handleApplyLeave = async (e) => {
             )}
 
             {selectedLeave.status === 'Pending' && (
-              <div className="flex justify-end">
+              <div className="sticky bottom-0 -mx-3 flex justify-end border-t border-slate-100 bg-white px-3 pt-2 sm:static sm:mx-0 sm:border-t-0 sm:px-0 sm:pt-0">
                 <button
                   onClick={() => {
                     handleCancelLeave(selectedLeave._id);
                     setShowViewModal(false);
                   }}
-                  className="px-6 py-3 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-all duration-200"
+                  className="w-full rounded-lg border border-red-300 bg-white px-4 py-2 text-sm text-red-600 transition-all duration-200 hover:bg-red-50 sm:w-auto sm:px-6 sm:py-3 sm:text-base"
                 >
                   Cancel Request
                 </button>
@@ -485,10 +491,10 @@ const handleApplyLeave = async (e) => {
     };
 
     return (
-      <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="employee-leave-calendar-modal bg-white border border-slate-200 rounded-xl shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">Leave Calendar</h2>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-2 backdrop-blur-sm sm:p-4">
+        <div className="employee-leave-calendar-modal flex max-h-[calc(100dvh-1rem)] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:max-h-[90vh]">
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3 sm:border-b-0 sm:px-6 sm:pb-0 sm:pt-6">
+            <h2 className="text-lg font-bold text-slate-900 sm:text-2xl">Leave Calendar</h2>
             <button
               onClick={() => setShowCalendarModal(false)}
               className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
@@ -497,8 +503,9 @@ const handleApplyLeave = async (e) => {
             </button>
           </div>
 
+          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
           <div className="mb-4">
-            <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex flex-wrap gap-3 text-xs sm:gap-4 sm:text-sm">
               <div className="flex items-center">
                 <div className="w-4 h-4 bg-green-100 rounded mr-2"></div>
                 <span className="text-slate-500">Approved</span>
@@ -520,8 +527,9 @@ const handleApplyLeave = async (e) => {
 
           <Calendar
             tileClassName={tileClassName}
-            className="employee-leave-calendar w-full rounded-lg p-4"
+            className="employee-leave-calendar w-full rounded-lg p-2 sm:p-4"
           />
+          </div>
         </div>
       </div>
     );

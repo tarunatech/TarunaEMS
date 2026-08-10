@@ -22,7 +22,7 @@ const AdminLayout = ({ children }) => {
   ];
 
   return (
-    <div className="min-h-screen flex bg-[#eef3f8] relative text-slate-900 overflow-x-hidden">
+    <div className="relative flex h-dvh min-h-dvh overflow-hidden bg-[#eef3f8] text-slate-900">
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
@@ -37,7 +37,7 @@ const AdminLayout = ({ children }) => {
           setSidebarOpen={setSidebarOpen}
         />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 pt-16 sm:px-5 lg:px-6 lg:pt-6">
+        <main id="admin-main-scroll" className="admin-main-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-5 lg:px-6">
           <div className="mx-auto w-full max-w-[1600px] min-w-0">
             {children}
           </div>
@@ -50,6 +50,14 @@ const AdminLayout = ({ children }) => {
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
+
+      <style>{`
+        .admin-main-scroll {
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+          scroll-behavior: smooth;
+        }
+      `}</style>
     </div>
   );
 };
