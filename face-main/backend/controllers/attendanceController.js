@@ -1066,7 +1066,7 @@ export const getAllAttendance = async (req, res) => {
       { $unwind: '$userData' }
     ];
 
-    // Department filter
+    // Department filter - match the employee's stored department id before replacing it with a display name.
     if (department) {
       pipeline.push({
         $match: {
@@ -1074,6 +1074,33 @@ export const getAllAttendance = async (req, res) => {
         }
       });
     }
+
+    pipeline.push(
+      {
+        $lookup: {
+          from: 'departments',
+          localField: 'employeeData.workInfo.department',
+          foreignField: '_id',
+          as: 'departmentData'
+        }
+      },
+      {
+        $addFields: {
+          'employeeData.workInfo.departmentName': {
+            $ifNull: [
+              { $arrayElemAt: ['$departmentData.name', 0] },
+              'Unknown Department'
+            ]
+          },
+          'employeeData.workInfo.department': {
+            $ifNull: [
+              { $arrayElemAt: ['$departmentData.name', 0] },
+              '$employeeData.workInfo.department'
+            ]
+          }
+        }
+      }
+    );
 
     // Search filter
     if (search) {
@@ -1226,6 +1253,47 @@ export const getAttendanceSummary = async (req, res) => {
     const totalPresent = stats.present + stats.late + stats.halfDay + stats.workFromHome;
     stats.absent = Math.max(0, totalEmployees - totalPresent);
 
+    const activeEmployees = await Employee.find({
+      $or: [
+        { status: 'Active' },
+        { status: { $exists: false } }
+      ]
+    }).lean();
+
+    const todayAttendance = await Attendance.find({
+      date: {
+        $gte: startOfDay,
+        $lt: endOfDay
+      }
+    }).lean();
+
+    const formatEmployeeSummary = (employee) => ({
+      id: employee._id,
+      name: employee.fullName ||
+        `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`.trim() ||
+        'Unknown Employee',
+      employeeId: employee.employeeId || 'N/A'
+    });
+
+    const employeeById = new Map(activeEmployees.map((employee) => [String(employee._id), employee]));
+    const attendedEmployeeIds = new Set(todayAttendance.map((record) => String(record.employee)));
+    const employeesForStatus = (status) => todayAttendance
+      .filter((record) => record.status === status)
+      .map((record) => employeeById.get(String(record.employee)))
+      .filter(Boolean)
+      .map(formatEmployeeSummary);
+
+    const employeeDetails = {
+      totalEmployees: activeEmployees.map(formatEmployeeSummary),
+      present: employeesForStatus('Present'),
+      late: employeesForStatus('Late'),
+      halfDay: employeesForStatus('Half Day'),
+      workFromHome: employeesForStatus('Work from Home'),
+      absent: activeEmployees
+        .filter((employee) => !attendedEmployeeIds.has(String(employee._id)))
+        .map(formatEmployeeSummary)
+    };
+
     // Get department-wise attendance
     const departmentStats = await Attendance.aggregate([
       {
@@ -1290,6 +1358,7 @@ export const getAttendanceSummary = async (req, res) => {
       data: {
         date: targetDate,
         overallStats: stats,
+        employeeDetails,
         departmentStats
       }
     });

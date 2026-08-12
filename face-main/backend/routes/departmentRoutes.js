@@ -6,7 +6,8 @@ import {
   updateDepartment,
   deleteDepartment,
   getDepartmentStats,
-  getDepartmentList
+  getDepartmentList,
+  getDepartmentEmployees
 } from '../controllers/departmentController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -25,6 +26,9 @@ router.route('/stats')
 
 router.route('/list')
   .get(getDepartmentList);
+
+router.route('/:id/employees')
+  .get(getDepartmentEmployees);
 
 router.route('/:id')
   .get(getDepartmentById)

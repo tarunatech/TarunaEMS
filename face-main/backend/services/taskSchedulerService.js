@@ -163,7 +163,7 @@ const getSchedulerStatus = () => ({
   isRunning: schedulerStarted,
   jobCount: scheduledJobs.length,
   frequency: 'Daily at 10:00 PM IST',
-  recipient: process.env.TASK_REPORT_RECIPIENT || 'vrunda1414@gmail.com',
+  recipient: process.env.TASK_REPORT_RECIPIENT || 'sudhanshunaikbaroda@gmail.com',
   timezone: 'Asia/Kolkata'
 });
 

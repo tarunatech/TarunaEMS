@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import Employee from '../models/Employee.js';
 import Attendance from '../models/Attendance.js';
 import Leave from '../models/Leave.js';
+import Task from '../models/Task.js';
 import Message from '../models/Message.js';
 import Department from '../models/Department.js';
 import Payslip from '../models/Payslip.js';
@@ -512,6 +513,241 @@ export const processMessage = async (req, res) => {
   res.json({ success: true, response });
 };
 
+const formatMoney = (value) => `INR ${Number(value || 0).toLocaleString('en-IN')}`;
+const formatDate = (value) => value ? new Date(value).toLocaleDateString('en-IN') : 'N/A';
+const employeeName = (employee = {}) => `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`.trim() || employee.fullName || employee.employeeId || 'Employee';
+const normalizeBotText = (value = '') => String(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const employeeUserId = (employee = {}) => employee.user?._id || employee.user?.id || employee.user || null;
+
+const getDepartmentName = (employee = {}) => {
+  const department = employee.workInfo?.department;
+  if (department && typeof department === 'object') return department.name || department.departmentName || department.code || 'N/A';
+  return employee.departmentName || employee.workInfo?.departmentName || department || 'N/A';
+};
+
+const loadEmployeesForBot = async () => Employee.find({ status: { $ne: 'Terminated' } })
+  .populate('user', 'name email')
+  .populate('workInfo.department', 'name code')
+  .lean();
+
+const extractEmployeeQueries = (text = '') => {
+  const raw = String(text || '').trim();
+  const candidates = [];
+  const addCandidate = (value) => {
+    const cleaned = normalizeBotText(value)
+      .replace(/\b(employee|emp|details?|detail|records?|record|report|info|information|leave|leaves|requests?|request|task|tasks|attendance|salary|payslip|payroll|give|show|get|view|list|for|of|about|the|please)\b/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (cleaned && !candidates.includes(cleaned)) candidates.push(cleaned);
+  };
+
+  const idMatch = raw.match(/\b(emp[\w-]*\d+|emp\d+|[A-Z]{2,}[\w-]*\d+)\b/i);
+  if (idMatch) return [normalizeBotText(idMatch[1])];
+
+  const patterns = [
+    /(?:attendance|leave|leaves|task|tasks|salary|payslip|payroll|pay|details?|detail|employee|emp|requests?)\s+(?:of|for|about)?\s*([a-z0-9][a-z0-9\s.'_-]{1,50})/i,
+    /(?:of|for|about)\s+([a-z0-9][a-z0-9\s.'_-]{1,50})/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = raw.match(pattern);
+    if (match?.[1]) addCandidate(match[1]);
+  }
+
+  addCandidate(raw);
+  return candidates;
+};
+
+const findEmployeeForBot = async (text) => {
+  const queries = extractEmployeeQueries(text);
+  if (!queries.length) return null;
+  const employees = await loadEmployeesForBot();
+
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const employee of employees) {
+    const name = employeeName(employee).toLowerCase();
+    const id = normalizeBotText(employee.employeeId || '');
+    const email = normalizeBotText(employee.user?.email || employee.contactInfo?.personalEmail || '');
+    const phone = normalizeBotText(employee.contactInfo?.phone || employee.contactInfo?.personalPhone || '');
+    const position = normalizeBotText(employee.workInfo?.position || employee.workInfo?.designation || '');
+    const department = normalizeBotText(getDepartmentName(employee));
+    const searchable = normalizeBotText([name, id, email, phone, position, department].join(' '));
+    const nameParts = normalizeBotText(name).split(' ').filter(Boolean);
+
+    for (const query of queries) {
+      let score = 0;
+      if (id && query === id) score += 100;
+      if (id && id.includes(query)) score += 80;
+      if (email && email.includes(query)) score += 70;
+      if (phone && phone.includes(query)) score += 65;
+      if (normalizeBotText(name) === query) score += 90;
+      if (normalizeBotText(name).includes(query)) score += 75;
+      if (query.split(' ').every((part) => nameParts.includes(part))) score += 70;
+      if (searchable.includes(query)) score += 25;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = employee;
+      }
+    }
+  }
+
+  return bestScore >= 25 ? bestMatch : null;
+};
+
+const listEmployeesResponse = async () => {
+  const employees = await loadEmployeesForBot();
+  if (!employees.length) return 'No employee records found.';
+
+  const rows = employees.slice(0, 20).map((employee, index) =>
+    `${index + 1}. ${employeeName(employee)} (${employee.employeeId || 'N/A'}) - ${getDepartmentName(employee)} - ${employee.workInfo?.position || employee.workInfo?.designation || 'N/A'} - ${employee.status || 'N/A'}`
+  );
+
+  return `Employee list (${employees.length} total):\n${rows.join('\n')}${employees.length > 20 ? '\n\nShowing first 20 employees.' : ''}`;
+};
+
+const employeeDetailsResponse = async (employee) => {
+  if (!employee) return 'Please mention an employee name or employee ID. Example: "show details of EMP001".';
+
+  return [
+    `Employee Details`,
+    ``,
+    `Name: ${employeeName(employee)}`,
+    `ID: ${employee.employeeId || 'N/A'}`,
+    `Email: ${employee.user?.email || employee.contactInfo?.personalEmail || 'N/A'}`,
+    `Phone: ${employee.contactInfo?.phone || 'N/A'}`,
+    `Department: ${getDepartmentName(employee)}`,
+    `Position: ${employee.workInfo?.position || employee.workInfo?.designation || 'N/A'}`,
+    `Status: ${employee.status || 'N/A'}`,
+    `Joining Date: ${formatDate(employee.workInfo?.joiningDate)}`,
+    `Leave Balance: ${employee.leaveBalance?.remaining ?? 'N/A'} remaining of ${employee.leaveBalance?.total ?? 'N/A'}`
+  ].join('\n\n');
+};
+
+const employeeLeavesResponse = async (employee) => {
+  if (!employee) return 'Please mention an employee name or employee ID for leave details.';
+  const query = employeeUserId(employee)
+    ? { $or: [{ employee: employee._id }, { user: employeeUserId(employee) }] }
+    : { employee: employee._id };
+  const leaves = await Leave.find(query).sort({ appliedDate: -1 }).limit(8).lean();
+  if (!leaves.length) return `No leave requests found for ${employeeName(employee)}.`;
+
+  return [
+    `Leave requests for ${employeeName(employee)}:`,
+    ...leaves.map((leave, index) =>
+      `${index + 1}. ${leave.leaveType} - ${leave.status} - ${formatDate(leave.startDate)} to ${formatDate(leave.endDate)} (${leave.totalDays} day${Number(leave.totalDays) === 1 ? '' : 's'}) - ${leave.reason || 'No reason'}`
+    )
+  ].join('\n');
+};
+
+const employeeTasksResponse = async (employee) => {
+  if (!employee) return 'Please mention an employee name or employee ID for task details.';
+  const tasks = await Task.find({ assignedTo: employee._id }).sort({ updatedAt: -1 }).limit(10).lean();
+  if (!tasks.length) return `No tasks found for ${employeeName(employee)}.`;
+
+  return [
+    `Tasks for ${employeeName(employee)}:`,
+    ...tasks.map((task, index) =>
+      `${index + 1}. ${task.title || 'Task'} - ${task.status} - Priority: ${task.priority || 'Medium'} - Progress: ${task.progress || 0}% - Due: ${formatDate(task.dueDate)}`
+    )
+  ].join('\n');
+};
+
+const employeeAttendanceResponse = async (employee) => {
+  if (!employee) return 'Please mention an employee name or employee ID for attendance report.';
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const employeeFilter = employeeUserId(employee)
+    ? { $or: [{ employee: employee._id }, { user: employeeUserId(employee) }] }
+    : { employee: employee._id };
+  const records = await Attendance.find({ ...employeeFilter, date: { $gte: monthStart, $lte: new Date() } }).sort({ date: -1 }).limit(10).lean();
+  if (!records.length) return `No attendance records found this month for ${employeeName(employee)}.`;
+
+  const counts = records.reduce((acc, record) => {
+    acc[record.status] = (acc[record.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  return [
+    `Attendance report for ${employeeName(employee)} this month:`,
+    `Summary: ${Object.entries(counts).map(([status, count]) => `${status}: ${count}`).join(', ')}`,
+    ...records.map((record, index) =>
+      `${index + 1}. ${formatDate(record.date || record.checkInTime)} - ${record.status} - In: ${record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'} - Out: ${record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}`
+    )
+  ].join('\n');
+};
+
+const employeeSalaryResponse = async (employee) => {
+  if (!employee) return 'Please mention an employee name or employee ID for salary or payslip details.';
+  const payslipsByEmployee = await Payslip.find({ employee: employee._id }).sort({ createdAt: -1 }).limit(3).lean();
+  const payslipsByCode = employee.employeeId
+    ? await Payslip.find({ employeeId: employee.employeeId }).sort({ createdAt: -1 }).limit(3).lean()
+    : [];
+  const payslips = [...payslipsByEmployee, ...payslipsByCode]
+    .filter((payslip, index, all) => index === all.findIndex((item) => item._id === payslip._id))
+    .slice(0, 3);
+  const salary = employee.salaryInfo || {};
+  const allowances = salary.allowances || {};
+  const deductions = salary.deductions || {};
+
+  return [
+    `Salary information for ${employeeName(employee)}:`,
+    `Basic Salary: ${formatMoney(salary.basicSalary)}`,
+    `Allowances: HRA ${formatMoney(allowances.hra)}, Medical ${formatMoney(allowances.medical)}, Transport ${formatMoney(allowances.transport)}, Other ${formatMoney(allowances.other)}`,
+    `Deductions: PF ${formatMoney(deductions.pf)}, ESI ${formatMoney(deductions.esi)}, Tax ${formatMoney(deductions.tax)}, Other ${formatMoney(deductions.other)}`,
+    payslips.length
+      ? `Recent payslips:\n${payslips.map((payslip, index) => `${index + 1}. ${payslip.period?.month}/${payslip.period?.year} - Net: ${formatMoney(payslip.netSalary)} - Status: ${payslip.status}`).join('\n')}`
+      : 'No generated payslips found for this employee.'
+  ].join('\n');
+};
+
+const approvalNeedsResponse = async () => {
+  const [pendingLeaves, reviewTasks] = await Promise.all([
+    Leave.find({ status: 'Pending' }).populate('employee', 'personalInfo.firstName personalInfo.lastName employeeId').sort({ appliedDate: -1 }).limit(10).lean(),
+    Task.find({ status: 'Review' }).populate('assignedTo', 'personalInfo.firstName personalInfo.lastName employeeId').sort({ updatedAt: -1 }).limit(10).lean()
+  ]);
+
+  const sections = ['Approval needs:'];
+  sections.push(`Pending leave requests: ${pendingLeaves.length}`);
+  pendingLeaves.forEach((leave, index) => {
+    sections.push(`${index + 1}. Leave - ${employeeName(leave.employee)} (${leave.employee?.employeeId || 'N/A'}) - ${leave.leaveType} - ${formatDate(leave.startDate)} to ${formatDate(leave.endDate)}`);
+  });
+  sections.push(`Tasks submitted for review: ${reviewTasks.length}`);
+  reviewTasks.forEach((task, index) => {
+    sections.push(`${index + 1}. Task - ${employeeName(task.assignedTo)} (${task.assignedTo?.employeeId || 'N/A'}) - ${task.title || 'Task'} - Due: ${formatDate(task.dueDate)}`);
+  });
+
+  return sections.join('\n');
+};
+
+const processAdminDbAgent = async (text) => {
+  const lower = String(text || '').toLowerCase();
+  const employee = await findEmployeeForBot(text);
+
+  if (/^(hi|hello|hey)\b/.test(lower)) {
+    return 'Hello Admin. Ask me for employee list, employee details, employee leaves, employee tasks, attendance report, salary/payslip info, or approval needs.';
+  }
+  if (lower.includes('attendance')) return employeeAttendanceResponse(employee);
+  if (lower.includes('leave')) return employeeLeavesResponse(employee);
+  if (lower.includes('task')) return employeeTasksResponse(employee);
+  if (lower.includes('salary') || lower.includes('payslip') || lower.includes('payroll') || lower.includes('pay ')) return employeeSalaryResponse(employee);
+  if (lower.includes('approval') || lower.includes('request') || lower.includes('pending')) return approvalNeedsResponse();
+  if (employee) return employeeDetailsResponse(employee);
+  if (lower.includes('employee') || lower.includes('staff') || lower.includes('list')) return listEmployeesResponse();
+
+  return [
+    'I can fetch HR data from the database. Try:',
+    '1. show employee list',
+    '2. show details of EMP001',
+    '3. leave requests for Sudhanshu',
+    '4. tasks of EMP001',
+    '5. attendance report of EMP001',
+    '6. salary info of EMP001',
+    '7. pending approvals'
+  ].join('\n');
+};
+
 export const processAdminMessage = async (req, res) => {
   const { text } = req.body;
   const userId = req.user.id;
@@ -526,7 +762,15 @@ export const processAdminMessage = async (req, res) => {
     text: text.trim()
   }).save();
 
-  const { response } = await processBotMessage(text, userId, true);
+  const response = await processAdminDbAgent(text);
+
+  await new Message({
+    from: null,
+    to: userId,
+    text: response,
+    fromBot: true
+  }).save();
+
   res.json({ success: true, response });
 };
 

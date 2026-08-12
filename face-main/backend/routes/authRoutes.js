@@ -73,6 +73,7 @@ router.post('/login', loginValidation, authController.login);
 router.post('/register', registerValidation, authController.register);
 router.post('/forgot-password', forgotPasswordValidation, authController.forgotPassword);
 router.put('/reset-password/:resetToken', resetPasswordValidation, authController.resetPassword);
+router.post('/reset-password/:resetToken', resetPasswordValidation, authController.resetPassword);
 
 // Protected routes
 router.use(protect); // All routes below this middleware are protected

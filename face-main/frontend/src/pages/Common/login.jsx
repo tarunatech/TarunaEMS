@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, ShieldCheck, Users, BarChart3 } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Mail, Lock, User, ShieldCheck, Users, BarChart3 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 import { getDepartmentName } from '../../utils/departmentAccess';
@@ -12,6 +12,7 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -19,6 +20,7 @@ const Login = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+    setLoginError('');
   };
 
   const isEmployeeId = (value) => {
@@ -28,6 +30,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setLoginError('');
 
     try {
       const loginData = {
@@ -110,19 +113,28 @@ const Login = () => {
 
       if (error.response?.status === 401) {
         if (error.response.data.message.includes('locked')) {
+          setLoginError('Account temporarily locked due to too many failed attempts.');
           toast.error('Account temporarily locked due to too many failed attempts');
         } else if (error.response.data.message.includes('deactivated')) {
+          setLoginError('Account is deactivated. Please contact administrator.');
           toast.error('Account is deactivated. Please contact administrator.');
         } else {
           const loginType = isEmployeeId(formData.email) ? 'Employee ID' : 'Email';
-          toast.error(error.response.data.message || `Invalid ${loginType.toLowerCase()} or password`);
+          const message = error.response.data.message || `Invalid ${loginType.toLowerCase()} or password`;
+          setLoginError(message);
+          toast.error(message);
         }
       } else if (error.response?.status === 400) {
-        toast.error(error.response.data.message || 'Please check your input');
+        const message = error.response.data.message || 'Please check your input';
+        setLoginError(message);
+        toast.error(message);
       } else if (error.response?.status >= 500) {
+        setLoginError('Server error. Please try again later.');
         toast.error('Server error. Please try again later.');
       } else {
-        toast.error(error.response?.data?.message || 'Login failed. Please try again.');
+        const message = error.response?.data?.message || 'Login failed. Please try again.';
+        setLoginError(message);
+        toast.error(message);
       }
     }
 
@@ -295,7 +307,7 @@ const Login = () => {
                   <span className="text-xs text-blue-600">Use your Employee ID</span>
                 )}
                 {formData.email && !isEmployeeId(formData.email) && formData.email.includes('@') && (
-                  <span className="text-xs text-blue-600">Employees: use Employee ID</span>
+                  <span className="text-xs text-blue-600">Employee ID or reset password</span>
                 )}
               </div>
               <div className="relative">
@@ -310,7 +322,7 @@ const Login = () => {
                     isEmployeeId(formData.email)
                       ? "Enter your Employee ID"
                       : formData.email.includes('@') && !formData.email.includes('admin')
-                        ? "Enter your Employee ID as password"
+                        ? "Enter Employee ID or reset password"
                         : "Enter your password"
                   }
                   required
@@ -320,13 +332,19 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-slate-700 transition-colors"
+                  className="absolute right-2.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 hover:text-slate-700 transition-colors"
                   disabled={loading}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {loginError && (
+                <p className="flex items-center gap-1.5 text-sm font-medium text-red-600">
+                  <AlertCircle className="w-4 h-4" />
+                  {loginError}
+                </p>
+              )}
             </div>
 
             {/* Forgot Password Link */}

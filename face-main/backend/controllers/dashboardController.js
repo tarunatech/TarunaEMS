@@ -234,12 +234,39 @@ export const getRecentActivities = async (req, res) => {
       .sort({ appliedDate: -1 })
       .limit(5);
 
+    const getEmployeeName = (employee = {}) => {
+      const firstName = employee.personalInfo?.firstName || '';
+      const lastName = employee.personalInfo?.lastName || '';
+      return `${firstName} ${lastName}`.trim() || employee.fullName || 'Employee';
+    };
+
+    const departmentNameCache = new Map();
+    const getDepartmentName = async (department) => {
+      if (!department) return 'N/A';
+      if (typeof department === 'object') {
+        return department.name || department.departmentName || department.code || 'N/A';
+      }
+
+      const departmentId = String(department);
+      if (departmentNameCache.has(departmentId)) return departmentNameCache.get(departmentId);
+
+      try {
+        const departmentDoc = await Department.findById(departmentId);
+        const name = departmentDoc?.name || 'N/A';
+        departmentNameCache.set(departmentId, name);
+        return name;
+      } catch {
+        return 'N/A';
+      }
+    };
+
     // Get recent task completions
     const recentTaskCompletions = await Task.find({ 
       status: 'Completed',
       completedDate: { $exists: true }
     })
-      .populate('assignedTo', 'personalInfo.firstName personalInfo.lastName')
+      .populate('assignedTo', 'personalInfo.firstName personalInfo.lastName employeeId workInfo.department workInfo.position workInfo.designation')
+      .populate('assignedBy', 'name email')
       .sort({ completedDate: -1 })
       .limit(5);
 
@@ -268,16 +295,24 @@ export const getRecentActivities = async (req, res) => {
       });
     });
 
-    recentTaskCompletions.forEach(task => {
+    for (const task of recentTaskCompletions) {
+      const employeeName = getEmployeeName(task.assignedTo);
       activities.push({
         id: task._id,
         type: 'success',
-        action: `Completed task: ${task.title}`,
-        user: task.assignedTo?.fullName,
+        action: `${employeeName} completed task`,
+        description: task.description || task.title || 'Task completed',
+        user: employeeName,
         time: task.completedDate || task.updatedAt || task.createdAt,
-        category: 'task'
+        category: 'task',
+        details: {
+          employeeName,
+          dueDate: task.dueDate,
+          completedDate: task.completedDate,
+          timingStatus: task.dueDate && task.completedDate && new Date(task.completedDate) > new Date(task.dueDate) ? 'late' : 'on-time'
+        }
       });
-    });
+    }
 
     // Sort all activities by time and limit
     activities.sort((a, b) => new Date(b.time) - new Date(a.time));

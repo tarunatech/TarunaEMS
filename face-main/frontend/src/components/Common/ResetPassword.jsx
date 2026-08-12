@@ -1,36 +1,105 @@
-import React, { useState, useEffect } from 'react';
-import { Lock, Eye, EyeOff, Building2, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import {
+  AlertCircle,
+  ArrowLeft,
+  BarChart3,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  Lock,
+  ShieldCheck,
+  Users
+} from 'lucide-react';
+import axios from 'axios';
 
-// Simulated API functions
-const verifyResetToken = async (token) => {
-  const response = await fetch(`/api/auth/verify-reset-token/${token}`);
-  
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Invalid or expired token');
+const API = axios.create({
+  baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json'
   }
-  
-  return response.json();
-};
+});
 
-const resetPassword = async (token, password, confirmPassword) => {
-  const response = await fetch(`/api/auth/reset-password/${token}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ password, confirmPassword })
-  });
-  
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to reset password');
-  }
-  
-  return response.json();
-};
+const FeatureCard = ({ icon: Icon, title, text }) => (
+  <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/10 p-4 shadow-sm backdrop-blur-sm">
+    <div className="shrink-0 w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
+      <Icon className="w-5 h-5 text-white" />
+    </div>
+    <div className="min-w-0">
+      <p className="text-white text-sm font-semibold">{title}</p>
+      <p className="text-blue-100/80 text-xs leading-relaxed mt-1">{text}</p>
+    </div>
+  </div>
+);
+
+const BrandPanel = () => (
+  <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-900 to-blue-800">
+    <div className="absolute -top-16 -right-10 w-80 h-80 bg-white/10 rounded-full" />
+    <div className="absolute top-1/3 -right-24 w-64 h-64 bg-white/5 rounded-full" />
+    <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-2xl" />
+
+    <div className="relative z-10 flex h-full w-full flex-col p-10 xl:p-14">
+      <div className="flex items-center gap-3.5">
+        <img
+          className="w-14 h-14 rounded-xl object-contain bg-white p-2 shadow-lg shadow-blue-900/20"
+          src="/taruna_logo.png"
+          alt="Taruna Technology logo"
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
+        <div>
+          <span className="block text-white font-bold text-xl tracking-tight">Taruna Technology</span>
+          <span className="block text-blue-100 text-sm">Employee Management System</span>
+        </div>
+      </div>
+
+      <div className="max-w-md mt-12">
+        <h1 className="text-4xl xl:text-[2.6rem] font-bold text-white leading-tight tracking-tight mb-5">
+          Set a new password, <span className="text-blue-100">securely</span>.
+        </h1>
+        <p className="text-blue-50/90 text-base leading-relaxed">
+          Create a fresh password for your Taruna Technology workspace and continue with protected access.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 mt-10">
+        <FeatureCard icon={ShieldCheck} title="Protected link" text="Reset links are time-limited for safety." />
+        <FeatureCard icon={Users} title="Team portal" text="Admin and employee access stays connected." />
+        <FeatureCard icon={BarChart3} title="Work insight" text="Tasks, attendance and performance in one place." />
+      </div>
+
+      <p className="text-blue-100/70 text-xs mt-auto pt-10">
+        © {new Date().getFullYear()} Taruna Technology. All rights reserved.
+      </p>
+    </div>
+  </div>
+);
+
+const MobileBrand = () => (
+  <div className="lg:hidden flex items-center gap-3 mb-10">
+    <img
+      className="w-14 h-14 rounded-lg object-contain bg-white p-2 shadow-md shadow-blue-500/20 ring-1 ring-gray-200"
+      src="/taruna_logo.png"
+      alt="Taruna Technology logo"
+      onError={(e) => { e.target.style.display = 'none'; }}
+    />
+    <div>
+      <span className="block text-slate-900 font-semibold text-lg tracking-tight">Taruna Technology</span>
+      <span className="block text-gray-500 text-xs mt-0.5">IT solutions, built to grow with you</span>
+    </div>
+  </div>
+);
+
+const ErrorMessage = ({ error }) => (
+  <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+    <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+    <p className="text-sm text-red-700 leading-relaxed">{error}</p>
+  </div>
+);
 
 const ResetPassword = () => {
+  const { token } = useParams();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: ''
@@ -38,56 +107,23 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [tokenValid, setTokenValid] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
-
-  // Get token from URL - in real app, use useParams from react-router
-  const token = 'demo-token'; // Replace with actual token from URL
-
-  useEffect(() => {
-    const verifyToken = async () => {
-      try {
-        const response = await verifyResetToken(token);
-        if (response.success) {
-          setTokenValid(true);
-          setUserEmail(response.email);
-        }
-      } catch (error) {
-        setError(error.message);
-        setTokenValid(false);
-      } finally {
-        setVerifying(false);
-      }
-    };
-
-    verifyToken();
-  }, [token]);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value
-    });
-    setError(''); // Clear error when user types
+    }));
+    setError('');
   };
 
   const validatePassword = (password) => {
-    const minLength = 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
     const errors = [];
-    if (password.length < minLength) errors.push(`At least ${minLength} characters`);
-    if (!hasUpperCase) errors.push('One uppercase letter');
-    if (!hasLowerCase) errors.push('One lowercase letter');
-    if (!hasNumbers) errors.push('One number');
-    if (!hasSpecialChar) errors.push('One special character');
-
+    if (password.length < 6) errors.push('at least 6 characters');
+    if (!/[A-Z]/.test(password)) errors.push('one uppercase letter');
+    if (!/[a-z]/.test(password)) errors.push('one lowercase letter');
+    if (!/\d/.test(password)) errors.push('one number');
     return errors;
   };
 
@@ -97,254 +133,167 @@ const ResetPassword = () => {
     setError('');
 
     try {
-      const { password, confirmPassword } = formData;
-
-      // Validation
-      if (!password || !confirmPassword) {
-        throw new Error('Please fill in all fields');
+      if (!token) {
+        throw new Error('Reset link is missing. Please request a new password reset link.');
       }
 
-      if (password !== confirmPassword) {
-        throw new Error('Passwords do not match');
+      if (!formData.password || !formData.confirmPassword) {
+        throw new Error('Please fill in both password fields.');
       }
 
-      const passwordErrors = validatePassword(password);
+      if (formData.password !== formData.confirmPassword) {
+        throw new Error('Passwords do not match.');
+      }
+
+      const passwordErrors = validatePassword(formData.password);
       if (passwordErrors.length > 0) {
-        throw new Error(`Password must contain: ${passwordErrors.join(', ')}`);
+        throw new Error(`Password must contain ${passwordErrors.join(', ')}.`);
       }
 
-      const response = await resetPassword(token, password, confirmPassword);
-      
-      if (response.success) {
+      const response = await API.put(`/auth/reset-password/${token}`, {
+        password: formData.password
+      });
+
+      if (response.data.success) {
         setSuccess(true);
+        toast.success('Password reset successfully');
       }
     } catch (error) {
-      setError(error.message);
+      const message = error.response?.data?.message || error.message || 'Failed to reset password. Please try again.';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Loading state while verifying token
-  if (verifying) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-secondary-900 via-secondary-800 to-secondary-900">
-        <div className="glass-morphism neon-border p-8 rounded-2xl text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-pink mx-auto mb-4"></div>
-          <p className="text-white">Verifying reset token...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Invalid token state
-  if (!tokenValid) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-secondary-900 via-secondary-800 to-secondary-900">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-10 -left-10 w-72 h-72 bg-neon-pink opacity-10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-10 -right-10 w-72 h-72 bg-neon-purple opacity-10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
-
-        <div className="w-full max-w-md relative">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-neon-pink to-neon-purple rounded-2xl mb-4 animate-glow">
-              <Building2 className="w-8 h-8 text-white" />
-            </div>
-          </div>
-
-          <div className="glass-morphism neon-border p-8 rounded-2xl text-center">
-            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-8 h-8 text-red-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Invalid Reset Link</h2>
-            <p className="text-secondary-400 mb-6">
-              This password reset link is invalid or has expired. Reset links are valid for 10 minutes only.
-            </p>
-            <div className="space-y-4">
-              <button
-                onClick={() => window.location.href = '/forgot-password'}
-                className="w-full py-3 px-4 bg-gradient-to-r from-neon-pink to-neon-purple text-white font-semibold rounded-lg hover-glow transition-all duration-300"
-              >
-                Request New Reset Link
-              </button>
-              <button
-                onClick={() => window.location.href = '/login'}
-                className="inline-flex items-center text-secondary-400 hover:text-white transition-colors duration-300 bg-transparent border-none cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Login
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Success state
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-secondary-900 via-secondary-800 to-secondary-900">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-10 -left-10 w-72 h-72 bg-neon-pink opacity-10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-10 -right-10 w-72 h-72 bg-neon-purple opacity-10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
+      <div className="h-screen overflow-hidden flex bg-white">
+        <BrandPanel />
 
-        <div className="w-full max-w-md relative">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-neon-pink to-neon-purple rounded-2xl mb-4 animate-glow">
-              <Building2 className="w-8 h-8 text-white" />
-            </div>
-          </div>
+        <div className="w-full lg:w-1/2 flex items-center justify-center overflow-hidden p-6 sm:p-10 bg-white">
+          <div className="w-full max-w-sm">
+            <MobileBrand />
 
-          <div className="glass-morphism neon-border p-8 rounded-2xl text-center">
-            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-400" />
+            <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-xl shadow-blue-900/5 text-center">
+              <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 ring-1 ring-green-100">
+                <CheckCircle className="w-7 h-7 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Password updated</h2>
+              <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                Your new password is ready. You can now sign in with your updated credentials.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-colors duration-200 shadow-lg shadow-blue-600/25"
+              >
+                Continue to Login
+              </button>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Password Reset Successful!</h2>
-            <p className="text-secondary-400 mb-6">
-              Your password has been successfully updated. You can now login with your new password.
-            </p>
-            <button
-              onClick={() => window.location.href = '/login'}
-              className="w-full py-3 px-4 bg-gradient-to-r from-neon-pink to-neon-purple text-white font-semibold rounded-lg hover-glow transition-all duration-300 mb-4"
-            >
-              Continue to Login
-            </button>
-            <p className="text-xs text-secondary-500">
-              A confirmation email has been sent to your registered email address.
-            </p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Password reset form
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-secondary-900 via-secondary-800 to-secondary-900">
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-10 -left-10 w-72 h-72 bg-neon-pink opacity-10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-10 -right-10 w-72 h-72 bg-neon-purple opacity-10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      </div>
+    <div className="h-screen overflow-hidden flex bg-white">
+      <BrandPanel />
 
-      <div className="w-full max-w-md relative">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-neon-pink to-neon-purple rounded-2xl mb-4 animate-glow">
-            <Building2 className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold neon-text mb-2">CompanyName</h1>
-        </div>
+      <div className="w-full lg:w-1/2 flex items-center justify-center overflow-hidden p-6 sm:p-10 bg-white">
+        <div className="w-full max-w-sm">
+          <MobileBrand />
 
-        {/* Form */}
-        <div className="glass-morphism neon-border p-8 rounded-2xl">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-white mb-2">Create New Password</h2>
-            <p className="text-secondary-400 mb-2">
-              Enter a new password for your account
-            </p>
-            {userEmail && (
-              <p className="text-neon-pink text-sm font-medium">
-                {userEmail}
-              </p>
-            )}
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-slate-900 mb-1.5">Create new password</h2>
+            <p className="text-gray-500 text-sm">Choose a strong password to secure your account.</p>
           </div>
 
-          <div onSubmit={handleSubmit} className="space-y-6">
-            {/* New Password */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-secondary-300">
-                New Password
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-2">
+                New password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-secondary-400" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  id="password"
                   name="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 bg-secondary-800/50 border border-secondary-600 rounded-lg text-white placeholder-secondary-500 focus:border-neon-pink focus:ring-2 focus:ring-neon-pink/20 transition-all duration-300"
+                  className="w-full pl-12 pr-12 py-3.5 bg-white border border-gray-200 rounded-xl text-slate-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
                   placeholder="Enter new password"
+                  autoComplete="new-password"
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-white transition-colors"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-slate-700 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* Confirm Password */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-secondary-300">
-                Confirm Password
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-slate-700 mb-2">
+                Confirm password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-secondary-400" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
                   name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 bg-secondary-800/50 border border-secondary-600 rounded-lg text-white placeholder-secondary-500 focus:border-neon-pink focus:ring-2 focus:ring-neon-pink/20 transition-all duration-300"
+                  className="w-full pl-12 pr-12 py-3.5 bg-white border border-gray-200 rounded-xl text-slate-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
                   placeholder="Confirm new password"
+                  autoComplete="new-password"
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-white transition-colors"
+                  onClick={() => setShowConfirmPassword((value) => !value)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-slate-700 transition-colors"
+                  aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* Password Requirements */}
-            <div className="bg-secondary-800/30 rounded-lg p-4 border border-secondary-600">
-              <h3 className="text-sm font-medium text-secondary-300 mb-2">Password Requirements:</h3>
-              <ul className="text-xs text-secondary-400 space-y-1">
-                <li>• At least 8 characters long</li>
-                <li>• Contains uppercase and lowercase letters</li>
-                <li>• Contains at least one number</li>
-                <li>• Contains at least one special character</li>
-              </ul>
+            <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3">
+              <p className="text-sm font-semibold text-slate-800 mb-1">Password must include</p>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                At least 6 characters with uppercase, lowercase and one number.
+              </p>
             </div>
 
-            {error && (
-              <div className="flex items-start space-x-3 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
-            )}
+            {error && <ErrorMessage error={error} />}
 
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-neon-pink to-neon-purple text-white font-semibold rounded-lg hover-glow transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-blue-600/25"
             >
-              {loading ? (
-                <span className="loading-dots">Updating Password</span>
-              ) : (
-                'Update Password'
-              )}
+              {loading ? 'Updating password...' : 'Update Password'}
             </button>
-          </div>
+          </form>
 
-          <div className="text-center mt-6">
-            <button
-              onClick={() => window.location.href = '/login'}
-              className="inline-flex items-center text-secondary-400 hover:text-white transition-colors duration-300 bg-transparent border-none cursor-pointer"
+          <div className="mt-7 text-center">
+            <Link
+              to="/login"
+              className="inline-flex items-center justify-center text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Login
-            </button>
+            </Link>
           </div>
         </div>
       </div>

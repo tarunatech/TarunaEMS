@@ -93,7 +93,7 @@ export async function detectFaces(imageBuffer) {
     
     // Resize large images for performance
     let processImg = img;
-    const MAX_WIDTH = 640; // Resize to max 640px width for speed
+    const MAX_WIDTH = 480;
     if (img.width > MAX_WIDTH) {
       const scaleFactor = MAX_WIDTH / img.width;
       const newHeight = img.height * scaleFactor;
@@ -140,7 +140,7 @@ export async function detectSingleFace(imageBuffer, options = {}) {
 
     // Resize large images for performance
     let processImg = img;
-    const MAX_WIDTH = 320; // Reduced to 320px for faster processing
+    const MAX_WIDTH = 256;
     if (img.width > MAX_WIDTH) {
       const scaleFactor = MAX_WIDTH / img.width;
       const newHeight = img.height * scaleFactor;

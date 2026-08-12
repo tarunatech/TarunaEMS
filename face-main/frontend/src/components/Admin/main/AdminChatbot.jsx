@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Bot, User } from 'lucide-react';
-import { employeeAPI, departmentAPI, attendanceAPI, dashboardAPI, aiAPI, botAPI } from '../../../utils/api';
+import { employeeAPI, departmentAPI, attendanceAPI, dashboardAPI, botAPI } from '../../../utils/api';
 import { taskService } from '../../../services/taskService';
 
 const AdminChatbot = ({ isOpen, onClose, isAdmin }) => {
@@ -8,7 +8,7 @@ const AdminChatbot = ({ isOpen, onClose, isAdmin }) => {
     {
       id: 1,
       type: 'bot',
-      content: 'Hello! I\'m your AI assistant for HR operations. How can I help you today?',
+      content: 'Hello! I\'m your HR data assistant. Ask me about employees, leaves, tasks, attendance, approvals, or salary details.',
       timestamp: new Date()
     },
     // {
@@ -589,8 +589,7 @@ const AdminChatbot = ({ isOpen, onClose, isAdmin }) => {
     }
   };
 
-  // Hybrid approach: Handle specific commands with structured logic, use AI for general questions
-  const parseCommandWithAI = async (input) => {
+  const parseCommandWithAgent = async (input) => {
     const lowerInput = input.toLowerCase();
 
     // Handle specific structured commands that require API calls with parameters
@@ -600,13 +599,12 @@ const AdminChatbot = ({ isOpen, onClose, isAdmin }) => {
       return await parseCommand(input);
     }
 
-    // For general questions and natural language, use AI HR Bot with all employee context
     try {
       const botRes = await botAPI.sendAdminMessage(input);
       if (botRes.data && botRes.data.success && botRes.data.response) {
         return botRes.data.response;
       }
-      return "Sorry, I couldn't get a response from the AI assistant.";
+      return "Sorry, I couldn't get a response from the HR data assistant.";
     } catch (botError) {
       console.error('Admin bot error:', botError);
       // Fallback to structured parsing if bot fails
@@ -634,7 +632,7 @@ const AdminChatbot = ({ isOpen, onClose, isAdmin }) => {
     setIsTyping(true);
 
     try {
-      const botContent = await parseCommandWithAI(currentInput);
+      const botContent = await parseCommandWithAgent(currentInput);
       const botResponse = {
         id: messages.length + 2,
         type: 'bot',
@@ -667,13 +665,19 @@ const AdminChatbot = ({ isOpen, onClose, isAdmin }) => {
   if (!isOpen || !isAdmin) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end justify-end p-4 z-50">
-      <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-full max-w-md h-96 flex flex-col">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-end justify-end p-4 z-50"
+      onMouseDown={onClose}
+    >
+      <div
+        className="bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-full max-w-md h-96 flex flex-col"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <div className="flex items-center space-x-2">
             <Bot className="text-neon-purple" size={20} />
-            <span className="text-white font-semibold">AI HR Assistant</span>
+            <span className="text-white font-semibold">HR Data Assistant</span>
           </div>
           <button
             onClick={onClose}
@@ -691,7 +695,7 @@ const AdminChatbot = ({ isOpen, onClose, isAdmin }) => {
               className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-xs px-4 py-2 rounded-lg ${
+                className={`max-w-xs px-4 py-3 rounded-lg ${
                   message.type === 'user'
                     ? 'bg-neon-purple text-white'
                     : 'bg-gray-700 text-gray-100'
@@ -703,7 +707,7 @@ const AdminChatbot = ({ isOpen, onClose, isAdmin }) => {
                     {message.timestamp.toLocaleTimeString()}
                   </span>
                 </div>
-                <p className="text-sm">{message.content}</p>
+                <p className="text-sm leading-6 whitespace-pre-line break-words">{message.content}</p>
               </div>
             </div>
           ))}

@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
 import { expenseTrackerAPI } from '../../utils/api';
-import { Edit3, Plus, RefreshCw, Search, Trash2, WalletCards } from 'lucide-react';
+import { Edit3, Plus, RefreshCw, Trash2, WalletCards } from 'lucide-react';
 import toast from 'react-hot-toast';
 import io from 'socket.io-client';
+import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 
 const paymentMethods = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Other'];
 const expenseCategories = ['Office Supplies', 'Travel', 'Utilities', 'Salary', 'Marketing', 'Maintenance', 'Software', 'Miscellaneous'];
@@ -185,10 +186,17 @@ const EmployeeExpenses = () => {
               <h2 className="text-xl font-bold text-slate-900">Expense History</h2>
               <p className="text-sm text-slate-500">Only your submitted expense records are shown here.</p>
             </div>
-            <div className="relative w-full sm:max-w-sm">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search expenses" className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
-            </div>
+            <SearchWithSuggestions
+              value={search}
+              onChange={setSearch}
+              items={expenses}
+              getSuggestionValue={(item) => item.paidTo || item.description || item.category || ''}
+              getSuggestionTitle={(item) => item.paidTo || item.category || 'Expense'}
+              getSuggestionSubtitle={(item) => [item.category, item.paymentMethod, item.description].filter(Boolean).join(' • ')}
+              placeholder="Search expenses"
+              className="w-full sm:max-w-sm"
+              inputClassName="rounded-xl py-2.5 focus:border-blue-500 focus:ring-blue-100"
+            />
           </div>
 
           <div className="overflow-hidden rounded-xl border border-slate-200">

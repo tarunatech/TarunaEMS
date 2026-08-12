@@ -10,15 +10,23 @@ import {
   XCircle,
   Eye,
   Filter,
-  Search,
   Download,
   User,
   FileText,
   Loader
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 
 const AdminLeaveManagement = () => {
+  const leaveTypeOptions = [
+    { value: 'casual', label: 'Casual' },
+    { value: 'sick', label: 'Sick' },
+    { value: 'earned', label: 'Earned' },
+    { value: 'emergency', label: 'Emergency' },
+    { value: 'personal', label: 'Personal' }
+  ];
+
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -117,6 +125,15 @@ const AdminLeaveManagement = () => {
     }
   };
 
+  const isInteractiveClick = (event) =>
+    event.target.closest('button, a, input, select, textarea, label');
+
+  const openLeaveDetails = (event, leave) => {
+    if (isInteractiveClick(event)) return;
+    setSelectedLeave(leave);
+    setShowModal(true);
+  };
+
   const getLeaveTypeColor = (type) => {
     switch (type.toLowerCase()) {
       case 'casual': return 'bg-blue-100 text-blue-700 border border-blue-200';
@@ -134,6 +151,77 @@ const AdminLeaveManagement = () => {
       return `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`.trim();
     }
     return employee.user?.name || 'Unknown Employee';
+  };
+
+  const formatDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString();
+  };
+
+  const getEmployeeId = (employee) => (
+    employee?.employeeId ||
+    employee?.user?.employeeId ||
+    ''
+  );
+
+  const escapeCsvValue = (value) => {
+    const text = String(value ?? '');
+    return `"${text.replace(/"/g, '""')}"`;
+  };
+
+  const exportLeaveReport = () => {
+    if (leaves.length === 0) {
+      toast.error('No leave applications to export');
+      return;
+    }
+
+    const rows = [
+      [
+        'Employee Name',
+        'Employee ID',
+        'Leave Type',
+        'Start Date',
+        'End Date',
+        'Total Days',
+        'Half Day',
+        'Half Day Session',
+        'Applied Date',
+        'Status',
+        'Reason',
+        'Approver Comments'
+      ],
+      ...leaves.map((leave) => [
+        getEmployeeName(leave.employee),
+        getEmployeeId(leave.employee),
+        leave.leaveType,
+        formatDate(leave.startDate),
+        formatDate(leave.endDate),
+        leave.isHalfDay ? '0.5' : leave.totalDays,
+        leave.isHalfDay ? 'Yes' : 'No',
+        leave.halfDaySession || '',
+        formatDate(leave.appliedDate),
+        leave.status,
+        leave.reason,
+        leave.approverComments
+      ])
+    ];
+
+    const csv = rows
+      .map((row) => row.map(escapeCsvValue).join(','))
+      .join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const reportDate = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `leave_report_${reportDate}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    toast.success('Leave report exported successfully');
   };
 
   const isSameDate = (a, b) => a.toDateString() === b.toDateString();
@@ -273,8 +361,9 @@ const AdminLeaveManagement = () => {
     const [comments, setComments] = useState('');
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 p-2 sm:p-4">
-        <div className="premium-panel w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+        <div className="fixed inset-0 bg-slate-900/20" onClick={() => setShowModal(false)} />
+        <div className="premium-panel relative z-10 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl">
           <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4 sm:p-6">
             <h2 className="text-lg font-bold text-slate-900 sm:text-2xl">Leave Application Details</h2>
             <button
@@ -328,8 +417,8 @@ const AdminLeaveManagement = () => {
                     <p className="text-slate-900 font-medium">{new Date(selectedLeave.appliedDate).toLocaleDateString()}</p>
                   </div>
                   <div>
-                    <label className="text-sm text-slate-500">Status</label>
-                    <span className={`inline-block px-3 py-1 text-xs rounded-full ${getStatusColor(selectedLeave.status)}`}>
+                    <label className="text-sm text-slate-500">Status:</label>
+                    <span className={`inline-block ml-2 px-1 py-1 text-xs rounded-full ${getStatusColor(selectedLeave.status)}`}>
                       {selectedLeave.status}
                     </span>
                   </div>
@@ -338,7 +427,7 @@ const AdminLeaveManagement = () => {
 
               <div>
                 <label className="text-sm text-slate-500">Reason</label>
-                <p className="text-slate-900 bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1 text-sm sm:text-base">{selectedLeave.reason}</p>
+                <p className="text-slate-900 bg-slate-50 border border-slate-200 p-2 rounded-xl mt-1 text-sm sm:text-base">{selectedLeave.reason}</p>
               </div>
 
               {selectedLeave.approverComments && (
@@ -405,7 +494,11 @@ const AdminLeaveManagement = () => {
               <CalendarIcon className="mr-1.5 h-4 w-4 sm:mr-2" />
               <span className="whitespace-nowrap">Leave Calendar</span>
             </button>
-            <button className="premium-primary-button flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 sm:px-6 sm:py-3">
+            <button
+              onClick={exportLeaveReport}
+              disabled={leaves.length === 0}
+              className="premium-primary-button flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3"
+            >
               <Download className="mr-1.5 h-4 w-4 sm:mr-2" />
               <span className="whitespace-nowrap">Export Report</span>
             </button>
@@ -464,16 +557,16 @@ const AdminLeaveManagement = () => {
 
         <div className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
           <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search employees..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="premium-input w-full rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400"
-              />
-            </div>
+            <SearchWithSuggestions
+              value={searchTerm}
+              onChange={setSearchTerm}
+              items={leaves}
+              getSuggestionValue={(leave) => leave.employee?.user?.name || leave.employee?.fullName || leave.employee?.employeeId || ''}
+              getSuggestionTitle={(leave) => leave.employee?.user?.name || leave.employee?.fullName || 'Employee'}
+              getSuggestionSubtitle={(leave) => [leave.employee?.employeeId, leave.leaveType, leave.status].filter(Boolean).join(' • ')}
+              placeholder="Search employees..."
+              inputClassName="premium-input rounded-xl py-3 text-sm"
+            />
 
             <div className="relative">
               <Filter className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-slate-400" />
@@ -498,11 +591,9 @@ const AdminLeaveManagement = () => {
                 className="premium-input w-full rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900"
               >
                 <option value="">All Types</option>
-                <option value="Casual">Casual</option>
-                <option value="Sick">Sick</option>
-                <option value="Earned">Earned</option>
-                <option value="Emergency">Emergency</option>
-                <option value="Personal">Personal</option>
+                {leaveTypeOptions.map((type) => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
               </select>
             </div>
 
@@ -529,7 +620,7 @@ const AdminLeaveManagement = () => {
             <>
               <div className="scrollbar-hide grid max-h-[68dvh] gap-3 overflow-y-auto overscroll-contain p-3 sm:gap-4 sm:p-4 md:hidden">
                 {leaves.map((leave) => (
-                  <div key={leave._id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-200 active:bg-indigo-50/60 sm:p-4">
+                  <div key={leave._id} onClick={(event) => openLeaveDetails(event, leave)} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-200 cursor-pointer hover:border-blue-200 hover:bg-blue-50/40 active:bg-indigo-50/60 sm:p-4">
                     <div className="mb-3 flex items-start justify-between gap-2">
                       <div className="flex min-w-0 flex-1 items-center space-x-2.5 sm:space-x-3">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 sm:h-10 sm:w-10">
@@ -626,7 +717,7 @@ const AdminLeaveManagement = () => {
                     </thead>
                     <tbody>
                       {leaves.map((leave) => (
-                        <tr key={leave._id} className="premium-table-row border-b border-slate-100">
+                        <tr key={leave._id} onClick={(event) => openLeaveDetails(event, leave)} className="premium-table-row border-b border-slate-100 cursor-pointer">
                           <td className="p-6">
                             <div className="flex items-center space-x-3">
                               <div className="flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-blue-50">

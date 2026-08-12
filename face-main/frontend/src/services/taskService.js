@@ -109,6 +109,16 @@ export const taskService = {
     }
   },
 
+  // Admin review action: approve, reject, or request changes
+  reviewTask: async (taskId, action, feedback = '') => {
+    try {
+      const response = await api.put(`/tasks/${taskId}/review`, { action, feedback });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to review task' };
+    }
+  },
+
   // Toggle subtask
   toggleSubtask: async (taskId, subtaskId) => {
     try {
@@ -186,6 +196,44 @@ export const taskService = {
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to delete day book' };
+    }
+  }
+};
+
+export const performanceService = {
+  getTeamPerformance: async (month) => {
+    try {
+      const response = await api.get('/performance', { params: { month } });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to get team performance' };
+    }
+  },
+
+  getEmployeeMonthlyDetail: async (employeeId, month) => {
+    try {
+      const response = await api.get(`/performance/${employeeId}`, { params: { month } });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to get employee performance detail' };
+    }
+  },
+
+  rateEmployee: async (employeeId, data) => {
+    try {
+      const response = await api.put(`/performance/${employeeId}/rate`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to rate employee performance' };
+    }
+  },
+
+  getMyPerformance: async (month) => {
+    try {
+      const response = await api.get('/performance/me', { params: { month } });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to get my performance' };
     }
   }
 };

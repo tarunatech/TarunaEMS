@@ -217,6 +217,7 @@ export const getLeaves = async (req, res) => {
       status, 
       leaveType, 
       employeeId,
+      search,
       startDate,
       endDate
     } = req.query;
@@ -235,9 +236,65 @@ export const getLeaves = async (req, res) => {
       query.employee = employeeId;
     }
 
+    if (req.user.role !== 'employee' && search?.trim()) {
+      const searchTerm = search.trim().toLowerCase();
+      const employees = await Employee.find({ status: { $ne: 'Terminated' } })
+        .populate('user', 'name email employeeId')
+        .lean();
+
+      const matchingEmployeeIds = employees
+        .filter((employee) => {
+          const fullName = [
+            employee.personalInfo?.firstName,
+            employee.personalInfo?.lastName
+          ].filter(Boolean).join(' ').toLowerCase();
+          const values = [
+            fullName,
+            employee.employeeId,
+            employee.user?.employeeId,
+            employee.user?.name,
+            employee.user?.email,
+            employee.contactInfo?.personalEmail
+          ];
+
+          return values.some((value) => String(value || '').toLowerCase().includes(searchTerm));
+        })
+        .map((employee) => employee._id);
+
+      if (matchingEmployeeIds.length === 0) {
+        return res.json({
+          success: true,
+          leaves: [],
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: 0,
+            totalLeaves: 0,
+            hasNext: false,
+            hasPrev: false
+          }
+        });
+      }
+
+      if (employeeId && !matchingEmployeeIds.includes(employeeId)) {
+        return res.json({
+          success: true,
+          leaves: [],
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: 0,
+            totalLeaves: 0,
+            hasNext: false,
+            hasPrev: false
+          }
+        });
+      }
+
+      query.employee = employeeId ? employeeId : { $in: matchingEmployeeIds };
+    }
+
     // Apply filters
     if (status) query.status = status;
-    if (leaveType) query.leaveType = leaveType;
+    if (leaveType) query.leaveType = String(leaveType).toLowerCase();
     
     if (startDate && endDate) {
       query.startDate = {
@@ -417,6 +474,8 @@ export const approveLeave = async (req, res) => {
       });
     }
 
+    const employeeEmail = leave.user?.email || leave.employee?.user?.email;
+
     // Update leave status
     leave.status = 'Approved';
     leave.actionBy = req.user.id;
@@ -440,7 +499,7 @@ export const approveLeave = async (req, res) => {
       `;
       
       await sendEmail({
-        to: leave.user.email,
+        to: employeeEmail,
         subject: 'Leave Approved',
         html: emailMessage
       });
@@ -500,6 +559,8 @@ export const rejectLeave = async (req, res) => {
       });
     }
 
+    const employeeEmail = leave.user?.email || leave.employee?.user?.email;
+
     // Restore simple leave balance when rejecting
     const employee = await Employee.findById(leave.employee._id);
     if (employee) {
@@ -531,7 +592,7 @@ export const rejectLeave = async (req, res) => {
       `;
       
       await sendEmail({
-        to: leave.user.email,
+        to: employeeEmail,
         subject: 'Leave Rejected',
         html: emailMessage
       });

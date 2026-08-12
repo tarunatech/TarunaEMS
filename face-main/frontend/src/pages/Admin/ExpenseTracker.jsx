@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import { expenseTrackerAPI } from '../../utils/api';
-import { RefreshCw, Search, Trash2, Edit3, Eye } from 'lucide-react';
+import { RefreshCw, Trash2, Edit3, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import io from 'socket.io-client';
+import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 
 const paymentMethods = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Other'];
 const expenseCategories = ['Office Supplies', 'Food', 'Travel', 'Utilities', 'Salary', 'Marketing', 'Maintenance', 'Software', 'Miscellaneous'];
@@ -336,16 +337,32 @@ const DashboardView = ({ summary, expenses, search, setSearch, loading, currency
       <SummaryCard label="Remaining Balance" value={currency(summary.remainingBalance)} />
     </div>
 
-    <div className="relative mt-4 sm:mt-6">
-      <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search expenses" className="premium-input w-full rounded-xl py-3 pl-12 pr-4 text-sm text-slate-900 placeholder-slate-400" />
-    </div>
+    <SearchWithSuggestions
+      value={search}
+      onChange={setSearch}
+      items={expenses}
+      getSuggestionValue={(item) => item.paidTo || item.description || item.category || ''}
+      getSuggestionTitle={(item) => item.paidTo || item.category || 'Expense'}
+      getSuggestionSubtitle={(item) => [item.category, item.paymentMethod, item.description].filter(Boolean).join(' • ')}
+      placeholder="Search expenses"
+      className="mt-4 sm:mt-6"
+      inputClassName="premium-input rounded-xl py-3 text-sm"
+    />
 
     <ExpenseTable expenses={expenses} loading={loading} currency={currency} displayDate={displayDate} onView={onView} onEdit={onEdit} onDelete={onDelete} />
   </div>
 );
 
-const ExpenseTable = ({ expenses, loading, currency, displayDate, onView, onEdit, onDelete }) => (
+const ExpenseTable = ({ expenses, loading, currency, displayDate, onView, onEdit, onDelete }) => {
+  const isInteractiveClick = (event) =>
+    event.target.closest('button, a, input, select, textarea, label');
+
+  const openExpenseDetails = (event, item) => {
+    if (isInteractiveClick(event)) return;
+    onView(item);
+  };
+
+  return (
   <div className="mt-4 sm:mt-6">
     {/* Mobile: card list */}
     <div className="space-y-3 md:hidden">
@@ -354,7 +371,7 @@ const ExpenseTable = ({ expenses, loading, currency, displayDate, onView, onEdit
       ) : expenses.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">No expenses found</div>
       ) : expenses.map((item) => (
-        <div key={item._id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div key={item._id} onClick={(event) => openExpenseDetails(event, item)} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm cursor-pointer hover:border-blue-200 hover:bg-blue-50/40 transition-colors">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">{item.paidTo}</p>
@@ -399,7 +416,7 @@ const ExpenseTable = ({ expenses, loading, currency, displayDate, onView, onEdit
             ) : expenses.length === 0 ? (
               <tr><td colSpan="8" className="p-8 text-center text-slate-500">No expenses found</td></tr>
             ) : expenses.map((item) => (
-              <tr key={item._id} className="premium-table-row border-b border-slate-100">
+              <tr key={item._id} onClick={(event) => openExpenseDetails(event, item)} className="premium-table-row border-b border-slate-100 cursor-pointer">
                 <td className="p-4 text-slate-800">{displayDate(item.date)}</td>
                 <td className="p-4 text-slate-800">
                   {item.employee
@@ -426,7 +443,8 @@ const ExpenseTable = ({ expenses, loading, currency, displayDate, onView, onEdit
       </div>
     </div>
   </div>
-);
+  );
+};
 
 const PaymentsView = ({ payments, filters, setFilters, paymentSearch, setPaymentSearch, loading, currency, displayDate, openPaymentForm, onRefresh, onEdit, onDelete }) => (
   <div className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
@@ -446,7 +464,16 @@ const PaymentsView = ({ payments, filters, setFilters, paymentSearch, setPayment
     </div>
 
     <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-6 sm:grid-cols-2">
-      <input value={paymentSearch} onChange={(e) => setPaymentSearch(e.target.value)} placeholder="Search by client name" className="premium-input rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400" />
+      <SearchWithSuggestions
+        value={paymentSearch}
+        onChange={setPaymentSearch}
+        items={payments}
+        getSuggestionValue={(item) => item.clientName || item.invoiceNumber || item.referenceNumber || ''}
+        getSuggestionTitle={(item) => item.clientName || 'Payment'}
+        getSuggestionSubtitle={(item) => [item.paymentMethod, item.invoiceNumber, item.referenceNumber].filter(Boolean).join(' • ')}
+        placeholder="Search by client name"
+        inputClassName="premium-input rounded-xl py-3 text-sm"
+      />
       <input type="date" value={filters.startDate} onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))} className="premium-input rounded-xl px-4 py-3 text-sm text-slate-900" />
       <input type="date" value={filters.endDate} onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))} className="premium-input rounded-xl px-4 py-3 text-sm text-slate-900" />
       <button onClick={onRefresh} className="premium-primary-button rounded-xl px-4 py-3 text-sm font-semibold">Filter</button>

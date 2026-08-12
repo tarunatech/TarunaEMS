@@ -36,7 +36,7 @@ export const faceAPI = {
       return await api.post('/face-detection/analyze-frame-base64', {
         image: imageBase64
       }, {
-        timeout: 120000, // 120 second timeout for face analysis
+        timeout: 30000,
         headers: {
           'Content-Type': 'application/json'
         }
@@ -84,7 +84,7 @@ export const faceAPI = {
       return await api.post(
         '/face-detection/verify-video',
         { frames, location },
-        { timeout: 90000 }
+        { timeout: 30000 }
       );
     } catch (error) {
       console.error('Error verifying video face:', error);
@@ -94,7 +94,7 @@ export const faceAPI = {
 
   checkLiveness: async (frames) => {
     try {
-      return await api.post('/face-detection/check-liveness', { frames }, { timeout: 60000 });
+      return await api.post('/face-detection/check-liveness', { frames }, { timeout: 30000 });
     } catch (error) {
       console.error('Error checking liveness:', error);
       throw error;
@@ -106,7 +106,7 @@ export const faceAPI = {
       return await api.post('/face-detection/register-continuous-video', {
         employeeId,
         frames
-      });
+      }, { timeout: 45000 });
     } catch (error) {
       console.error('Error registering continuous video:', error);
       throw error;
@@ -118,7 +118,7 @@ export const faceAPI = {
       return await api.post(
         '/face-detection/verify-live-video',
         { frames, location },
-        { timeout: 120000 }
+        { timeout: 30000 }
       );
     } catch (error) {
       console.error('Error verifying live video:', error);
@@ -164,8 +164,8 @@ export class CameraHelper {
 
     const defaultConstraints = {
       video: {
-        width: { ideal: 640 },
-        height: { ideal: 480 },
+        width: { ideal: 480 },
+        height: { ideal: 360 },
         facingMode: 'user',
         frameRate: { ideal: 30 }
       },
@@ -215,12 +215,11 @@ export class CameraHelper {
   captureImage(videoElement) {
     if (!videoElement) return null;
     
-    // Force resizing to max 640x480 for performance
-    const MAX_WIDTH = 640;
-    const MAX_HEIGHT = 480;
+    const MAX_WIDTH = 480;
+    const MAX_HEIGHT = 360;
 
-    let width = videoElement.videoWidth || 640;
-    let height = videoElement.videoHeight || 480;
+    let width = videoElement.videoWidth || 480;
+    let height = videoElement.videoHeight || 360;
     
     // Maintain aspect ratio while resizing
     if (width > MAX_WIDTH || height > MAX_HEIGHT) {
@@ -236,19 +235,17 @@ export class CameraHelper {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(videoElement, 0, 0, width, height);
     
-    // Reduce quality slightly for faster transmission
-    return canvas.toDataURL('image/jpeg', 0.8);
+    return canvas.toDataURL('image/jpeg', 0.65);
   }
 
   async captureImageBlob(videoElement) {
     if (!videoElement) return null;
     
-    // Force resizing to max 640x480 for performance
-    const MAX_WIDTH = 640;
-    const MAX_HEIGHT = 480;
+    const MAX_WIDTH = 480;
+    const MAX_HEIGHT = 360;
 
-    let width = videoElement.videoWidth || 640;
-    let height = videoElement.videoHeight || 480;
+    let width = videoElement.videoWidth || 480;
+    let height = videoElement.videoHeight || 360;
     
     // Maintain aspect ratio while resizing
     if (width > MAX_WIDTH || height > MAX_HEIGHT) {
@@ -267,7 +264,7 @@ export class CameraHelper {
     return new Promise((resolve) => {
       canvas.toBlob((blob) => {
         resolve(blob);
-      }, 'image/jpeg', 0.8);
+      }, 'image/jpeg', 0.65);
     });
   }
 

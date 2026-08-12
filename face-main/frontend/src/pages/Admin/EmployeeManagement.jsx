@@ -4,7 +4,6 @@ import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import { faceAPI, cameraHelper } from '../../utils/faceAPI';
 import {
   Plus,
-  Search,
   Filter,
   Edit,
   Eye,
@@ -18,6 +17,7 @@ import {
   CheckCircle,
   Camera
 } from 'lucide-react';
+import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 import toast from 'react-hot-toast';
 
 const getFullImageUrl = (path) => {
@@ -675,8 +675,8 @@ const EmployeeManagement = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: 640,
-          height: 480,
+          width: 480,
+          height: 360,
           facingMode: 'user'
         }
       });
@@ -711,6 +711,15 @@ const EmployeeManagement = () => {
       return department.name || department.departmentName || department.code || fallback;
     }
     return String(department);
+  };
+
+  const isInteractiveClick = (event) =>
+    event.target.closest('button, a, input, select, textarea, label');
+
+  const openEmployeeView = (event, employee) => {
+    if (isInteractiveClick(event)) return;
+    setSelectedEmployee(employee);
+    setShowViewModal(true);
   };
 
   const drawHexagon = (ctx, x, y, width, height) => {
@@ -801,7 +810,7 @@ const EmployeeManagement = () => {
         response = await Promise.race([
           faceAPI.analyzeFrameBase64(imageBase64),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Request timeout - server took too long to respond')), 90000)
+            setTimeout(() => reject(new Error('Request timeout - server took too long to respond')), 30000)
           )
         ]);
         console.log('Response received:', response.data);
@@ -1090,12 +1099,25 @@ const EmployeeManagement = () => {
   const handleEditEmployee = async (e) => {
     e.preventDefault();
     try {
+      const selectedDepartmentValue = selectedEmployee.workInfo?.department;
+      const departmentId = getDepartmentId(selectedDepartmentValue);
+      const matchedDepartment = departments.find((department) =>
+        department._id === departmentId ||
+        department.id === departmentId ||
+        department.name === selectedDepartmentValue ||
+        department.code === selectedDepartmentValue
+      );
+
       const employeePayload = {
-        ...selectedEmployee,
+        personalInfo: selectedEmployee.personalInfo,
+        contactInfo: selectedEmployee.contactInfo,
         workInfo: {
           ...selectedEmployee.workInfo,
-          department: getDepartmentId(selectedEmployee.workInfo?.department)
-        }
+          department: matchedDepartment?._id || matchedDepartment?.id || departmentId
+        },
+        salaryInfo: selectedEmployee.salaryInfo,
+        bankInfo: selectedEmployee.bankInfo,
+        status: selectedEmployee.status || 'Active'
       };
 
       const response = await employeeAPI.updateEmployee(selectedEmployee._id, employeePayload);
@@ -1129,18 +1151,42 @@ const EmployeeManagement = () => {
     if (!selectedEmployee) return null;
     return (
       <div className="fixed inset-y-0 left-0 right-0 lg:left-64 z-[9999] flex items-center justify-center p-3 sm:p-4">
+        <style>{`
+          .employee-edit-modal {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          .employee-edit-modal::-webkit-scrollbar {
+            display: none;
+          }
+          .employee-edit-modal input,
+          .employee-edit-modal select,
+          .employee-edit-modal textarea {
+            padding: 0.625rem 0.75rem !important;
+            border-radius: 0.75rem !important;
+            font-size: 0.875rem !important;
+          }
+          .employee-edit-modal label {
+            margin-bottom: 0.375rem !important;
+            font-size: 0.75rem !important;
+            line-height: 1rem !important;
+          }
+        `}</style>
         {/* Enhanced backdrop with blur */}
         <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
 
         {/* Modal content */}
-        <div className="relative bg-[#F8FAFC] border border-blue-100 rounded-2xl p-4 sm:p-5 w-full max-w-4xl max-h-[86vh] overflow-y-auto shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-blue-100">
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Edit Employee</h2>
-            <button onClick={() => setShowEditModal(false)} className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-white rounded-lg transition-all duration-200">
-              <X className="w-5 h-5 sm:w-6 sm:h-6" />
+        <div className="employee-edit-modal relative w-full max-w-3xl max-h-[76vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
+          <div className="sticky top-0 z-20 flex items-center justify-between border-b border-blue-100 bg-[#F8FAFC]/95 px-4 py-3 backdrop-blur sm:px-5">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Edit Employee</h2>
+            <button
+              onClick={() => setShowEditModal(false)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900"
+            >
+              Cancel
             </button>
           </div>
-          <form onSubmit={handleEditEmployee} className="space-y-5">
+          <form onSubmit={handleEditEmployee} className="space-y-4 p-4 pb-20 sm:p-5 sm:pb-20">
             {/* Personal Information */}
             <div className="space-y-4">
               <h3 className="text-base sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Personal Information</h3>
@@ -1314,17 +1360,17 @@ const EmployeeManagement = () => {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200">
+            <div className="sticky bottom-0 z-20 -mx-4 -mb-20 flex flex-col justify-end gap-2 border-t border-slate-200 bg-[#F8FAFC]/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:-mb-20 sm:flex-row sm:px-5">
               <button
                 type="button"
                 onClick={() => setShowEditModal(false)}
-                className="px-4 sm:px-6 py-2.5 sm:py-3 border border-slate-200 text-slate-600 text-sm rounded-xl hover:bg-white hover:text-slate-900 transition-colors"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 sm:px-6"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white font-semibold text-sm rounded-xl shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all duration-300"
+                className="rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 sm:px-6"
               >
                 Update Employee
               </button>
@@ -1337,25 +1383,66 @@ const EmployeeManagement = () => {
 
   const ViewModal = () => (
     <div className="fixed inset-y-0 left-0 right-0 lg:left-64 z-[9999] flex items-center justify-center p-3 sm:p-4">
+      <style>{`
+        .employee-details-view {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .employee-details-view::-webkit-scrollbar {
+          display: none;
+        }
+        .employee-details-view section p {
+          min-height: 1.75rem;
+          color: rgb(15 23 42);
+          font-size: 0.875rem;
+          line-height: 1.25rem;
+          font-weight: 500;
+        }
+        .employee-details-view section label {
+          margin-bottom: 0.25rem;
+          display: block;
+          color: rgb(100 116 139);
+          font-size: 0.75rem;
+          line-height: 1rem;
+          font-weight: 500;
+        }
+        .employee-details-view label + p {
+          min-height: 1.75rem !important;
+          border: 0 !important;
+          background: transparent !important;
+          padding: 0 !important;
+          color: rgb(15 23 42) !important;
+          font-size: 0.875rem !important;
+          line-height: 1.25rem !important;
+          font-weight: 500 !important;
+        }
+        .employee-details-view label {
+          margin-bottom: 0.25rem !important;
+          color: rgb(100 116 139) !important;
+          font-size: 0.75rem !important;
+          line-height: 1rem !important;
+          font-weight: 500 !important;
+        }
+      `}</style>
       {/* Enhanced backdrop with blur */}
       <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
 
       {/* Modal content */}
-      <div className="relative bg-[#F8FAFC] border border-blue-100 rounded-2xl p-4 sm:p-5 w-full max-w-4xl max-h-[86vh] overflow-y-auto shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-blue-100">
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Employee Details</h2>
+      <div className="employee-details-view relative w-full max-w-3xl max-h-[74vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-blue-100 bg-[#F8FAFC]/95 px-4 py-3 backdrop-blur sm:px-5">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900">Employee Details</h2>
           <button
             onClick={() => setShowViewModal(false)}
-            className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-white rounded-lg transition-all duration-200"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900"
           >
-            <X className="w-5 h-5 sm:w-6 sm:h-6" />
+            Close
           </button>
         </div>
         {selectedEmployee && (
-          <div className="space-y-5">
+          <div className="space-y-4 p-4 sm:p-5">
             {/* Header */}
-            <div className="flex items-center space-x-4 p-4 bg-white border border-blue-100 rounded-2xl shadow-sm">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden border border-blue-100 bg-blue-50">
+            <div className="flex items-center space-x-3 rounded-xl border border-blue-100 bg-white p-3 shadow-sm">
+              <div className="h-12 w-12 rounded-xl flex items-center justify-center overflow-hidden border border-blue-100 bg-blue-50">
                 {selectedEmployee.user?.profileImage ? (
                   <img
                     src={getFullImageUrl(selectedEmployee.user.profileImage)}
@@ -1363,18 +1450,18 @@ const EmployeeManagement = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="w-8 h-8 text-blue-600" />
+                  <User className="h-6 w-6 text-blue-600" />
                 )}
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-900">{selectedEmployee.fullName}</h3>
-                <p className="text-blue-600 text-base font-medium">{selectedEmployee.workInfo?.position}</p>
-                <p className="text-slate-500 text-sm">
+              <div className="min-w-0">
+                <h3 className="truncate text-lg font-bold text-slate-900">{selectedEmployee.fullName}</h3>
+                <p className="truncate text-sm font-medium text-blue-600">{selectedEmployee.workInfo?.position}</p>
+                <p className="truncate text-xs text-slate-500">
                   {getDepartmentName(selectedEmployee.workInfo?.department, 'N/A')}
                 </p>
-                <p className="text-slate-500 text-sm">ID: {selectedEmployee.employeeId || selectedEmployee.user?.employeeId}</p>
+                <p className="text-xs text-slate-500">ID: {selectedEmployee.employeeId || selectedEmployee.user?.employeeId}</p>
                 {selectedEmployee.hasFaceRegistered && (
-                  <span className="inline-block px-2 py-1 text-xs rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 mt-1">
+                  <span className="mt-1 inline-block rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700">
                     Face Registered
                   </span>
                 )}
@@ -1382,65 +1469,65 @@ const EmployeeManagement = () => {
             </div>
 
             {/* Personal Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Personal Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+              <h3 className="text-sm font-bold text-slate-900">Personal Information</h3>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">First Name</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.personalInfo?.firstName || 'N/A'}</p>
+                  <label>First Name</label>
+                  <p>{selectedEmployee.personalInfo?.firstName || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Last Name</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.personalInfo?.lastName || 'N/A'}</p>
+                  <label>Last Name</label>
+                  <p>{selectedEmployee.personalInfo?.lastName || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Date of Birth</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">
+                  <label>Date of Birth</label>
+                  <p>
                     {selectedEmployee.personalInfo?.dateOfBirth ? new Date(selectedEmployee.personalInfo.dateOfBirth).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Gender</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.personalInfo?.gender || 'N/A'}</p>
+                  <label>Gender</label>
+                  <p>{selectedEmployee.personalInfo?.gender || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Blood Group</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.personalInfo?.bloodGroup || 'N/A'}</p>
+                  <label>Blood Group</label>
+                  <p>{selectedEmployee.personalInfo?.bloodGroup || 'N/A'}</p>
                 </div>
               </div>
-            </div>
+            </section>
 
             {/* Contact Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Contact Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+              <h3 className="text-sm font-bold text-slate-900">Contact Information</h3>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Email</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.contactInfo?.personalEmail || selectedEmployee.user?.email || 'N/A'}</p>
+                  <label>Email</label>
+                  <p>{selectedEmployee.contactInfo?.personalEmail || selectedEmployee.user?.email || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Phone</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.contactInfo?.phone || 'N/A'}</p>
+                  <label>Phone</label>
+                  <p>{selectedEmployee.contactInfo?.phone || 'N/A'}</p>
                 </div>
                 <div className="sm:col-span-2">
-                  <h4 className="text-base font-semibold text-slate-900 mb-3">Emergency Contact</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <h4 className="mb-2 text-xs font-semibold uppercase text-slate-500">Emergency Contact</h4>
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-3">
                     <div>
-                      <label className="block text-sm font-medium text-slate-500 mb-2">Name</label>
-                      <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.contactInfo?.emergencyContact?.name || 'N/A'}</p>
+                      <label>Name</label>
+                      <p>{selectedEmployee.contactInfo?.emergencyContact?.name || 'N/A'}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-500 mb-2">Relationship</label>
-                      <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.contactInfo?.emergencyContact?.relationship || 'N/A'}</p>
+                      <label>Relationship</label>
+                      <p>{selectedEmployee.contactInfo?.emergencyContact?.relationship || 'N/A'}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-500 mb-2">Phone</label>
-                      <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.contactInfo?.emergencyContact?.phone || 'N/A'}</p>
+                      <label>Phone</label>
+                      <p>{selectedEmployee.contactInfo?.emergencyContact?.phone || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </section>
 
             {/* Work Information */}
             <div className="space-y-4">
@@ -1539,16 +1626,20 @@ const EmployeeManagement = () => {
         {/* Filters */}
         <div className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
           <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search employees..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="premium-input w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 md:py-3 rounded-xl text-slate-900 placeholder-slate-400 text-xs sm:text-sm"
-              />
-            </div>
+            <SearchWithSuggestions
+              value={searchTerm}
+              onChange={setSearchTerm}
+              items={employees}
+              getSuggestionValue={(emp) => {
+                const fullName = `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim() || emp.user?.name || '';
+                return fullName || emp.user?.email || emp.employeeId || '';
+              }}
+              getSuggestionTitle={(emp) => `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim() || emp.user?.name || 'Employee'}
+              getSuggestionSubtitle={(emp) => [emp.user?.email, emp.employeeId, emp.workInfo?.position].filter(Boolean).join(' • ')}
+              placeholder="Search employees..."
+              className="flex-1"
+              inputClassName="premium-input rounded-xl py-2 text-xs text-slate-900 sm:py-2.5 sm:text-sm md:py-3"
+            />
             <div className="relative">
               <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
               <select
@@ -1623,7 +1714,7 @@ const EmployeeManagement = () => {
           <div className="md:hidden max-h-[68dvh] overflow-y-auto overscroll-contain p-3">
             <div className="grid gap-3">
             {filteredEmployees.map((employee) => (
-              <div key={employee._id} className="bg-white border border-slate-200 rounded-xl p-3 transition-all duration-200 shadow-sm active:bg-indigo-50/60">
+              <div key={employee._id} onClick={(event) => openEmployeeView(event, employee)} className="bg-white border border-slate-200 rounded-xl p-3 transition-all duration-200 shadow-sm cursor-pointer hover:border-blue-200 hover:bg-blue-50/40 active:bg-indigo-50/60">
                 <div className="mb-3 flex items-start justify-between gap-2">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-200 bg-blue-50">
@@ -1722,7 +1813,7 @@ const EmployeeManagement = () => {
                 </thead>
                 <tbody>
                   {filteredEmployees.map((employee) => (
-                    <tr key={employee._id} className="premium-table-row border-b border-slate-100">
+                    <tr key={employee._id} onClick={(event) => openEmployeeView(event, employee)} className="premium-table-row border-b border-slate-100 cursor-pointer">
                       <td className="p-4 md:p-6">
                         <div className="flex items-center space-x-3">
                           <div className="h-10 w-10 flex-shrink-0">
@@ -1773,7 +1864,7 @@ const EmployeeManagement = () => {
                             className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="View Details"
                           >
-                            <Eye className="w-3 h-3" />
+                            <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => {
@@ -1783,14 +1874,14 @@ const EmployeeManagement = () => {
                             className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
                             title="Edit"
                           >
-                            <Edit className="w-3 h-3" />
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteEmployee(employee._id)}
                             className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Delete"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

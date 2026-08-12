@@ -68,12 +68,15 @@ const login = async (req, res) => {
         });
       }
     } else if (user.role === 'employee') {
-      // Employee login with email - password should be employeeId
-      if (password.toUpperCase() !== user.employeeId) {
+      // Employees can keep using Employee ID as the default password, or use a reset password.
+      const isStoredPasswordMatch = await user.matchPassword(password);
+      const isEmployeeIdPassword = user.employeeId && password.toUpperCase() === user.employeeId;
+
+      if (!isStoredPasswordMatch && !isEmployeeIdPassword) {
         await user.handleFailedLogin();
         return res.status(401).json({
           success: false,
-          message: 'Invalid email or Employee ID. Use your Employee ID as password.'
+          message: 'Invalid email, Employee ID, or password.'
         });
       }
     } else {
@@ -623,71 +626,13 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    // For employees, remind them to use Employee ID as password
-    if (user.role === 'employee') {
-      const message = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333; text-align: center;">Login Reminder</h2>
-          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p>Hello <strong>${user.name}</strong>,</p>
-            <p>You requested help with your login credentials.</p>
-            
-            <div style="background-color: #fff; padding: 15px; border-radius: 5px; border-left: 4px solid #ff0080;">
-              <h3 style="margin-top: 0; color: #333;">Your Login Options:</h3>
-              <div style="margin: 10px 0;">
-                <strong>Option 1 - Login with Email:</strong>
-                <p style="margin: 5px 0;"><strong>Email:</strong> ${user.email}</p>
-                <p style="margin: 5px 0;"><strong>Password:</strong> ${user.employeeId}</p>
-              </div>
-              <div style="margin: 10px 0;">
-                <strong>Option 2 - Login with Employee ID:</strong>
-                <p style="margin: 5px 0;"><strong>Employee ID:</strong> ${user.employeeId}</p>
-                <p style="margin: 5px 0;"><strong>Password:</strong> ${user.employeeId}</p>
-              </div>
-            </div>
-            
-            <div style="text-align: center; margin: 20px 0;">
-              <a href="${process.env.FRONTEND_URL}/login" 
-                 style="display: inline-block; padding: 12px 25px; background: linear-gradient(45deg, #ff0080, #8b5cf6); color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                Login to Your Account
-              </a>
-            </div>
-            
-            <div style="background-color: #d1ecf1; padding: 10px; border-radius: 5px; border: 1px solid #bee5eb;">
-              <p style="margin: 0; color: #0c5460;"><strong>Note:</strong> Employees use their Employee ID as password for both login methods.</p>
-            </div>
-          </div>
-          
-          <p style="color: #666; font-size: 14px;">Best regards,<br>HR Team<br>CompanyName</p>
-        </div>
-      `;
-
-      try {
-        await sendEmail({
-          to: user.email,
-          subject: 'Login Credentials Reminder - Employee Management System',
-          html: message
-        });
-
-        return res.status(200).json({
-          success: true,
-          message: 'Login reminder sent to your email'
-        });
-      } catch (emailError) {
-        console.error('Email sending error:', emailError);
-        return res.status(500).json({
-          success: false,
-          message: 'Email could not be sent. Please contact HR directly.'
-        });
-      }
-    }
-
-    // For admin users, generate reset token
+    // Generate reset token for any active user.
     const resetToken = user.getResetPasswordToken();
     await user.save();
 
     // Create reset URL
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    const frontendUrl = (process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5000').replace(/\/$/, '');
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
 
     // Email message for admin
     const message = `
@@ -710,11 +655,15 @@ const forgotPassword = async (req, res) => {
     `;
 
     try {
-      await sendEmail({
+      const emailResult = await sendEmail({
         to: user.email,
         subject: 'Password Reset Request - Employee Management System',
         html: message
       });
+
+      if (!emailResult?.success) {
+        throw new Error(emailResult?.error || emailResult?.message || 'Email could not be sent');
+      }
 
       res.status(200).json({
         success: true,
@@ -764,8 +713,7 @@ const resetPassword = async (req, res) => {
     const user = await User.findOne({
       resetPasswordToken,
       resetPasswordExpire: { $gt: Date.now() },
-      isActive: true,
-      role: 'admin' // Only allow admin password reset
+      isActive: true
     });
 
     if (!user) {

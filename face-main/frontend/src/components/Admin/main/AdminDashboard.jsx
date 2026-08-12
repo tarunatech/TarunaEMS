@@ -1,5 +1,5 @@
 // components/Dashboard/AdminDashboard.js
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import AdminLayout from '../layout/AdminLayout';
 import WelcomeSection from '../Dashboard/WelcomeSection';
 import StatCard from '../Dashboard/StatCard';
@@ -7,14 +7,12 @@ import RecentActivities from '../Dashboard/RecentActivities';
 import UpcomingEvents from '../Dashboard/UpcomingEvents';
 import QuickActions from '../Dashboard/QuickActions';
 import LoadingSpinner from '../../Common/LoadingSpinner';
-import FloatingChatButton from './FloatingChatButton';
-import AdminChatbot from './AdminChatbot';
 import { useDashboardData } from '../../../hooks/useDashboardData';
 import { useRealTimeUpdates } from '../../../hooks/useRealTimeUpdates';
 import { useAuth } from '../../../hooks/useAuth';
 
 const AdminDashboard = () => {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const {
     stats,
     recentActivities,
@@ -30,8 +28,6 @@ const AdminDashboard = () => {
     toggleAutoRefresh,
     manualRefresh
   } = useRealTimeUpdates(refreshData);
-
-  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Memoized components for performance
   const statsGrid = useMemo(() => (
@@ -111,19 +107,6 @@ const AdminDashboard = () => {
         {/* Quick Actions */}
         <QuickActions userRole={user?.role || 'admin'} />
       </div>
-
-      {/* Floating Chat Button */}
-      <FloatingChatButton
-        isAdmin={isAdmin}
-        onClick={() => setIsChatOpen(true)}
-      />
-
-      {/* Admin Chatbot */}
-      <AdminChatbot
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        isAdmin={isAdmin}
-      />
     </AdminLayout>
   );
 };

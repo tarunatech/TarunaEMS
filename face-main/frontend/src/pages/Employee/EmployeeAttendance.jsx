@@ -161,8 +161,7 @@ const EmployeeAttendance = () => {
       setVerificationProgress(5);
       setLivenessMessage('Capturing video frames...');
 
-      // Capture 5 frames with 200ms interval for video verification
-      const frames = await localCameraHelper.current.captureMultipleFrames(videoRef.current, 5, 200);
+      const frames = await localCameraHelper.current.captureMultipleFrames(videoRef.current, 2, 80);
 
       if (!frames || frames.length === 0) {
         toast.error('Failed to capture video frames. Please try again.');

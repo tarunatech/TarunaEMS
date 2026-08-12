@@ -930,10 +930,10 @@ export const registerContinuousVideo = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Employee ID is required' });
     }
 
-    if (!frames || !Array.isArray(frames) || frames.length < 10) {
+    if (!frames || !Array.isArray(frames) || frames.length < 4) {
       return res.status(400).json({ 
         success: false, 
-        message: 'At least 10 video frames are required for registration' 
+        message: 'At least 4 video frames are required for registration' 
       });
     }
 

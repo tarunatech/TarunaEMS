@@ -619,17 +619,19 @@ const SalesPage = () => {
       {/* Modals */}
       {/* Add Lead Modal */}
       {showAddModal && (
-        <Modal title="Add New Lead" onClose={() => setShowAddModal(false)}>
+        <Modal title="Add New Lead" onClose={() => setShowAddModal(false)} size="wide">
           <form onSubmit={handleAddLead} className="space-y-4">
-            <Input label="First Name *" value={newLead.firstName} onChange={(v) => setNewLead({ ...newLead, firstName: v })} />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Input label="First Name *" value={newLead.firstName} onChange={(v) => setNewLead({ ...newLead, firstName: v })} />
             <Input label="Last Name *" value={newLead.lastName} onChange={(v) => setNewLead({ ...newLead, lastName: v })} />
             <Input label="Email *" type="email" value={newLead.email} onChange={(v) => setNewLead({ ...newLead, email: v })} />
             <Input label="Phone *" value={newLead.phone} onChange={(v) => setNewLead({ ...newLead, phone: v })} />
             <Input label="Company" value={newLead.company} onChange={(v) => setNewLead({ ...newLead, company: v })} />
             <Input label="Estimated Value (₹)" type="number" value={newLead.estimatedValue} onChange={(v) => setNewLead({ ...newLead, estimatedValue: v })} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="contents">
               <Input label="Expected Close Date" type="date" value={newLead.expectedCloseDate} onChange={(v) => setNewLead({ ...newLead, expectedCloseDate: v })} />
               <Input label="Next Follow-up" type="date" value={newLead.nextFollowUpDate} onChange={(v) => setNewLead({ ...newLead, nextFollowUpDate: v })} />
+            </div>
             </div>
             <div className="flex justify-end gap-2 pt-4">
               <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all duration-200">Cancel</button>
@@ -793,9 +795,9 @@ const ActionButton = ({ icon, label, onClick }) => (
   </button>
 );
 
-const Modal = ({ title, children, onClose }) => (
+const Modal = ({ title, children, onClose, size = 'default' }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-2 backdrop-blur-sm sm:p-4">
-    <div className="employee-sales-modal flex max-h-[calc(100dvh-1rem)] w-full max-w-sm flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:max-h-[90vh] sm:max-w-md">
+    <div className={`employee-sales-modal flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:max-h-[90vh] ${size === 'wide' ? 'max-w-4xl' : 'max-w-sm sm:max-w-md'}`}>
       <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-3 py-2.5 sm:border-b-0 sm:px-4 sm:pb-0 sm:pt-4">
         <h3 className="truncate pr-3 text-base font-bold text-slate-900 sm:text-lg">{title}</h3>
         <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200">

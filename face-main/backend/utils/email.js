@@ -1,22 +1,65 @@
 import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
+
+let resendClient = null;
+let sendGridInitialized = false;
+
+const getResendClient = () => {
+  if (!process.env.RESEND_API_KEY) return null;
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resendClient;
+};
 
 // Initialize SendGrid
 const initSendGrid = () => {
-  if (process.env.SENDGRID_API_KEY) {
+  if (process.env.SENDGRID_API_KEY && !sendGridInitialized) {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    sendGridInitialized = true;
     return true;
   }
-  return false;
+  return sendGridInitialized;
 };
-
-initSendGrid();
 
 /**
  * Send email utility function via SendGrid
  */
-export const sendEmail = async ({ to, subject, html, text, fromName }) => {
+export const sendEmail = async ({ to, subject, html, text, fromName, attachments = [] }) => {
   try {
-    const adminEmail = process.env.EMAIL_FROM || 'noreply@company.com';
+    const adminEmail = process.env.RESEND_FROM_EMAIL || process.env.EMAIL_FROM || 'onboarding@resend.dev';
+    const senderName = fromName || process.env.EMAIL_FROM_NAME || 'Taruna Technology EMS';
+    const resend = getResendClient();
+
+    if (resend) {
+      console.log(`Email: sending via Resend to ${to}`);
+      const { data, error } = await resend.emails.send({
+        from: `${senderName} <${adminEmail}>`,
+        to,
+        subject,
+        html,
+        text: text || html.replace(/<[^>]*>/g, ''),
+        attachments,
+      });
+
+      if (error) {
+        console.error('Resend email error:', error);
+        return {
+          success: false,
+          error: error.message || 'Resend email failed',
+          message: 'Email could not be sent'
+        };
+      }
+
+      console.log('Email sent successfully via Resend:', data?.id);
+      return {
+        success: true,
+        messageId: data?.id,
+        provider: 'resend'
+      };
+    }
+
+    initSendGrid();
 
     if (!process.env.SENDGRID_API_KEY) {
       console.warn('⚠️ SendGrid API Key missing. Falling back to local logging.');
@@ -27,12 +70,20 @@ export const sendEmail = async ({ to, subject, html, text, fromName }) => {
     const msg = {
       to,
       from: {
-        name: fromName || 'CompanyName EMS',
+        name: senderName,
         email: adminEmail,
       },
       subject,
       html,
       text: text || html.replace(/<[^>]*>/g, ''), // Fallback plain text
+      attachments: attachments.map((attachment) => ({
+        filename: attachment.filename,
+        content: Buffer.isBuffer(attachment.content)
+          ? attachment.content.toString('base64')
+          : attachment.content,
+        type: attachment.contentType,
+        disposition: 'attachment',
+      })),
     };
 
     console.log(`📧 Attempting to send email via SendGrid to: ${to}`);
@@ -244,7 +295,7 @@ export const sendDayBookReportEmail = async (dayBook, employee, tasks) => {
 
   const htmlContent = createEmailTemplate(emailContent, `Day Book Report - ${employee.personalInfo.firstName}`);
 
-  const reportEmail = "vrunda1414@gmail.com";
+  const reportEmail = "sudhanshunaikbaroda@gmail.com";
 
   return await sendEmail({
     to: reportEmail,
@@ -285,7 +336,7 @@ export const sendTaskAssignmentEmail = async (task, assignedTo, assignedBy) => {
 
   const htmlContent = createEmailTemplate(emailContent, 'New Task Assignment');
 
-  const reportEmail = "vrunda1414@gmail.com";
+  const reportEmail = "sudhanshunaikbaroda@gmail.com";
 
   return await sendEmail({
     to: reportEmail,

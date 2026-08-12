@@ -289,6 +289,14 @@ const AdminPayslips = () => {
     setShowViewModal(true);
   };
 
+  const isInteractiveClick = (event) =>
+    event.target.closest('button, a, input, select, textarea, label');
+
+  const openPayslipDetails = (event, payslip) => {
+    if (isInteractiveClick(event)) return;
+    handleViewPayslip(payslip);
+  };
+
   const resetForm = () => {
     setFormData({
       employeeId: '',
@@ -428,7 +436,7 @@ const AdminPayslips = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {payslips.map((payslip) => (
-                    <tr key={payslip._id} className="hover:bg-blue-50 transition-all duration-200">
+                    <tr key={payslip._id} onClick={(event) => openPayslipDetails(event, payslip)} className="hover:bg-blue-50 transition-all duration-200 cursor-pointer">
                       <td className="px-4 py-4">
                         <div>
                           <p className="font-semibold text-slate-900">{payslip.employeeName}</p>

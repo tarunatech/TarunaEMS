@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Login from "./pages/Common/login";
 import ForgotPassword from './components/Common/ForgotPassword';
+import ResetPassword from './components/Common/ResetPassword';
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
 import EmployeeManagement from './pages/Admin/EmployeeManagement';
 import EmployeeDashboard from './pages/Employee/EmployeeDashboard';
@@ -47,6 +48,7 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={

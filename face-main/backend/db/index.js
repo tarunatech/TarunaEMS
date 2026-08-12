@@ -8,6 +8,7 @@ import * as attendanceSchema from './schema/attendance.js';
 import * as leaveSchema from './schema/leave.js';
 import * as holidaySchema from './schema/holiday.js';
 import * as taskSchema from './schema/task.js';
+import * as performanceReviewSchema from './schema/performanceReview.js';
 import * as dayBookSchema from './schema/dayBook.js';
 import * as payslipSchema from './schema/payslip.js';
 import * as expenseTransactionSchema from './schema/expenseTransaction.js';
@@ -38,6 +39,7 @@ export const db = drizzle(pool, {
     ...leaveSchema,
     ...holidaySchema,
     ...taskSchema,
+    ...performanceReviewSchema,
     ...dayBookSchema,
     ...payslipSchema,
     ...expenseTransactionSchema,

@@ -341,8 +341,26 @@ export const updateTask = async (req, res) => {
         });
       }
 
-      // Employees can only update specific fields
-      const allowedUpdates = ['status', 'progress', 'actualHours', 'comments', 'subtasks'];
+      if (task.status === 'Completed') {
+        return res.status(400).json({
+          success: false,
+          message: 'Completed tasks cannot be edited'
+        });
+      }
+
+      // Employees can edit their task details until admin approval completes the task.
+      const allowedUpdates = [
+        'title',
+        'description',
+        'priority',
+        'dueDate',
+        'estimatedHours',
+        'status',
+        'progress',
+        'actualHours',
+        'comments',
+        'subtasks'
+      ];
       const updates = {};
 
       Object.keys(req.body).forEach(key => {
@@ -350,6 +368,10 @@ export const updateTask = async (req, res) => {
           updates[key] = req.body[key];
         }
       });
+
+      if (['Review', 'On Hold'].includes(task.status) && !updates.status) {
+        updates.status = 'In Progress';
+      }
 
       req.body = updates;
     }
@@ -612,6 +634,116 @@ export const changeStatus = async (req, res) => {
 
   } catch (error) {
     console.error('Change status error:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// @desc    Review submitted task
+// @route   PUT /api/tasks/:id/review
+// @access  Private (Admin)
+export const reviewTask = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin only.'
+      });
+    }
+
+    const { action, feedback = '' } = req.body;
+    const actionConfig = {
+      approve: {
+        status: 'Completed',
+        progress: 100,
+        message: 'Task approved successfully',
+        commentPrefix: 'Approved'
+      },
+      reject: {
+        status: 'In Progress',
+        progress: 75,
+        message: 'Task rejected and returned to employee',
+        commentPrefix: 'Rejected'
+      },
+      changes: {
+        status: 'On Hold',
+        progress: 90,
+        message: 'Changes requested successfully',
+        commentPrefix: 'Changes requested'
+      }
+    };
+
+    const config = actionConfig[action];
+    if (!config) {
+      return res.status(400).json({
+        success: false,
+        message: 'Review action must be approve, reject, or changes'
+      });
+    }
+
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: 'Task not found'
+      });
+    }
+
+    if (task.status !== 'Review' && action === 'approve') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only tasks submitted for review can be approved'
+      });
+    }
+
+    const reviewText = `${config.commentPrefix}${feedback.trim() ? `: ${feedback.trim()}` : ''}`;
+    task.status = config.status;
+    task.progress = config.progress;
+    task.comments = [
+      ...(task.comments || []),
+      {
+        user: req.user.id,
+        text: reviewText,
+        createdAt: new Date()
+      }
+    ];
+
+    if (config.status === 'Completed') {
+      task.completedDate = new Date();
+    } else {
+      task.completedDate = null;
+    }
+
+    await task.save();
+
+    const updatedTask = await Task.findById(req.params.id)
+      .populate([
+        {
+          path: 'assignedTo',
+          populate: {
+            path: 'user',
+            select: 'name email employeeId'
+          }
+        },
+        {
+          path: 'assignedBy',
+          select: 'name email'
+        },
+        {
+          path: 'comments.user',
+          select: 'name email'
+        }
+      ]);
+
+    res.json({
+      success: true,
+      message: config.message,
+      task: updatedTask
+    });
+  } catch (error) {
+    console.error('Review task error:', error);
     res.status(400).json({
       success: false,
       message: error.message

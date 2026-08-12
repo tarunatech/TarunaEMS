@@ -255,9 +255,9 @@ const LeadManagement = () => {
     if (!showAddModal) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-900 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-700">
-          <div className="p-6 border-b border-gray-700">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3">
+        <div className="bg-gray-900 rounded-xl w-full max-w-6xl max-h-[94vh] overflow-hidden border border-gray-700 shadow-2xl">
+          <div className="px-5 py-4 border-b border-gray-700">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-500">Add New Lead</h2>
               <button
@@ -269,13 +269,14 @@ const LeadManagement = () => {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Basic Information */}
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-4">Basic Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="p-5">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.15fr_1fr]">
+              {/* Basic Information */}
+              <div>
+                <h3 className="text-base font-semibold text-white mb-3">Basic Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     First Name *
                   </label>
                   <input
@@ -287,7 +288,7 @@ const LeadManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     Last Name *
                   </label>
                   <input
@@ -299,7 +300,7 @@ const LeadManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     Email *
                   </label>
                   <input
@@ -311,7 +312,7 @@ const LeadManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     Phone *
                   </label>
                   <input
@@ -323,7 +324,7 @@ const LeadManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     Company
                   </label>
                   <input
@@ -334,7 +335,7 @@ const LeadManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     Position
                   </label>
                   <input
@@ -347,12 +348,12 @@ const LeadManagement = () => {
               </div>
             </div>
 
-            {/* Lead Details */}
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-4">Lead Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Lead Details */}
+              <div>
+                <h3 className="text-base font-semibold text-white mb-3">Lead Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     Source *
                   </label>
                   <select
@@ -372,7 +373,7 @@ const LeadManagement = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     Priority
                   </label>
                   <select
@@ -387,7 +388,7 @@ const LeadManagement = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     Estimated Value ($)
                   </label>
                   <input
@@ -400,7 +401,7 @@ const LeadManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     Expected Close Date
                   </label>
                   <input
@@ -410,8 +411,8 @@ const LeadManagement = () => {
                     className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20"
                   />
                 </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">
                     Next Follow-up Date
                   </label>
                   <input
@@ -423,8 +424,9 @@ const LeadManagement = () => {
                 </div>
               </div>
             </div>
+            </div>
 
-            <div className="flex justify-end space-x-4 pt-4 border-t border-gray-700">
+            <div className="flex justify-end space-x-3 mt-5 pt-4 border-t border-gray-700">
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}

@@ -57,6 +57,14 @@ const AdminDayBookReview = () => {
         setShowReviewModal(true);
     };
 
+    const isInteractiveClick = (event) =>
+        event.target.closest('button, a, input, select, textarea, label');
+
+    const openDayBookReview = (event, dayBook) => {
+        if (isInteractiveClick(event)) return;
+        handleReview(dayBook);
+    };
+
     const updateStatus = async (status) => {
         try {
             // Prepare task status updates
@@ -134,7 +142,7 @@ const AdminDayBookReview = () => {
                         </thead>
                         <tbody className="divide-y divide-slate-200">
                             {dayBooks.map((db) => (
-                                <tr key={db._id} className="hover:bg-blue-50 transition-all duration-200">
+                                <tr key={db._id} onClick={(event) => openDayBookReview(event, db)} className="hover:bg-blue-50 transition-all duration-200 cursor-pointer">
                                     <td className="p-6 text-slate-700 font-medium">
                                         {new Date(db.date).toLocaleDateString('en-US', {
                                             weekday: 'short',

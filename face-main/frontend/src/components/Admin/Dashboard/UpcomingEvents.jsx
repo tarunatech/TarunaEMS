@@ -1,7 +1,10 @@
 import React from 'react';
 import { Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const UpcomingEvents = ({ events = [], loading = false }) => {
+  const navigate = useNavigate();
+
   const formatEventDate = (dateString) => {
     try {
       const date = new Date(dateString);
@@ -47,6 +50,26 @@ const UpcomingEvents = ({ events = [], loading = false }) => {
     }
   };
 
+  const getEventPath = (event) => {
+    const type = String(event?.type || '').toLowerCase();
+    const title = String(event?.title || event?.description || '').toLowerCase();
+
+    if (type.includes('leave') || title.includes('leave')) return '/admin/leaves';
+    if (type.includes('task') || title.includes('task')) return '/admin/tasks';
+    if (type.includes('attendance') || title.includes('attendance')) return '/admin/attendance';
+    if (type.includes('employee') || title.includes('employee')) return '/admin/employees';
+    if (type.includes('department') || title.includes('department')) return '/admin/department';
+    if (type.includes('holiday') || title.includes('holiday')) return '/admin/holidays';
+    if (type.includes('payslip') || title.includes('payslip')) return '/admin/payslips';
+    if (type.includes('expense') || title.includes('expense')) return '/admin/expense-tracker';
+
+    return '/admin/dashboard';
+  };
+
+  const handleEventClick = (event) => {
+    navigate(getEventPath(event));
+  };
+
   if (loading) {
     return (
       <div className="dashboard-panel bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
@@ -86,13 +109,16 @@ const UpcomingEvents = ({ events = [], loading = false }) => {
       <div className="scrollbar-hide relative space-y-3 sm:space-y-4 max-h-[18rem] sm:max-h-80 overflow-y-auto overscroll-contain">
         {events.length > 0 ? (
           events.map((event, index) => (
-            <div
+            <button
+              type="button"
               key={event.id || index}
-              className={`dashboard-sub-card p-3 sm:p-4 rounded-xl border transition-all duration-200 cursor-pointer group bg-white shadow-sm ${
+              onClick={() => handleEventClick(event)}
+              className={`dashboard-sub-card group w-full rounded-xl border p-3 text-left shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30 sm:p-4 ${
                 isEventSoon(event.date, event.time)
                   ? 'border-pink-200 bg-pink-50/60 hover:border-pink-300'
                   : 'border-slate-200 hover:border-pink-200 hover:bg-pink-50/40'
               }`}
+              title={`Open ${event.type || 'event'} page`}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
                 <h4 className="text-slate-900 text-sm sm:text-base font-medium group-hover:text-pink-700 transition-colors truncate flex-1">
@@ -127,7 +153,7 @@ const UpcomingEvents = ({ events = [], loading = false }) => {
                   {event.description}
                 </p>
               )}
-            </div>
+            </button>
           ))
         ) : (
           <div className="text-center py-12">

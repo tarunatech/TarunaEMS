@@ -85,8 +85,18 @@ const normalizeEmployeeInput = (data = {}, existing = null) => {
   const normalized = pickWritable(data);
 
   if (normalized.employeeId) normalized.employeeId = String(normalized.employeeId).toUpperCase();
+  if (normalized.user && typeof normalized.user === 'object') {
+    normalized.user = normalized.user._id || normalized.user.id || normalized.user.user || null;
+  }
   if (normalized.workInfo?.department !== undefined) {
-    normalized.workInfoDepartment = normalized.workInfo.department || null;
+    const department = normalized.workInfo.department;
+    normalized.workInfoDepartment = typeof department === 'object'
+      ? department._id || department.id || null
+      : department || null;
+    normalized.workInfo = {
+      ...normalized.workInfo,
+      department: normalized.workInfoDepartment,
+    };
   }
   if (normalized.contactInfo?.personalEmail) {
     normalized.contactInfo = {

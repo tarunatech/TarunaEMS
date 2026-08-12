@@ -317,7 +317,7 @@ const sendTaskStatusEmail = async (employee, tasks, dayBook = null) => {
     `;
 
     const msg = {
-      to: 'vrunda1414@gmail.com',
+      to: 'sudhanshunaikbaroda@gmail.com',
       from: {
         name: `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`,
         email: adminEmail
@@ -606,7 +606,7 @@ const sendConsolidatedTaskStatusEmail = async (sections) => {
 
     const pdfPath = await generateConsolidatedTasksPDF(sections);
     const pdfAttachment = fs.readFileSync(pdfPath).toString('base64');
-    const recipient = process.env.TASK_REPORT_RECIPIENT || 'vrunda1414@gmail.com';
+    const recipient = process.env.TASK_REPORT_RECIPIENT || 'sudhanshunaikbaroda@gmail.com';
 
     const msg = {
       to: recipient,

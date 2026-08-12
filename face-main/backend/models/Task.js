@@ -380,8 +380,8 @@ class TaskDocument {
   async updateProgress(progress) {
     this.progress = Math.max(0, Math.min(100, Number(progress)));
     if (this.progress === 100 && this.status !== 'Completed') {
-      this.status = 'Completed';
-      this.completedDate = new Date();
+      this.status = 'Review';
+      this.completedDate = null;
     } else if (this.progress > 0 && this.status === 'Not Started') {
       this.status = 'In Progress';
     }

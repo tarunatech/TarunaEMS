@@ -302,6 +302,14 @@ const PurchaseOrders = () => {
     setShowViewModal(true);
   };
 
+  const isInteractiveClick = (event) =>
+    event.target.closest('button, a, input, select, textarea, label');
+
+  const openPODetails = (event, po) => {
+    if (isInteractiveClick(event)) return;
+    openViewModal(po);
+  };
+
   const exportData = () => {
     const csvContent = [
       ['PO Number', 'Client', 'Project', 'Service Type', 'Vendor', 'Renewal Date', 'Amount', 'Status'],
@@ -423,7 +431,7 @@ const PurchaseOrders = () => {
                   ) : purchaseOrders.map(po => {
                     const renewalBadge = getRenewalBadge(po);
                     return (
-                      <tr key={po._id} className="hover:bg-blue-50 transition-all duration-200">
+                      <tr key={po._id} onClick={(event) => openPODetails(event, po)} className="hover:bg-blue-50 transition-all duration-200 cursor-pointer">
                         <td className="p-2 sm:p-3 text-slate-900 font-medium text-xs sm:text-sm">{po.poNumber || '—'}</td>
                         <td className="p-2 sm:p-3 text-slate-700 text-xs sm:text-sm">{getPOClientName(po)}</td>
                         <td className="p-2 sm:p-3 text-slate-700 text-xs sm:text-sm">{po.project || '—'}</td>
@@ -451,7 +459,7 @@ const PurchaseOrders = () => {
               ) : purchaseOrders.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">No service purchases found</div>
               ) : purchaseOrders.map(po => (
-                <div key={po._id} className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+                <div key={po._id} onClick={(event) => openPODetails(event, po)} className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 cursor-pointer hover:border-blue-200 hover:bg-blue-50/40 transition-colors">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <p className="text-slate-900 font-medium text-base">PO: {po.poNumber || '—'}</p>

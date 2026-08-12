@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Calendar, CheckCircle, ChevronDown, Clock, Edit3, Loader2, Phone, Search, UserCheck, Video, MapPin, X } from 'lucide-react';
+import { Calendar, CheckCircle, ChevronDown, Clock, Edit3, Loader2, Phone, UserCheck, Video, MapPin, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
 import { leadAPI } from '../../utils/api';
+import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 
 const SalesMeetings = () => {
   const [leads, setLeads] = useState([]);
@@ -163,15 +164,17 @@ const SalesMeetings = () => {
               <h1 className="mt-1 text-xl font-bold text-slate-950 sm:text-2xl">Scheduled Meeting History</h1>
               <p className="mt-1 text-sm text-slate-500">All meetings across your leads, sorted by earliest scheduled date and time.</p>
             </div>
-            <div className="relative w-full lg:max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search meetings..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-              />
-            </div>
+            <SearchWithSuggestions
+              value={searchTerm}
+              onChange={setSearchTerm}
+              items={meetings}
+              getSuggestionValue={(meeting) => meeting.leadName || meeting.company || meeting.agenda || ''}
+              getSuggestionTitle={(meeting) => meeting.leadName || 'Meeting'}
+              getSuggestionSubtitle={(meeting) => [meeting.company, meeting.type, meeting.status].filter(Boolean).join(' • ')}
+              placeholder="Search meetings..."
+              className="w-full lg:max-w-xs"
+              inputClassName="rounded-xl border-slate-200 bg-slate-50 py-2.5 text-sm focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+            />
           </div>
 
           <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">

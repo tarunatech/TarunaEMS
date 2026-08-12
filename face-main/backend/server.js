@@ -23,6 +23,7 @@ import userRoutes from "./routes/userRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import leaveRoutes from "./routes/leaveRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
+import performanceRoutes from "./routes/performanceRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import departmentRoutes from "./routes/departmentRoutes.js";
 import leadsRoutes from "./routes/leadRoutes.js";
@@ -40,6 +41,7 @@ import faceDetectionRoutes from "./routes/faceDetectionRoutes.js";
 import schedulerRoutes from "./routes/schedulerRoutes.js";
 import { initializeEmailService } from "./services/emailService.js";
 import { startTaskStatusScheduler } from "./services/taskSchedulerService.js";
+import { startEodReportScheduler } from "./services/eodReportSchedulerService.js";
 import holidayRoutes from "./routes/holidayRoutes.js";
 import dayBookRoutes from "./routes/dayBookRoutes.js";
 import expenseTrackerRoutes from "./routes/expenseTrackerRoutes.js";
@@ -145,6 +147,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/performance", performanceRoutes);
 app.use("/api/attendance", attendanceRoutes); // NEW: Add attendance routes
 app.use("/api/departments", departmentRoutes);
 app.use("/api/leads", leadsRoutes);
@@ -234,6 +237,8 @@ const startServer = async () => {
         "⚠️ Email service not configured. Task status scheduler will not run.",
       );
     }
+
+    startEodReportScheduler();
 
     // Setup chat socket handlers
     setupChatSocket(io);

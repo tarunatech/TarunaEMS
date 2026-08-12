@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, FileText, RefreshCw, Search, Trash2, UserRound, X } from 'lucide-react';
+import { CalendarClock, FileText, RefreshCw, Trash2, UserRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import { getApiFileUrl, interviewAPI } from '../../utils/api';
+import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 
 const statuses = ['Scheduled', 'Completed', 'Selected', 'Rejected', 'Cancelled'];
 
@@ -118,15 +119,16 @@ const AdminInterviews = () => {
         </div>
 
         <div className="premium-panel rounded-2xl p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              className="premium-input w-full rounded-lg py-3 pl-10 pr-3"
-              placeholder="Search candidates, email, position, skills, status..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
+          <SearchWithSuggestions
+            value={search}
+            onChange={setSearch}
+            items={interviews}
+            getSuggestionValue={(item) => item.candidateName || item.email || item.position || ''}
+            getSuggestionTitle={(item) => item.candidateName || 'Candidate'}
+            getSuggestionSubtitle={(item) => [item.email, item.position, item.status].filter(Boolean).join(' • ')}
+            placeholder="Search candidates, email, position, skills, status..."
+            inputClassName="premium-input rounded-lg"
+          />
         </div>
 
         <div className="premium-panel overflow-hidden rounded-2xl">

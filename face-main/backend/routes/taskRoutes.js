@@ -10,6 +10,7 @@ import {
   addComment,
   updateProgress,
   changeStatus,
+  reviewTask,
   getTaskStats,
   toggleSubtask,
   getTaskHistory
@@ -92,6 +93,7 @@ router.route('/:id')
 router.post('/:id/comments', protect, commentValidation, addComment);
 router.put('/:id/progress', protect, progressValidation, updateProgress);
 router.put('/:id/status', protect, statusValidation, changeStatus);
+router.put('/:id/review', protect, reviewTask);
 router.put('/:id/subtasks/:subtaskId', protect, toggleSubtask);
 
 export default router;

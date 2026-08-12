@@ -62,6 +62,13 @@ const openTimePicker = (event) => {
     event.currentTarget.showPicker?.();
 };
 
+const WORK_TYPE_OPTIONS = [
+    { label: 'Meeting', value: 'Meeting' },
+    { label: 'Learning', value: 'Learning' },
+    { label: 'Int Work', value: 'Internal Work' },
+    { label: 'Other', value: 'Other' }
+];
+
 const DayBookEntry = ({ embedded = false, onClose }) => {
     const [dayBook, setDayBook] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -103,6 +110,12 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
     const handleSlotChange = (index, field, value) => {
         const updatedSlots = [...dayBook.slots];
         updatedSlots[index] = { ...updatedSlots[index], [field]: value };
+        setDayBook({ ...dayBook, slots: updatedSlots });
+    };
+
+    const updateSlot = (index, changes) => {
+        const updatedSlots = [...dayBook.slots];
+        updatedSlots[index] = { ...updatedSlots[index], ...changes };
         setDayBook({ ...dayBook, slots: updatedSlots });
     };
 
@@ -166,6 +179,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
     }
 
     const isEditable = dayBook?.status === 'Draft' || dayBook?.status === 'Rejected' || dayBook?.status === 'Pending';
+    const activeTasks = tasks.filter(t => t.status !== 'Cancelled' && t.status !== 'Completed');
 
     const handleBack = () => {
         if (embedded && onClose) {
@@ -175,6 +189,73 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
 
         navigate('/employee/tasks');
     };
+
+    const applyWorkType = (index, workType) => {
+        updateSlot(index, { workType, taskRef: null });
+    };
+
+    const applyTaskToSlot = (index, taskId) => {
+        if (!taskId) return;
+
+        const selectedTask = activeTasks.find(t => t._id === taskId);
+        const currentDescription = dayBook.slots[index].description;
+
+        updateSlot(index, {
+            workType: 'Task',
+            taskRef: taskId,
+            description: selectedTask && !currentDescription ? selectedTask.description : currentDescription
+        });
+    };
+
+    const getSelectedWorkLabel = (slot) => {
+        const taskId = slot.taskRef?._id || slot.taskRef;
+        if (taskId) {
+            const selectedTask = activeTasks.find(t => t._id === taskId) || slot.taskRef;
+            const taskText = selectedTask?.description || selectedTask?.title || 'Selected active task';
+            return `Active Task: ${taskText}`;
+        }
+
+        const option = WORK_TYPE_OPTIONS.find(item => item.value === slot.workType);
+        return option?.label || slot.workType || 'Select work type';
+    };
+
+    const renderWorkTypePicker = (slot, index, compact = false) => (
+        <div className="space-y-2">
+            {/* <div className={`${compact ? 'px-2 py-1.5 text-[11px]' : 'px-3 py-2 text-xs'} rounded-lg border border-blue-200 bg-blue-50 font-semibold text-blue-700`}>
+                <span className="block truncate">{getSelectedWorkLabel(slot)}</span>
+            </div> */}
+
+            <select
+                disabled={!isEditable}
+                value={slot.taskRef?._id || slot.taskRef || slot.workType || ''}
+                onChange={(e) => {
+                    const value = e.target.value;
+                    if (WORK_TYPE_OPTIONS.some(option => option.value === value)) {
+                        applyWorkType(index, value);
+                        return;
+                    }
+                    applyTaskToSlot(index, value);
+                }}
+                className={`${compact ? 'px-2 py-1.5 text-xs' : 'px-3 py-2 text-sm'} w-full rounded-lg border border-slate-300 bg-white text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+                <optgroup label="Active Tasks">
+                    {activeTasks.length ? activeTasks.map(task => (
+                        <option key={task._id} value={task._id}>
+                            {(task.description || task.title || 'Untitled task').substring(0, compact ? 34 : 48)}
+                            {(task.description || task.title || '').length > (compact ? 34 : 48) ? '...' : ''}
+                        </option>
+                    )) : (
+                        <option value="" disabled>No active tasks</option>
+                    )}
+                </optgroup>
+                <optgroup label="Categories">
+                    {WORK_TYPE_OPTIONS.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                </optgroup>
+            </select>
+        </div>
+    );
 
     return (
        <div className={`${embedded ? 'p-2 sm:p-5 space-y-2 sm:space-y-4' : 'p-4 sm:p-6 lg:p-8 space-y-8'} max-w-5xl mx-auto bg-slate-50`}>
@@ -291,39 +372,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                                     {index === 1 ? (
                                         <div className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-500">Break</div>
                                     ) : (
-                                        <select
-                                            disabled={!isEditable}
-                                            value={slot.taskRef?._id || slot.taskRef || slot.workType}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                if (['Meeting', 'Learning', 'Internal Work', 'Other'].includes(val)) {
-                                                    handleSlotChange(index, 'workType', val);
-                                                    handleSlotChange(index, 'taskRef', null);
-                                                } else {
-                                                    handleSlotChange(index, 'workType', 'Task');
-                                                    handleSlotChange(index, 'taskRef', val);
-                                                    const selectedTask = tasks.find(t => t._id === val);
-                                                    if (selectedTask && !slot.description) {
-                                                        handleSlotChange(index, 'description', selectedTask.description);
-                                                    }
-                                                }
-                                            }}
-                                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-                                        >
-                                            <optgroup label="Active Tasks">
-                                                {tasks.filter(t => t.status !== 'Cancelled' && t.status !== 'Completed').map(task => (
-                                                    <option key={task._id} value={task._id}>
-                                                        {task.description.substring(0, 40)}...
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                            <optgroup label="Categories">
-                                                <option value="Meeting">Meeting</option>
-                                                <option value="Learning">Learning</option>
-                                                <option value="Internal Work">Internal Work</option>
-                                                <option value="Other">Other</option>
-                                            </optgroup>
-                                        </select>
+                                        renderWorkTypePicker(slot, index, true)
                                     )}
                                 </div>
 
@@ -413,40 +462,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                                                 Break
                                             </div>
                                         ) : (
-                                            <select
-                                                disabled={!isEditable}
-                                                value={slot.taskRef?._id || slot.taskRef || slot.workType}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    if (['Meeting', 'Learning', 'Internal Work', 'Other'].includes(val)) {
-                                                        handleSlotChange(index, 'workType', val);
-                                                        handleSlotChange(index, 'taskRef', null);
-                                                    } else {
-                                                        handleSlotChange(index, 'workType', 'Task');
-                                                        handleSlotChange(index, 'taskRef', val);
-                                                        // Auto-fill description if empty
-                                                        const selectedTask = tasks.find(t => t._id === val);
-                                                        if (selectedTask && !slot.description) {
-                                                            handleSlotChange(index, 'description', selectedTask.description);
-                                                        }
-                                                    }
-                                                }}
-                                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 disabled:opacity-50"
-                                            >
-                                                <optgroup label="Active Tasks">
-                                                    {tasks.filter(t => t.status !== 'Cancelled' && t.status !== 'Completed').map(task => (
-                                                        <option key={task._id} value={task._id}>
-                                                            {task.description.substring(0, 40)}...
-                                                        </option>
-                                                    ))}
-                                                </optgroup>
-                                                <optgroup label="Categories">
-                                                    <option value="Meeting">Meeting</option>
-                                                    <option value="Learning">Learning</option>
-                                                    <option value="Internal Work">Internal Work</option>
-                                                    <option value="Other">Other</option>
-                                                </optgroup>
-                                            </select>
+                                            renderWorkTypePicker(slot, index)
                                         )}
                                     </td>
                                     <td className={`${embedded ? 'p-3 space-y-2' : 'p-6 space-y-3'}`}>

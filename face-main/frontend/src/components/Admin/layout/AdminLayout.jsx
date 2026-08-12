@@ -2,9 +2,14 @@ import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 import Sidebar from "../Siderbar/Sidebar";
 import Header from "../Header/Header";
+import FloatingChatButton from "../main/FloatingChatButton";
+import AdminChatbot from "../main/AdminChatbot";
+import { useAuth } from "../../../hooks/useAuth";
 
 const AdminLayout = ({ children }) => {
+  const { isAdmin } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem('sidebar-collapsed') === 'true';
   });
@@ -50,6 +55,17 @@ const AdminLayout = ({ children }) => {
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
+
+      <FloatingChatButton
+        isAdmin={isAdmin}
+        onClick={() => setIsChatOpen(true)}
+      />
+
+      <AdminChatbot
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        isAdmin={isAdmin}
+      />
 
       <style>{`
         .admin-main-scroll {

@@ -197,6 +197,15 @@ const AdminSalesDashboard = () => {
     }
   };
 
+  const isInteractiveClick = (event) =>
+    event.target.closest('button, a, input, select, textarea, label');
+
+  const openLeadDetails = (event, lead) => {
+    if (isInteractiveClick(event)) return;
+    setSelectedLead(lead);
+    setShowViewModal(true);
+  };
+
   const exportData = () => {
     const csvContent = [
       ['Lead ID', 'Name', 'Email', 'Company', 'Status', 'Priority', 'Value', 'Assigned To', 'Created At'],
@@ -347,7 +356,7 @@ const AdminSalesDashboard = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm text-slate-600 mb-1.5">Department</label>
+                {/* <label className="block text-xs sm:text-sm text-slate-600 mb-1.5">Department</label>
                 <select
                   value={filters.department}
                   onChange={(e) => handleFilterChange('department', e.target.value)}
@@ -356,10 +365,8 @@ const AdminSalesDashboard = () => {
                   <option value="">All Departments</option>
                   <option value="Sales">Sales</option>
                   <option value="Marketing">Marketing</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs sm:text-sm text-slate-600 mb-1.5">Status</label>
+                </select> */}
+                  <label className="block text-xs sm:text-sm text-slate-600 mb-1.5">Status</label>
                 <select
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
@@ -375,6 +382,7 @@ const AdminSalesDashboard = () => {
                 </select>
               </div>
               <div>
+               <div>
                 <label className="block text-xs sm:text-sm text-slate-600 mb-1.5">Search</label>
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
@@ -387,6 +395,8 @@ const AdminSalesDashboard = () => {
                   />
                 </div>
               </div>
+              </div>
+             
             </div>
           </div>
         )}
@@ -454,7 +464,7 @@ const AdminSalesDashboard = () => {
                     leads.map(lead => {
                       const nextMeeting = getNextMeeting(lead);
                       return (
-                      <tr key={lead._id} className="border-b border-slate-200 hover:bg-blue-50 transition-colors duration-200">
+                      <tr key={lead._id} onClick={(event) => openLeadDetails(event, lead)} className="border-b border-slate-200 hover:bg-blue-50 transition-colors duration-200 cursor-pointer">
                         <td className="p-2 sm:p-3">
                           <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center ">
@@ -555,7 +565,7 @@ const AdminSalesDashboard = () => {
                 leads.map(lead => {
                   const nextMeeting = getNextMeeting(lead);
                   return (
-                  <div key={lead._id} className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm active:bg-blue-50/40 transition-colors">
+                  <div key={lead._id} onClick={(event) => openLeadDetails(event, lead)} className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm active:bg-blue-50/40 hover:border-blue-200 hover:bg-blue-50/40 transition-colors cursor-pointer">
                     <div className="flex justify-between items-start gap-2 mb-3">
                       <div className="flex min-w-0 flex-1 items-center gap-3">
                         <div className="w-9 h-9 flex-shrink-0 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center shadow-sm shadow-blue-500/20">

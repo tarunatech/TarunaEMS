@@ -24,11 +24,14 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminDayBookReview from './AdminDayBookReview';
+import AdminPerformanceReview from './AdminPerformanceReview';
+import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 
 // Import API services
 import { useTasks } from '../../hooks/useTasks';
 import { useAuth } from '../../hooks/useAuth';
 import { employeeAPI } from '../../utils/api'; // Use the same API as employee management
+import { taskService } from '../../services/taskService';
 
 const AdminTaskManagement = () => {
 
@@ -54,6 +57,7 @@ const AdminTaskManagement = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [newTask, setNewTask] = useState({
+    title: '',
     description: '',
     assignedTo: '',
     priority: 'Medium',
@@ -62,13 +66,15 @@ const AdminTaskManagement = () => {
   });
   const [taskHistory, setTaskHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('tasks'); // 'tasks' or 'daybooks'
+  const [activeTab, setActiveTab] = useState('tasks'); // 'tasks', 'daybooks', or 'performance'
 
   // State for employees
   const [employees, setEmployees] = useState([]);
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [expandedEmployees, setExpandedEmployees] = useState({});
+  const [reviewFeedback, setReviewFeedback] = useState('');
+  const [reviewLoading, setReviewLoading] = useState('');
 
   const toggleEmployeeExpand = (employeeId) => {
     setExpandedEmployees(prev => ({
@@ -162,7 +168,8 @@ const AdminTaskManagement = () => {
   // Filter tasks
   useEffect(() => {
     let filtered = tasks.filter(task => {
-      const matchesSearch = (task.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchesSearch = (task.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (task.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (task.assignedTo?.user?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = !statusFilter || task.status === statusFilter;
       const matchesPriority = !priorityFilter || task.priority === priorityFilter;
@@ -178,6 +185,11 @@ const AdminTaskManagement = () => {
     }
 
     try {
+      if (!newTask.title?.trim()) {
+        toast.error("Task title is required");
+        return;
+      }
+
       if (!newTask.description?.trim()) {
         toast.error("Task description is required");
         return;
@@ -200,6 +212,7 @@ const AdminTaskManagement = () => {
       }
 
       const taskPayload = {
+        title: newTask.title.trim(),
         description: newTask.description.trim(),
         assignedTo: newTask.assignedTo,
         priority: newTask.priority || 'Medium',
@@ -210,6 +223,7 @@ const AdminTaskManagement = () => {
       await createTask(taskPayload);
 
       setNewTask({
+        title: '',
         description: '',
         assignedTo: '',
         priority: 'Medium',
@@ -241,6 +255,7 @@ const AdminTaskManagement = () => {
     e.preventDefault();
     try {
       await updateTask(selectedTask._id, {
+        title: selectedTask.title,
         description: selectedTask.description,
         assignedTo: selectedTask.assignedTo._id || selectedTask.assignedTo,
         priority: selectedTask.priority,
@@ -268,6 +283,7 @@ const AdminTaskManagement = () => {
       setModalLoading(true);
       setSelectedTask(task);
       setShowViewModal(true);
+      setReviewFeedback('');
 
       // Optionally fetch fresh task data
       // const response = await taskService.getTaskById(task._id);
@@ -277,6 +293,37 @@ const AdminTaskManagement = () => {
     } finally {
       setModalLoading(false);
     }
+  };
+
+  const handleReviewTask = async (action) => {
+    if (!selectedTask?._id) return;
+    if ((action === 'reject' || action === 'changes') && !reviewFeedback.trim()) {
+      toast.error('Please add feedback for the employee');
+      return;
+    }
+
+    try {
+      setReviewLoading(action);
+      const response = await taskService.reviewTask(selectedTask._id, action, reviewFeedback.trim());
+      if (response.success) {
+        setSelectedTask(response.task);
+        setReviewFeedback('');
+        toast.success(response.message || 'Task reviewed');
+        await fetchTasks();
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to review task');
+    } finally {
+      setReviewLoading('');
+    }
+  };
+
+  const isInteractiveClick = (event) =>
+    event.target.closest('button, a, input, select, textarea, label');
+
+  const openTaskDetails = (event, task) => {
+    if (isInteractiveClick(event)) return;
+    handleViewTask(task);
   };
 
   const getStatusColor = (status) => {
@@ -450,6 +497,15 @@ const AdminTaskManagement = () => {
             >
               Day Books (EOD)
             </button>
+            <button
+              onClick={() => setActiveTab('performance')}
+              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'performance'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-900'
+                }`}
+            >
+              Performance
+            </button>
           </div>
 
           <div className="flex items-center space-x-3">
@@ -467,16 +523,16 @@ const AdminTaskManagement = () => {
           <div className="space-y-6">
             {/* Filters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search tasks..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
+              <SearchWithSuggestions
+                value={searchTerm}
+                onChange={setSearchTerm}
+                items={tasks}
+                getSuggestionValue={(task) => task.title || task.description || task.assignedTo?.user?.name || ''}
+                getSuggestionTitle={(task) => task.title || 'Untitled Task'}
+                getSuggestionSubtitle={(task) => `${task.description || 'No description'}${task.assignedTo?.user?.name ? ` • ${task.assignedTo.user.name}` : ''}`}
+                placeholder="Search tasks..."
+                inputClassName="border-slate-200 focus:border-blue-500 focus:ring-blue-100"
+              />
               <div className="relative">
                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <select
@@ -573,9 +629,10 @@ const AdminTaskManagement = () => {
 
                         {/* Task Rows (only if expanded) */}
                         {expandedEmployees[empId] && group.tasks.map((task) => (
-                          <tr key={task._id} className="border-b border-slate-200 hover:bg-blue-50 transition-all duration-200">
+                          <tr key={task._id} onClick={(event) => openTaskDetails(event, task)} className="border-b border-slate-200 hover:bg-blue-50 transition-all duration-200 cursor-pointer">
                             <td className="p-4 sm:p-6 pl-12 max-w-xs">
-                              <p className="text-slate-900 font-medium line-clamp-2">{task.description || 'No description'}</p>
+                              <p className="text-slate-900 font-semibold line-clamp-1">{task.title || 'Untitled Task'}</p>
+                              <p className="mt-1 text-slate-500 text-sm line-clamp-2">{task.description || 'No description'}</p>
                             </td>
                             <td className="p-4 sm:p-6 italic text-slate-500">
                               (Assigned above)
@@ -694,10 +751,11 @@ const AdminTaskManagement = () => {
                       </div>
 
                       {expandedEmployees[empId] && group.tasks.map((task) => (
-                        <div key={task._id} className="bg-white border border-slate-200 rounded-xl p-4 space-y-4 ml-4 shadow-sm hover:shadow-md transition-all duration-200">
+                        <div key={task._id} onClick={(event) => openTaskDetails(event, task)} className="bg-white border border-slate-200 rounded-xl p-4 space-y-4 ml-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <p className="text-slate-900 font-medium text-lg line-clamp-2">{task.description || 'No description'}</p>
+                              <p className="text-slate-900 font-semibold text-lg line-clamp-1">{task.title || 'Untitled Task'}</p>
+                              <p className="mt-1 text-slate-500 text-sm line-clamp-2">{task.description || 'No description'}</p>
                             </div>
                             <span className={`px-3 py-1 text-xs rounded-full ${getStatusColor(task.status)}`}>
                               {task.status}
@@ -807,7 +865,8 @@ const AdminTaskManagement = () => {
                   {tasks.slice(0, 4).map((task) => (
                     <div key={task._id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
                       <div className="flex-1 min-w-0 mr-3">
-                        <p className="text-slate-900 font-medium line-clamp-1">{task.description || 'No description'}</p>
+                        <p className="text-slate-900 font-medium line-clamp-1">{task.title || 'Untitled Task'}</p>
+                        <p className="text-xs text-slate-500 line-clamp-1">{task.description || 'No description'}</p>
                         <p className="text-sm text-slate-500">
                           {task.assignedTo?.user?.name || 'Unknown Employee'}
                         </p>
@@ -836,7 +895,7 @@ const AdminTaskManagement = () => {
               showAddModal && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-0 sm:p-2 md:p-4">
                   <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-                  <div className="relative bg-white border border-slate-200 rounded-2xl p-1 sm:p-3 md:p-4 lg:p-6 w-full sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl max-h-[85vh] overflow-auto shadow-xl">
+                  <div className="relative bg-white border border-slate-200 rounded-2xl p-1 sm:p-3 md:p-4 lg:p-6 w-full sm:max-w-sm md:max-w-md lg:max-w-2xl xl:max-w-4xl max-h-[88vh] overflow-auto shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
                     <div className="flex items-center justify-between mb-4 sm:mb-6">
                       <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">Create New Task</h2>
                       <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-900">
@@ -844,6 +903,17 @@ const AdminTaskManagement = () => {
                       </button>
                     </div>
                     <form onSubmit={handleAddTask} className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-2">Title *</label>
+                        <input
+                          type="text"
+                          value={newTask.title}
+                          onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                          placeholder="Short task title..."
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                          required
+                        />
+                      </div>
                       <div>
                         <div className="flex justify-between items-center mb-2">
                           <label className="block text-sm font-medium text-slate-600">Description *</label>
@@ -972,6 +1042,17 @@ const AdminTaskManagement = () => {
                     </div>
                     <form onSubmit={handleEditTask} className="space-y-6">
                       <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-2">Title *</label>
+                        <input
+                          type="text"
+                          value={selectedTask?.title || ''}
+                          onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
+                          placeholder="Short task title..."
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                          required
+                        />
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-slate-600 mb-2">Description *</label>
                         <textarea
                           value={selectedTask?.description || ''}
@@ -1090,7 +1171,8 @@ const AdminTaskManagement = () => {
                       <div className="space-y-6">
                         <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
                           <div className="flex-1 min-w-0 mr-3">
-                            <p className="text-slate-900 font-medium line-clamp-2">{selectedTask.description || 'No description'}</p>
+                            <p className="text-slate-900 font-semibold line-clamp-1">{selectedTask.title || 'Untitled Task'}</p>
+                            <p className="mt-1 text-sm text-slate-500 line-clamp-2">{selectedTask.description || 'No description'}</p>
                           </div>
                           <span className={`px-3 py-1 text-sm rounded-full flex-shrink-0 ${getStatusColor(selectedTask.status)}`}>
                             {selectedTask.status}
@@ -1150,9 +1232,66 @@ const AdminTaskManagement = () => {
                           </div>
                         </div>
                         <div>
+                          <label className="text-sm text-slate-500">Title</label>
+                          <p className="text-slate-900 bg-white p-3 rounded-lg mt-1 border border-slate-200 font-semibold">{selectedTask.title || 'Untitled Task'}</p>
+                        </div>
+                        <div>
                           <label className="text-sm text-slate-500">Description</label>
                           <p className="text-slate-900 bg-slate-50 p-3 rounded-lg mt-1 border border-slate-200">{selectedTask.description}</p>
                         </div>
+                        {selectedTask.status === 'Review' && (
+                          <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-4 shadow-[0_10px_30px_rgba(79,70,229,0.08)]">
+                            <div className="mb-4 flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-slate-900">Review Decision</p>
+                                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                                  Employee has submitted this task for admin review. Approve it, reject it, or request specific changes.
+                                </p>
+                              </div>
+                              <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
+                                Pending Review
+                              </span>
+                            </div>
+
+                            <textarea
+                              value={reviewFeedback}
+                              onChange={(e) => setReviewFeedback(e.target.value)}
+                              rows={3}
+                              placeholder="Add feedback for rejection or requested changes..."
+                              className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                            />
+
+                            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                              <button
+                                type="button"
+                                onClick={() => handleReviewTask('approve')}
+                                disabled={!!reviewLoading}
+                                className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {reviewLoading === 'approve' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleReviewTask('changes')}
+                                disabled={!!reviewLoading}
+                                className="inline-flex items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {reviewLoading === 'changes' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                                Changes
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleReviewTask('reject')}
+                                disabled={!!reviewLoading}
+                                className="inline-flex items-center justify-center rounded-xl bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {reviewLoading === 'reject' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AlertTriangle className="mr-2 h-4 w-4" />}
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        )}
                         {selectedTask.comments && selectedTask.comments.length > 0 && (
                           <div>
                             <label className="text-sm text-slate-500">Recent Comments ({selectedTask.comments.length})</label>
@@ -1179,8 +1318,10 @@ const AdminTaskManagement = () => {
                 </div>
               )}
           </div>
-        ) : (
+        ) : activeTab === 'daybooks' ? (
           <AdminDayBookReview />
+        ) : (
+          <AdminPerformanceReview />
         )}
       </div>
     </AdminLayout >

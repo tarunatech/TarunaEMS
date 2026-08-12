@@ -89,6 +89,15 @@ const calculateTotalDays = (startDate, endDate, isHalfDay) => {
 const normalizeInput = (data = {}, existing = null) => {
   const normalized = pickWritable(data);
 
+  const normalizeRef = (value) => {
+    if (!value || typeof value !== 'object') return value;
+    return value.id || value._id;
+  };
+
+  if (normalized.employee !== undefined) normalized.employee = normalizeRef(normalized.employee);
+  if (normalized.user !== undefined) normalized.user = normalizeRef(normalized.user);
+  if (normalized.actionBy !== undefined) normalized.actionBy = normalizeRef(normalized.actionBy);
+
   if (normalized.startDate !== undefined) normalized.startDate = normalizeDate(normalized.startDate);
   if (normalized.endDate !== undefined) normalized.endDate = normalizeDate(normalized.endDate);
   if (normalized.appliedDate !== undefined) normalized.appliedDate = normalizeDate(normalized.appliedDate);
@@ -203,12 +212,19 @@ const matchRow = (row, query = {}) => {
     const actual = field.includes('.') ? getNested(row, field) : row[field];
     if (expected && typeof expected === 'object' && !(expected instanceof Date)) {
       for (const [op, value] of Object.entries(expected)) {
-        if (op === '$gte' && !(new Date(actual) >= value)) return false;
-        else if (op === '$lte' && !(new Date(actual) <= value)) return false;
-        else if (op === '$lt' && !(new Date(actual) < value)) return false;
-        else if (op === '$in' && !value.includes(actual)) return false;
-        else if (op === '$ne' && actual === value) return false;
-        else unsupported(`aggregate match operator "${op}" on field "${field}"`);
+        if (op === '$gte') {
+          if (!(new Date(actual) >= value)) return false;
+        } else if (op === '$lte') {
+          if (!(new Date(actual) <= value)) return false;
+        } else if (op === '$lt') {
+          if (!(new Date(actual) < value)) return false;
+        } else if (op === '$in') {
+          if (!value.includes(actual)) return false;
+        } else if (op === '$ne') {
+          if (actual === value) return false;
+        } else {
+          unsupported(`aggregate match operator "${op}" on field "${field}"`);
+        }
       }
       continue;
     }
