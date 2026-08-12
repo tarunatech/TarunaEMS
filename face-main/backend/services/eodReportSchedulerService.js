@@ -4,7 +4,7 @@ import Employee from '../models/Employee.js';
 import Task from '../models/Task.js';
 import { sendEmail } from '../utils/email.js';
 
-const ADMIN_EOD_REPORT_EMAIL = 'sudhanshunaikbaroda@gmail.com';
+const ADMIN_EOD_REPORT_EMAIL = process.env.ADMIN_EOD_REPORT_EMAIL;
 const SUBMITTED_STATUSES = new Set(['Submitted', 'Approved', 'Rejected']);
 
 let eodReportJob = null;
@@ -253,7 +253,7 @@ export const startEodReportScheduler = () => {
   }
 
   eodReportJob = cron.schedule(
-    '00 21 * * *',
+    '53 17 * * *',
     async () => {
       const istTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
       console.log(`[${istTime}] Daily EOD Excel report job started`);
