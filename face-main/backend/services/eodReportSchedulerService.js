@@ -253,7 +253,7 @@ export const startEodReportScheduler = () => {
   }
 
   eodReportJob = cron.schedule(
-    '53 17 * * *',
+    '30 18 * * *',
     async () => {
       const istTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
       console.log(`[${istTime}] Daily EOD Excel report job started`);
