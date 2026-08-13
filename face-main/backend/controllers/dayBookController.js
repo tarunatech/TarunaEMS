@@ -1,7 +1,7 @@
 import DayBook from '../models/DayBook.js';
 import Task from '../models/Task.js';
 import Employee from '../models/Employee.js';
-import { sendDayBookReportEmail } from '../utils/email.js';
+// import { sendDayBookReportEmail } from '../utils/email.js';
 
 // @desc    Get or create day book for today
 // @route   GET /api/daybooks/today
@@ -69,23 +69,23 @@ export const submitDayBook = async (req, res) => {
         ).populate('slots.taskRef');
 
         // Only send email if status is 'Submitted'
-        if (dayBook && dayBook.status === 'Submitted') {
-            try {
-                // Fetch all active tasks for this employee to include in report
-                const activeTasks = await Task.find({
-                    assignedTo: employee._id,
-                    status: { $nin: ['Completed', 'Cancelled'] }
-                });
+        // if (dayBook && dayBook.status === 'Submitted') {
+        //     try {
+        //         // Fetch all active tasks for this employee to include in report
+        //         const activeTasks = await Task.find({
+        //             assignedTo: employee._id,
+        //             status: { $nin: ['Completed', 'Cancelled'] }
+        //         });
 
-                // Get details of employee for email
-                const employeeDetails = await Employee.findById(employee._id);
+        //         // Get details of employee for email
+        //         const employeeDetails = await Employee.findById(employee._id);
 
-                await sendDayBookReportEmail(dayBook, employeeDetails, activeTasks);
-            } catch (emailError) {
-                console.error('Error sending day book report email:', emailError);
-                // We don't want to fail the request if email fails
-            }
-        }
+        //         await sendDayBookReportEmail(dayBook, employeeDetails, activeTasks);
+        //     } catch (emailError) {
+        //         console.error('Error sending day book report email:', emailError);
+        //         // We don't want to fail the request if email fails
+        //     }
+        // }
 
         res.json({ success: true, dayBook });
     } catch (error) {
@@ -151,17 +151,17 @@ export const updateDayBookStatus = async (req, res) => {
         }
 
         // Send email report to admin email
-        try {
-            const employee = await Employee.findById(dayBook.employee);
-            const activeTasks = await Task.find({
-                assignedTo: dayBook.employee,
-                status: { $nin: ['Completed', 'Cancelled'] }
-            });
+        // try {
+        //     const employee = await Employee.findById(dayBook.employee);
+        //     const activeTasks = await Task.find({
+        //         assignedTo: dayBook.employee,
+        //         status: { $nin: ['Completed', 'Cancelled'] }
+        //     });
 
-            await sendDayBookReportEmail(dayBook, employee, activeTasks);
-        } catch (emailError) {
-            console.error('Error sending day book report email on update:', emailError);
-        }
+        //     await sendDayBookReportEmail(dayBook, employee, activeTasks);
+        // } catch (emailError) {
+        //     console.error('Error sending day book report email on update:', emailError);
+        // }
 
         res.json({ success: true, dayBook });
     } catch (error) {
