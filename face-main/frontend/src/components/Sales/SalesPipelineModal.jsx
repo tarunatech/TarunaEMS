@@ -139,7 +139,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
   };
 
   const content = (
-      <div className={`${embedded ? 'w-full' : 'max-h-[92vh] w-full max-w-5xl overflow-y-auto'} rounded-xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6`}>
+      <div className={`${embedded ? 'w-full' : 'pipeline-modal-scroll max-h-[92vh] w-full max-w-5xl overflow-y-auto'} rounded-xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6`}>
         <style>{`
           @keyframes pipelineStageIn {
             from { opacity: 0; transform: translateY(10px) scale(0.99); }
@@ -147,6 +147,13 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
           }
           .pipeline-stage-panel {
             animation: pipelineStageIn 0.28s ease-out both;
+          }
+          .pipeline-modal-scroll {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          .pipeline-modal-scroll::-webkit-scrollbar {
+            display: none;
           }
         `}</style>
         <div className="mb-5 flex items-start justify-between gap-3">
@@ -291,8 +298,13 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
   if (embedded) return content;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/30 p-3 backdrop-blur-sm">
-      {content}
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/30 p-3 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div className="w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
+        {content}
+      </div>
     </div>
   );
 };

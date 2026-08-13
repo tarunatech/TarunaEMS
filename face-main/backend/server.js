@@ -14,7 +14,7 @@ import connectDB from "./config/db.js";
 import errorHandler from "./middleware/errorHandler.js";
 import setupShutdown from "./utils/shutdown.js";
 import setupChatSocket from "./socket/chat.js";
-import fs from "fs";
+import { ensureUploadDirs, uploadsDir } from "./config/uploadPaths.js";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -100,20 +100,9 @@ app.use(
   }),
 );
 
-// Static folders
-const uploadsDir = path.join(__dirname, "uploads");
-const profilePicsDir = path.join(uploadsDir, "profile-pics");
-const resumesDir = path.join(uploadsDir, "resumes");
-
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
-if (!fs.existsSync(profilePicsDir)) {
-  fs.mkdirSync(profilePicsDir);
-}
-if (!fs.existsSync(resumesDir)) {
-  fs.mkdirSync(resumesDir);
-}
+// Static upload folder. Set UPLOAD_DIR on VPS to a persistent absolute path.
+ensureUploadDirs();
+console.log(`[Uploads] Serving uploaded files from: ${uploadsDir}`);
 
 app.use(
   "/uploads",

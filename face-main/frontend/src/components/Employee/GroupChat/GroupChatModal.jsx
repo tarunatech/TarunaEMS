@@ -47,6 +47,8 @@ const GroupChatModal = ({
     if (!socket || !isOpen) return;
 
     const handleGroupMessage = (message) => {
+      const currentUserId = String(employeeData?.id || employeeData?._id || localStorage.getItem('userId') || '');
+      const senderId = String(message.sender?._id || message.sender?.id || message.sender || '');
       if (message.groupId === selectedGroup?._id) {
         setGroupMessages(prev => {
           if (prev.some(m => m._id === message._id)) return prev;
@@ -61,6 +63,9 @@ const GroupChatModal = ({
           ? { ...g, lastMessage: { text: message.text, sender: message.sender, timestamp: message.timestamp } }
           : g
       ));
+      if (senderId && senderId !== currentUserId) {
+        window.dispatchEvent(new CustomEvent('employee-notifications-refresh'));
+      }
     };
 
     const handleTypingStart = ({ groupId, userId, userName }) => {

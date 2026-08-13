@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, RefreshCw, CheckCheck, Clock, User, Settings, AlertTriangle, Calendar, FileText, CheckCircle } from "lucide-react";
+import { Bell, RefreshCw, CheckCheck, Clock, User, Settings, AlertTriangle, Calendar, FileText, CheckCircle, X, MessageCircle, Briefcase, GitBranch, ClipboardList } from "lucide-react";
 
-const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead, onRefresh }) => {
+const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead, onRefresh, onMarkAllRead, onDismiss }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const dropdownRef = useRef(null);
@@ -42,7 +42,11 @@ const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead,
   };
 
   // Mark all as read
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = async () => {
+    if (onMarkAllRead) {
+      await onMarkAllRead();
+      return;
+    }
     notifications.filter(n => n.unread).forEach(n => onNotificationRead(n.id));
   };
 
@@ -64,6 +68,15 @@ const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead,
         return <Calendar {...iconProps} className="w-4 h-4 text-violet-600 flex-shrink-0" />;
       case 'payslip':
         return <FileText {...iconProps} className="w-4 h-4 text-indigo-600 flex-shrink-0" />;
+      case 'sales':
+      case 'lead':
+        return <Briefcase {...iconProps} className="w-4 h-4 text-cyan-600 flex-shrink-0" />;
+      case 'pipeline':
+        return <GitBranch {...iconProps} className="w-4 h-4 text-violet-600 flex-shrink-0" />;
+      case 'interview':
+        return <ClipboardList {...iconProps} className="w-4 h-4 text-fuchsia-600 flex-shrink-0" />;
+      case 'chat':
+        return <MessageCircle {...iconProps} className="w-4 h-4 text-sky-600 flex-shrink-0" />;
       case 'task':
         return <Settings {...iconProps} className="w-4 h-4 text-green-600 flex-shrink-0" />;
       case 'tasks':
@@ -197,11 +210,29 @@ const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead,
                           <span className="text-xs text-slate-400">
                             {notification.time}
                           </span>
-                          {notification.unread && (
+                          {notification.category === 'chat' && notification.count > 1 ? (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-semibold text-white">
+                              {notification.count > 99 ? '99+' : notification.count}
+                            </span>
+                          ) : notification.unread && (
                             <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
                           )}
                         </div>
                       </div>
+                      {onDismiss && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onDismiss(notification.id);
+                          }}
+                          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-slate-300 transition-colors hover:bg-white hover:text-slate-700"
+                          title="Remove notification"
+                          aria-label="Remove notification"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))

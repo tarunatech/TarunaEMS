@@ -7,6 +7,23 @@ import ProfileDropdown from "./ProfileDropdown";
 import { authAPI, dashboardAPI } from '../../../utils/api';
 import toast from 'react-hot-toast';
 
+const getNotificationStorageKey = (suffix) => {
+  const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId') || 'admin';
+  return `admin-notifications-${userId}-${suffix}`;
+};
+
+const readNotificationSet = (suffix) => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(getNotificationStorageKey(suffix)) || '[]'));
+  } catch {
+    return new Set();
+  }
+};
+
+const writeNotificationSet = (suffix, values) => {
+  localStorage.setItem(getNotificationStorageKey(suffix), JSON.stringify(Array.from(values)));
+};
+
 const Header = ({ sidebarItems, location, setSidebarOpen }) => {
   const navigate = useNavigate();
   const [profileDropdown, setProfileDropdown] = useState(false);
@@ -97,16 +114,22 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
     try {
       const response = await dashboardAPI.getUserNotifications();
       if (response.data.success) {
+        const readIds = readNotificationSet('read');
+        const dismissedIds = readNotificationSet('dismissed');
         setNotifications(
-          (response.data.data || []).map((n, index) => ({
-            id: n.id || `notification-${index}`,
+          (response.data.data || []).map((n, index) => {
+            const id = String(n.id || `notification-${index}`);
+            return {
+            id,
             message: n.message,
             user: n.user,
             time: n.time,
             type: n.type || 'info',
             category: n.category || 'general',
-            unread: n.unread ?? true
-          }))
+            count: n.count || 1,
+            unread: readIds.has(id) ? false : (n.unread ?? true)
+          };
+          }).filter(n => !dismissedIds.has(n.id))
         );
       } else {
         setNotifications([]);
@@ -154,10 +177,32 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
   };
 
   // Mark notification as read
-  const handleNotificationRead = (notificationId) => {
+  const handleNotificationRead = async (notificationId) => {
+    const id = String(notificationId);
+    const readIds = readNotificationSet('read');
+    readIds.add(id);
+    writeNotificationSet('read', readIds);
     setNotifications(prev =>
-      prev.map(n => n.id === notificationId ? { ...n, unread: false } : n)
+      prev.map(n => n.id === id ? { ...n, unread: false } : n)
     );
+    dashboardAPI.markNotificationAsRead(id).catch(() => {});
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    const readIds = readNotificationSet('read');
+    notifications.forEach(notification => readIds.add(String(notification.id)));
+    writeNotificationSet('read', readIds);
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+    dashboardAPI.markAllNotificationsAsRead().catch(() => {});
+    toast.success('All notifications marked as read');
+  };
+
+  const handleDismissNotification = (notificationId) => {
+    const id = String(notificationId);
+    const dismissedIds = readNotificationSet('dismissed');
+    dismissedIds.add(id);
+    writeNotificationSet('dismissed', dismissedIds);
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   // Count unread notifications
@@ -233,6 +278,8 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
             unreadCount={unreadNotifications}
             notifications={notifications}
             onNotificationRead={handleNotificationRead}
+            onMarkAllRead={handleMarkAllNotificationsRead}
+            onDismiss={handleDismissNotification}
             onRefresh={handleRefreshNotifications}
           />
 

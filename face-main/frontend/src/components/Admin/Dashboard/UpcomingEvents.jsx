@@ -56,6 +56,8 @@ const UpcomingEvents = ({ events = [], loading = false }) => {
 
     if (type.includes('leave') || title.includes('leave')) return '/admin/leaves';
     if (type.includes('task') || title.includes('task')) return '/admin/tasks';
+    if (type.includes('meeting') || type.includes('lead') || type.includes('pipeline') || title.includes('meeting') || title.includes('lead')) return '/admin/sales';
+    if (type.includes('interview') || title.includes('interview')) return '/admin/interviews';
     if (type.includes('attendance') || title.includes('attendance')) return '/admin/attendance';
     if (type.includes('employee') || title.includes('employee')) return '/admin/employees';
     if (type.includes('department') || title.includes('department')) return '/admin/department';

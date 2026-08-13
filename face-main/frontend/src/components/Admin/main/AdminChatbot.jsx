@@ -666,60 +666,65 @@ const AdminChatbot = ({ isOpen, onClose, isAdmin }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-end justify-end p-4 z-50"
+      className="fixed inset-0 z-50 flex items-end justify-end bg-slate-950/20 p-3 backdrop-blur-sm sm:p-4"
       onMouseDown={onClose}
     >
       <div
-        className="bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-full max-w-md h-96 flex flex-col"
+        className="flex h-[min(34rem,calc(100dvh-2rem))] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
         onMouseDown={(event) => event.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="flex items-center justify-between border-b border-blue-100/80 bg-gradient-to-r from-slate-50 to-blue-50 p-4">
           <div className="flex items-center space-x-2">
-            <Bot className="text-neon-purple" size={20} />
-            <span className="text-white font-semibold">HR Data Assistant</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600">
+              <Bot size={18} />
+            </div>
+            <div>
+              <span className="block text-[15px] font-semibold tracking-tight text-slate-900">HR Data Assistant</span>
+              <span className="block text-xs text-slate-500">Admin insights and records</span>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-xs px-4 py-3 rounded-lg ${
+                className={`max-w-[88%] rounded-xl px-3.5 py-3 shadow-sm ${
                   message.type === 'user'
-                    ? 'bg-neon-purple text-white'
-                    : 'bg-gray-700 text-gray-100'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
+                    : 'border border-blue-100 bg-white text-slate-900'
                 }`}
               >
-                <div className="flex items-center space-x-2 mb-1">
+                <div className={`mb-1.5 flex items-center space-x-2 ${message.type === 'user' ? 'text-blue-100' : 'text-blue-600'}`}>
                   {message.type === 'bot' ? <Bot size={14} /> : <User size={14} />}
-                  <span className="text-xs opacity-70">
+                  <span className="text-[11px] opacity-80">
                     {message.timestamp.toLocaleTimeString()}
                   </span>
                 </div>
-                <p className="text-sm leading-6 whitespace-pre-line break-words">{message.content}</p>
+                <p className="whitespace-pre-line break-words text-sm leading-6">{message.content}</p>
               </div>
             </div>
           ))}
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-gray-700 text-gray-100 px-4 py-2 rounded-lg">
+              <div className="rounded-xl border border-blue-100 bg-white px-4 py-2 text-slate-600 shadow-sm">
                 <div className="flex items-center space-x-2">
-                  <Bot size={14} />
+                  <Bot size={14} className="text-blue-600" />
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-blue-400"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-indigo-400" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-violet-400" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </div>
@@ -729,7 +734,7 @@ const AdminChatbot = ({ isOpen, onClose, isAdmin }) => {
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-gray-700">
+        <div className="border-t border-slate-200 bg-white p-3">
           <div className="flex space-x-2">
             <input
               type="text"
@@ -737,12 +742,12 @@ const AdminChatbot = ({ isOpen, onClose, isAdmin }) => {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask me about employees, leave, tasks..."
-              className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-neon-purple"
+              className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
             <button
               onClick={handleSendMessage}
               disabled={!inputValue.trim()}
-              className="bg-neon-purple hover:bg-neon-purple/80 disabled:opacity-50 disabled:cursor-not-allowed text-white p-2 rounded-lg transition-colors"
+              className="rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 p-2 text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send size={20} />
             </button>

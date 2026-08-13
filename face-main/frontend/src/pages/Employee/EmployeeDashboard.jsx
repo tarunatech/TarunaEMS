@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import GroupChatModal from '../../components/Employee/GroupChat/GroupChatModal';
 import toast from 'react-hot-toast';
-import { employeeAPI, authAPI, attendanceAPI, payslipAPI, getApiFileUrl } from '../../utils/api';
+import { employeeAPI, authAPI, attendanceAPI, payslipAPI, dashboardAPI, getApiFileUrl } from '../../utils/api';
 import API from '../../utils/api';
 import { geolocationUtils } from '../../utils/geolocationUtils';
 import io from 'socket.io-client';
@@ -91,6 +91,8 @@ const EmployeeDashboard = () => {
   const [loadingChat, setLoadingChat] = useState(false);
   const [loadingBot, setLoadingBot] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
+  const [recentNotices, setRecentNotices] = useState([]);
+  const [noticesLoading, setNoticesLoading] = useState(true);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const selectedPeerRef = useRef(null);
@@ -322,6 +324,18 @@ const EmployeeDashboard = () => {
             console.error('Error fetching today attendance or stats:', error);
           }
         }
+
+        try {
+          setNoticesLoading(true);
+          const eventsRes = await dashboardAPI.getUpcomingEvents();
+          if (eventsRes.data?.success) {
+            setRecentNotices(eventsRes.data.events || []);
+          }
+        } catch (error) {
+          console.error('Error fetching latest notices:', error);
+        } finally {
+          setNoticesLoading(false);
+        }
       } catch (error) {
         console.error('Error fetching employee ', error);
         if (error.response?.status === 401) {
@@ -336,6 +350,7 @@ const EmployeeDashboard = () => {
         setDefaultStats();
       } finally {
         setLastUpdated(new Date());
+        setNoticesLoading(false);
         setLoading(false);
       }
     };
@@ -633,6 +648,7 @@ const EmployeeDashboard = () => {
             ...prev,
             [peerId]: (prev[peerId] || 0) + 1,
           }));
+          window.dispatchEvent(new CustomEvent('employee-notifications-refresh'));
         }
 
         setChatMessages(prev => {
@@ -919,14 +935,8 @@ const EmployeeDashboard = () => {
     window.location.href = '/employee/attendance';
   };
 
-  const recentNotices = [
-    { id: 1, title: "Company Holiday Announcement", message: "Office will be closed on October 15th for Diwali festival.", date: "2024-10-10", priority: "High" },
-    { id: 2, title: "New HR Policy Update", message: "Please review the updated attendance policy.", date: "2024-10-08", priority: "Medium" },
-    { id: 3, title: "Team Meeting Scheduled", message: "Monthly team sync meeting scheduled for tomorrow at 2 PM.", date: "2024-10-09", priority: "Medium" }
-  ];
-
   const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
+    switch (String(status || '').toLowerCase()) {
       case 'completed': case 'on track': return 'text-green-700 bg-green-100';
       case 'in progress': case 'nearly complete': return 'text-amber-700 bg-amber-100';
       case 'pending': case 'not started': return 'text-red-700 bg-red-100';
@@ -935,7 +945,7 @@ const EmployeeDashboard = () => {
   };
 
   const getPriorityColor = (priority) => {
-    switch (priority.toLowerCase()) {
+    switch (String(priority || '').toLowerCase()) {
       case 'high': return 'text-red-700 bg-red-100';
       case 'medium': return 'text-amber-700 bg-amber-100';
       case 'low': return 'text-green-700 bg-green-100';
@@ -1261,22 +1271,44 @@ const EmployeeDashboard = () => {
             style={{ animationDelay: '220ms' }}
           >
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-[15px] font-semibold text-slate-900">Latest notices</h2>
+              <h2 className="text-[15px] font-semibold text-slate-900">Latest Updates</h2>
               <Bell className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
             </div>
             <div className="space-y-2.5 max-h-80 overflow-y-auto">
-              {recentNotices.map((notice) => (
-                <div key={notice.id} className="dashboard-sub-card p-3.5 border border-slate-200/70 bg-slate-50/60 rounded-lg transition-colors duration-150 hover:bg-slate-100/70">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <h4 className="text-slate-900 text-[13px] font-medium">{notice.title}</h4>
-                    <span className={`text-[10.5px] px-2 py-0.5 rounded-full font-medium ${getPriorityColor(notice.priority)}`}>
-                      {notice.priority}
-                    </span>
-                  </div>
-                  <p className="text-slate-500 text-[12.5px] mb-1.5">{notice.message}</p>
-                  <p className="text-[11px] text-slate-400">{new Date(notice.date).toLocaleDateString()}</p>
+              {noticesLoading ? (
+                <div className="space-y-2.5">
+                  {[0, 1, 2].map((item) => (
+                    <div key={item} className="rounded-lg border border-slate-200/70 bg-slate-50/70 p-3.5">
+                      <div className="h-3 w-2/3 animate-pulse rounded bg-slate-200" />
+                      <div className="mt-2 h-2.5 w-full animate-pulse rounded bg-slate-200/80" />
+                      <div className="mt-2 h-2.5 w-1/3 animate-pulse rounded bg-slate-200/70" />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : recentNotices.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/70 p-4 text-center">
+                  <p className="text-[13px] font-medium text-slate-600">No latest notices right now</p>
+                  <p className="mt-1 text-[12px] text-slate-400">Holidays, leaves, tasks, sales updates, and HR interview status will appear here.</p>
+                </div>
+              ) : (
+                recentNotices.map((notice) => (
+                  <div key={notice.id} className="dashboard-sub-card p-3.5 border border-slate-200/70 bg-slate-50/60 rounded-lg transition-colors duration-150 hover:bg-slate-100/70">
+                    <div className="mb-1.5 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h4 className="truncate text-slate-900 text-[13px] font-medium">{notice.title || 'Notice'}</h4>
+                        <span className="mt-1 inline-flex rounded-full bg-white px-2 py-0.5 text-[10.5px] font-medium capitalize text-slate-500 ring-1 ring-slate-200">
+                          {notice.type || 'notice'}
+                        </span>
+                      </div>
+                      <span className={`shrink-0 text-[10.5px] px-2 py-0.5 rounded-full font-medium ${getPriorityColor(notice.priority)}`}>
+                        {notice.priority || 'Medium'}
+                      </span>
+                    </div>
+                    <p className="text-slate-500 text-[12.5px] mb-1.5 leading-relaxed">{notice.message || 'No additional details available.'}</p>
+                    <p className="text-[11px] text-slate-400">{notice.date ? new Date(notice.date).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

@@ -796,8 +796,9 @@ const ActionButton = ({ icon, label, onClick }) => (
 );
 
 const Modal = ({ title, children, onClose, size = 'default' }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-2 backdrop-blur-sm sm:p-4">
-    <div className={`employee-sales-modal flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:max-h-[90vh] ${size === 'wide' ? 'max-w-4xl' : 'max-w-sm sm:max-w-md'}`}>
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
+    <div className={`employee-sales-modal relative flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:max-h-[90vh] ${size === 'wide' ? 'max-w-4xl' : 'max-w-sm sm:max-w-md'}`}>
       <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-3 py-2.5 sm:border-b-0 sm:px-4 sm:pb-0 sm:pt-4">
         <h3 className="truncate pr-3 text-base font-bold text-slate-900 sm:text-lg">{title}</h3>
         <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200">

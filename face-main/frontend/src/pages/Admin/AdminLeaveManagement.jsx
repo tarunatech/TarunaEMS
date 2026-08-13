@@ -271,8 +271,9 @@ const AdminLeaveManagement = () => {
     };
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-2 backdrop-blur-sm sm:p-4">
-        <div className="premium-panel w-full max-w-5xl overflow-hidden rounded-2xl shadow-2xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowCalendarModal(false)} />
+        <div className="premium-panel relative w-full max-w-5xl overflow-hidden rounded-2xl shadow-2xl">
           <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4 sm:p-5">
             <div>
               <h2 className="text-lg font-bold text-slate-900 sm:text-2xl">Leave Calendar</h2>

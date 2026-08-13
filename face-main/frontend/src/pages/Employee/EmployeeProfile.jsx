@@ -1,8 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, Building2, Briefcase, Calendar, Save, Camera, CreditCard, DollarSign, FileText, MapPin, Award } from 'lucide-react';
+import { User, Mail, Phone, Save, Camera, CreditCard, DollarSign, FileText, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
 import { authAPI, getApiFileUrl } from '../../utils/api';
+
+const ProfileField = ({ label, value, editable = true, type = 'text', onChange, options }) => (
+  <div>
+    <label className="mb-1 block text-[12px] font-semibold text-slate-500">{label}</label>
+    {editable ? (
+      options ? (
+        <select
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-[13px] text-slate-900 outline-none transition-all duration-200 focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100"
+        >
+          <option value="">Select</option>
+          {options.map(option => <option key={option} value={option}>{option}</option>)}
+        </select>
+      ) : (
+        <input
+          type={type}
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-[13px] text-slate-900 outline-none transition-all duration-200 focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100"
+        />
+      )
+    ) : (
+      <p className="flex h-10 items-center overflow-hidden text-ellipsis rounded-lg border border-slate-200 bg-slate-50 px-3 text-[13px] text-slate-600">
+        {value || 'N/A'}
+      </p>
+    )}
+  </div>
+);
 
 const EmployeeProfile = () => {
   const [profile, setProfile] = useState({
@@ -85,16 +114,63 @@ const EmployeeProfile = () => {
     }));
   };
 
+  const handleNestedChange = (section, path, value) => {
+    setProfile(prev => {
+      const nextSection = { ...(prev[section] || {}) };
+      if (path.length === 1) {
+        nextSection[path[0]] = value;
+      } else {
+        nextSection[path[0]] = {
+          ...(nextSection[path[0]] || {}),
+          [path[1]]: value
+        };
+      }
+
+      const nextProfile = { ...prev, [section]: nextSection };
+      if (section === 'personalInfo' && ['firstName', 'lastName'].includes(path[0])) {
+        nextProfile.name = `${nextProfile.personalInfo?.firstName || ''} ${nextProfile.personalInfo?.lastName || ''}`.trim();
+      }
+      if (section === 'contactInfo' && path[0] === 'phone') {
+        nextProfile.phone = value;
+      }
+      return nextProfile;
+    });
+  };
+
+  const formatDateInput = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toISOString().slice(0, 10);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
       await authAPI.updateProfile({
         name: profile.name,
-        phone: profile.phone
+        phone: profile.phone,
+        personalInfo: {
+          firstName: profile.personalInfo?.firstName || '',
+          lastName: profile.personalInfo?.lastName || '',
+          dateOfBirth: profile.personalInfo?.dateOfBirth || null,
+          gender: profile.personalInfo?.gender || '',
+          bloodGroup: profile.personalInfo?.bloodGroup || '',
+          nationality: profile.personalInfo?.nationality || ''
+        },
+        contactInfo: {
+          phone: profile.phone,
+          personalEmail: profile.contactInfo?.personalEmail || '',
+          alternatePhone: profile.contactInfo?.alternatePhone || '',
+          address: profile.contactInfo?.address || {},
+          emergencyContact: profile.contactInfo?.emergencyContact || {}
+        },
+        bankInfo: profile.bankInfo || {}
       });
       toast.success('Profile updated successfully');
       localStorage.setItem('userName', profile.name);
+      localStorage.setItem('userEmail', profile.email);
       // Refresh profile data to show updated values
       await fetchProfile();
     } catch (error) {
@@ -157,17 +233,30 @@ const EmployeeProfile = () => {
 
   return (
     <EmployeeLayout>
-      <div className="employee-profile-page max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 bg-[#F8FAFC]">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">My Profile</h1>
-          <p className="text-slate-500 mt-1">View and update your information</p>
+      <div className="employee-profile-page mx-auto max-w-5xl bg-[#F8FAFC] px-3 sm:px-5 lg:px-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">My Profile</h1>
+            <p className="text-slate-500 mt-1">View and update your information</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="submit"
+              form="employee-profile-form"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)] transition-all hover:shadow-[0_16px_30px_rgba(79,70,229,0.30)] disabled:opacity-60"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? 'Saving...' : 'Save Profile'}
+            </button>
+          </div>
         </div>
 
         {/* Profile Header */}
-        <div className="relative overflow-hidden rounded-2xl border border-blue-100/80 bg-[#F8FAFC] p-6 mb-8 shadow-[0_14px_34px_rgba(15,23,42,0.08)] transition-all duration-300 hover:border-indigo-200 hover:shadow-[0_20px_44px_rgba(30,64,175,0.12)]">
-          <div className="flex items-center space-x-4">
+        <div className="relative mb-5 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+          <div className="flex items-center space-x-3">
             <div className="relative group">
-              <div className="w-20 h-20 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 rounded-2xl flex items-center justify-center overflow-hidden shadow-[0_16px_32px_rgba(79,70,229,0.28)] ring-4 ring-blue-100/80">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 shadow-[0_12px_24px_rgba(79,70,229,0.22)] ring-4 ring-blue-100/80">
                 {profile.profileImage ? (
                   <img
                     src={getFullImageUrl(profile.profileImage)}
@@ -194,7 +283,7 @@ const EmployeeProfile = () => {
               </label>
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-slate-900">{profile.name}</h2>
+              <h2 className="text-lg font-semibold text-slate-900">{profile.name}</h2>
               <p className="text-sm text-slate-500">{profile.position || 'Employee'}</p>
               {profile.employeeId && (
                 <p className="text-xs text-indigo-600 mt-1 font-semibold">ID: {profile.employeeId}</p>
@@ -203,234 +292,133 @@ const EmployeeProfile = () => {
           </div>
         </div>
 
-        <div className="space-y-8">
+        <form id="employee-profile-form" onSubmit={handleSubmit} className="space-y-4">
           {/* Personal Information */}
-          <section className="relative overflow-hidden rounded-2xl border border-blue-100/80 bg-[#F8FAFC] p-6 shadow-[0_12px_28px_rgba(15,23,42,0.07)] transition-all duration-300 hover:border-indigo-200 hover:shadow-[0_18px_38px_rgba(30,64,175,0.12)]">
-            <div className="flex items-center space-x-3 mb-6">
+          <section className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+            <div className="mb-4 flex items-center space-x-2">
               <User className="w-5 h-5 text-indigo-600" />
-              <h3 className="text-lg font-semibold text-slate-900">Personal Information</h3>
+              <h3 className="text-base font-semibold text-slate-900">Personal Information</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-500 mb-1">First Name</label>
-                <p className="text-slate-900 p-3 bg-[#F1F5F9] rounded-xl border border-blue-100/70 transition-all duration-200 hover:border-indigo-200 hover:bg-blue-50">
-                  {profile.personalInfo?.firstName || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-500 mb-1">Last Name</label>
-                <p className="text-slate-900 p-3 bg-[#F1F5F9] rounded-xl border border-blue-100/70 transition-all duration-200 hover:border-indigo-200 hover:bg-blue-50">
-                  {profile.personalInfo?.lastName || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-500 mb-1">Date of Birth</label>
-                <p className="text-slate-900 p-3 bg-[#F1F5F9] rounded-xl border border-blue-100/70 transition-all duration-200 hover:border-indigo-200 hover:bg-blue-50">
-                  {profile.personalInfo?.dateOfBirth ? new Date(profile.personalInfo.dateOfBirth).toLocaleDateString() : 'N/A'}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-500 mb-1">Gender</label>
-                <p className="text-slate-900 p-3 bg-[#F1F5F9] rounded-xl border border-blue-100/70 transition-all duration-200 hover:border-indigo-200 hover:bg-blue-50">
-                  {profile.personalInfo?.gender || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-500 mb-1">Blood Group</label>
-                <p className="text-slate-900 p-3 bg-[#F1F5F9] rounded-xl border border-blue-100/70 transition-all duration-200 hover:border-indigo-200 hover:bg-blue-50">
-                  {profile.personalInfo?.bloodGroup || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-500 mb-1">Nationality</label>
-                <p className="text-slate-900 p-3 bg-[#F1F5F9] rounded-xl border border-blue-100/70 transition-all duration-200 hover:border-indigo-200 hover:bg-blue-50">
-                  {profile.personalInfo?.nationality || 'Indian'}
-                </p>
-              </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <ProfileField label="First Name" value={profile.personalInfo?.firstName} onChange={(value) => handleNestedChange('personalInfo', ['firstName'], value)} />
+              <ProfileField label="Last Name" value={profile.personalInfo?.lastName} onChange={(value) => handleNestedChange('personalInfo', ['lastName'], value)} />
+              <ProfileField label="Date of Birth" type="date" value={formatDateInput(profile.personalInfo?.dateOfBirth)} onChange={(value) => handleNestedChange('personalInfo', ['dateOfBirth'], value)} />
+              <ProfileField label="Gender" value={profile.personalInfo?.gender} options={['Male', 'Female', 'Other']} onChange={(value) => handleNestedChange('personalInfo', ['gender'], value)} />
+              <ProfileField label="Blood Group" value={profile.personalInfo?.bloodGroup} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} onChange={(value) => handleNestedChange('personalInfo', ['bloodGroup'], value)} />
+              <ProfileField label="Nationality" value={profile.personalInfo?.nationality || 'Indian'} onChange={(value) => handleNestedChange('personalInfo', ['nationality'], value)} />
             </div>
           </section>
 
           {/* Contact Information */}
-          <section className="relative overflow-hidden rounded-2xl border border-blue-100/80 bg-[#F8FAFC] p-6 shadow-[0_12px_28px_rgba(15,23,42,0.07)] transition-all duration-300 hover:border-indigo-200 hover:shadow-[0_18px_38px_rgba(30,64,175,0.12)]">
-            <div className="flex items-center space-x-3 mb-6">
+          <section className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+            <div className="mb-4 flex items-center space-x-2">
               <Mail className="w-5 h-5 text-indigo-600" />
-              <h3 className="text-lg font-semibold text-slate-900">Contact Information</h3>
+              <h3 className="text-base font-semibold text-slate-900">Contact Information</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-500 mb-1">Official Email</label>
-                <p className="text-slate-900 p-3 bg-[#F1F5F9] rounded-xl border border-blue-100/70 overflow-hidden text-ellipsis transition-all duration-200 hover:border-indigo-200 hover:bg-blue-50">
-                  {profile.email}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-500 mb-1">Personal Email</label>
-                <p className="text-slate-900 p-3 bg-[#F1F5F9] rounded-xl border border-blue-100/70 overflow-hidden text-ellipsis transition-all duration-200 hover:border-indigo-200 hover:bg-blue-50">
-                  {profile.contactInfo?.personalEmail || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <form onSubmit={handleSubmit}>
-                  <label className="block text-sm font-medium text-slate-500 mb-1">Phone Number (Editable)</label>
-                  <div className="flex space-x-2">
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={profile.phone}
-                      onChange={handleChange}
-                      className="flex-1 p-3 bg-[#F1F5F9] border border-blue-100/70 rounded-xl text-slate-900 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none transition-all duration-200"
-                    />
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="p-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white rounded-xl shadow-[0_12px_24px_rgba(79,70,229,0.24)] hover:shadow-[0_16px_30px_rgba(79,70,229,0.30)] transition-all duration-200 disabled:opacity-50"
-                    >
-                      {saving ? '...' : <Save className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </form>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-500 mb-1">Alternate Phone</label>
-                <p className="text-slate-900 p-3 bg-[#F1F5F9] rounded-xl border border-blue-100/70 transition-all duration-200 hover:border-indigo-200 hover:bg-blue-50">
-                  {profile.contactInfo?.alternatePhone || 'N/A'}
-                </p>
-              </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <ProfileField label="Official Email" value={profile.email} editable={false} onChange={() => {}} />
+              <ProfileField label="Personal Email" type="email" value={profile.contactInfo?.personalEmail} onChange={(value) => handleNestedChange('contactInfo', ['personalEmail'], value)} />
+              <ProfileField label="Phone Number" type="tel" value={profile.phone} onChange={(value) => handleNestedChange('contactInfo', ['phone'], value)} />
+              <ProfileField label="Alternate Phone" type="tel" value={profile.contactInfo?.alternatePhone} onChange={(value) => handleNestedChange('contactInfo', ['alternatePhone'], value)} />
             </div>
 
             {/* Address */}
-            <div className="mt-8 pt-8 border-t border-blue-100/80">
-              <h4 className="text-sm font-semibold text-slate-700 mb-4 flex items-center">
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <h4 className="mb-3 flex items-center text-sm font-semibold text-slate-700">
                 <MapPin className="w-4 h-4 mr-2 text-indigo-600" />
                 Address Details
               </h4>
-              <div className="p-4 bg-[#F1F5F9] border border-blue-100/70 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-2">
                 <div className="md:col-span-2">
-                  <label className="block text-xs text-slate-500 mb-1">Street</label>
-                  <p className="text-sm text-slate-900">{profile.contactInfo?.address?.street || 'N/A'}</p>
+                  <ProfileField label="Street" value={profile.contactInfo?.address?.street} onChange={(value) => handleNestedChange('contactInfo', ['address', 'street'], value)} />
                 </div>
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1">City & State</label>
-                  <p className="text-sm text-slate-900">
-                    {profile.contactInfo?.address?.city || 'N/A'}, {profile.contactInfo?.address?.state || 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1">Pincode & Country</label>
-                  <p className="text-sm text-slate-900">
-                    {profile.contactInfo?.address?.pincode || 'N/A'}, {profile.contactInfo?.address?.country || 'India'}
-                  </p>
-                </div>
+                <ProfileField label="City" value={profile.contactInfo?.address?.city} onChange={(value) => handleNestedChange('contactInfo', ['address', 'city'], value)} />
+                <ProfileField label="State" value={profile.contactInfo?.address?.state} onChange={(value) => handleNestedChange('contactInfo', ['address', 'state'], value)} />
+                <ProfileField label="Pincode" value={profile.contactInfo?.address?.pincode} onChange={(value) => handleNestedChange('contactInfo', ['address', 'pincode'], value)} />
+                <ProfileField label="Country" value={profile.contactInfo?.address?.country || 'India'} onChange={(value) => handleNestedChange('contactInfo', ['address', 'country'], value)} />
               </div>
             </div>
 
             {/* Emergency Contact */}
-            <div className="mt-8 pt-8 border-t border-blue-100/80">
-              <h4 className="text-sm font-semibold text-slate-700 mb-4 flex items-center">
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <h4 className="mb-3 flex items-center text-sm font-semibold text-slate-700">
                 <Phone className="w-4 h-4 mr-2 text-indigo-600" />
                 Emergency Contact
               </h4>
-              <div className="p-4 bg-[#F1F5F9] border border-blue-100/70 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1">Name</label>
-                  <p className="text-sm text-slate-900">{profile.contactInfo?.emergencyContact?.name || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1">Relationship</label>
-                  <p className="text-sm text-slate-900">{profile.contactInfo?.emergencyContact?.relationship || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1">Phone</label>
-                  <p className="text-sm text-slate-900">{profile.contactInfo?.emergencyContact?.phone || 'N/A'}</p>
-                </div>
+              <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-3">
+                <ProfileField label="Name" value={profile.contactInfo?.emergencyContact?.name} onChange={(value) => handleNestedChange('contactInfo', ['emergencyContact', 'name'], value)} />
+                <ProfileField label="Relationship" value={profile.contactInfo?.emergencyContact?.relationship} onChange={(value) => handleNestedChange('contactInfo', ['emergencyContact', 'relationship'], value)} />
+                <ProfileField label="Phone" type="tel" value={profile.contactInfo?.emergencyContact?.phone} onChange={(value) => handleNestedChange('contactInfo', ['emergencyContact', 'phone'], value)} />
               </div>
             </div>
           </section>
 
           {/* Bank Information */}
-          <div className="relative overflow-hidden rounded-2xl border border-blue-100/80 bg-[#F8FAFC] p-6 shadow-[0_12px_28px_rgba(15,23,42,0.07)] transition-all duration-300 hover:border-indigo-200 hover:shadow-[0_18px_38px_rgba(30,64,175,0.12)]">
-            <div className="flex items-center space-x-3 mb-6">
-              <CreditCard className="w-6 h-6 text-indigo-600" />
-              <h2 className="text-xl font-bold text-slate-900">Bank Information</h2>
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+            <div className="mb-4 flex items-center space-x-2">
+              <CreditCard className="h-5 w-5 text-indigo-600" />
+              <h2 className="text-base font-semibold text-slate-900">Bank Information</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <p className="text-sm text-slate-500">Account Holder</p>
-                <p className="text-slate-900 font-medium">{profile.bankInfo?.accountHolderName || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Bank Name</p>
-                <p className="text-slate-900 font-medium">{profile.bankInfo?.bankName || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Account Number</p>
-                <p className="text-slate-900 font-medium">{profile.bankInfo?.accountNumber || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">IFSC Code</p>
-                <p className="text-slate-900 font-medium">{profile.bankInfo?.ifscCode || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Branch Name</p>
-                <p className="text-slate-900 font-medium">{profile.bankInfo?.branchName || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Account Type</p>
-                <p className="text-slate-900 font-medium">{profile.bankInfo?.accountType || 'Savings'}</p>
-              </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <ProfileField label="Account Holder" value={profile.bankInfo?.accountHolderName} onChange={(value) => handleNestedChange('bankInfo', ['accountHolderName'], value)} />
+              <ProfileField label="Bank Name" value={profile.bankInfo?.bankName} onChange={(value) => handleNestedChange('bankInfo', ['bankName'], value)} />
+              <ProfileField label="Account Number" value={profile.bankInfo?.accountNumber} onChange={(value) => handleNestedChange('bankInfo', ['accountNumber'], value)} />
+              <ProfileField label="IFSC Code" value={profile.bankInfo?.ifscCode} onChange={(value) => handleNestedChange('bankInfo', ['ifscCode'], value.toUpperCase())} />
+              <ProfileField label="Branch Name" value={profile.bankInfo?.branchName} onChange={(value) => handleNestedChange('bankInfo', ['branchName'], value)} />
+              <ProfileField label="Account Type" value={profile.bankInfo?.accountType || 'Savings'} options={['Savings', 'Current', 'Salary']} onChange={(value) => handleNestedChange('bankInfo', ['accountType'], value)} />
             </div>
           </div>
 
           {/* Salary Information */}
-          <div className="relative overflow-hidden rounded-2xl border border-blue-100/80 bg-[#F8FAFC] p-6 shadow-[0_12px_28px_rgba(15,23,42,0.07)] transition-all duration-300 hover:border-indigo-200 hover:shadow-[0_18px_38px_rgba(30,64,175,0.12)]">
-            <div className="flex items-center space-x-3 mb-6">
-              <DollarSign className="w-6 h-6 text-indigo-600" />
-              <h2 className="text-xl font-bold text-slate-900">Salary Information</h2>
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+            <div className="mb-4 flex items-center space-x-2">
+              <DollarSign className="h-5 w-5 text-indigo-600" />
+              <h2 className="text-base font-semibold text-slate-900">Salary Information</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
-                <p className="text-sm text-slate-500">Basic Salary</p>
-                <p className="text-slate-900 font-medium">
+                <p className="text-[12px] font-semibold text-slate-500">Basic Salary</p>
+                <p className="mt-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] font-medium text-slate-900">
                   {profile.salaryInfo?.currency || 'INR'} {profile.salaryInfo?.basicSalary?.toLocaleString() || '0'}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-slate-500">Pay Frequency</p>
-                <p className="text-slate-900 font-medium">{profile.salaryInfo?.payFrequency || 'Monthly'}</p>
+                <p className="text-[12px] font-semibold text-slate-500">Pay Frequency</p>
+                <p className="mt-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] font-medium text-slate-900">{profile.salaryInfo?.payFrequency || 'Monthly'}</p>
               </div>
             </div>
           </div>
 
           {/* Additional Details */}
-          <div className="relative overflow-hidden rounded-2xl border border-blue-100/80 bg-[#F8FAFC] p-6 mb-12 shadow-[0_12px_28px_rgba(15,23,42,0.07)] transition-all duration-300 hover:border-indigo-200 hover:shadow-[0_18px_38px_rgba(30,64,175,0.12)]">
-            <div className="flex items-center space-x-3 mb-6">
-              <FileText className="w-6 h-6 text-indigo-600" />
-              <h2 className="text-xl font-bold text-slate-900">Additional Details</h2>
+          <div className="relative mb-8 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+            <div className="mb-4 flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-indigo-600" />
+              <h2 className="text-base font-semibold text-slate-900">Additional Details</h2>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div>
-                <p className="text-sm text-slate-500 mb-2">Notes from Admin</p>
-                <div className="p-4 bg-[#F1F5F9] border border-blue-100/70 rounded-xl text-slate-600">
+                <p className="mb-1 text-[12px] font-semibold text-slate-500">Notes from Admin</p>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] text-slate-600">
                   {profile.personalInfo?.notes || 'No notes provided.'}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
-                  <p className="text-sm text-slate-500">Employment Type</p>
-                  <p className="text-slate-900 font-medium">{profile.workInfo?.employmentType || 'Full-time'}</p>
+                  <p className="text-[12px] font-semibold text-slate-500">Employment Type</p>
+                  <p className="mt-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] font-medium text-slate-900">{profile.workInfo?.employmentType || 'Full-time'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Work Location</p>
-                  <p className="text-slate-900 font-medium">{profile.workInfo?.workLocation || 'Office'}</p>
+                  <p className="text-[12px] font-semibold text-slate-500">Work Location</p>
+                  <p className="mt-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] font-medium text-slate-900">{profile.workInfo?.workLocation || 'Office'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Work Shift</p>
-                  <p className="text-slate-900 font-medium">{profile.workInfo?.workShift || 'Morning'}</p>
+                  <p className="text-[12px] font-semibold text-slate-500">Work Shift</p>
+                  <p className="mt-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] font-medium text-slate-900">{profile.workInfo?.workShift || 'Morning'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Reporting Manager</p>
-                  <p className="text-slate-900 font-medium">
+                  <p className="text-[12px] font-semibold text-slate-500">Reporting Manager</p>
+                  <p className="mt-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] font-medium text-slate-900">
                     {profile.workInfo?.reportingManager
                       ? `${profile.workInfo.reportingManager.personalInfo?.firstName} ${profile.workInfo.reportingManager.personalInfo?.lastName}`
                       : 'Not Assigned'}
@@ -439,7 +427,7 @@ const EmployeeProfile = () => {
               </div>
             </div>
           </div>
-        </div>
+        </form>
       </div>
     </EmployeeLayout>
   );

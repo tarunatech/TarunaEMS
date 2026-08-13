@@ -372,8 +372,9 @@ const MeetingRow = ({ meeting, onEdit, onMarkDone }) => {
 };
 
 const MeetingEditModal = ({ form, setForm, onSubmit, onClose }) => (
-  <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
-    <form onSubmit={onSubmit} className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
+    <form onSubmit={onSubmit} className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Edit Meeting</p>

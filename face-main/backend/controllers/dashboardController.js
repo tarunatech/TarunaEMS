@@ -7,6 +7,12 @@ import Attendance from '../models/Attendance.js';
 import Holiday from '../models/Holiday.js';
 import Payslip from '../models/Payslip.js';
 import Department from '../models/Department.js';
+import Lead from '../models/Lead.js';
+import SalesPipeline from '../models/SalesPipeline.js';
+import InterviewSchedule from '../models/InterviewSchedule.js';
+import Message from '../models/Message.js';
+import Group from '../models/Group.js';
+import GroupMessage from '../models/GroupMessage.js';
 
 // @desc    Get admin dashboard statistics
 // @route   GET /api/dashboard/stats
@@ -270,6 +276,17 @@ export const getRecentActivities = async (req, res) => {
       .sort({ completedDate: -1 })
       .limit(5);
 
+    const recentLeads = await Lead.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    const recentInterviews = await InterviewSchedule.find()
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
     // Format activities
     const activities = [];
 
@@ -314,6 +331,43 @@ export const getRecentActivities = async (req, res) => {
       });
     }
 
+    recentLeads.forEach((lead) => {
+      const leadName = lead.fullName || `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.company || 'Lead';
+      activities.push({
+        id: lead._id,
+        type: lead.priority === 'Hot' || lead.priority === 'High' ? 'warning' : 'info',
+        action: `New lead added: ${leadName}`,
+        description: `${lead.company || 'No company'} • Status: ${lead.status || 'New'} • Priority: ${lead.priority || 'Medium'}`,
+        user: lead.assignedTo ? 'Sales lead' : 'Unassigned lead',
+        time: lead.createdAt || lead.updatedAt,
+        category: 'lead',
+        details: {
+          leadId: lead.leadId,
+          status: lead.status,
+          priority: lead.priority,
+          company: lead.company
+        }
+      });
+    });
+
+    recentInterviews.forEach((interview) => {
+      activities.push({
+        id: interview._id,
+        type: interview.status === 'Rejected' || interview.status === 'Cancelled' ? 'error' : 'info',
+        action: `New interview scheduled: ${interview.candidateName}`,
+        description: `${interview.position || 'Position'} • ${interview.interviewRound || 'Round'} • ${new Date(interview.interviewDate).toLocaleDateString('en-IN')} at ${interview.interviewTime || 'N/A'}`,
+        user: interview.createdBy?.name || 'HR',
+        time: interview.createdAt || interview.interviewDate,
+        category: 'interview',
+        details: {
+          candidateName: interview.candidateName,
+          status: interview.status,
+          position: interview.position,
+          interviewDate: interview.interviewDate
+        }
+      });
+    });
+
     // Sort all activities by time and limit
     activities.sort((a, b) => new Date(b.time) - new Date(a.time));
     const limitedActivities = activities.slice(0, 10);
@@ -341,76 +395,189 @@ export const getRecentActivities = async (req, res) => {
 export const getUpcomingEvents = async (req, res) => {
   try {
     const upcomingEvents = [];
-    const departmentNameCache = new Map();
+    const now = new Date();
+    const next30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const userId = req.user.id || req.user._id;
 
-    const getDepartmentName = async (department) => {
-      if (!department) return 'General';
-      if (typeof department === 'object') return department.name || department.departmentName || department.code || 'General';
-
-      const departmentId = String(department);
-      if (departmentNameCache.has(departmentId)) return departmentNameCache.get(departmentId);
-
-      const departmentDoc = await Department.findById(departmentId);
-      const departmentName = departmentDoc?.name || 'General';
-      departmentNameCache.set(departmentId, departmentName);
-      return departmentName;
+    const addEvent = (event) => {
+      upcomingEvents.push({
+        date: event.date || event.time || event.createdAt || now,
+        priority: event.priority || 'Medium',
+        ...event,
+      });
     };
 
-    // Get upcoming task deadlines
-    const upcomingTasks = await Task.find({
-      status: { $nin: ['Completed', 'Cancelled'] },
-      dueDate: { 
-        $gte: new Date(),
-        $lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Next 7 days
+    if (req.user.role === 'admin') {
+      const nextPayslipDueDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      if (nextPayslipDueDate < now) {
+        nextPayslipDueDate.setMonth(nextPayslipDueDate.getMonth() + 1);
       }
-    })
-      .populate('assignedTo', 'personalInfo.firstName personalInfo.lastName workInfo.department')
-      .sort({ dueDate: 1 })
-      .limit(5);
 
-    for (const task of upcomingTasks) {
-      const taskDept = task.assignedTo?.workInfo?.department;
-      upcomingEvents.push({
-        id: task._id,
-        title: `Task Deadline: ${task.title}`,
-        date: task.dueDate,
-        time: new Date(task.dueDate).toLocaleTimeString(),
-        department: await getDepartmentName(taskDept),
-        type: 'task',
-        priority: task.priority
+      const daysUntilPayslipDue = Math.ceil((nextPayslipDueDate - now) / (1000 * 60 * 60 * 24));
+      if (daysUntilPayslipDue >= 0 && daysUntilPayslipDue <= 3) {
+        addEvent({
+          id: 'payslip-due-next',
+          title: 'Payslip generation due',
+          description: 'Monthly payslips are due on the 1st of the month.',
+          date: nextPayslipDueDate,
+          time: 'All Day',
+          department: 'Finance',
+          type: 'payslip',
+          priority: 'High'
+        });
+      }
+
+      const leadsWithMeetings = await Lead.find()
+        .sort({ updatedAt: -1 })
+        .limit(100)
+        .lean();
+
+      leadsWithMeetings
+        .flatMap((lead) => (Array.isArray(lead.meetings) ? lead.meetings : []).map((meeting) => ({ lead, meeting })))
+        .filter(({ meeting }) => {
+          const scheduledDate = meeting.scheduledDate ? new Date(meeting.scheduledDate) : null;
+          return scheduledDate && scheduledDate >= now && scheduledDate <= next30Days && meeting.status !== 'Cancelled';
+        })
+        .sort((a, b) => new Date(a.meeting.scheduledDate) - new Date(b.meeting.scheduledDate))
+        .slice(0, 6)
+        .forEach(({ lead, meeting }) => {
+          const leadName = lead.fullName || `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.company || lead.leadId || 'Lead';
+          addEvent({
+            id: `meeting-${meeting._id || meeting.id || lead._id}`,
+            title: `${meeting.type || 'Sales'} meeting: ${leadName}`,
+            description: `${lead.company || 'No company'} • ${meeting.status || 'Scheduled'} • ${meeting.agenda || 'Meeting scheduled'}`,
+            date: meeting.scheduledDate,
+            time: new Date(meeting.scheduledDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+            department: 'Sales',
+            type: 'meeting',
+            priority: lead.priority || 'Medium'
+          });
+        });
+
+      upcomingEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      return res.json({
+        success: true,
+        events: upcomingEvents.slice(0, 8)
       });
     }
 
-    // Get upcoming leave periods
-    const upcomingLeaves = await Leave.find({
-      status: 'Approved',
-      startDate: {
-        $gte: new Date(),
-        $lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Next 7 days
-      }
-    })
-      .populate('employee', 'personalInfo.firstName personalInfo.lastName workInfo.department')
-      .sort({ startDate: 1 })
-      .limit(5);
+    const employee = await Employee.findOne({ user: userId })
+      .populate('workInfo.department', 'name code')
+      .lean();
 
-    for (const leave of upcomingLeaves) {
-      const leaveDept = leave.employee?.workInfo?.department;
-      upcomingEvents.push({
-        id: leave._id,
-        title: `${leave.employee?.fullName} on ${leave.leaveType} leave`,
-        date: leave.startDate,
-        time: 'All Day',
-        department: await getDepartmentName(leaveDept),
-        type: 'leave',
-        duration: leave.duration
+    const employeeName = `${employee?.personalInfo?.firstName || ''} ${employee?.personalInfo?.lastName || ''}`.trim() || 'You';
+    const departmentName = (() => {
+      const department = employee?.workInfo?.department;
+      if (!department) return '';
+      if (typeof department === 'object') return `${department.name || ''} ${department.code || ''}`.toLowerCase();
+      return String(department).toLowerCase();
+    })();
+    const positionName = String(employee?.workInfo?.position || employee?.workInfo?.designation || '').toLowerCase();
+    const isSalesEmployee = ['sales', 'bde', 'business development'].some((key) => departmentName.includes(key) || positionName.includes(key));
+    const isHrEmployee = ['hr', 'human resource', 'human resources'].some((key) => departmentName.includes(key) || positionName.includes(key));
+
+    const upcomingHolidays = await Holiday.find({
+      date: { $gte: now, $lte: next30Days }
+    }).sort({ date: 1 }).limit(4).lean();
+
+    upcomingHolidays.forEach((holiday) => {
+      addEvent({
+        id: `holiday-${holiday._id}`,
+        title: holiday.title,
+        message: `${holiday.type || 'Holiday'} on ${new Date(holiday.date).toLocaleDateString('en-IN')}${holiday.description ? ` - ${holiday.description}` : ''}`,
+        date: holiday.date,
+        type: 'holiday',
+        priority: 'Low'
       });
+    });
+
+    if (employee?._id) {
+      const upcomingTasks = await Task.find({
+        assignedTo: employee._id,
+        status: { $nin: ['Completed', 'Cancelled'] },
+        dueDate: {
+          $gte: now,
+          $lte: next30Days
+        }
+      }).sort({ dueDate: 1 }).limit(5).lean();
+
+      upcomingTasks.forEach((task) => {
+        addEvent({
+          id: `task-${task._id}`,
+          title: `Task: ${task.title || 'Assigned task'}`,
+          message: `${task.status || 'Pending'} • Due ${new Date(task.dueDate).toLocaleDateString('en-IN')} • Progress ${task.progress || 0}%`,
+          date: task.dueDate,
+          type: 'task',
+          priority: task.priority || 'Medium'
+        });
+      });
+
+      const recentLeaves = await Leave.find({
+        $or: [{ employee: employee._id }, { user: userId }]
+      }).sort({ appliedDate: -1, createdAt: -1 }).limit(4).lean();
+
+      recentLeaves.forEach((leave) => {
+        addEvent({
+          id: `leave-${leave._id}`,
+          title: `${leave.leaveType || 'Leave'} request`,
+          message: `${leave.status || 'Pending'} • ${new Date(leave.startDate).toLocaleDateString('en-IN')} to ${new Date(leave.endDate).toLocaleDateString('en-IN')}`,
+          date: leave.startDate || leave.createdAt,
+          type: 'leave',
+          priority: String(leave.status || '').toLowerCase() === 'rejected' ? 'High' : 'Medium'
+        });
+      });
+
+      if (isSalesEmployee) {
+        const recentLeads = await Lead.find({ assignedTo: employee._id }).sort({ updatedAt: -1 }).limit(5).lean();
+        recentLeads.forEach((lead) => {
+          addEvent({
+            id: `lead-${lead._id}`,
+            title: `Lead: ${lead.fullName || `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.company || 'Lead'}`,
+            message: `${lead.status || 'New'} • ${lead.company || 'No company'} • Next follow-up ${lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toLocaleDateString('en-IN') : 'N/A'}`,
+            date: lead.nextFollowUpDate || lead.updatedAt,
+            type: 'lead',
+            priority: lead.priority || 'Medium'
+          });
+        });
+
+        const leadIds = new Set(recentLeads.map((lead) => String(lead._id || lead.id)));
+        const pipelines = await SalesPipeline.find().populate('lead').sort({ updatedAt: -1 }).limit(50).lean();
+        pipelines
+          .filter((pipeline) => leadIds.has(String(pipeline.lead?._id || pipeline.lead?.id || pipeline.lead)))
+          .slice(0, 4)
+          .forEach((pipeline) => {
+            addEvent({
+              id: `pipeline-${pipeline._id}`,
+              title: `Pipeline: ${pipeline.lead?.fullName || pipeline.lead?.leadId || 'Lead pipeline'}`,
+              message: `Stage ${pipeline.currentStage || 'N/A'} • Approval ${pipeline.approval?.status || 'N/A'} • Outcome ${pipeline.outcome?.status || 'open'}`,
+              date: pipeline.updatedAt,
+              type: 'pipeline',
+              priority: pipeline.approval?.status === 'rejected' ? 'High' : 'Medium'
+            });
+          });
+      }
+
+      if (isHrEmployee) {
+        const interviews = await InterviewSchedule.find({ createdBy: userId }).sort({ interviewDate: 1, interviewTime: 1, createdAt: -1 }).limit(6).lean();
+        interviews.forEach((interview) => {
+          addEvent({
+            id: `interview-${interview._id}`,
+            title: `Interview: ${interview.candidateName}`,
+            message: `${interview.status || 'Scheduled'} • ${interview.position || 'Position'} • ${new Date(interview.interviewDate).toLocaleDateString('en-IN')} at ${interview.interviewTime || 'N/A'}`,
+            date: interview.interviewDate,
+            type: 'interview',
+            priority: ['Rejected', 'Cancelled'].includes(interview.status) ? 'High' : 'Medium'
+          });
+        });
+      }
     }
 
-    // Sort events by date
     upcomingEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     res.json({
       success: true,
+      employee: employeeName,
       events: upcomingEvents.slice(0, 6)
     });
 
@@ -552,6 +719,79 @@ export const getUserNotifications = async (req, res) => {
           time: new Date().toISOString(),
           type: 'error',
           category: 'attendance',
+          unread: true
+        });
+      });
+
+      const recentAttendanceUpdates = await Attendance.find({})
+        .populate('employee', 'personalInfo.firstName personalInfo.lastName')
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .limit(6);
+
+      recentAttendanceUpdates.forEach(record => {
+        const employeeName = record.employee?.fullName || `${record.employee?.personalInfo?.firstName || ''} ${record.employee?.personalInfo?.lastName || ''}`.trim() || 'Employee';
+        notifications.push({
+          id: `admin-attendance-${record._id}`,
+          message: `${employeeName}'s attendance is ${record.status}`,
+          user: employeeName,
+          time: record.updatedAt || record.createdAt || record.checkInTime,
+          type: record.status === 'Late' || record.status === 'Half Day' ? 'warning' : 'success',
+          category: 'attendance',
+          unread: true
+        });
+      });
+
+      const recentAdminTasks = await Task.find({})
+        .populate('assignedTo', 'personalInfo.firstName personalInfo.lastName')
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .limit(6);
+
+      recentAdminTasks.forEach(task => {
+        const employeeName = task.assignedTo?.fullName || `${task.assignedTo?.personalInfo?.firstName || ''} ${task.assignedTo?.personalInfo?.lastName || ''}`.trim() || 'Employee';
+        notifications.push({
+          id: `admin-task-${task._id}-${task.status}`,
+          message: `${employeeName}'s task "${task.title}" is ${task.status}`,
+          user: employeeName,
+          time: task.updatedAt || task.createdAt,
+          type: task.status === 'Completed' ? 'success' : task.priority === 'High' || task.priority === 'Critical' ? 'warning' : 'info',
+          category: 'task',
+          unread: true
+        });
+      });
+
+      const recentLeads = await Lead.find({})
+        .populate('assignedTo', 'personalInfo.firstName personalInfo.lastName')
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .limit(8);
+
+      recentLeads.forEach(lead => {
+        const leadName = `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.company || 'Lead';
+        const assignedName = lead.assignedTo?.fullName || `${lead.assignedTo?.personalInfo?.firstName || ''} ${lead.assignedTo?.personalInfo?.lastName || ''}`.trim();
+        notifications.push({
+          id: `admin-lead-${lead._id}-${lead.status || 'updated'}`,
+          message: `${leadName} lead is now ${lead.status || 'updated'}${assignedName ? ` with ${assignedName}` : ''}`,
+          user: assignedName || leadName,
+          time: lead.updatedAt || lead.createdAt,
+          type: ['Converted', 'Closed Won'].includes(lead.status) ? 'success' : 'info',
+          category: 'lead',
+          unread: true
+        });
+      });
+
+      const recentPipelines = await SalesPipeline.find({})
+        .populate('lead', 'firstName lastName company')
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .limit(8);
+
+      recentPipelines.forEach(pipeline => {
+        const leadName = `${pipeline.lead?.firstName || ''} ${pipeline.lead?.lastName || ''}`.trim() || pipeline.lead?.company || pipeline.title || 'Pipeline';
+        notifications.push({
+          id: `admin-pipeline-${pipeline._id}-${pipeline.currentStage || 'updated'}`,
+          message: `${leadName} pipeline moved to ${pipeline.currentStage || pipeline.outcome?.status || 'updated'}`,
+          user: leadName,
+          time: pipeline.updatedAt || pipeline.createdAt,
+          type: pipeline.outcome?.status === 'won' ? 'success' : 'info',
+          category: 'pipeline',
           unread: true
         });
       });
@@ -800,7 +1040,171 @@ export const getUserNotifications = async (req, res) => {
             unread: true
           });
         });
+
+        const departmentName = String(employee.workInfo?.department || '').toLowerCase();
+        if (departmentName.includes('sales') || departmentName.includes('bde')) {
+          const assignedLeads = await Lead.find({ assignedTo: employee._id })
+            .sort({ updatedAt: -1, createdAt: -1 })
+            .limit(8);
+
+          assignedLeads.forEach(lead => {
+            const leadName = `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.company || 'Lead';
+            notifications.push({
+              id: `employee-lead-${lead._id}-${lead.status || 'updated'}`,
+              message: `${leadName} lead is ${lead.status || 'updated'}`,
+              user: leadName,
+              time: lead.updatedAt || lead.createdAt,
+              type: ['Converted', 'Closed Won'].includes(lead.status) ? 'success' : 'info',
+              category: 'lead',
+              unread: true
+            });
+
+            (lead.meetings || [])
+              .filter(meeting => meeting?.scheduledDate && new Date(meeting.scheduledDate) >= now && new Date(meeting.scheduledDate) <= next14Days)
+              .slice(0, 3)
+              .forEach(meeting => {
+                notifications.push({
+                  id: `employee-meeting-${lead._id}-${meeting._id || meeting.scheduledDate}`,
+                  message: `${meeting.meetingType || 'Meeting'} scheduled with ${leadName} on ${new Date(meeting.scheduledDate).toLocaleString()}`,
+                  user: leadName,
+                  time: meeting.scheduledDate,
+                  type: 'info',
+                  category: 'sales',
+                  unread: true
+                });
+              });
+          });
+
+          const assignedLeadIds = new Set(assignedLeads.map(lead => String(lead._id || lead.id)));
+          const assignedPipelines = await SalesPipeline.find({})
+            .populate('lead', 'firstName lastName company assignedTo')
+            .sort({ updatedAt: -1, createdAt: -1 })
+            .limit(50);
+
+          assignedPipelines
+            .filter(pipeline => {
+              const leadId = String(pipeline.lead?._id || pipeline.lead?.id || pipeline.lead || '');
+              const leadAssignee = String(pipeline.lead?.assignedTo || '');
+              return assignedLeadIds.has(leadId) || leadAssignee === String(employee._id);
+            })
+            .slice(0, 8)
+            .forEach(pipeline => {
+            const leadName = `${pipeline.lead?.firstName || ''} ${pipeline.lead?.lastName || ''}`.trim() || pipeline.lead?.company || pipeline.title || 'Pipeline';
+            notifications.push({
+              id: `employee-pipeline-${pipeline._id}-${pipeline.currentStage || 'updated'}`,
+              message: `${leadName} pipeline is at ${pipeline.currentStage || pipeline.outcome?.status || 'updated'}`,
+              user: leadName,
+              time: pipeline.updatedAt || pipeline.createdAt,
+              type: pipeline.outcome?.status === 'won' ? 'success' : 'info',
+              category: 'pipeline',
+              unread: true
+            });
+          });
+        }
+
+        if (departmentName.includes('hr')) {
+          const interviews = await InterviewSchedule.find({})
+            .sort({ updatedAt: -1, createdAt: -1 })
+            .limit(8);
+
+          interviews.forEach(interview => {
+            const candidateName = interview.candidateName || interview.email || 'Candidate';
+            notifications.push({
+              id: `employee-interview-${interview._id}-${interview.status || 'updated'}`,
+              message: `${candidateName} interview is ${interview.status || 'scheduled'}`,
+              user: candidateName,
+              time: interview.updatedAt || interview.createdAt || interview.scheduledDate,
+              type: interview.status === 'Selected' ? 'success' : interview.status === 'Rejected' ? 'error' : 'info',
+              category: 'interview',
+              unread: true
+            });
+          });
+        }
+
       }
+    }
+
+    const existingNotificationIds = new Set(notifications.map(notification => notification.id));
+    const directTeamMessages = await Message.find({
+      to: req.user.id,
+      fromBot: false
+    })
+      .populate('from', 'name email role')
+      .sort({ timestamp: -1, createdAt: -1 })
+      .limit(40);
+
+    const directChatsBySender = new Map();
+    directTeamMessages
+      .filter(message => {
+        const senderId = String(message.from?._id || message.from?.id || message.from || '');
+        return senderId && senderId !== String(req.user.id) && message.from?.role === 'employee';
+      })
+      .forEach(message => {
+        const senderId = String(message.from?._id || message.from?.id || message.from);
+        const senderName = message.from?.name || message.from?.email || 'Team member';
+        const existing = directChatsBySender.get(senderId);
+        if (!existing) {
+          directChatsBySender.set(senderId, {
+            senderName,
+            latestMessage: message,
+            count: 1
+          });
+          return;
+        }
+        existing.count += 1;
+      });
+
+    directChatsBySender.forEach(({ senderName, latestMessage, count }, senderId) => {
+      const id = `chat-thread-${senderId}-${latestMessage._id}`;
+      if (existingNotificationIds.has(id)) return;
+      notifications.push({
+        id,
+        message: `${count} new message${count > 1 ? 's' : ''} from ${senderName}: "${String(latestMessage.text || '').slice(0, 80)}"`,
+        user: senderName,
+        time: latestMessage.timestamp || latestMessage.createdAt,
+        type: 'info',
+        category: 'chat',
+        count,
+        unread: true
+      });
+      existingNotificationIds.add(id);
+    });
+
+    const myGroups = await Group.find({
+      'members.user': req.user.id,
+      isActive: true
+    })
+      .sort({ updatedAt: -1 })
+      .limit(8);
+
+    for (const group of myGroups) {
+      const latestGroupMessages = await GroupMessage.find({
+        group: group._id,
+        isDeleted: false
+      })
+        .populate('sender', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(3);
+
+      const incomingGroupMessages = latestGroupMessages
+        .filter(message => String(message.sender?._id || message.sender?.id || message.sender) !== String(req.user.id))
+      const latestMessage = incomingGroupMessages[0];
+      if (!latestMessage) continue;
+
+      const id = `group-chat-thread-${group._id}-${latestMessage._id}`;
+      if (existingNotificationIds.has(id)) continue;
+      const senderName = latestMessage.sender?.name || latestMessage.sender?.email || 'Team member';
+      notifications.push({
+        id,
+        message: `${incomingGroupMessages.length} new group message${incomingGroupMessages.length > 1 ? 's' : ''} in ${group.name} from ${senderName}: "${String(latestMessage.text || '').slice(0, 80)}"`,
+        user: group.name,
+        time: latestMessage.createdAt,
+        type: 'info',
+        category: 'chat',
+        count: incomingGroupMessages.length,
+        unread: true
+      });
+      existingNotificationIds.add(id);
     }
 
     // Sort notifications by time (most recent first)

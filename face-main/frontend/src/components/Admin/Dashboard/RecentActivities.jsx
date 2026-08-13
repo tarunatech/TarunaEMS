@@ -43,6 +43,8 @@ const RecentActivities = ({ activities = [], loading = false }) => {
     if (category.includes('leave') || action.includes('leave')) return '/admin/leaves';
     if (category.includes('employee') || action.includes('employee')) return '/admin/employees';
     if (category.includes('task') || action.includes('task')) return '/admin/tasks';
+    if (category.includes('lead') || action.includes('lead')) return '/admin/sales';
+    if (category.includes('interview') || action.includes('interview')) return '/admin/interviews';
     if (category.includes('attendance') || action.includes('attendance')) return '/admin/attendance';
     if (category.includes('department') || action.includes('department')) return '/admin/department';
     if (category.includes('payslip') || action.includes('payslip')) return '/admin/payslips';

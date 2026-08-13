@@ -7,7 +7,6 @@ import {
   Calendar,
   Clock,
   FileText,
-  Bell,
   LogOut,
   ChevronDown,
   Menu,
@@ -29,10 +28,28 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { allowedKeysForDepartment, getDepartmentName, normalizeDepartment } from '../../../utils/departmentAccess';
-import { getApiFileUrl } from '../../../utils/api';
+import { dashboardAPI, getApiFileUrl } from '../../../utils/api';
 import logo from "../../../assets/logo.jpg";
 import EmployeeHrBot from "./EmployeeHrBot";
 import { useTheme } from "../../../hooks/useTheme";
+import NotificationBell from "../../Admin/Header/NotificationBell";
+
+const getNotificationStorageKey = (suffix) => {
+  const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId') || localStorage.getItem('employeeId') || 'employee';
+  return `employee-notifications-${userId}-${suffix}`;
+};
+
+const readNotificationSet = (suffix) => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(getNotificationStorageKey(suffix)) || '[]'));
+  } catch {
+    return new Set();
+  }
+};
+
+const writeNotificationSet = (suffix, values) => {
+  localStorage.setItem(getNotificationStorageKey(suffix), JSON.stringify(Array.from(values)));
+};
 
 const getStoredDepartment = () => {
   const stored = getDepartmentName(
@@ -75,7 +92,6 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     return localStorage.getItem('sidebar-collapsed') === 'true';
   });
   const [profileDropdown, setProfileDropdown] = useState(false);
-  const [notificationDropdown, setNotificationDropdown] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { isDark, toggleTheme } = useTheme();
 
@@ -130,38 +146,15 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     return () => window.removeEventListener('profile-image-updated', handleProfileImageUpdated);
   }, []);
 
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      message: "Welcome to the company!",
-      time: "1 hour ago",
-      unread: true,
-    },
-    {
-      id: 2,
-      message: "Please complete your profile",
-      time: "2 hours ago",
-      unread: true,
-    },
-    {
-      id: 3,
-      message: "Team meeting scheduled for tomorrow",
-      time: "1 day ago",
-      unread: false,
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   const location = useLocation();
   const navigate = useNavigate();
-  const notificationRef = useRef(null);
   const profileRef = useRef(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-        setNotificationDropdown(false);
-      }
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setProfileDropdown(false);
       }
@@ -170,6 +163,48 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await dashboardAPI.getUserNotifications();
+      if (response.data.success) {
+        const readIds = readNotificationSet('read');
+        const dismissedIds = readNotificationSet('dismissed');
+        const nextNotifications = (response.data.data || [])
+          .map((notification, index) => {
+            const id = String(notification.id || `notification-${index}`);
+            return {
+              id,
+              message: notification.message,
+              user: notification.user,
+              time: notification.time,
+              type: notification.type || 'info',
+              category: notification.category || 'general',
+              count: notification.count || 1,
+              unread: readIds.has(id) ? false : (notification.unread ?? true)
+            };
+          })
+          .filter(notification => !dismissedIds.has(notification.id));
+
+        setNotifications(nextNotifications);
+      } else {
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error('Failed to load employee notifications:', error);
+      setNotifications([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = window.setInterval(fetchNotifications, 45000);
+    window.addEventListener('employee-notifications-refresh', fetchNotifications);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('employee-notifications-refresh', fetchNotifications);
     };
   }, []);
 
@@ -245,14 +280,31 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
   };
 
   const markAsRead = (notificationId) => {
-    setNotifications(notifications.map(n =>
-      n.id === notificationId ? { ...n, unread: false } : n
+    const id = String(notificationId);
+    const readIds = readNotificationSet('read');
+    readIds.add(id);
+    writeNotificationSet('read', readIds);
+    setNotifications(prev => prev.map(n =>
+      n.id === id ? { ...n, unread: false } : n
     ));
+    dashboardAPI.markNotificationAsRead(id).catch(() => {});
   };
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+    const readIds = readNotificationSet('read');
+    notifications.forEach(notification => readIds.add(String(notification.id)));
+    writeNotificationSet('read', readIds);
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+    dashboardAPI.markAllNotificationsAsRead().catch(() => {});
     toast.success('All notifications marked as read');
+  };
+
+  const dismissNotification = (notificationId) => {
+    const id = String(notificationId);
+    const dismissedIds = readNotificationSet('dismissed');
+    dismissedIds.add(id);
+    writeNotificationSet('dismissed', dismissedIds);
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const unreadNotifications = notifications.filter((n) => n.unread).length;
@@ -441,63 +493,14 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
             {/* Right Section */}
             <div className="flex items-center gap-2">
               {/* Notifications */}
-              <div className="relative" ref={notificationRef}>
-                <button
-                  onClick={() => setNotificationDropdown(!notificationDropdown)}
-                  className="relative p-2 text-slate-500 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150"
-                  aria-label="Notifications"
-                >
-                  <Bell strokeWidth={1.75} className="w-[19px] h-[19px]" />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute top-1 right-1 w-[7px] h-[7px] bg-indigo-500 rounded-full ring-2 ring-white" />
-                  )}
-                </button>
-
-                {notificationDropdown && (
-                  <div className="fixed left-2 top-14 z-50 mt-2 w-[calc(100vw-1.5rem)] max-w-80 -translate-x-1/2 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xl shadow-slate-900/[0.08] animate-dropdown-in md:absolute md:left-auto md:right-0 md:top-full md:translate-x-0">
-                    <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                      <h3 className="text-[13px] font-semibold text-slate-900">Notifications</h3>
-                      {unreadNotifications > 0 && (
-                        <button
-                          onClick={markAllAsRead}
-                          className="text-[12px] font-medium text-indigo-600 hover:text-indigo-700 transition-colors duration-150"
-                        >
-                          Mark all as read
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="max-h-80 overflow-y-auto">
-                      {notifications.length > 0 ? (
-                        notifications.map((notification) => (
-                          <div
-                            key={notification.id}
-                            onClick={() => markAsRead(notification.id)}
-                            className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-X50 cursor-pointer transition-colors duration-150 ${notification.unread ? 'bg-indigo-50/40' : ''}`}
-                          >
-                            <div className="flex items-start gap-2.5">
-                              <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${notification.unread ? 'bg-indigo-500' : 'bg-slate-300'}`} />
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-[13px] leading-snug ${notification.unread ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>
-                                  {notification.message}
-                                </p>
-                                <p className="text-[11px] text-slate-400 mt-0.5">
-                                  {notification.time}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-8 text-center">
-                          <Bell className="w-10 h-10 text-slate-200 mx-auto mb-2.5" />
-                          <p className="text-slate-400 text-[13px]">No notifications</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <NotificationBell
+                unreadCount={unreadNotifications}
+                notifications={notifications}
+                onNotificationRead={markAsRead}
+                onMarkAllRead={markAllAsRead}
+                onDismiss={dismissNotification}
+                onRefresh={fetchNotifications}
+              />
 
               <div className="w-px h-5 bg-slate-200 mx-1" />
 

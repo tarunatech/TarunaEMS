@@ -9,6 +9,7 @@ import fs from 'fs/promises';
 import * as faceService from '../services/faceRecognitionService.js';
 import { getSocketIdForUser } from '../socket/chat.js';
 import { measurePerformance } from '../utils/performanceLogger.js';
+import { facesDir } from '../config/uploadPaths.js';
 
 // Initialize face models on startup
 faceService.initializeFaceModels().catch(err => {
@@ -42,10 +43,9 @@ const invalidateFaceCache = (userId) => {
 
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
-    const uploadDir = 'uploads/faces';
     try {
-      await fs.mkdir(uploadDir, { recursive: true });
-      cb(null, uploadDir);
+      await fs.mkdir(facesDir, { recursive: true });
+      cb(null, facesDir);
     } catch (error) {
       cb(error);
     }

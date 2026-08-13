@@ -315,7 +315,12 @@ const EmployeeAttendance = () => {
         limit: 31
       });
       if (response.data.success) {
-        setAttendanceHistory(response.data.data);
+        const history = Array.isArray(response.data.data)
+          ? response.data.data
+          : Array.isArray(response.data.data?.attendance)
+            ? response.data.data.attendance
+            : [];
+        setAttendanceHistory(history);
         setAttendanceStats(response.data.summary);
       }
     } catch (error) {
@@ -391,6 +396,19 @@ const EmployeeAttendance = () => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
+  };
+
+  const getRecordWorkingTime = (record) => {
+    if (record.workingHours) return record.workingHours;
+    if (record.totalWorkingTime) return record.totalWorkingTime;
+    if (record.workingMinutes || record.totalWorkingMinutes) {
+      return formatWorkingTime(record.workingMinutes || record.totalWorkingMinutes);
+    }
+    if (record.checkInTime && record.checkOutTime) {
+      const diffMinutes = Math.max(0, Math.floor((new Date(record.checkOutTime) - new Date(record.checkInTime)) / 60000));
+      return formatWorkingTime(diffMinutes);
+    }
+    return '0h 0m';
   };
 
   return (
@@ -638,27 +656,68 @@ const EmployeeAttendance = () => {
               <p className="text-[13px] text-slate-500 font-medium">No attendance records for this month</p>
             </div>
           ) : (
-            <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
-              {attendanceHistory.map((record) => (
-                <div key={record._id} className="attendance-soft-row rounded-lg border border-slate-200/80 bg-slate-50 p-3 transition-colors duration-150 hover:bg-slate-100">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-[14px] font-semibold leading-snug text-slate-900">{formatDate(record.date)}</p>
-                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs ${getStatusColor(record.status)}`}>
-                      {record.status || 'Present'}
-                    </span>
-                  </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-[13px] sm:flex sm:items-center sm:gap-6">
-                    <div className="rounded-md border border-slate-200/70 bg-white px-3 py-2 sm:border-0 sm:bg-transparent sm:p-0">
-                      <p className="text-[11px] font-medium uppercase text-slate-500">In</p>
-                      <p className="mt-0.5 font-medium text-slate-900">{formatTime(record.checkInTime)}</p>
+            <div className="max-h-[28rem] overflow-y-auto pr-1">
+              <div className="hidden overflow-hidden rounded-xl border border-slate-200/80 md:block">
+                <table className="w-full text-left">
+                  <thead className="border-b border-slate-200 bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-3 text-[11px] font-semibold uppercase text-slate-500">Date</th>
+                      <th className="px-4 py-3 text-[11px] font-semibold uppercase text-slate-500">Check In</th>
+                      <th className="px-4 py-3 text-[11px] font-semibold uppercase text-slate-500">Check Out</th>
+                      <th className="px-4 py-3 text-[11px] font-semibold uppercase text-slate-500">Working Time</th>
+                      <th className="px-4 py-3 text-[11px] font-semibold uppercase text-slate-500">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {attendanceHistory.map((record) => (
+                      <tr key={record._id || record.id || record.date} className="transition-colors hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          <p className="text-[13px] font-semibold text-slate-900">{formatDate(record.date)}</p>
+                          <p className="text-[11px] text-slate-400">{record.date ? new Date(record.date).toLocaleDateString('en-US', { year: 'numeric' }) : ''}</p>
+                        </td>
+                        <td className="px-4 py-3 text-[13px] font-medium text-slate-700">{formatTime(record.checkInTime)}</td>
+                        <td className="px-4 py-3 text-[13px] font-medium text-slate-700">{formatTime(record.checkOutTime)}</td>
+                        <td className="px-4 py-3 text-[13px] font-semibold text-indigo-600">{getRecordWorkingTime(record)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusColor(record.status)}`}>
+                            {record.status || 'Present'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="space-y-3 md:hidden">
+                {attendanceHistory.map((record) => (
+                  <div key={record._id || record.id || record.date} className="attendance-soft-row rounded-lg border border-slate-200/80 bg-slate-50 p-3 transition-colors duration-150 hover:bg-slate-100">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[14px] font-semibold leading-snug text-slate-900">{formatDate(record.date)}</p>
+                        <p className="mt-0.5 text-[11px] text-slate-400">{record.date ? new Date(record.date).toLocaleDateString('en-US', { year: 'numeric' }) : ''}</p>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${getStatusColor(record.status)}`}>
+                        {record.status || 'Present'}
+                      </span>
                     </div>
-                    <div className="rounded-md border border-slate-200/70 bg-white px-3 py-2 sm:border-0 sm:bg-transparent sm:p-0">
-                      <p className="text-[11px] font-medium uppercase text-slate-500">Out</p>
-                      <p className="mt-0.5 font-medium text-slate-900">{formatTime(record.checkOutTime)}</p>
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-[13px]">
+                      <div className="rounded-md border border-slate-200/70 bg-white px-3 py-2">
+                        <p className="text-[10px] font-semibold uppercase text-slate-500">In</p>
+                        <p className="mt-0.5 font-medium text-slate-900">{formatTime(record.checkInTime)}</p>
+                      </div>
+                      <div className="rounded-md border border-slate-200/70 bg-white px-3 py-2">
+                        <p className="text-[10px] font-semibold uppercase text-slate-500">Out</p>
+                        <p className="mt-0.5 font-medium text-slate-900">{formatTime(record.checkOutTime)}</p>
+                      </div>
+                      <div className="rounded-md border border-indigo-100 bg-indigo-50 px-3 py-2">
+                        <p className="text-[10px] font-semibold uppercase text-indigo-500">Total</p>
+                        <p className="mt-0.5 font-semibold text-indigo-700">{getRecordWorkingTime(record)}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>

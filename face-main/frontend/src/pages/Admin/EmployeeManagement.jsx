@@ -1256,6 +1256,15 @@ const EmployeeManagement = () => {
                     <option value="O-">O-</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Nationality</label>
+                  <input
+                    type="text"
+                    value={selectedEmployee.personalInfo?.nationality || ''}
+                    onChange={(e) => updateSelectedEmployee('personalInfo', e.target.value, 'nationality')}
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
               </div>
             </div>
             {/* Contact Information */}
@@ -1281,6 +1290,65 @@ const EmployeeManagement = () => {
                     className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Alternate Phone</label>
+                  <input
+                    type="tel"
+                    value={selectedEmployee.contactInfo?.alternatePhone || ''}
+                    onChange={(e) => updateSelectedEmployee('contactInfo', e.target.value, 'alternatePhone')}
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <h4 className="text-sm sm:text-md font-semibold text-slate-900 mb-2 sm:mb-3">Address</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="lg:col-span-3">
+                      <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Street</label>
+                      <input
+                        type="text"
+                        value={selectedEmployee.contactInfo?.address?.street || ''}
+                        onChange={(e) => updateSelectedEmployee('contactInfo', e.target.value, 'address', 'street')}
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">City</label>
+                      <input
+                        type="text"
+                        value={selectedEmployee.contactInfo?.address?.city || ''}
+                        onChange={(e) => updateSelectedEmployee('contactInfo', e.target.value, 'address', 'city')}
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">State</label>
+                      <input
+                        type="text"
+                        value={selectedEmployee.contactInfo?.address?.state || ''}
+                        onChange={(e) => updateSelectedEmployee('contactInfo', e.target.value, 'address', 'state')}
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Pincode</label>
+                      <input
+                        type="text"
+                        value={selectedEmployee.contactInfo?.address?.pincode || ''}
+                        onChange={(e) => updateSelectedEmployee('contactInfo', e.target.value, 'address', 'pincode')}
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Country</label>
+                      <input
+                        type="text"
+                        value={selectedEmployee.contactInfo?.address?.country || ''}
+                        onChange={(e) => updateSelectedEmployee('contactInfo', e.target.value, 'address', 'country')}
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="sm:col-span-2">
                   <h4 className="text-sm sm:text-md font-semibold text-slate-900 mb-2 sm:mb-3">Emergency Contact</h4>
@@ -1360,6 +1428,69 @@ const EmployeeManagement = () => {
                 </div>
               </div>
             </div>
+            {/* Bank Information */}
+            <div className="space-y-4">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Bank Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Account Holder</label>
+                  <input
+                    type="text"
+                    value={selectedEmployee.bankInfo?.accountHolderName || ''}
+                    onChange={(e) => updateSelectedEmployee('bankInfo', e.target.value, 'accountHolderName')}
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Bank Name</label>
+                  <input
+                    type="text"
+                    value={selectedEmployee.bankInfo?.bankName || ''}
+                    onChange={(e) => updateSelectedEmployee('bankInfo', e.target.value, 'bankName')}
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Account Number</label>
+                  <input
+                    type="text"
+                    value={selectedEmployee.bankInfo?.accountNumber || ''}
+                    onChange={(e) => updateSelectedEmployee('bankInfo', e.target.value, 'accountNumber')}
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">IFSC Code</label>
+                  <input
+                    type="text"
+                    value={selectedEmployee.bankInfo?.ifscCode || ''}
+                    onChange={(e) => updateSelectedEmployee('bankInfo', e.target.value.toUpperCase(), 'ifscCode')}
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Branch Name</label>
+                  <input
+                    type="text"
+                    value={selectedEmployee.bankInfo?.branchName || ''}
+                    onChange={(e) => updateSelectedEmployee('bankInfo', e.target.value, 'branchName')}
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Account Type</label>
+                  <select
+                    value={selectedEmployee.bankInfo?.accountType || 'Savings'}
+                    onChange={(e) => updateSelectedEmployee('bankInfo', e.target.value, 'accountType')}
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="Savings">Savings</option>
+                    <option value="Current">Current</option>
+                    <option value="Salary">Salary</option>
+                  </select>
+                </div>
+              </div>
+            </div>
             <div className="sticky bottom-0 z-20 -mx-4 -mb-20 flex flex-col justify-end gap-2 border-t border-slate-200 bg-[#F8FAFC]/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:-mb-20 sm:flex-row sm:px-5">
               <button
                 type="button"
@@ -1429,14 +1560,26 @@ const EmployeeManagement = () => {
 
       {/* Modal content */}
       <div className="employee-details-view relative w-full max-w-3xl max-h-[74vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
-        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-blue-100 bg-[#F8FAFC]/95 px-4 py-3 backdrop-blur sm:px-5">
+        <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-blue-100 bg-[#F8FAFC]/95 px-4 py-3 backdrop-blur sm:px-5">
           <h2 className="text-lg sm:text-xl font-bold text-slate-900">Employee Details</h2>
-          <button
-            onClick={() => setShowViewModal(false)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setShowViewModal(false);
+                setShowEditModal(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800"
+            >
+              <Edit className="h-3.5 w-3.5" />
+              Edit
+            </button>
+            <button
+              onClick={() => setShowViewModal(false)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900"
+            >
+              Close
+            </button>
+          </div>
         </div>
         {selectedEmployee && (
           <div className="space-y-4 p-4 sm:p-5">

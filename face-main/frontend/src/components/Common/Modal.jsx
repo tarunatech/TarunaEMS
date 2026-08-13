@@ -81,7 +81,7 @@ const Modal = ({
       onClick={handleBackdropClick}
     >
       {/* Enhanced Backdrop with blur */}
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-md" aria-hidden="true" />
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={handleBackdropClick} aria-hidden="true" />
 
       {/* Modal Content */}
       <div
@@ -135,4 +135,3 @@ const Modal = ({
 };
 
 export default Modal;
-

@@ -8,6 +8,10 @@ import Task from '../models/Task.js';
 import Message from '../models/Message.js';
 import Department from '../models/Department.js';
 import Payslip from '../models/Payslip.js';
+import Holiday from '../models/Holiday.js';
+import Lead from '../models/Lead.js';
+import SalesPipeline from '../models/SalesPipeline.js';
+import InterviewSchedule from '../models/InterviewSchedule.js';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
@@ -358,6 +362,17 @@ export const processBotMessage = async (text, userId, isAdmin = false) => {
     } else {
       contextData = await getDetailedEmployeeContext(userId);
       systemPrompt = EMPLOYEE_HR_CONTEXT;
+      const dbResponse = await processEmployeeDbAgent(text, userId);
+      if (dbResponse) {
+        await new Message({
+          from: null,
+          to: userId,
+          text: dbResponse,
+          fromBot: true
+        }).save();
+
+        return { response: dbResponse, intent: 'employee_db_response' };
+      }
     }
     
     let response = '';
@@ -530,6 +545,25 @@ const loadEmployeesForBot = async () => Employee.find({ status: { $ne: 'Terminat
   .populate('workInfo.department', 'name code')
   .lean();
 
+const getCurrentEmployeeForBot = async (userId) => Employee.findOne({ user: userId })
+  .populate('user', 'name email role')
+  .populate('workInfo.department', 'name code')
+  .lean();
+
+const getEmployeeScopedQuery = (employee, userId) => {
+  const clauses = [{ user: userId }];
+  if (employee?._id) clauses.unshift({ employee: employee._id });
+  return { $or: clauses };
+};
+
+const isSalesDepartment = (employee = {}) => {
+  const dept = getDepartmentName(employee).toLowerCase();
+  const position = String(employee.workInfo?.position || employee.workInfo?.designation || '').toLowerCase();
+  return ['sales', 'bde', 'business development'].some((key) => dept.includes(key) || position.includes(key));
+};
+
+const statusBadgeText = (value) => value || 'N/A';
+
 const extractEmployeeQueries = (text = '') => {
   const raw = String(text || '').trim();
   const candidates = [];
@@ -700,6 +734,192 @@ const employeeSalaryResponse = async (employee) => {
       ? `Recent payslips:\n${payslips.map((payslip, index) => `${index + 1}. ${payslip.period?.month}/${payslip.period?.year} - Net: ${formatMoney(payslip.netSalary)} - Status: ${payslip.status}`).join('\n')}`
       : 'No generated payslips found for this employee.'
   ].join('\n');
+};
+
+const currentEmployeeTasksResponse = async (employee) => {
+  if (!employee) return 'I could not find your employee profile, so I cannot fetch your task list. Please contact HR.';
+  const tasks = await Task.find({ assignedTo: employee._id }).sort({ updatedAt: -1 }).limit(12).lean();
+  if (!tasks.length) return 'No tasks are currently assigned to you.';
+
+  const activeTasks = tasks.filter((task) => !['Completed', 'Done', 'Approved'].includes(task.status));
+  return [
+    `Your tasks (${tasks.length} recent):`,
+    `Active: ${activeTasks.length} | Completed/closed: ${tasks.length - activeTasks.length}`,
+    ...tasks.map((task, index) =>
+      `${index + 1}. ${task.title || 'Task'} - ${statusBadgeText(task.status)} - Priority: ${task.priority || 'Medium'} - Progress: ${task.progress || 0}% - Due: ${formatDate(task.dueDate)}`
+    )
+  ].join('\n');
+};
+
+const currentEmployeeAttendanceResponse = async (employee, userId, text) => {
+  const lower = String(text || '').toLowerCase();
+  const today = new Date();
+  const start = lower.includes('today')
+    ? new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    : new Date(today.getFullYear(), today.getMonth(), 1);
+  const end = lower.includes('today')
+    ? new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+    : today;
+  const records = await Attendance.find({
+    ...getEmployeeScopedQuery(employee, userId),
+    date: { $gte: start, $lte: end }
+  }).sort({ date: -1 }).limit(12).lean();
+
+  if (!records.length) return lower.includes('today') ? 'No attendance record found for you today.' : 'No attendance records found for you this month.';
+
+  const counts = records.reduce((acc, record) => {
+    const key = record.status || 'Unknown';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  return [
+    lower.includes('today') ? 'Your attendance today:' : 'Your attendance this month:',
+    `Summary: ${Object.entries(counts).map(([status, count]) => `${status}: ${count}`).join(', ')}`,
+    ...records.slice(0, 8).map((record, index) =>
+      `${index + 1}. ${formatDate(record.date || record.checkInTime)} - ${statusBadgeText(record.status)} - In: ${record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'} - Out: ${record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}`
+    )
+  ].join('\n');
+};
+
+const currentEmployeeLeavesResponse = async (employee, userId) => {
+  const leaves = await Leave.find(getEmployeeScopedQuery(employee, userId)).sort({ appliedDate: -1, createdAt: -1 }).limit(10).lean();
+  const balance = employee?.leaveBalance;
+  if (!leaves.length) {
+    return balance
+      ? `No recent leave requests found. Leave balance: ${balance.remaining ?? 'N/A'} remaining of ${balance.total ?? 'N/A'}.`
+      : 'No recent leave requests found for you.';
+  }
+
+  return [
+    `Your leave status: ${balance ? `${balance.remaining ?? 'N/A'} remaining of ${balance.total ?? 'N/A'}` : 'balance not available'}`,
+    ...leaves.map((leave, index) =>
+      `${index + 1}. ${leave.leaveType || 'Leave'} - ${statusBadgeText(leave.status)} - ${formatDate(leave.startDate)} to ${formatDate(leave.endDate)} (${leave.totalDays || 'N/A'} day${Number(leave.totalDays) === 1 ? '' : 's'}) - ${leave.reason || 'No reason'}`
+    )
+  ].join('\n');
+};
+
+const holidayStatusResponse = async (text) => {
+  const lower = String(text || '').toLowerCase();
+  const now = new Date();
+  const start = lower.includes('today')
+    ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    : now;
+  const end = lower.includes('today')
+    ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+    : new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+
+  const holidays = await Holiday.find({ date: { $gte: start, $lte: end } }).sort({ date: 1 }).limit(lower.includes('today') ? 3 : 8).lean();
+  if (!holidays.length) return lower.includes('today') ? 'Today is not marked as a holiday.' : 'No upcoming holidays found.';
+
+  return [
+    lower.includes('today') ? 'Holiday status for today:' : 'Upcoming holidays:',
+    ...holidays.map((holiday, index) => `${index + 1}. ${holiday.title} - ${formatDate(holiday.date)} - ${holiday.type || 'Holiday'}${holiday.description ? ` - ${holiday.description}` : ''}`)
+  ].join('\n');
+};
+
+const findLeadQuery = (text = '') => {
+  const raw = String(text || '');
+  const quoted = raw.match(/["']([^"']+)["']/);
+  if (quoted?.[1]) return normalizeBotText(quoted[1]);
+  const id = raw.match(/\b(lead[\w-]*\d+|ld[\w-]*\d+)\b/i);
+  if (id?.[1]) return normalizeBotText(id[1]);
+  return normalizeBotText(raw)
+    .replace(/\b(my|lead|leads|pipeline|details?|detail|status|show|get|view|for|of|about|client|customer|company|the|please)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const currentEmployeeLeadsResponse = async (employee, text) => {
+  if (!employee) return 'I could not find your employee profile, so I cannot fetch lead details.';
+  if (!isSalesDepartment(employee)) return 'Lead and pipeline details are available for Sales/BDE employees only.';
+
+  const leads = await Lead.find({ assignedTo: employee._id }).sort({ updatedAt: -1 }).limit(50).lean();
+  if (!leads.length) return 'No leads are currently assigned to you.';
+
+  const query = findLeadQuery(text);
+  const matched = query
+    ? leads.find((lead) => normalizeBotText([lead.leadId, lead.firstName, lead.lastName, lead.fullName, lead.company, lead.email, lead.phone, lead.status].join(' ')).includes(query))
+    : null;
+  const selected = matched ? [matched] : leads.slice(0, 8);
+
+  return [
+    matched ? `Lead details for ${matched.fullName || `${matched.firstName} ${matched.lastName}`}:` : `Your assigned leads (${leads.length} total, showing latest ${selected.length}):`,
+    ...selected.map((lead, index) =>
+      `${index + 1}. ${lead.fullName || `${lead.firstName || ''} ${lead.lastName || ''}`.trim()} (${lead.leadId || 'N/A'}) - ${lead.company || 'No company'} - Status: ${lead.status || 'N/A'} - Priority: ${lead.priority || 'N/A'} - Value: ${formatMoney(lead.estimatedValue)} - Next follow-up: ${formatDate(lead.nextFollowUpDate)}`
+    )
+  ].join('\n');
+};
+
+const currentEmployeePipelineResponse = async (employee, text) => {
+  if (!employee) return 'I could not find your employee profile, so I cannot fetch pipeline details.';
+  if (!isSalesDepartment(employee)) return 'Pipeline details are available for Sales/BDE employees only.';
+
+  const leads = await Lead.find({ assignedTo: employee._id }).sort({ updatedAt: -1 }).limit(100).lean();
+  if (!leads.length) return 'No leads are currently assigned to you, so no pipeline data is available.';
+  const leadIds = new Set(leads.map((lead) => String(lead._id || lead.id)));
+  const pipelines = await SalesPipeline.find().populate('lead').sort({ updatedAt: -1 }).limit(100).lean();
+  const ownPipelines = pipelines.filter((pipeline) => leadIds.has(String(pipeline.lead?._id || pipeline.lead?.id || pipeline.lead)));
+  if (!ownPipelines.length) return 'No active pipeline records found for your assigned leads.';
+
+  const query = findLeadQuery(text);
+  const matched = query
+    ? ownPipelines.find((pipeline) => normalizeBotText([pipeline.lead?.leadId, pipeline.lead?.firstName, pipeline.lead?.lastName, pipeline.lead?.fullName, pipeline.lead?.company, pipeline.currentStage, pipeline.approval?.status, pipeline.outcome?.status].join(' ')).includes(query))
+    : null;
+  const selected = matched ? [matched] : ownPipelines.slice(0, 8);
+
+  return [
+    matched ? `Pipeline details for ${matched.lead?.fullName || `${matched.lead?.firstName || ''} ${matched.lead?.lastName || ''}`.trim()}:` : `Your sales pipelines (${ownPipelines.length} total, showing latest ${selected.length}):`,
+    ...selected.map((pipeline, index) =>
+      `${index + 1}. ${pipeline.lead?.fullName || `${pipeline.lead?.firstName || ''} ${pipeline.lead?.lastName || ''}`.trim() || pipeline.lead?.leadId || 'Lead'} - Stage: ${pipeline.currentStage || 'N/A'} - Approval: ${pipeline.approval?.status || 'N/A'} - Outcome: ${pipeline.outcome?.status || 'open'} - Updated: ${formatDate(pipeline.updatedAt)}`
+    )
+  ].join('\n');
+};
+
+const currentEmployeeInterviewResponse = async (userId, text) => {
+  const interviews = await InterviewSchedule.find({ createdBy: userId }).sort({ interviewDate: 1, interviewTime: 1, createdAt: -1 }).limit(50).lean();
+  if (!interviews.length) return 'No interview schedules submitted by you were found.';
+
+  const query = normalizeBotText(text)
+    .replace(/\b(interview|candidate|status|round|schedule|details?|detail|show|get|view|for|of|about|the|please)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const matched = query
+    ? interviews.find((item) => normalizeBotText([item.candidateName, item.email, item.phone, item.position, item.skills, item.status, item.interviewRound].join(' ')).includes(query))
+    : null;
+  const selected = matched ? [matched] : interviews.slice(0, 8);
+
+  return [
+    matched ? `Interview status for ${matched.candidateName}:` : `Your submitted interviews (${interviews.length} total, showing ${selected.length}):`,
+    ...selected.map((item, index) =>
+      `${index + 1}. ${item.candidateName} - ${item.position} - ${item.interviewRound || '-'} - ${formatDate(item.interviewDate)} at ${item.interviewTime || 'N/A'} - Mode: ${item.interviewMode || 'N/A'} - Status: ${item.status || 'N/A'}`
+    )
+  ].join('\n');
+};
+
+const processEmployeeDbAgent = async (text, userId) => {
+  const lower = String(text || '').toLowerCase();
+  const employee = await getCurrentEmployeeForBot(userId);
+
+  if (/^(hi|hello|hey)\b/.test(lower)) {
+    return [
+      'Hello. I can fetch your live employee data.',
+      'Ask me about your tasks, attendance, leaves, holidays, salary, submitted interview candidates, or Sales/BDE lead and pipeline status.'
+    ].join('\n');
+  }
+  if (lower.includes('pipeline')) return currentEmployeePipelineResponse(employee, text);
+  if (lower.includes('lead') || lower.includes('client')) return currentEmployeeLeadsResponse(employee, text);
+  if (lower.includes('interview') || lower.includes('candidate')) return currentEmployeeInterviewResponse(userId, text);
+  if (lower.includes('task')) return currentEmployeeTasksResponse(employee);
+  if (lower.includes('attendance') || lower.includes('present') || lower.includes('absent') || lower.includes('check in') || lower.includes('check-out') || lower.includes('checkout')) {
+    return currentEmployeeAttendanceResponse(employee, userId, text);
+  }
+  if (lower.includes('leave')) return currentEmployeeLeavesResponse(employee, userId);
+  if (lower.includes('holiday')) return holidayStatusResponse(text);
+  if ((lower.includes('salary') || lower.includes('payslip')) && (lower.includes('generate') || lower.includes('download') || lower.includes('slip'))) return null;
+  if (lower.includes('salary') || lower.includes('payslip') || lower.includes('payroll') || lower.includes('pay ')) return employeeSalaryResponse(employee);
+
+  return null;
 };
 
 const approvalNeedsResponse = async () => {

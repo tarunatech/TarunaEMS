@@ -4,6 +4,7 @@ import path from 'path';
 import InterviewSchedule from '../models/InterviewSchedule.js';
 import { adminOnly, protect } from '../middleware/auth.js';
 import { requireDepartment } from '../middleware/departmentAccess.js';
+import { resumesDir } from '../config/uploadPaths.js';
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ router.use(protect);
 
 const resumeStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/resumes/');
+    cb(null, resumesDir);
   },
   filename: (req, file, cb) => {
     const safeName = file.originalname.replace(/[^a-z0-9.-]/gi, '-').toLowerCase();

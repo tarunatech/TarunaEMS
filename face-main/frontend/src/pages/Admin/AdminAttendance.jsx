@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import { 
-  Users, Calendar, Clock, MapPin, Search, Filter, Download, 
+  Users, Calendar, Clock, MapPin, Search, Download,
   Edit3, Trash2, CheckCircle, XCircle, AlertCircle, Timer,
   TrendingUp, Building2, User, MoreVertical, RefreshCw, Eye
 } from 'lucide-react';
@@ -28,7 +28,6 @@ const AdminAttendance = () => {
     pages: 1,
     total: 0
   });
-  const [showFilters, setShowFilters] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [viewingRecord, setViewingRecord] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -304,13 +303,6 @@ const AdminAttendance = () => {
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 md:mt-0 md:flex md:flex-row md:space-x-3">
               <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center justify-center space-x-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:px-4 md:py-2"
-              >
-                <Filter className="w-4 h-4" />
-                <span>Filters</span>
-              </button>
-              <button
                 onClick={exportAttendanceData}
                 disabled={attendanceRecords.length === 0}
                 className="flex items-center justify-center space-x-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-sm text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 md:py-2"
@@ -396,9 +388,8 @@ const AdminAttendance = () => {
         )}
 
         {/* Filters */}
-        {showFilters && (
-          <div className="premium-panel rounded-2xl p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Filters & Search</h3>
+        <div className="premium-panel rounded-2xl p-4 sm:p-5">
+            <h3 className="text-base font-bold text-slate-900 mb-3">Filters & Search</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div>
                 <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Start Date</label>
@@ -470,7 +461,6 @@ const AdminAttendance = () => {
               </button>
             </div>
           </div>
-        )}
 
         {/* Attendance Records Table */}
         <div className="premium-panel rounded-2xl p-4 sm:p-6">
@@ -911,8 +901,9 @@ const AdminAttendance = () => {
 
         {/* Edit Record Modal */}
         {editingRecord && (
-          <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-md flex items-center justify-center z-50 p-2 sm:p-4">
-            <div className="premium-panel rounded-xl sm:rounded-2xl p-4 sm:p-5 w-full max-w-full sm:max-w-md">
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4">
+            <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-md" onClick={() => setEditingRecord(null)} />
+            <div className="premium-panel relative rounded-xl sm:rounded-2xl p-4 sm:p-5 w-full max-w-full sm:max-w-md">
               <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3">Edit Attendance Record</h3>
               
               <div className="space-y-2 sm:space-y-3">

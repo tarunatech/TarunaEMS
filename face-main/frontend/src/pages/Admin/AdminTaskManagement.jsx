@@ -397,12 +397,12 @@ const AdminTaskManagement = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 bg-slate-0">
+      <div className="space-y-4 bg-slate-0 text-sm">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Task Management</h1>
-            <p className="text-slate-500 text-sm sm:text-base">Assign and track tasks for your team</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Task Management</h1>
+            <p className="text-slate-500 text-xs sm:text-sm">Assign and track tasks for your team</p>
           </div>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 space-x-0 sm:space-x-3">
             <button
@@ -410,14 +410,14 @@ const AdminTaskManagement = () => {
                 fetchTasks();
                 fetchEmployees();
               }}
-              className="px-4 sm:px-6 py-2 sm:py-3 border border-slate-200 bg-white text-slate-700 rounded-lg shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-200 flex items-center"
+              className="px-3 sm:px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-200 flex items-center text-sm"
             >
               <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
               Refresh
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:bg-blue-700 transition-all duration-200 flex items-center"
+              className="px-3 sm:px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:bg-blue-700 transition-all duration-200 flex items-center text-sm"
             >
               <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
               Add Task
@@ -426,62 +426,62 @@ const AdminTaskManagement = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6 hover:shadow-md transition-all duration-200">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="premium-stat-card rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">{stats?.total || 0}</h3>
-                <p className="text-slate-500 text-sm sm:text-base">Total Tasks</p>
+              <div className="min-w-0">
+                <h3 className="text-lg sm:text-xl font-bold leading-tight text-slate-900">{stats?.total || 0}</h3>
+                <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Total Tasks</p>
               </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Target className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm shadow-blue-600/20">
+                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6 hover:shadow-md transition-all duration-200">
+          <div className="premium-stat-card rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-blue-700">{stats?.inProgress || 0}</h3>
-                <p className="text-slate-500 text-sm sm:text-base">In Progress</p>
+              <div className="min-w-0">
+                <h3 className="text-lg sm:text-xl font-bold leading-tight text-blue-700">{stats?.inProgress || 0}</h3>
+                <p className="text-slate-500 text-[11px] sm:text-xs font-medium">In Progress</p>
               </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm shadow-blue-600/20">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6 hover:shadow-md transition-all duration-200">
+          <div className="premium-stat-card rounded-xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-emerald-700">{stats?.completed || 0}</h3>
-                <p className="text-slate-500 text-sm sm:text-base">Completed</p>
+              <div className="min-w-0">
+                <h3 className="text-lg sm:text-xl font-bold leading-tight text-emerald-700">{stats?.completed || 0}</h3>
+                <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Completed</p>
               </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm shadow-emerald-600/20">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6 hover:shadow-md transition-all duration-200">
+          <div className="premium-stat-card rounded-xl border border-red-100 bg-gradient-to-br from-white to-red-50/60 p-3 sm:p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-red-700">{stats?.overdue || 0}</h3>
-                <p className="text-slate-500 text-sm sm:text-base">Overdue</p>
+              <div className="min-w-0">
+                <h3 className="text-lg sm:text-xl font-bold leading-tight text-red-700">{stats?.overdue || 0}</h3>
+                <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Overdue</p>
               </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-red-600 rounded-lg flex items-center justify-center shadow-sm shadow-red-600/20">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex space-x-1 p-1 bg-white border border-slate-200 rounded-xl w-fit shadow-sm">
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'tasks'
+              className={`px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${activeTab === 'tasks'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-900'
                 }`}
@@ -490,7 +490,7 @@ const AdminTaskManagement = () => {
             </button>
             <button
               onClick={() => setActiveTab('daybooks')}
-              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'daybooks'
+              className={`px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${activeTab === 'daybooks'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-900'
                 }`}
@@ -499,7 +499,7 @@ const AdminTaskManagement = () => {
             </button>
             <button
               onClick={() => setActiveTab('performance')}
-              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'performance'
+              className={`px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${activeTab === 'performance'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-900'
                 }`}
@@ -520,9 +520,9 @@ const AdminTaskManagement = () => {
         </div>
 
         {activeTab === 'tasks' ? (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="premium-panel rounded-xl p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <SearchWithSuggestions
                 value={searchTerm}
                 onChange={setSearchTerm}
@@ -531,14 +531,14 @@ const AdminTaskManagement = () => {
                 getSuggestionTitle={(task) => task.title || 'Untitled Task'}
                 getSuggestionSubtitle={(task) => `${task.description || 'No description'}${task.assignedTo?.user?.name ? ` • ${task.assignedTo.user.name}` : ''}`}
                 placeholder="Search tasks..."
-                inputClassName="border-slate-200 focus:border-blue-500 focus:ring-blue-100"
+                inputClassName="premium-input !py-2 !text-sm border-slate-200 focus:border-blue-500 focus:ring-blue-100"
               />
               <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">All Status</option>
                   <option value="Not Started">Not Started</option>
@@ -550,11 +550,11 @@ const AdminTaskManagement = () => {
                 </select>
               </div>
               <div className="relative">
-                <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <select
                   value={priorityFilter}
                   onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">All Priority</option>
                   <option value="Low">Low</option>
@@ -569,7 +569,7 @@ const AdminTaskManagement = () => {
                   setStatusFilter('');
                   setPriorityFilter('');
                 }}
-                className="px-4 py-3 border border-blue-200 text-blue-700 rounded-lg bg-white hover:bg-blue-50 transition-all duration-200"
+                className="px-4 py-2 border border-blue-200 text-blue-700 rounded-lg bg-white hover:bg-blue-50 transition-all duration-200 text-sm font-medium"
               >
                 Clear Filters
               </button>
@@ -581,13 +581,13 @@ const AdminTaskManagement = () => {
                 <table className="w-full">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                      <th className="text-left p-4 sm:p-6 text-slate-600 font-semibold">Description</th>
-                      <th className="text-left p-4 sm:p-6 text-slate-600 font-semibold">Assigned To</th>
-                      <th className="text-left p-4 sm:p-6 text-slate-600 font-semibold">Priority</th>
-                      <th className="text-left p-4 sm:p-6 text-slate-600 font-semibold">Status</th>
-                      <th className="text-left p-4 sm:p-6 text-slate-600 font-semibold">Progress</th>
-                      <th className="text-left p-4 sm:p-6 text-slate-600 font-semibold">Due Date</th>
-                      <th className="text-left p-4 sm:p-6 text-slate-600 font-semibold">Actions</th>
+                      <th className="text-left p-3 text-xs text-slate-600 font-semibold">Description</th>
+                      <th className="text-left p-3 text-xs text-slate-600 font-semibold">Assigned To</th>
+                      <th className="text-left p-3 text-xs text-slate-600 font-semibold">Priority</th>
+                      <th className="text-left p-3 text-xs text-slate-600 font-semibold">Status</th>
+                      <th className="text-left p-3 text-xs text-slate-600 font-semibold">Progress</th>
+                      <th className="text-left p-3 text-xs text-slate-600 font-semibold">Due Date</th>
+                      <th className="text-left p-3 text-xs text-slate-600 font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -598,18 +598,18 @@ const AdminTaskManagement = () => {
                           className="bg-blue-50 cursor-pointer hover:bg-blue-100 transition-all duration-200 border-b border-slate-200"
                           onClick={() => toggleEmployeeExpand(empId)}
                         >
-                          <td colSpan="7" className="p-4">
+                          <td colSpan="7" className="p-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-blue-00 rounded-full flex items-center justify-center">
-                                  {expandedEmployees[empId] ? <ChevronDown className="w-5 h-5 text-blue-600" /> : <ChevronRight className="w-5 h-5 text-blue-600" />}
+                                <div className="w-8 h-8 bg-blue-00 rounded-full flex items-center justify-center">
+                                  {expandedEmployees[empId] ? <ChevronDown className="w-4 h-4 text-blue-600" /> : <ChevronRight className="w-4 h-4 text-blue-600" />}
                                 </div>
                                 <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-blue-00 rounded-full flex items-center justify-center">
-                                    <User className="w-4 h-4 text-blue-600" />
+                                  <div className="w-7 h-7 bg-blue-00 rounded-full flex items-center justify-center">
+                                    <User className="w-3.5 h-3.5 text-blue-600" />
                                   </div>
                                   <div>
-                                    <p className="text-slate-900 font-bold text-lg">
+                                    <p className="text-slate-900 font-bold text-sm">
                                       {group.employee?.user?.name || 'Unknown Employee'}
                                     </p>
                                     <p className="text-slate-500 text-xs">
@@ -619,7 +619,7 @@ const AdminTaskManagement = () => {
                                 </div>
                               </div>
                               <div className="flex items-center space-x-4">
-                                <span className="text-slate-500 text-sm">
+                                <span className="text-slate-500 text-xs">
                                   {expandedEmployees[empId] ? 'Click to collapse' : 'Click to expand'}
                                 </span>
                               </div>
@@ -630,24 +630,24 @@ const AdminTaskManagement = () => {
                         {/* Task Rows (only if expanded) */}
                         {expandedEmployees[empId] && group.tasks.map((task) => (
                           <tr key={task._id} onClick={(event) => openTaskDetails(event, task)} className="border-b border-slate-200 hover:bg-blue-50 transition-all duration-200 cursor-pointer">
-                            <td className="p-4 sm:p-6 pl-12 max-w-xs">
-                              <p className="text-slate-900 font-semibold line-clamp-1">{task.title || 'Untitled Task'}</p>
-                              <p className="mt-1 text-slate-500 text-sm line-clamp-2">{task.description || 'No description'}</p>
+                            <td className="p-3 pl-10 max-w-xs">
+                              <p className="text-slate-900 text-sm font-semibold line-clamp-1">{task.title || 'Untitled Task'}</p>
+                              <p className="mt-0.5 text-slate-500 text-xs line-clamp-2">{task.description || 'No description'}</p>
                             </td>
-                            <td className="p-4 sm:p-6 italic text-slate-500">
+                            <td className="p-3 italic text-xs text-slate-500">
                               (Assigned above)
                             </td>
-                            <td className="p-4 sm:p-6">
-                              <span className={`px-3 py-1 text-xs rounded-full ${getPriorityColor(task.priority)}`}>
+                            <td className="p-3">
+                              <span className={`px-2.5 py-1 text-[11px] rounded-full ${getPriorityColor(task.priority)}`}>
                                 {task.priority}
                               </span>
                             </td>
-                            <td className="p-4 sm:p-6">
-                              <span className={`px-3 py-1 text-xs rounded-full ${getStatusColor(task.status)}`}>
+                            <td className="p-3">
+                              <span className={`px-2.5 py-1 text-[11px] rounded-full ${getStatusColor(task.status)}`}>
                                 {task.status}
                               </span>
                             </td>
-                            <td className="p-4 sm:p-6">
+                            <td className="p-3">
                               <div className="flex items-center space-x-2">
                                 <div className="flex-1 bg-slate-200 rounded-full h-2 min-w-[60px]">
                                   <div
@@ -655,25 +655,25 @@ const AdminTaskManagement = () => {
                                     style={{ width: `${task.progress}%` }}
                                   ></div>
                                 </div>
-                                <span className="text-blue-700 text-sm">{task.progress}%</span>
+                                <span className="text-blue-700 text-xs">{task.progress}%</span>
                               </div>
                             </td>
-                            <td className="p-4 sm:p-6">
-                              <div className={`${isOverdue(task.dueDate, task.status) ? 'text-red-600' : 'text-slate-900'}`}>
+                            <td className="p-3">
+                              <div className={`text-xs ${isOverdue(task.dueDate, task.status) ? 'text-red-600' : 'text-slate-900'}`}>
                                 {formatDate(task.dueDate)}
                                 {isOverdue(task.dueDate, task.status) && (
-                                  <div className="flex items-center text-red-600 text-sm mt-1">
+                                  <div className="flex items-center text-red-600 text-xs mt-1">
                                     <AlertTriangle className="w-3 h-3 mr-1" />
                                     Overdue
                                   </div>
                                 )}
                               </div>
                             </td>
-                            <td className="p-4 sm:p-6">
+                            <td className="p-3">
                               <div className="flex items-center space-x-2">
                                 <button
                                   onClick={() => handleViewTask(task)}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-blue-200"
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-blue-200"
                                   title="View Details"
                                 >
                                   <Eye className="w-4 h-4" />
@@ -683,14 +683,14 @@ const AdminTaskManagement = () => {
                                     setSelectedTask(task);
                                     setShowEditModal(true);
                                   }}
-                                  className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-amber-200"
+                                  className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-amber-200"
                                   title="Edit"
                                 >
                                   <Edit className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteTask(task._id)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200"
+                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200"
                                   title="Delete"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -737,13 +737,13 @@ const AdminTaskManagement = () => {
                   Object.entries(groupTasksByEmployee(filteredTasks)).map(([empId, group]) => (
                     <div key={empId} className="space-y-3">
                       <div
-                        className="bg-blue-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all duration-200 hover:shadow-sm"
+                        className="bg-blue-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between cursor-pointer transition-all duration-200 hover:shadow-sm"
                         onClick={() => toggleEmployeeExpand(empId)}
                       >
                         <div className="flex items-center space-x-3">
                           <User className="w-5 h-5 text-blue-600" />
                           <div>
-                            <p className="text-slate-900 font-bold">{group.employee?.user?.name || 'Unknown Employee'}</p>
+                            <p className="text-slate-900 text-sm font-bold">{group.employee?.user?.name || 'Unknown Employee'}</p>
                             <p className="text-slate-500 text-xs">{group.tasks.length} tasks</p>
                           </div>
                         </div>
@@ -751,18 +751,18 @@ const AdminTaskManagement = () => {
                       </div>
 
                       {expandedEmployees[empId] && group.tasks.map((task) => (
-                        <div key={task._id} onClick={(event) => openTaskDetails(event, task)} className="bg-white border border-slate-200 rounded-xl p-4 space-y-4 ml-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer">
+                        <div key={task._id} onClick={(event) => openTaskDetails(event, task)} className="bg-white border border-slate-200 rounded-xl p-3 space-y-3 ml-3 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <p className="text-slate-900 font-semibold text-lg line-clamp-1">{task.title || 'Untitled Task'}</p>
-                              <p className="mt-1 text-slate-500 text-sm line-clamp-2">{task.description || 'No description'}</p>
+                              <p className="text-slate-900 font-semibold text-sm line-clamp-1">{task.title || 'Untitled Task'}</p>
+                              <p className="mt-1 text-slate-500 text-xs line-clamp-2">{task.description || 'No description'}</p>
                             </div>
                             <span className={`px-3 py-1 text-xs rounded-full ${getStatusColor(task.status)}`}>
                               {task.status}
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="grid grid-cols-2 gap-3 text-xs">
                             <div>
                               <p className="text-slate-500">Priority</p>
                               <span className={`px-2 py-1 text-xs rounded-full ${getPriorityColor(task.priority)}`}>
@@ -781,7 +781,7 @@ const AdminTaskManagement = () => {
                           </div>
 
                           <div>
-                            <p className="text-slate-500 text-sm mb-2">Progress</p>
+                            <p className="text-slate-500 text-xs mb-2">Progress</p>
                             <div className="flex items-center space-x-2">
                               <div className="flex-1 bg-slate-200 rounded-full h-2">
                                 <div
@@ -789,7 +789,7 @@ const AdminTaskManagement = () => {
                                   style={{ width: `${task.progress}%` }}
                                 ></div>
                               </div>
-                              <span className="text-blue-700 text-sm">{task.progress}%</span>
+                              <span className="text-blue-700 text-xs">{task.progress}%</span>
                             </div>
                           </div>
 
@@ -828,20 +828,20 @@ const AdminTaskManagement = () => {
             </div >
 
             {/* Quick Stats */}
-            < div className="grid grid-cols-1 lg:grid-cols-2 gap-6" >
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-slate-900">Task Distribution by Priority</h2>
-                  <BarChart3 className="w-5 h-5 text-blue-600" />
+            < div className="grid grid-cols-1 lg:grid-cols-2 gap-4" >
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-bold text-slate-900">Task Distribution by Priority</h2>
+                  <BarChart3 className="w-4 h-4 text-blue-600" />
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {stats?.priorityDistribution?.map((priority) => {
                     const percentage = stats.total > 0 ? (priority.count / stats.total) * 100 : 0;
                     return (
                       <div key={priority._id} className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-slate-900 font-medium">{priority._id || 'Unknown'}</span>
-                          <span className="text-blue-700 text-sm">{priority.count} tasks</span>
+                          <span className="text-slate-900 text-sm font-medium">{priority._id || 'Unknown'}</span>
+                          <span className="text-blue-700 text-xs">{priority.count} tasks</span>
                         </div>
                         <div className="w-full bg-slate-200 rounded-full h-2">
                           <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
@@ -856,18 +856,18 @@ const AdminTaskManagement = () => {
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-slate-900">Recent Tasks</h2>
-                  <Clock className="w-5 h-5 text-blue-600" />
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-bold text-slate-900">Recent Tasks</h2>
+                  <Clock className="w-4 h-4 text-blue-600" />
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {tasks.slice(0, 4).map((task) => (
-                    <div key={task._id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <div key={task._id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
                       <div className="flex-1 min-w-0 mr-3">
-                        <p className="text-slate-900 font-medium line-clamp-1">{task.title || 'Untitled Task'}</p>
+                        <p className="text-slate-900 text-sm font-medium line-clamp-1">{task.title || 'Untitled Task'}</p>
                         <p className="text-xs text-slate-500 line-clamp-1">{task.description || 'No description'}</p>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-xs text-slate-500">
                           {task.assignedTo?.user?.name || 'Unknown Employee'}
                         </p>
                       </div>
@@ -1159,9 +1159,21 @@ const AdminTaskManagement = () => {
                   <div className="relative bg-white border border-slate-200 rounded-2xl p-1 sm:p-3 md:p-4 lg:p-6 w-full sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl max-h-[85vh] overflow-auto shadow-xl">
                     <div className="flex items-center justify-between mb-4 sm:mb-6">
                       <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">Task Details</h2>
-                      <button onClick={() => setShowViewModal(false)} className="text-slate-400 hover:text-slate-900">
-                        <X className="w-6 h-6" />
-                      </button>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setShowViewModal(false);
+                            setShowEditModal(true);
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800 sm:px-3 sm:text-sm"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                          Edit
+                        </button>
+                        <button onClick={() => setShowViewModal(false)} className="text-slate-400 hover:text-slate-900">
+                          <X className="w-6 h-6" />
+                        </button>
+                      </div>
                     </div>
                     {modalLoading ? (
                       <div className="flex items-center justify-center py-12">

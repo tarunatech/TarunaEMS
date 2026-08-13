@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import {
   TrendingUp, DollarSign, Target, Award, Users, Calendar,
-  Search, Filter, Download, Edit3, Trash2, Eye, User,
+  Download, Edit3, Trash2, Eye, User,
   RefreshCw, AlertCircle, CheckCircle, XCircle, Phone,
-  Building2, GitBranch, UserCheck, Clock, ChevronDown
+  Building2, UserCheck, Clock, ChevronDown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { leadAPI, salesPipelineAPI } from '../../utils/api';
 import SalesPipelineModal from '../../components/Sales/SalesPipelineModal';
+import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 
 const AdminSalesDashboard = () => {
   // State
   const [leads, setLeads] = useState([]);
+  const [leadSuggestions, setLeadSuggestions] = useState([]);
   const [summary, setSummary] = useState(null);
   const [funnelData, setFunnelData] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -24,12 +26,12 @@ const AdminSalesDashboard = () => {
     status: 'all',
     search: ''
   });
-  const [showFilters, setShowFilters] = useState(false);
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showPipelineModal, setShowPipelineModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [reassignTo, setReassignTo] = useState('');
+  const pendingScrollLeadRef = useRef(null);
 
   const calculateDashboardStats = (leadEntries, pipelineEntries) => {
     const wonLeads = leadEntries.filter(lead => lead.status === 'Won' || lead.wonDetails?.wonDate || lead.actualValue > 0);
@@ -66,6 +68,24 @@ const AdminSalesDashboard = () => {
     }
   };
 
+  const fetchLeadSuggestions = async () => {
+    try {
+      const res = await leadAPI.getLeads({ includeAll: true, limit: 500 });
+      console.log('[lead suggestions] response:', res.data);
+      if (res.data.success) {
+        const list = Array.isArray(res.data.data?.leads)
+          ? res.data.data.leads
+          : Array.isArray(res.data.data)
+            ? res.data.data
+            : [];
+        console.log('[lead suggestions] count:', list.length);
+        setLeadSuggestions(list);
+      }
+    } catch (err) {
+      console.error('[lead suggestions] FAILED:', err.response?.data || err.message || err);
+    }
+  };
+
   // Fetch data
   const fetchData = async () => {
     try {
@@ -76,7 +96,11 @@ const AdminSalesDashboard = () => {
       ]);
 
       const fetchedLeads = leadsRes.data.success ? leadsRes.data.data.leads || [] : [];
-      if (leadsRes.data.success) setLeads(fetchedLeads);
+      const pendingScrollLead = pendingScrollLeadRef.current;
+      const displayLeads = pendingScrollLead && !fetchedLeads.some((lead) => lead._id === pendingScrollLead._id)
+        ? [pendingScrollLead, ...fetchedLeads]
+        : fetchedLeads;
+      if (leadsRes.data.success) setLeads(displayLeads);
       const fetchedPipelines = pipelinesRes.data.success ? pipelinesRes.data.data || [] : [];
       setSummary(calculateDashboardStats(fetchedLeads, fetchedPipelines));
       setFunnelData(buildPipelineFunnel(fetchedLeads, fetchedPipelines));
@@ -89,13 +113,22 @@ const AdminSalesDashboard = () => {
   };
 
   useEffect(() => {
-    fetchData();
     fetchBDEEmployees();
+    fetchLeadSuggestions();
   }, []);
 
   useEffect(() => {
-    fetchData();
+    const timeout = setTimeout(() => {
+      fetchData();
+    }, 300);
+    return () => clearTimeout(timeout);
   }, [filters]);
+
+  useEffect(() => {
+    if (pendingScrollLeadRef.current) {
+      scrollToLead(pendingScrollLeadRef.current);
+    }
+  }, [leads]);
 
   const buildPipelineFunnel = (leadEntries, pipelineEntries) => {
     const funnelStages = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Won'];
@@ -177,10 +210,17 @@ const AdminSalesDashboard = () => {
 
   const handleReassign = async () => {
     try {
-      await leadAPI.reassignLead(selectedLead._id, { assignedTo: reassignTo });
+      const response = await leadAPI.reassignLead(selectedLead._id, { assignedTo: reassignTo });
+      if (response.data.success && response.data.data) {
+        setSelectedLead(response.data.data);
+        setLeads((prev) => prev.map((lead) => lead._id === response.data.data._id ? response.data.data : lead));
+        setLeadSuggestions((prev) => prev.map((lead) => lead._id === response.data.data._id ? response.data.data : lead));
+      }
       toast.success('Lead reassigned successfully!');
       setShowReassignModal(false);
+      setReassignTo('');
       fetchData();
+      fetchLeadSuggestions();
     } catch {
       toast.error('Failed to reassign lead');
     }
@@ -204,6 +244,54 @@ const AdminSalesDashboard = () => {
     if (isInteractiveClick(event)) return;
     setSelectedLead(lead);
     setShowViewModal(true);
+  };
+
+  const getLeadSearchValue = (lead) => [lead.firstName, lead.lastName].filter(Boolean).join(' ') || lead.email || lead.company || '';
+
+  const isSalesEmployee = (employee) => {
+    const department = String(employee?.department || '').replace(/\s+/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+    return new Set([
+      'bde',
+      'businessdevelopmentexecutive',
+      'sales',
+      'businessdevelopment',
+      'bd',
+      'bdexecutive',
+      'salesdepartment',
+      'salesteam'
+    ]).has(department);
+  };
+
+  const scrollToLead = (lead, attempt = 0) => {
+    if (!lead?._id) return;
+    window.setTimeout(() => {
+      const candidates = Array.from(document.querySelectorAll(`[data-lead-id="${lead._id}"]`));
+      const target = candidates.find((element) => element.offsetParent !== null) || candidates[0];
+      if (!target && attempt < 12) {
+        scrollToLead(lead, attempt + 1);
+        return;
+      }
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target?.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2');
+      window.setTimeout(() => {
+        target?.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2');
+        if (pendingScrollLeadRef.current?._id === lead._id) {
+          pendingScrollLeadRef.current = null;
+        }
+      }, 1600);
+    }, 180);
+  };
+
+  const handleLeadSuggestionSelect = (lead) => {
+    pendingScrollLeadRef.current = lead;
+    setFilters((prev) => ({
+      ...prev,
+      startDate: '',
+      endDate: '',
+      status: 'all',
+      search: getLeadSearchValue(lead)
+    }));
+    scrollToLead(lead);
   };
 
   const exportData = () => {
@@ -263,14 +351,7 @@ const AdminSalesDashboard = () => {
               </h1>
               <p className="text-slate-500 text-xs sm:text-sm">Monitor and manage your sales pipeline</p>
             </div>
-            <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="justify-center px-2 py-2 sm:px-4 bg-white hover:bg-slate-50 text-slate-700 rounded-xl border border-slate-200 flex items-center gap-1.5 text-xs sm:text-sm transition-colors shadow-sm"
-              >
-                <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>Filters</span>
-              </button>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
               <button
                 onClick={exportData}
                 disabled={leads.length === 0}
@@ -333,9 +414,8 @@ const AdminSalesDashboard = () => {
         )}
 
         {/* Filters */}
-        {showFilters && (
-          <div className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3">Filters</h3>
+        <div className="premium-panel rounded-2xl p-3 sm:p-4">
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-3">Filters</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
               <div>
                 <label className="block text-xs sm:text-sm text-slate-600 mb-1.5">Start Date</label>
@@ -384,22 +464,23 @@ const AdminSalesDashboard = () => {
               <div>
                <div>
                 <label className="block text-xs sm:text-sm text-slate-600 mb-1.5">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Lead name, email..."
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange('search', e.target.value)}
-                    className="premium-input w-full pl-8 pr-3 py-1.5 sm:py-2 rounded-lg text-slate-900 placeholder-slate-400 text-xs sm:text-sm"
-                  />
-                </div>
+                <SearchWithSuggestions
+                  value={filters.search}
+                  onChange={(value) => handleFilterChange('search', value)}
+                  onSelect={handleLeadSuggestionSelect}
+                  items={leadSuggestions}
+                  getSuggestionValue={getLeadSearchValue}
+                  getSuggestionTitle={(lead) => getLeadSearchValue(lead)}
+                  getSuggestionSubtitle={(lead) => [lead.email, lead.company, lead.leadId].filter(Boolean).join(' • ')}
+                  placeholder="Lead name, email..."
+                  inputClassName="premium-input !py-1.5 sm:!py-2 !rounded-lg !text-xs sm:!text-sm !border-slate-200"
+                  maxSuggestions={8}
+                />
               </div>
               </div>
              
             </div>
           </div>
-        )}
 
         {/* Funnel Chart */}
         {funnelData.length > 0 && (
@@ -464,7 +545,12 @@ const AdminSalesDashboard = () => {
                     leads.map(lead => {
                       const nextMeeting = getNextMeeting(lead);
                       return (
-                      <tr key={lead._id} onClick={(event) => openLeadDetails(event, lead)} className="border-b border-slate-200 hover:bg-blue-50 transition-colors duration-200 cursor-pointer">
+                      <tr
+                        key={lead._id}
+                        data-lead-id={lead._id}
+                        onClick={(event) => openLeadDetails(event, lead)}
+                        className="border-b border-slate-200 hover:bg-blue-50 transition-all duration-300 cursor-pointer"
+                      >
                         <td className="p-2 sm:p-3">
                           <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center ">
@@ -535,10 +621,10 @@ const AdminSalesDashboard = () => {
                                 setSelectedLead(lead);
                                 setShowPipelineModal(true);
                               }}
-                              className="p-1 text-slate-400 hover:text-blue-600"
+                              className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 transition-colors hover:border-blue-200 hover:bg-blue-100"
                               title="View Pipeline"
                             >
-                              <GitBranch className="w-4 h-4" />
+                              View Pipeline
                             </button>
                           </div>
                         </td>
@@ -565,7 +651,12 @@ const AdminSalesDashboard = () => {
                 leads.map(lead => {
                   const nextMeeting = getNextMeeting(lead);
                   return (
-                  <div key={lead._id} onClick={(event) => openLeadDetails(event, lead)} className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm active:bg-blue-50/40 hover:border-blue-200 hover:bg-blue-50/40 transition-colors cursor-pointer">
+                  <div
+                    key={lead._id}
+                    data-lead-id={lead._id}
+                    onClick={(event) => openLeadDetails(event, lead)}
+                    className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm active:bg-blue-50/40 hover:border-blue-200 hover:bg-blue-50/40 transition-all duration-300 cursor-pointer"
+                  >
                     <div className="flex justify-between items-start gap-2 mb-3">
                       <div className="flex min-w-0 flex-1 items-center gap-3">
                         <div className="w-9 h-9 flex-shrink-0 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center shadow-sm shadow-blue-500/20">
@@ -607,10 +698,10 @@ const AdminSalesDashboard = () => {
                             setSelectedLead(lead);
                             setShowPipelineModal(true);
                           }}
-                          className="rounded-lg p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+                          className="rounded-lg border border-blue-100 bg-blue-50 px-2 py-1.5 text-[11px] font-semibold text-blue-700 transition-colors hover:border-blue-200 hover:bg-blue-100"
                           title="View Pipeline"
                         >
-                          <GitBranch className="w-4 h-4" />
+                          View Pipeline
                         </button>
                       </div>
                     </div>
@@ -654,8 +745,9 @@ const AdminSalesDashboard = () => {
 
       {/* Reassign Modal */}
       {showReassignModal && (
-        <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="premium-panel rounded-2xl p-4 sm:p-5 w-full max-w-md">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-md" onClick={() => setShowReassignModal(false)} />
+          <div className="premium-panel relative rounded-2xl p-4 sm:p-5 w-full max-w-md">
             <h3 className="text-lg font-bold text-slate-900 mb-3">Reassign Lead</h3>
             <p className="text-slate-500 text-sm mb-4">
               Reassign <span className="font-semibold text-slate-900">{selectedLead?.firstName} {selectedLead?.lastName}</span>
@@ -666,7 +758,7 @@ const AdminSalesDashboard = () => {
               className="premium-input w-full px-3 py-2 rounded-lg text-slate-900 text-sm mb-4"
             >
               <option value="">Select Sales Rep</option>
-              {employees.map(emp => (
+              {employees.filter(isSalesEmployee).map(emp => (
                 <option key={emp._id} value={emp._id}>
                   {emp.personalInfo?.firstName} {emp.personalInfo?.lastName}
                 </option>
@@ -693,64 +785,91 @@ const AdminSalesDashboard = () => {
 
       {/* View Lead Modal */}
       {showViewModal && selectedLead && (
-        <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="premium-panel rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[calc(100dvh-1.5rem)] overflow-y-auto">
-            <div className="flex justify-between items-start gap-3 mb-4">
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900">Lead Details</h3>
+        <div
+          className="fixed inset-0 bg-slate-950/35 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-4"
+          onClick={() => setShowViewModal(false)}
+        >
+          <style>{`
+            .lead-details-scroll {
+              scrollbar-width: none;
+              -ms-overflow-style: none;
+            }
+            .lead-details-scroll::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
+          <div
+            className="lead-details-scroll premium-panel w-full max-w-6xl max-h-[76dvh] overflow-y-auto rounded-xl p-3 shadow-[0_28px_80px_rgba(15,23,42,0.24)] sm:max-h-[calc(100dvh-1.5rem)] sm:rounded-2xl sm:p-5"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex justify-between items-start gap-3 mb-3 sm:mb-4">
+              <div className="min-w-0">
+                <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedLead.status)}`}>
+                    {selectedLead.status}
+                  </span>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getPriorityColor(selectedLead.priority)}`}>
+                    {selectedLead.priority || 'Medium'}
+                  </span>
+                </div>
+                <h3 className="truncate text-lg font-bold text-slate-900 sm:text-2xl">{selectedLead.firstName} {selectedLead.lastName}</h3>
+                <p className="truncate text-xs text-slate-500 sm:text-sm">{selectedLead.company || 'No company'}{selectedLead.position ? ` • ${selectedLead.position}` : ''}</p>
+              </div>
               <button
                 onClick={() => setShowViewModal(false)}
-                className="text-slate-400 hover:text-slate-700"
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               >
-                <XCircle className="w-6 h-6" />
+                <XCircle className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
-              <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 xl:grid-cols-[1.4fr_0.9fr]">
+              <div className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 sm:gap-3 sm:text-sm lg:grid-cols-3">
+              <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                 <div>
                   <p className="text-slate-500 text-xs">Name</p>
                   <p className="text-slate-900 font-medium">{selectedLead.firstName} {selectedLead.lastName}</p>
                 </div>
-                <div>
+              </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Email</p>
                   <p className="text-slate-900">{selectedLead.email || '—'}</p>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Phone</p>
                   <p className="text-slate-900">{selectedLead.phone || '—'}</p>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Company</p>
                   <p className="text-slate-900">{selectedLead.company || '—'}</p>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Position</p>
                   <p className="text-slate-900">{selectedLead.position || '—'}</p>
                 </div>
-              </div>
               
-              <div className="space-y-3">
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Status</p>
                   <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(selectedLead.status)}`}>
                     {selectedLead.status}
                   </span>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Priority</p>
                   <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(selectedLead.priority)}`}>
                     {selectedLead.priority || 'Medium'}
                   </span>
                 </div>
-                <div>
+                <div className="rounded-lg border border-blue-100 bg-blue-50/70 p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Estimated Value</p>
-                  <p className="text-blue-700 font-semibold">{formatCurrency(selectedLead.estimatedValue)}</p>
+                  <p className="text-blue-700 font-bold">{formatCurrency(selectedLead.estimatedValue)}</p>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Source</p>
                   <p className="text-slate-900">{selectedLead.source || '—'}</p>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Assigned To</p>
                   <p className="text-slate-900">
                     {selectedLead.assignedTo?.personalInfo
@@ -759,59 +878,63 @@ const AdminSalesDashboard = () => {
                   </p>
                 </div>
               </div>
-            </div>
             
-            <div className="mt-4 pt-4 border-t border-slate-200">
-              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3 sm:gap-4 text-sm">
-                <div>
+            <div className="border-t border-slate-200 pt-3 sm:pt-4">
+              <div className="grid grid-cols-1 gap-2 text-xs min-[420px]:grid-cols-2 sm:gap-3 sm:text-sm lg:grid-cols-4">
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Next Follow-up</p>
                   <p className="text-slate-900">{formatDate(selectedLead.nextFollowUpDate)}</p>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Expected Close</p>
                   <p className="text-slate-900">{formatDate(selectedLead.expectedCloseDate)}</p>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Created</p>
                   <p className="text-slate-900">{formatDate(selectedLead.createdAt)}</p>
                 </div>
-                <div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
                   <p className="text-slate-500 text-xs">Lead ID</p>
                   <p className="break-all text-slate-900">{selectedLead.leadId || selectedLead._id}</p>
                 </div>
               </div>
             </div>
+              </div>
 
-            <div className="mt-4 pt-4 border-t border-slate-200">
-              <h4 className="text-sm font-semibold text-slate-900 mb-3">Scheduled Meetings</h4>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:rounded-xl sm:p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h4 className="text-sm font-semibold text-slate-900">Scheduled Meetings</h4>
+                <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-500">{selectedLead.meetings?.length || 0}</span>
+              </div>
               {selectedLead.meetings?.length ? (
-                <div className="space-y-2">
+                <div className="lead-details-scroll max-h-[26dvh] space-y-2 overflow-y-auto pr-1 sm:max-h-[45dvh]">
                   {selectedLead.meetings
                     .slice()
                     .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate))
                     .map((meeting) => (
-                      <div key={meeting._id || meeting.meetingId} className="rounded-xl border border-slate-200 bg-white p-3">
+                      <div key={meeting._id || meeting.meetingId} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                         <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">{meeting.type}</p>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-900">{meeting.type}</p>
                             <p className="text-xs text-slate-500">{formatDateTime(meeting.scheduledDate)} • {meeting.duration || 30} min</p>
                           </div>
-                          <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                          <span className="flex-shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                             {meeting.status}
                           </span>
                         </div>
                         {meeting.agenda && (
-                          <p className="mt-2 text-xs text-slate-600">{meeting.agenda}</p>
+                          <p className="mt-2 line-clamp-2 text-xs text-slate-600">{meeting.agenda}</p>
                         )}
                       </div>
                     ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-500">No meetings scheduled yet.</p>
+                <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500">No meetings scheduled yet.</div>
               )}
             </div>
+            </div>
             
-            <div className="mt-4 flex justify-end">
+            <div className="mt-3 flex justify-end sm:mt-4">
               <button
                 onClick={() => setShowViewModal(false)}
                 className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm"

@@ -168,14 +168,17 @@ const AdminPerformanceReview = () => {
                 <th className="p-6 text-left font-semibold text-slate-600">Tasks Completed</th>
                 <th className="p-6 text-left font-semibold text-slate-600">On Time</th>
                 <th className="p-6 text-left font-semibold text-slate-600">Late</th>
-                <th className="p-6 text-left font-semibold text-slate-600">Suggested</th>
                 <th className="p-6 text-left font-semibold text-slate-600">Current</th>
                 <th className="p-6 text-left font-semibold text-slate-600">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {reviews.map((item) => (
-                <tr key={item.employee._id} className="transition-all duration-200 hover:bg-blue-50">
+                <tr
+                  key={item.employee._id}
+                  onClick={() => openReviewModal(item)}
+                  className="cursor-pointer transition-all duration-200 hover:bg-blue-50"
+                >
                   <td className="p-6">
                     <div className="flex items-center space-x-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-xs font-bold text-blue-700">
@@ -190,14 +193,19 @@ const AdminPerformanceReview = () => {
                   <td className="p-6 text-slate-700">{item.review.totalTasks}</td>
                   <td className="p-6 text-slate-700">{item.review.onTimeCount}</td>
                   <td className="p-6 text-slate-700">{item.review.lateCount}</td>
-                  <td className="p-6"><Stars value={item.review.suggestedRating} /></td>
                   <td className="p-6">
                     {item.review.adminRating ? <Stars value={item.review.adminRating} /> : (
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">Not rated</span>
                     )}
                   </td>
                   <td className="p-6">
-                    <button onClick={() => openReviewModal(item)} className="inline-flex items-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-600 transition-all duration-200 hover:bg-blue-50">
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openReviewModal(item);
+                      }}
+                      className="inline-flex items-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-600 transition-all duration-200 hover:bg-blue-50"
+                    >
                       <Eye className="mr-2 h-4 w-4" />
                       Review
                     </button>
@@ -206,7 +214,7 @@ const AdminPerformanceReview = () => {
               ))}
               {reviews.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="p-12 text-center text-slate-500">No employees found for this month.</td>
+                  <td colSpan="6" className="p-12 text-center text-slate-500">No employees found for this month.</td>
                 </tr>
               )}
             </tbody>

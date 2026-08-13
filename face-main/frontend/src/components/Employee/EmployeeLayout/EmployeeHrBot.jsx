@@ -85,29 +85,66 @@ const EmployeeHrBot = () => {
     }
   };
 
-  const renderMessageText = (text) => {
+  const renderInlineMessagePart = (part, index) => {
     const urlRegex = /(\/api\/bot\/download\/[a-zA-Z0-9_-]+\.pdf)/g;
-    const parts = text.split(urlRegex);
+    if (urlRegex.test(part)) {
+      return (
+        <button
+          key={index}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            handlePdfDownload(part);
+          }}
+          className="rounded-md border border-blue-100 bg-white px-2 py-1 text-left text-xs font-semibold text-blue-700 transition-colors duration-200 hover:bg-blue-50"
+        >
+          Download Document
+        </button>
+      );
+    }
 
-    return parts.map((part, index) => {
-      if (urlRegex.test(part)) {
-        return (
-          <button
-            key={index}
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              handlePdfDownload(part);
-            }}
-            className="text-blue-600 underline hover:text-blue-700 break-all bg-transparent border-0 cursor-pointer text-left p-0 font-medium transition-colors duration-200"
-          >
-            Download Document
-          </button>
-        );
-      }
+    return part;
+  };
 
-      return part;
-    });
+  const renderMessageText = (text, isBot = false) => {
+    const value = String(text || '');
+    const urlRegex = /(\/api\/bot\/download\/[a-zA-Z0-9_-]+\.pdf)/g;
+
+    if (!isBot) {
+      return <span className="whitespace-pre-wrap break-words">{value}</span>;
+    }
+
+    const lines = value.split('\n');
+    return (
+      <div className="space-y-2">
+        {lines.map((line, lineIndex) => {
+          const trimmed = line.trim();
+          if (!trimmed) return <div key={lineIndex} className="h-1" />;
+
+          const parts = line.split(urlRegex);
+          const isNumbered = /^\d+\.\s/.test(trimmed);
+          const isSummary = /^summary:/i.test(trimmed);
+          const isHeading = !isNumbered && !trimmed.includes(' - ') && trimmed.length <= 70 && /[:?]$/.test(trimmed);
+
+          return (
+            <div
+              key={lineIndex}
+              className={`break-words leading-relaxed ${
+                isHeading
+                  ? 'font-semibold text-slate-950'
+                  : isSummary
+                    ? 'rounded-lg border border-blue-100 bg-white px-2.5 py-2 font-medium text-slate-800'
+                    : isNumbered
+                      ? 'rounded-lg bg-white/70 px-2.5 py-2 text-slate-700'
+                      : 'text-slate-700'
+              }`}
+            >
+              {parts.map((part, index) => renderInlineMessagePart(part, `${lineIndex}-${index}`))}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   const sendMessage = async () => {
@@ -168,7 +205,7 @@ const EmployeeHrBot = () => {
         ref={launcherRef}
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-[9998] h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-white shadow-[0_16px_34px_rgba(37,99,235,0.34)] hover:-translate-y-1 hover:shadow-[0_20px_42px_rgba(37,99,235,0.42)] transition-all duration-300 flex items-center justify-center"
+        className="fixed bottom-6 right-6 z-[9998] flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-white opacity-45 shadow-[0_10px_22px_rgba(37,99,235,0.18)] transition-all duration-300 hover:-translate-y-1 hover:opacity-100 hover:shadow-[0_20px_42px_rgba(37,99,235,0.42)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200"
         title="HR Assistant"
       >
         <Bot className="w-7 h-7" />
@@ -198,12 +235,12 @@ const EmployeeHrBot = () => {
                 messages.map((message, index) => (
                   <div
                     key={message._id || index}
-                    className={`max-w-xs p-3 rounded-lg shadow-sm ${message.self
+                    className={`p-3 rounded-lg shadow-sm ${message.self
                       ? 'ml-auto bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
-                      : 'mr-auto bg-blue-50 border border-blue-200 text-slate-900'
+                      : 'mr-auto max-w-[92%] bg-blue-50 border border-blue-200 text-slate-900 sm:max-w-[86%]'
                       }`}
                   >
-                    <div className="text-sm">{renderMessageText(message.text)}</div>
+                    <div className="text-sm">{renderMessageText(message.text, message.fromBot)}</div>
                     <div className={`text-xs mt-1 ${message.self ? 'text-blue-100' : 'text-blue-500'}`}>
                       {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>

@@ -17,6 +17,19 @@ const BDE_DEPARTMENTS = [
   'salesteam'
 ];
 
+const normalizeSalesDept = (department) => String(
+  department?.name ||
+  department?.code ||
+  department ||
+  ''
+).replace(/\s+/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+const SALES_DEPARTMENT_KEYS = new Set(BDE_DEPARTMENTS.map(normalizeSalesDept));
+const isSalesDepartmentEmployee = (employee) => {
+  const dept = employee?.workInfo?.department;
+  return SALES_DEPARTMENT_KEYS.has(normalizeSalesDept(dept));
+};
+
 // Create new lead - ENHANCED ERROR HANDLING
 export const createLead = async (req, res) => {
   try {
@@ -1160,7 +1173,7 @@ export const reassignLead = async (req, res) => {
       });
     }
 
-    if (!isDepartmentAllowed(newEmployee.workInfo?.department, BDE_DEPARTMENTS)) {
+    if (!isSalesDepartmentEmployee(newEmployee)) {
       return res.status(400).json({
         success: false,
         message: 'Can only assign leads to BDE department employees'
@@ -1192,12 +1205,10 @@ export const reassignLead = async (req, res) => {
 export const getBDEEmployees = async (req, res) => {
   try {
     const employees = await Employee.find({
-      'employmentInfo.status': 'Active'
+      status: 'Active'
     }).populate('workInfo.department', 'name code');
 
-    const bdeEmployees = employees.filter(emp => 
-      isDepartmentAllowed(emp.workInfo?.department, BDE_DEPARTMENTS)
-    );
+    const bdeEmployees = employees.filter(isSalesDepartmentEmployee);
 
     res.json({
       success: true,

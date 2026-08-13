@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import User from '../models/User.js';
 import Employee from '../models/Employee.js';
 import { sendEmail } from '../utils/email.js';
+import { uploadPublicPath } from '../config/uploadPaths.js';
 
 // Helper function to determine if input is employee ID
 const isEmployeeId = (value) => {
@@ -796,7 +797,7 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { name, phone, profileImage } = req.body;
+    const { name, phone, profileImage, personalInfo, contactInfo, bankInfo } = req.body;
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
@@ -818,10 +819,85 @@ const updateProfile = async (req, res) => {
       });
     }
 
+    let employee = null;
+    if (user.role === 'employee') {
+      employee = await Employee.findOne({ user: req.user.id }).lean();
+
+      if (employee) {
+        const employeeUpdate = {};
+
+        if (personalInfo && typeof personalInfo === 'object') {
+          const allowedPersonalInfo = [
+            'firstName',
+            'lastName',
+            'dateOfBirth',
+            'gender',
+            'bloodGroup',
+            'nationality'
+          ];
+          employeeUpdate.personalInfo = Object.fromEntries(
+            allowedPersonalInfo
+              .filter((key) => personalInfo[key] !== undefined)
+              .map((key) => [key, personalInfo[key]])
+          );
+        }
+
+        if (contactInfo && typeof contactInfo === 'object') {
+          const nextContactInfo = {};
+          ['phone', 'personalEmail', 'alternatePhone'].forEach((key) => {
+            if (contactInfo[key] !== undefined) nextContactInfo[key] = contactInfo[key];
+          });
+
+          if (contactInfo.address && typeof contactInfo.address === 'object') {
+            nextContactInfo.address = {};
+            ['street', 'city', 'state', 'pincode', 'country'].forEach((key) => {
+              if (contactInfo.address[key] !== undefined) nextContactInfo.address[key] = contactInfo.address[key];
+            });
+          }
+
+          if (contactInfo.emergencyContact && typeof contactInfo.emergencyContact === 'object') {
+            nextContactInfo.emergencyContact = {};
+            ['name', 'relationship', 'phone'].forEach((key) => {
+              if (contactInfo.emergencyContact[key] !== undefined) {
+                nextContactInfo.emergencyContact[key] = contactInfo.emergencyContact[key];
+              }
+            });
+          }
+
+          employeeUpdate.contactInfo = nextContactInfo;
+        }
+
+        if (bankInfo && typeof bankInfo === 'object') {
+          const allowedBankInfo = [
+            'accountHolderName',
+            'bankName',
+            'accountNumber',
+            'ifscCode',
+            'branchName',
+            'accountType'
+          ];
+          employeeUpdate.bankInfo = Object.fromEntries(
+            allowedBankInfo
+              .filter((key) => bankInfo[key] !== undefined)
+              .map((key) => [key, bankInfo[key]])
+          );
+        }
+
+        if (Object.keys(employeeUpdate).length > 0) {
+          employee = await Employee.findByIdAndUpdate(employee._id, employeeUpdate)
+            .populate('workInfo.department', 'name code')
+            .populate('workInfo.reportingManager', 'personalInfo.firstName personalInfo.lastName');
+        }
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      data: user
+      data: {
+        user,
+        employee
+      }
     });
 
   } catch (error) {
@@ -1144,7 +1220,7 @@ const updateProfileImage = async (req, res) => {
       });
     }
 
-    const imagePath = `/uploads/profile-pics/${req.file.filename}`;
+    const imagePath = uploadPublicPath('profile-pics', req.file.filename);
 
     // Update user model
     const user = await User.findByIdAndUpdate(

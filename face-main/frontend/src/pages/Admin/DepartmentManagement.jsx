@@ -17,8 +17,9 @@ import toast from 'react-hot-toast';
 import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 
 const ModalShell = ({ title, onClose, children, className = '' }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-2 sm:p-4">
-    <div className={`premium-panel flex max-h-[90dvh] w-[calc(100vw-1rem)] max-w-sm flex-col overflow-hidden rounded-xl sm:max-h-[90vh] sm:w-full sm:max-w-4xl sm:rounded-2xl ${className}`}>
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 bg-slate-900/30" onClick={onClose} />
+    <div className={`premium-panel relative flex max-h-[90dvh] w-[calc(100vw-1rem)] max-w-sm flex-col overflow-hidden rounded-xl sm:max-h-[90vh] sm:w-full sm:max-w-4xl sm:rounded-2xl ${className}`}>
       <style>{`
         .department-modal-scroll {
           scrollbar-width: none;
@@ -776,9 +777,21 @@ const DepartmentManagement = () => {
           <div className="premium-panel relative max-h-[90dvh] w-[calc(100vw-1rem)] max-w-sm overflow-hidden rounded-xl sm:max-h-[90vh] sm:w-full sm:max-w-4xl sm:rounded-2xl">
             <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:mb-6 sm:border-b-0 sm:bg-transparent sm:p-6 sm:pb-0">
               <h2 className="min-w-0 truncate text-base font-bold text-slate-900 sm:text-2xl">Department Details</h2>
-              <button onClick={() => setShowViewModal(false)} className="text-slate-500 hover:text-slate-900">
-                <X className="h-5 w-5 sm:h-6 sm:w-6" />
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setShowEditModal(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800 sm:px-3 sm:text-sm"
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                  Edit
+                </button>
+                <button onClick={() => setShowViewModal(false)} className="text-slate-500 hover:text-slate-900">
+                  <X className="h-5 w-5 sm:h-6 sm:w-6" />
+                </button>
+              </div>
             </div>
 
             {selectedDepartment && (
