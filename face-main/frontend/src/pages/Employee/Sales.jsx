@@ -238,6 +238,11 @@ const SalesPage = () => {
     setShowMeetingModal(true);
   };
 
+  const openLead = (lead) => {
+    setSelectedLead(lead);
+    setShowViewModal(true);
+  };
+
   const handleMarkAsWon = async (e) => {
     e.preventDefault();
     try {
@@ -403,7 +408,19 @@ const SalesPage = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {leads.map(lead => (
-                      <tr key={lead._id} className="hover:bg-blue-50 transition-all duration-200">
+                      <tr
+                        key={lead._id}
+                        onClick={() => openLead(lead)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openLead(lead);
+                          }
+                        }}
+                        tabIndex={0}
+                        role="button"
+                        className="cursor-pointer hover:bg-blue-50 focus:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-all duration-200"
+                      >
                         <td className="py-3">
                           <p className="text-slate-900 font-medium">{lead.firstName} {lead.lastName}</p>
                           <p className="text-xs text-slate-500">{lead.company || '—'}</p>
@@ -436,9 +453,9 @@ const SalesPage = () => {
                         <td className="py-3">
                           <div className="flex items-center gap-1">
                             <button
-                              onClick={() => {
-                                setSelectedLead(lead);
-                                setShowViewModal(true);
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openLead(lead);
                               }}
                               className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
                             >
@@ -461,7 +478,8 @@ const SalesPage = () => {
                             </button> */}
                             {lead.status !== 'Won' && (
                               <button
-                                onClick={() => {
+                                onClick={(event) => {
+                                  event.stopPropagation();
                                   setSelectedLead(lead);
                                   setWonData({
                                     finalValue: lead.estimatedValue || '',
@@ -482,13 +500,17 @@ const SalesPage = () => {
                               </button>
                             )}
                             <button
-                              onClick={() => handleDeleteLead(lead._id)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleDeleteLead(lead._id);
+                              }}
                               className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => {
+                              onClick={(event) => {
+                                event.stopPropagation();
                                 navigate(`/employee/sales-pipeline?leadId=${lead._id}`);
                               }}
                               className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
@@ -507,7 +529,19 @@ const SalesPage = () => {
               {/* Mobile Cards */}
               <div className="block sm:hidden space-y-4">
                 {leads.map(lead => (
-                  <div key={lead._id} className="employee-sales-card bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                  <div
+                    key={lead._id}
+                    onClick={() => openLead(lead)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        openLead(lead);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    className="employee-sales-card cursor-pointer bg-white border border-slate-200 rounded-lg p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  >
                     <div className="mb-3 space-y-2">
                       <div>
                         <p className="text-slate-900 font-medium text-base leading-snug break-words">{lead.firstName} {lead.lastName}</p>
@@ -515,9 +549,9 @@ const SalesPage = () => {
                       </div>
                       <div className="flex flex-wrap items-center gap-1">
                         <button
-                          onClick={() => {
-                            setSelectedLead(lead);
-                            setShowViewModal(true);
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openLead(lead);
                           }}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
                         >
@@ -540,7 +574,8 @@ const SalesPage = () => {
                         </button> */}
                         {lead.status !== 'Won' && (
                           <button
-                            onClick={() => {
+                            onClick={(event) => {
+                              event.stopPropagation();
                               setSelectedLead(lead);
                               setWonData({
                                 finalValue: lead.estimatedValue || '',
@@ -561,13 +596,17 @@ const SalesPage = () => {
                           </button>
                         )}
                         <button
-                          onClick={() => handleDeleteLead(lead._id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDeleteLead(lead._id);
+                          }}
                           className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={(event) => {
+                            event.stopPropagation();
                             navigate(`/employee/sales-pipeline?leadId=${lead._id}`);
                           }}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
@@ -643,50 +682,81 @@ const SalesPage = () => {
 
       {/* View Lead Modal */}
       {showViewModal && selectedLead && (
-        <Modal title={`${selectedLead.firstName} ${selectedLead.lastName}`} onClose={() => setShowViewModal(false)}>
-          <div className="space-y-1 sm:space-y-3">
-            <InfoRow label="Email" value={selectedLead.email} />
-            <InfoRow label="Phone" value={selectedLead.phone} />
+        <Modal title={`${selectedLead.firstName} ${selectedLead.lastName}`} onClose={() => setShowViewModal(false)} size="wide">
+          <div className="space-y-3 sm:space-y-5">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+              <SummaryTile label="Deal Value" value={formatCurrency(selectedLead.estimatedValue)} icon={DollarSign} tone="blue" />
+              <SummaryTile label="Status" value={selectedLead.status || 'New'} icon={Target} tone="slate" />
+              <SummaryTile label="Priority" value={selectedLead.priority || 'Medium'} icon={AlertCircle} tone="amber" />
+              <SummaryTile label="Meetings" value={getLeadUpcomingMeetings(selectedLead).length} icon={Calendar} tone="indigo" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
+              <div className="space-y-3 sm:space-y-5">
+                <div className="grid grid-cols-1 gap-3 sm:gap-5 md:grid-cols-2">
+                  <section className="rounded-lg border border-slate-200 bg-white p-2 sm:rounded-xl sm:p-4">
+                    <h3 className="mb-2 text-xs font-semibold text-slate-900 sm:mb-3 sm:text-sm">Contact Information</h3>
+                    <div className="grid grid-cols-2 gap-2 sm:block sm:space-y-3">
+                      <DetailItem icon={Phone} label="Phone" value={selectedLead.phone || '—'} />
+                      <DetailItem icon={UserCheck} label="Email" value={selectedLead.email || '—'} />
+                      <DetailItem icon={Activity} label="Company" value={selectedLead.company || '—'} />
+                      <DetailItem icon={UserCheck} label="Position" value={selectedLead.position || '—'} />
+                    </div>
+                  </section>
+
+                  <section className="rounded-lg border border-slate-200 bg-white p-2 sm:rounded-xl sm:p-4">
+                    <h3 className="mb-2 text-xs font-semibold text-slate-900 sm:mb-3 sm:text-sm">Lead Details</h3>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:block sm:space-y-3">
             <InfoRow label="Company" value={selectedLead.company || '—'} />
             <InfoRow label="Status" value={
-              <span className={`employee-sales-chip px-2 py-1 rounded-full text-xs ${getStatusColor(selectedLead.status)}`}>
+              <span className={`employee-sales-chip rounded-full px-1.5 py-0.5 text-[10.5px] sm:px-2 sm:py-1 sm:text-xs ${getStatusColor(selectedLead.status)}`}>
                 {selectedLead.status}
               </span>
             } />
             <InfoRow label="Priority" value={
-              <span className={`employee-sales-chip px-2 py-1 rounded-full text-xs ${getPriorityColor(selectedLead.priority)}`}>
+              <span className={`employee-sales-chip rounded-full px-1.5 py-0.5 text-[10.5px] sm:px-2 sm:py-1 sm:text-xs ${getPriorityColor(selectedLead.priority)}`}>
                 {selectedLead.priority}
               </span>
             } />
-            <InfoRow label="Estimated Value" value={formatCurrency(selectedLead.estimatedValue)} />
             <InfoRow label="Next Follow-up" value={formatDateTime(selectedLead.nextFollowUpDate)} />
-            {selectedLead.notes && <InfoRow label="Notes" value={selectedLead.notes} />}
+            <InfoRow label="Source" value={selectedLead.source || '—'} />
+                    </div>
+                  </section>
+                </div>
 
-            <div className="pt-1 sm:pt-2">
+                {selectedLead.notes && (
+                  <section className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:rounded-xl sm:p-4">
+                    <h3 className="mb-1 text-xs font-semibold text-slate-900 sm:mb-2 sm:text-sm">Notes</h3>
+                    <p className="line-clamp-3 text-xs leading-relaxed text-slate-600 sm:line-clamp-none sm:text-sm">{selectedLead.notes}</p>
+                  </section>
+                )}
+              </div>
+
+              <section className="rounded-lg border border-slate-200 bg-white p-2 sm:rounded-xl sm:p-4">
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-900">Scheduled Meetings</p>
-                <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">
+                <p className="text-xs font-semibold text-slate-900 sm:text-sm">Scheduled Meetings</p>
+                <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10.5px] font-medium text-indigo-600 sm:px-2 sm:text-xs">
                   {getLeadUpcomingMeetings(selectedLead).length}
                 </span>
               </div>
               {getLeadUpcomingMeetings(selectedLead).length > 0 ? (
-                <div className="max-h-48 space-y-1.5 overflow-y-auto pr-1 sm:max-h-64 sm:space-y-2">
+                <div className="max-h-36 space-y-1.5 overflow-y-auto pr-1 sm:max-h-64 sm:space-y-2">
                   {getLeadUpcomingMeetings(selectedLead).map((meeting, index) => (
                     <div
                       key={meeting._id || meeting.meetingId || `${meeting.scheduledDate}-${index}`}
-                      className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 sm:rounded-xl sm:p-3"
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 sm:rounded-xl sm:p-3"
                     >
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-xs font-semibold leading-tight text-slate-900 sm:text-sm">{meeting.type}</p>
                           <p className="truncate text-[11px] leading-tight text-slate-500 sm:text-xs">{formatDateTime(meeting.scheduledDate)}</p>
                         </div>
-                        <div className="flex shrink-0 items-center gap-1">
+                        <div className="flex shrink-0 flex-wrap items-center gap-1">
                           <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-600 sm:px-2 sm:py-1 sm:text-xs">
                             {meeting.duration || 30} min
                           </span>
                           {meeting.status === 'Scheduled' && new Date(meeting.scheduledDate) < new Date() && (
-                            <button type="button" onClick={() => handleMarkMeetingDone(selectedLead, meeting)} className="rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold text-white sm:px-2 sm:py-1 sm:text-xs">Done</button>
+                            <button type="button" onClick={() => handleMarkMeetingDone(selectedLead, meeting)} className="rounded-full bg-emerald-600 px-1 py-0.5 text-[9px] font-semibold leading-none text-white sm:px-2 sm:py-1 sm:text-xs">Done</button>
                           )}
                           <button type="button" onClick={() => handleEditMeeting(selectedLead, meeting)} className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 sm:px-2 sm:py-1 sm:text-xs">Edit</button>
                         </div>
@@ -700,6 +770,7 @@ const SalesPage = () => {
                   No meetings scheduled for this lead
                 </div>
               )}
+              </section>
             </div>
           </div>
         </Modal>
@@ -796,16 +867,20 @@ const ActionButton = ({ icon, label, onClick }) => (
 );
 
 const Modal = ({ title, children, onClose, size = 'default' }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+  <div className={`fixed inset-y-0 right-0 z-50 flex items-start justify-center overflow-y-auto px-5 py-10 sm:items-center sm:p-4 ${
+    size === 'wide' ? 'left-0 lg:left-[248px]' : 'left-0'
+  }`}>
     <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
-    <div className={`employee-sales-modal relative flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:max-h-[90vh] ${size === 'wide' ? 'max-w-4xl' : 'max-w-sm sm:max-w-md'}`}>
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-3 py-2.5 sm:border-b-0 sm:px-4 sm:pb-0 sm:pt-4">
-        <h3 className="truncate pr-3 text-base font-bold text-slate-900 sm:text-lg">{title}</h3>
-        <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200">
+    <div className={`employee-sales-modal relative flex max-h-[76dvh] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:max-h-[90vh] ${
+      size === 'wide' ? 'max-w-[340px] sm:max-w-[min(72rem,calc(100vw-1rem))] lg:max-w-[min(72rem,calc(100vw-280px))]' : 'max-w-sm sm:max-w-md'
+    }`}>
+      <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-2.5 py-1.5 sm:static sm:border-b-0 sm:px-4 sm:pb-0 sm:pt-4">
+        <h3 className="truncate pr-2 text-sm font-bold text-slate-900 sm:text-lg">{title}</h3>
+        <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200 sm:p-1.5">
           <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2 sm:px-4 sm:py-4">
         {children}
       </div>
     </div>
@@ -850,10 +925,45 @@ const Select = ({ label, value, onChange, options }) => (
   </div>
 );
 
+const SummaryTile = ({ label, value, icon, tone = 'blue' }) => {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-600',
+    indigo: 'bg-indigo-50 text-indigo-600',
+    amber: 'bg-amber-50 text-amber-600',
+    slate: 'bg-slate-100 text-slate-600'
+  };
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-2 sm:rounded-xl sm:p-4">
+      <div className="flex items-center justify-between gap-1.5 sm:gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-medium leading-tight text-slate-500 sm:text-xs">{label}</p>
+          <p className="mt-0.5 truncate text-[13px] font-bold leading-tight text-slate-900 sm:mt-1 sm:text-lg">{value || '—'}</p>
+        </div>
+        <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 ${tones[tone] || tones.blue}`}>
+          {React.createElement(icon, { className: 'h-3.5 w-3.5 sm:h-5 sm:w-5' })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DetailItem = ({ icon, label, value }) => (
+  <div className="flex min-w-0 items-start gap-2 sm:gap-3">
+    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500 sm:h-8 sm:w-8 sm:rounded-lg">
+      {React.createElement(icon, { className: 'h-3.5 w-3.5 sm:h-4 sm:w-4' })}
+    </div>
+    <div className="min-w-0">
+      <p className="text-[10px] leading-tight text-slate-500 sm:text-xs">{label}</p>
+      <p className="break-words text-[12px] font-medium leading-snug text-slate-900 sm:text-sm">{value || '—'}</p>
+    </div>
+  </div>
+);
+
 const InfoRow = ({ label, value }) => (
-  <div className="flex items-center justify-between gap-3 border-b border-slate-200 py-1 sm:items-start sm:py-2">
-    <span className="shrink-0 text-xs text-slate-500 sm:text-sm">{label}</span>
-    <span className="min-w-0 break-words text-right text-xs text-slate-900 sm:text-sm">{value || '—'}</span>
+  <div className="min-w-0 border-b border-slate-200 py-1 sm:flex sm:items-start sm:justify-between sm:gap-3 sm:py-2">
+    <span className="block text-[10.5px] leading-tight text-slate-500 sm:shrink-0 sm:text-sm">{label}</span>
+    <span className="block min-w-0 break-words text-[12px] leading-snug text-slate-900 sm:text-right sm:text-sm">{value || '—'}</span>
   </div>
 );
 

@@ -18,7 +18,7 @@ const chat = async (req, res) => {
     }
 
     // Get the generative model
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: process.env.GOOGLE_AI_MODEL || 'gemini-3.6-flash' });
 
     // System prompt for EMS context
     const systemPrompt = `You are an AI assistant for an Employee Management System (EMS). You help administrators with HR operations, employee management, leave requests, tasks, departments, attendance, and general questions about the system.

@@ -1,9 +1,12 @@
 import Lead from '../models/Lead.js';
 import Employee from '../models/Employee.js';
 import SalesPipeline from '../models/SalesPipeline.js';
+import { buildProposalDefaults, generateProposalContent, generateProposalSectionContent } from '../services/proposalAIService.js';
+import { generateProposalPdf } from '../services/proposalPdfService.js';
+import { extractProposalFromPdf as extractFromPdf } from '../services/proposalPdfExtractService.js';
 
-const STAGE_ORDER = ['client_details', 'quotation', 'admin_approval', 'sent_to_client', 'negotiation', 'won_closed'];
-const EMPLOYEE_EDITABLE_SECTIONS = ['clientDetails', 'quotation', 'sentToClient', 'negotiation', 'outcome'];
+const STAGE_ORDER = ['client_details', 'quotation', 'admin_approval', 'proposal', 'sent_to_client', 'negotiation', 'won_closed'];
+const EMPLOYEE_EDITABLE_SECTIONS = ['clientDetails', 'quotation', 'proposal', 'sentToClient', 'negotiation', 'outcome'];
 
 const populatePipeline = (query) => query
   .populate('lead', 'leadId firstName lastName email phone company position estimatedValue status assignedTo')
@@ -69,10 +72,26 @@ const assertStageTransition = (pipeline, toStage) => {
     throw error;
   }
 
-  if (toStage === 'sent_to_client' && pipeline.approval.status !== 'approved') {
+  if (toStage === 'sent_to_client' && pipeline.approval?.status !== 'approved') {
     const error = new Error('Quotation must be approved by admin before it can be sent to client.');
     error.statusCode = 400;
     throw error;
+  }
+
+  if (toStage === 'proposal' && pipeline.currentStage !== 'proposal' && pipeline.approval?.status !== 'approved') {
+    const error = new Error('Admin approval must be approved before proposal can be prepared.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (toStage === 'sent_to_client') {
+    const proposal = pipeline.proposal || {};
+    const hasContent = proposal.sections && Object.values(proposal.sections).some((value) => Array.isArray(value) ? value.length : Boolean(value));
+    if (!['generated', 'finalized'].includes(proposal.status) || !hasContent) {
+      const error = new Error('Generate and save the proposal before sending it to client.');
+      error.statusCode = 400;
+      throw error;
+    }
   }
 
   if (toStage === 'negotiation' && !pipeline.sentToClient?.sentAt) {
@@ -139,6 +158,26 @@ export const updatePipelineSection = async (req, res) => {
         payload.closedAt = payload.closedAt ? new Date(payload.closedAt) : new Date();
       }
     }
+    if (section === 'proposal') {
+      if (pipeline.currentStage !== 'proposal') {
+        assertStageTransition(pipeline, 'proposal');
+      }
+      const current = pipeline.proposal?.toObject ? pipeline.proposal.toObject() : pipeline.proposal;
+      const defaults = buildProposalDefaults({ lead, clientDetails: pipeline.clientDetails, quotation: pipeline.quotation, proposal: current });
+      payload.pricing = { ...defaults.pricing, ...(payload.pricing || {}) };
+      payload.validity = { ...defaults.validity, ...(payload.validity || {}) };
+      payload.sections = { ...defaults.sections, ...(payload.sections || {}) };
+      payload.sourceData = defaults.sourceData;
+      payload.version = Number(current?.version || 0) + 1;
+      payload.contentVersion = Number(current?.contentVersion || current?.version || 0) + 1;
+      payload.status = payload.status || current?.status || 'draft';
+      payload.lastEditedAt = new Date();
+      payload.lastEditedBy = req.user.id;
+      payload.versions = [
+        ...(current?.versions || []),
+        { version: payload.version, source: 'manual', content: payload.sections, createdAt: new Date(), createdBy: req.user.id }
+      ].slice(-10);
+    }
 
     pipeline[section] = {
       ...(pipeline[section]?.toObject ? pipeline[section].toObject() : pipeline[section]),
@@ -148,6 +187,7 @@ export const updatePipelineSection = async (req, res) => {
     };
 
     if (section === 'quotation') appendStageHistory(pipeline, 'quotation', req.user.id, 'Quotation details updated');
+    if (section === 'proposal') appendStageHistory(pipeline, 'proposal', req.user.id, 'Proposal draft updated');
     if (section === 'sentToClient' && pipeline.sentToClient?.sentAt) {
       assertStageTransition(pipeline, 'sent_to_client');
       appendStageHistory(pipeline, 'sent_to_client', req.user.id, 'Quotation sent to client');
@@ -195,11 +235,161 @@ export const transitionPipelineStage = async (req, res) => {
       pipeline.negotiation.lastNegotiationAt = new Date();
     }
 
+    if (stage === 'proposal') {
+      pipeline.proposal = buildProposalDefaults({ lead, clientDetails: pipeline.clientDetails, quotation: pipeline.quotation, proposal: pipeline.proposal });
+    }
+
     appendStageHistory(pipeline, stage, req.user.id, comments);
     await pipeline.save();
 
     const populated = await populatePipeline(SalesPipeline.findById(pipeline._id));
     res.json({ success: true, data: populated });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+};
+
+export const savePipelineProposal = async (req, res) => {
+  req.params.section = 'proposal';
+  return updatePipelineSection(req, res);
+};
+
+export const generatePipelineProposal = async (req, res) => {
+  try {
+    const { leadId } = req.params;
+    const lead = await Lead.findById(leadId);
+    await assertLeadAccess(lead, req.user);
+    const pipeline = await getOrCreatePipeline(lead, req.user.id);
+    if (pipeline.currentStage !== 'proposal') {
+      assertStageTransition(pipeline, 'proposal');
+    }
+
+    const current = buildProposalDefaults({
+      lead,
+      clientDetails: pipeline.clientDetails,
+      quotation: pipeline.quotation,
+      proposal: { ...(pipeline.proposal || {}), ...(req.body || {}) }
+    });
+    const generation = await generateProposalContent({
+      lead,
+      clientDetails: pipeline.clientDetails,
+      quotation: pipeline.quotation,
+      proposalInputs: current,
+      userInstructions: req.body?.aiInstructions || current.aiInstructions || ''
+    });
+    const generatedSections = generation.content;
+
+    const nextVersion = Number(pipeline.proposal?.version || 0) + 1;
+    pipeline.proposal = {
+      ...current,
+      sections: { ...current.sections, ...generatedSections },
+      status: 'generated',
+      version: nextVersion,
+      contentVersion: Number(current.contentVersion || 0) + 1,
+      generatedAt: new Date(),
+      aiGeneratedAt: new Date(),
+      aiModel: generation.meta?.aiModel || current.aiModel || '',
+      aiProvider: generation.meta?.aiProvider || current.aiProvider || 'fallback',
+      updatedAt: new Date(),
+      generatedBy: req.user.id,
+      versions: [
+        ...(pipeline.proposal?.versions || []),
+        { version: nextVersion, source: generation.meta?.usedFallback ? 'fallback' : 'ai', content: current.sections, createdAt: new Date(), createdBy: req.user.id }
+      ].slice(-10)
+    };
+    appendStageHistory(pipeline, 'proposal', req.user.id, 'Proposal content generated');
+    await pipeline.save();
+    const populated = await populatePipeline(SalesPipeline.findById(pipeline._id));
+    res.json({ success: true, data: populated });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+};
+
+export const generatePipelineProposalSection = async (req, res) => {
+  try {
+    const { leadId } = req.params;
+    const { section, instruction } = req.body;
+    const lead = await Lead.findById(leadId);
+    await assertLeadAccess(lead, req.user);
+    const pipeline = await getOrCreatePipeline(lead, req.user.id);
+    if (pipeline.currentStage !== 'proposal') {
+      assertStageTransition(pipeline, 'proposal');
+    }
+
+    const current = buildProposalDefaults({
+      lead,
+      clientDetails: pipeline.clientDetails,
+      quotation: pipeline.quotation,
+      proposal: pipeline.proposal || {}
+    });
+    const generation = await generateProposalSectionContent({
+      lead,
+      clientDetails: pipeline.clientDetails,
+      quotation: pipeline.quotation,
+      proposalInputs: current,
+      userInstructions: instruction || current.aiInstructions || ''
+    }, section);
+    const nextVersion = Number(current.version || 0) + 1;
+    pipeline.proposal = {
+      ...current,
+      sections: { ...current.sections, ...generation.content },
+      status: 'generated',
+      version: nextVersion,
+      contentVersion: Number(current.contentVersion || 0) + 1,
+      aiGeneratedAt: new Date(),
+      aiModel: generation.meta?.aiModel || current.aiModel || '',
+      aiProvider: generation.meta?.aiProvider || current.aiProvider || 'fallback',
+      updatedAt: new Date(),
+      versions: [
+        ...(current.versions || []),
+        { version: nextVersion, source: generation.meta?.usedFallback ? 'fallback-section' : 'ai-section', section, content: current.sections, createdAt: new Date(), createdBy: req.user.id }
+      ].slice(-10)
+    };
+    appendStageHistory(pipeline, 'proposal', req.user.id, `Proposal section improved: ${section}`);
+    await pipeline.save();
+    const populated = await populatePipeline(SalesPipeline.findById(pipeline._id));
+    res.json({ success: true, data: populated });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+};
+
+export const generatePipelineProposalPdf = async (req, res) => {
+  try {
+    const { leadId } = req.params;
+    const lead = await Lead.findById(leadId);
+    await assertLeadAccess(lead, req.user);
+    const pipeline = await getOrCreatePipeline(lead, req.user.id);
+    if (pipeline.currentStage !== 'proposal') {
+      assertStageTransition(pipeline, 'proposal');
+    }
+    const proposal = buildProposalDefaults({
+      lead,
+      clientDetails: pipeline.clientDetails,
+      quotation: pipeline.quotation,
+      proposal: { ...(pipeline.proposal || {}), ...(req.body || {}) }
+    });
+    const hasSectionContent = proposal.sections && Object.values(proposal.sections).some((value) => Array.isArray(value) ? value.length > 0 : Boolean(String(value || '').trim()));
+    const hasBasicContent = Boolean(proposal.companyName || proposal.customerName || proposal.proposalType || proposal.title);
+    const hasContent = hasSectionContent || hasBasicContent;
+    if (!hasContent) return res.status(400).json({ success: false, message: 'Add or generate proposal content before creating PDF.' });
+
+    const pdfUrl = await generateProposalPdf({ proposal });
+    pipeline.proposal = {
+      ...proposal,
+      pdfUrl,
+      status: proposal.status === 'draft' ? 'generated' : proposal.status,
+      updatedAt: new Date(),
+      version: Number(proposal.version || 0) + 1
+    };
+    pipeline.sentToClient = {
+      ...(pipeline.sentToClient?.toObject ? pipeline.sentToClient.toObject() : pipeline.sentToClient),
+      fileUrl: pipeline.sentToClient?.fileUrl || pdfUrl
+    };
+    await pipeline.save();
+    const populated = await populatePipeline(SalesPipeline.findById(pipeline._id));
+    res.json({ success: true, data: populated, pdfUrl });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
@@ -271,6 +461,28 @@ export const getAllPipelines = async (req, res) => {
 
     res.json({ success: true, data: pipelines });
   } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const extractProposalFromPdf = async (req, res) => {
+  try {
+    const { leadId } = req.params;
+    const lead = await Lead.findOne({ _id: leadId });
+    await assertLeadAccess(lead, req.user);
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No PDF file uploaded.' });
+    }
+
+    if (req.file.mimetype !== 'application/pdf') {
+      return res.status(400).json({ success: false, message: 'Uploaded file must be a PDF.' });
+    }
+
+    const extracted = await extractFromPdf(req.file.buffer);
+    res.json({ success: true, data: extracted });
+  } catch (error) {
+    console.error('[PDF Extract] Error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };

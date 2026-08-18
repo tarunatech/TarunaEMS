@@ -166,21 +166,21 @@ app.get("/api/health", (req, res) => {
 });
 
 
-  app.get("/", (req, res) => {
-    res.json({
-      success: true,
-      message: "Employee Management System API",
-      version: "1.0.0",
-      endpoints: {
-        auth: "/api/auth",
-        employees: "/api/employees",
-        dashboard: "/api/dashboard",
-        leaves: "/api/leaves",
-        tasks: "/api/tasks",
-        users: "/api/users",
-      },
-    });
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "Employee Management System API",
+    version: "1.0.0",
+    endpoints: {
+      auth: "/api/auth",
+      employees: "/api/employees",
+      dashboard: "/api/dashboard",
+      leaves: "/api/leaves",
+      tasks: "/api/tasks",
+      users: "/api/users",
+    },
   });
+});
 
 // Global error handler (must be last)
 app.use(errorHandler);

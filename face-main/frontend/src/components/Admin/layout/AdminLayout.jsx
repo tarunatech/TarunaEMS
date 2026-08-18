@@ -23,6 +23,7 @@ const AdminLayout = ({ children }) => {
     { name: "Holiday Calendar", path: "/admin/holidays" },
     { name: "Department", path: "/admin/department" },
     { name: "Task Management", path: "/admin/tasks" },
+    { name: "Problem Statements", path: "/admin/problems" },
     { name: "Interviews", path: "/admin/interviews" },
   ];
 

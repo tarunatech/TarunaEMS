@@ -3,11 +3,11 @@ import db from '../db/index.js';
 import { salesPipelines } from '../db/schema/salesPipeline.js';
 import { users } from '../db/schema/user.js';
 
-const STAGES = new Set(['client_details', 'quotation', 'admin_approval', 'sent_to_client', 'negotiation', 'won_closed']);
+const STAGES = new Set(['client_details', 'quotation', 'admin_approval', 'proposal', 'sent_to_client', 'negotiation', 'won_closed']);
 const APPROVAL_STATUSES = new Set(['not_submitted', 'pending', 'approved', 'rejected', 'revision_requested']);
 const CLIENT_METHODS = new Set(['Email', 'WhatsApp', 'Portal', 'In-Person', 'Other']);
 const OUTCOME_STATUSES = new Set(['open', 'won', 'lost']);
-const WRITABLE_FIELDS = ['lead', 'currentStage', 'clientDetails', 'quotation', 'approval', 'sentToClient', 'negotiation', 'outcome', 'stageHistory', 'createdAt', 'updatedAt'];
+const WRITABLE_FIELDS = ['lead', 'currentStage', 'clientDetails', 'quotation', 'approval', 'proposal', 'sentToClient', 'negotiation', 'outcome', 'stageHistory', 'createdAt', 'updatedAt'];
 
 const columnByField = {
   id: salesPipelines.id,
@@ -47,6 +47,7 @@ const withToObject = (value) => {
 
 const defaultApproval = () => ({ status: 'not_submitted', history: [] });
 const defaultOutcome = () => ({ status: 'open' });
+const defaultProposal = () => ({ status: 'draft', version: 0, contentVersion: 0, sections: {}, pricing: { currency: 'INR' }, validity: {}, versions: [] });
 
 const normalizeHistory = (history = []) => asArray(history).map((item) => ({
   ...item,
@@ -75,6 +76,19 @@ const normalizeInput = (data = {}) => {
     if (normalized.approval.submittedAt) normalized.approval.submittedAt = normalizeDate(normalized.approval.submittedAt);
     if (normalized.approval.approvedAt) normalized.approval.approvedAt = normalizeDate(normalized.approval.approvedAt);
     normalized.approval.history = normalizeHistory(normalized.approval.history);
+  }
+  if (normalized.proposal !== undefined) {
+    normalized.proposal = { ...defaultProposal(), ...(normalized.proposal || {}) };
+    if (!['draft', 'generated', 'finalized'].includes(normalized.proposal.status)) unsupported(`proposal.status value "${normalized.proposal.status}"`);
+    for (const field of ['generatedAt', 'updatedAt', 'aiGeneratedAt', 'lastEditedAt']) {
+      if (normalized.proposal[field]) normalized.proposal[field] = normalizeDate(normalized.proposal[field]);
+    }
+    normalized.proposal.version = Number(normalized.proposal.version || 0);
+    normalized.proposal.contentVersion = Number(normalized.proposal.contentVersion || normalized.proposal.version || 0);
+    normalized.proposal.sections = { ...(normalized.proposal.sections || {}) };
+    normalized.proposal.pricing = { currency: 'INR', ...(normalized.proposal.pricing || {}) };
+    normalized.proposal.validity = { ...(normalized.proposal.validity || {}) };
+    normalized.proposal.versions = asArray(normalized.proposal.versions);
   }
   if (normalized.sentToClient !== undefined) {
     normalized.sentToClient = { ...(normalized.sentToClient || {}) };
@@ -108,6 +122,7 @@ const serialize = (row) => {
     clientDetails: withToObject(row.clientDetails || {}),
     quotation: withToObject(row.quotation || {}),
     approval: withToObject({ ...defaultApproval(), ...(row.approval || {}), history: asArray(row.approval?.history) }),
+    proposal: withToObject({ ...defaultProposal(), ...(row.proposal || {}) }),
     sentToClient: withToObject(row.sentToClient || {}),
     negotiation: withToObject(row.negotiation || {}),
     outcome: withToObject({ ...defaultOutcome(), ...(row.outcome || {}) }),
@@ -203,6 +218,7 @@ class SalesPipelineDocument {
       clientDetails: {},
       quotation: {},
       approval: defaultApproval(),
+      proposal: defaultProposal(),
       sentToClient: {},
       negotiation: {},
       outcome: defaultOutcome(),

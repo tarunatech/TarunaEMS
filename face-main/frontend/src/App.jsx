@@ -38,6 +38,7 @@ import ExpenseTracker from './pages/Admin/ExpenseTracker';
 import EmployeeExpenses from './pages/Employee/EmployeeExpenses';
 import HRInterviewSchedule from './pages/Employee/HRInterviewSchedule';
 import AdminInterviews from './pages/Admin/AdminInterviews';
+import AdminProblemStatements from './pages/Admin/AdminProblemStatements';
 
 function App() {
   return (
@@ -129,6 +130,11 @@ function App() {
           <Route path="/admin/interviews" element={
             <ProtectedRoute role="admin">
               <AdminInterviews />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/problems" element={
+            <ProtectedRoute role="admin">
+              <AdminProblemStatements />
             </ProtectedRoute>
           } />
 

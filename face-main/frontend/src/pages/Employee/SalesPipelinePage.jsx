@@ -56,7 +56,7 @@ const SalesPipelinePage = () => {
 
   return (
     <EmployeeLayout>
-      <div className="flex flex-col gap-4 lg:h-[calc(100vh-104px)]">
+      <div className="employee-sales-pipeline-page flex flex-col gap-4 lg:h-[calc(100vh-104px)]">
         {/* Header */}
         <div className="flex flex-shrink-0 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -88,9 +88,9 @@ const SalesPipelinePage = () => {
             <p className="mt-1 text-[12.5px] text-slate-500">Add or receive a lead first to start a sales pipeline.</p>
           </div>
         ) : (
-          <div className="grid flex-1 min-h-0 gap-4 lg:grid-cols-[260px_1fr]">
+          <div className="grid flex-1 min-h-0 gap-4 lg:grid-cols-[230px_minmax(0,1fr)] 2xl:grid-cols-[220px_minmax(0,1fr)]">
             {/* Leads list */}
-            <aside className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <aside className="sales-pipeline-leads flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
               <div className="flex-shrink-0 border-b border-slate-100 px-4 py-3">
                 <p className="text-[10.5px] font-semibold uppercase tracking-wider text-slate-400">My Leads</p>
               </div>
@@ -131,7 +131,7 @@ const SalesPipelinePage = () => {
             </aside>
 
             {/* Pipeline detail */}
-            <main className="min-h-0 overflow-y-auto rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <main className="sales-pipeline-main min-h-0 overflow-y-auto rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
               {selectedLead ? (
                 <SalesPipelineModal
                   lead={selectedLead}

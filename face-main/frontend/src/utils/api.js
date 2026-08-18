@@ -319,6 +319,14 @@ export const salesPipelineAPI = {
   getAll: () => API.get('/sales-pipelines'),
   getByLead: (leadId) => API.get(`/sales-pipelines/lead/${leadId}`),
   updateSection: (leadId, section, data) => API.patch(`/sales-pipelines/lead/${leadId}/${section}`, data),
+  saveProposal: (leadId, data) => API.patch(`/sales-pipelines/lead/${leadId}/proposal`, data),
+  generateProposal: (leadId, data) => API.post(`/sales-pipelines/lead/${leadId}/proposal/generate`, data),
+  generateProposalSection: (leadId, data) => API.post(`/sales-pipelines/lead/${leadId}/proposal/generate-section`, data),
+  generateProposalPdf: (leadId, data) => API.post(`/sales-pipelines/lead/${leadId}/proposal/pdf`, data),
+  extractProposalFromPdf: (leadId, formData) => API.post(`/sales-pipelines/lead/${leadId}/proposal/extract-pdf`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 90000
+  }),
   transitionStage: (leadId, data) => API.patch(`/sales-pipelines/lead/${leadId}/stage`, data),
   updateApproval: (leadId, data) => API.patch(`/sales-pipelines/lead/${leadId}/approval`, data),
   getPendingApprovals: () => API.get('/sales-pipelines/pending-approvals')

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { employeeAPI, departmentAPI } from '../../utils/api';
+import { useNavigate } from 'react-router-dom';
+import api, { employeeAPI, departmentAPI, attendanceAPI, leadAPI } from '../../utils/api';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import { faceAPI, cameraHelper } from '../../utils/faceAPI';
 import {
@@ -15,7 +16,14 @@ import {
   UserPlus,
   AlertCircle,
   CheckCircle,
-  Camera
+  Camera,
+  Calendar,
+  ClipboardList,
+  TrendingUp,
+  Users,
+  BarChart3,
+  ArrowUpRight,
+  Loader2
 } from 'lucide-react';
 import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 import toast from 'react-hot-toast';
@@ -33,6 +41,90 @@ const getDepartmentId = (department) => {
     return department._id || department.id || '';
   }
   return department;
+};
+
+const EmployeeOverviewCard = ({
+  icon,
+  title,
+  value,
+  subtitle,
+  breakdown = [],
+  note,
+  footer,
+  progress,
+  cta,
+  tone = 'blue',
+  onClick
+}) => {
+  const tones = {
+    blue: { gradient: 'from-blue-500 to-indigo-500', text: 'text-blue-700', bg: 'bg-blue-50', ring: 'ring-blue-100' },
+    amber: { gradient: 'from-amber-400 to-orange-500', text: 'text-amber-700', bg: 'bg-amber-50', ring: 'ring-amber-100' },
+    violet: { gradient: 'from-violet-500 to-fuchsia-500', text: 'text-violet-700', bg: 'bg-violet-50', ring: 'ring-violet-100' },
+    emerald: { gradient: 'from-emerald-500 to-teal-500', text: 'text-emerald-700', bg: 'bg-emerald-50', ring: 'ring-emerald-100' },
+    slate: { gradient: 'from-slate-600 to-slate-800', text: 'text-slate-700', bg: 'bg-slate-50', ring: 'ring-slate-200' }
+  };
+  const toneClass = tones[tone] || tones.blue;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative grid min-h-[132px] grid-cols-1 gap-3 overflow-hidden rounded-2xl border border-white/80 bg-white p-4 text-left shadow-sm ring-1 ${toneClass.ring} transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 lg:grid-cols-[minmax(150px,0.9fr)_minmax(220px,1.1fr)]`}
+    >
+      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${toneClass.gradient}`} />
+      <div className="min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${toneClass.bg} ${toneClass.text}`}>
+              {React.createElement(icon, { className: 'h-4 w-4' })}
+            </span>
+            <p className="truncate text-[11px] font-black uppercase tracking-wide text-slate-600">{title}</p>
+          </div>
+          <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 text-slate-300 transition-colors group-hover:text-blue-600 lg:hidden" />
+        </div>
+
+        <div className="mt-3">
+          <p className="truncate text-[30px] font-black leading-none text-slate-950">{value}</p>
+          <p className="mt-1 truncate text-sm font-semibold text-slate-500">{subtitle}</p>
+        </div>
+      </div>
+
+      <div className="flex min-w-0 flex-col">
+        <div className="grid grid-cols-4 gap-1.5 text-xs">
+          {breakdown.map((item) => (
+            <div key={item.label} className="min-w-0 rounded-lg bg-slate-50 px-1.5 py-1.5 text-center ring-1 ring-slate-100">
+              <p className="truncate text-[9.5px] font-semibold leading-tight text-slate-500">{item.label}</p>
+              <p className="mt-0.5 truncate text-[11px] font-black leading-tight text-slate-900">{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {note && (
+          <p className="mt-2 truncate rounded-lg bg-white/70 px-2 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-100">
+            {note}
+          </p>
+        )}
+
+        <div className="mt-auto pt-2.5">
+          {footer && <p className="mb-2 truncate text-xs font-semibold text-slate-500">{footer}</p>}
+          {typeof progress === 'number' && (
+            <div className="mb-2">
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className={`h-full rounded-full bg-gradient-to-r ${toneClass.gradient}`}
+                  style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }}
+                />
+              </div>
+            </div>
+          )}
+          <div className="flex items-center gap-1 text-xs font-bold text-slate-400 transition-colors group-hover:text-blue-600">
+            {cta || 'View details'}
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </div>
+        </div>
+      </div>
+    </button>
+  );
 };
 
 // ================================
@@ -585,6 +677,7 @@ const AddEmployeeModal = ({
 // MAIN COMPONENT
 // ================================
 const EmployeeManagement = () => {
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -592,7 +685,10 @@ const EmployeeManagement = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showFullEmployeeDetails, setShowFullEmployeeDetails] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [employeeOverview, setEmployeeOverview] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [faceRegistrationEnabled, setFaceRegistrationEnabled] = useState(true); // Face registration is now OPTIONAL
@@ -604,6 +700,7 @@ const EmployeeManagement = () => {
   const [posesCaptured, setPosesCaptured] = useState([]);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const keyDetailsRef = useRef(null);
   const POSES = [
     { name: 'front', instruction: 'Look straight ahead at the camera. Keep your head level.', emoji: '👁️' }
   ];
@@ -719,6 +816,7 @@ const EmployeeManagement = () => {
   const openEmployeeView = (event, employee) => {
     if (isInteractiveClick(event)) return;
     setSelectedEmployee(employee);
+    setShowFullEmployeeDetails(false);
     setShowViewModal(true);
   };
 
@@ -1094,6 +1192,276 @@ const EmployeeManagement = () => {
         [field]: value
       }));
     }
+  };
+
+  const getSelectedEmployeeKey = (employee = selectedEmployee) => {
+    if (!employee) return '';
+    return String(employee._id || employee.id || employee.employeeId || employee.user?._id || employee.user?.employeeId || '');
+  };
+
+  const getSelectedEmployeeEmail = (employee = selectedEmployee) => (
+    employee?.contactInfo?.personalEmail || employee?.user?.email || ''
+  );
+
+  const normalizeList = (response, keys = []) => {
+    const data = response?.data || response || {};
+    for (const key of keys) {
+      if (Array.isArray(data?.[key])) return data[key];
+      if (Array.isArray(data?.data?.[key])) return data.data[key];
+    }
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.tasks)) return data.tasks;
+    if (Array.isArray(data.leaves)) return data.leaves;
+    return [];
+  };
+
+  const matchesEmployee = (item, employee = selectedEmployee) => {
+    if (!employee || !item) return false;
+    const ids = new Set([
+      employee._id,
+      employee.id,
+      employee.employeeId,
+      employee.user?._id,
+      employee.user?.id,
+      employee.user?.employeeId
+    ].filter(Boolean).map(String));
+    const email = getSelectedEmployeeEmail(employee).toLowerCase();
+    const candidates = [
+      item.employee,
+      item.employeeId,
+      item.assignedTo,
+      item.user,
+      item.userId,
+      item.employee?._id,
+      item.employee?.id,
+      item.employee?.employeeId,
+      item.employee?.user?._id,
+      item.employee?.user?.employeeId,
+      item.assignedTo?._id,
+      item.assignedTo?.id,
+      item.assignedTo?.employeeId,
+      item.assignedTo?.user?._id,
+      item.assignedTo?.user?.employeeId
+    ];
+
+    if (candidates.some(value => value && ids.has(String(typeof value === 'object' ? value._id || value.id || value.employeeId : value)))) {
+      return true;
+    }
+
+    const itemEmail = [
+      item.email,
+      item.employee?.contactInfo?.personalEmail,
+      item.employee?.user?.email,
+      item.assignedTo?.contactInfo?.personalEmail,
+      item.assignedTo?.user?.email
+    ].filter(Boolean).map(value => String(value).toLowerCase());
+
+    return !!email && itemEmail.includes(email);
+  };
+
+  const fetchEmployeeOverview = async (employee) => {
+    if (!employee) return;
+    setOverviewLoading(true);
+    const employeeId = getSelectedEmployeeKey(employee);
+    const employeeEmail = getSelectedEmployeeEmail(employee);
+
+    try {
+      const [leavesRes, tasksRes, attendanceRes, leadsRes, problemsRes, interviewsRes] = await Promise.allSettled([
+        api.get('/leaves', { params: { search: employee.employeeId || employee.user?.employeeId || employee.fullName || employeeEmail } }),
+        api.get('/tasks', { params: { assignedTo: employee._id || employeeId } }),
+        attendanceAPI.getAllAttendance({ employee: employee._id || employeeId, limit: 200 }),
+        leadAPI.getLeads({ includeAll: true, assignedTo: employeeEmail || employee._id || employeeId, limit: 200 }),
+        isDeveloperEmployee(employee) ? api.get('/problems') : Promise.resolve({ data: { data: [] } }),
+        isHrEmployee(employee) ? api.get('/interviews/admin') : Promise.resolve({ data: { data: [] } })
+      ]);
+
+      const leaves = leavesRes.status === 'fulfilled'
+        ? normalizeList(leavesRes.value, ['leaves']).filter(item => matchesEmployee(item, employee))
+        : [];
+      const tasks = tasksRes.status === 'fulfilled'
+        ? normalizeList(tasksRes.value, ['tasks']).filter(item => matchesEmployee(item, employee))
+        : [];
+      const attendance = attendanceRes.status === 'fulfilled'
+        ? normalizeList(attendanceRes.value, ['attendanceRecords', 'records', 'attendance']).filter(item => matchesEmployee(item, employee))
+        : [];
+      const leads = leadsRes.status === 'fulfilled'
+        ? normalizeList(leadsRes.value, ['leads']).filter(item => matchesEmployee(item, employee))
+        : [];
+      const problems = problemsRes.status === 'fulfilled'
+        ? normalizeList(problemsRes.value, ['data', 'problems']).filter(item => matchesEmployee({ ...item, employee: item.reportedBy || item.solvedBy }, employee))
+        : [];
+      const interviews = interviewsRes.status === 'fulfilled'
+        ? normalizeList(interviewsRes.value, ['data', 'interviews']).filter(item => matchesEmployee({ ...item, employee: item.createdBy || item.employee || item.hr }, employee))
+        : [];
+
+      const statusOf = (item) => String(item.status || '').toLowerCase();
+      const leadNameOf = (lead) => (
+        lead.fullName ||
+        lead.name ||
+        `${lead.firstName || ''} ${lead.lastName || ''}`.trim() ||
+        lead.company ||
+        'Lead'
+      );
+      const formatShortDate = (date) => {
+        if (!date) return '';
+        const parsed = new Date(date);
+        if (Number.isNaN(parsed.getTime())) return '';
+        return parsed.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      };
+      const sortLatest = (items) => [...items].sort((a, b) =>
+        new Date(b.updatedAt || b.createdAt || b.appliedDate || b.startDate || b.dueDate || b.scheduledDate || 0) -
+        new Date(a.updatedAt || a.createdAt || a.appliedDate || a.startDate || a.dueDate || a.scheduledDate || 0)
+      );
+      const scheduledMeetings = leads
+        .flatMap(lead => (lead.meetings || []).map(meeting => ({
+          ...meeting,
+          scheduledDate: meeting.scheduledDate || meeting.date || meeting.meetingDate || meeting.startTime,
+          leadName: leadNameOf(lead),
+          leadCompany: lead.company,
+          leadStatus: lead.status
+        })))
+        .filter(meeting => statusOf(meeting) !== 'cancelled');
+      const presentDays = attendance.filter(record => ['present', 'checked-in', 'checked out', 'checked-out'].includes(statusOf(record))).length;
+      const absentDays = attendance.filter(record => statusOf(record) === 'absent').length;
+      const lateDays = attendance.filter(record => statusOf(record).includes('late')).length;
+      const halfDays = attendance.filter(record => statusOf(record).includes('half')).length;
+      const approvedLeaves = leaves.filter(item => statusOf(item) === 'approved').length;
+      const rejectedLeaves = leaves.filter(item => statusOf(item) === 'rejected').length;
+      const leaveDaysTaken = leaves
+        .filter(item => statusOf(item) === 'approved')
+        .reduce((sum, item) => sum + Number(item.isHalfDay ? 0.5 : item.totalDays || 0), 0);
+      const visibleLeave = sortLatest(leaves.filter(item => ['pending', 'requested', 'applied'].includes(statusOf(item)) || !statusOf(item)))[0];
+      const leaveReason = visibleLeave?.reason || visibleLeave?.leaveReason || visibleLeave?.description || visibleLeave?.type || visibleLeave?.leaveType;
+      const leaveDate = formatShortDate(visibleLeave?.startDate || visibleLeave?.fromDate || visibleLeave?.date || visibleLeave?.appliedDate);
+      const inactiveTaskStatuses = ['completed', 'done', 'approved', 'reviewed', 'cancelled', 'rejected'];
+      const activeTasks = sortLatest(tasks.filter(item => !inactiveTaskStatuses.includes(statusOf(item))));
+      const completedTasks = tasks.filter(item => ['completed', 'done', 'approved', 'reviewed'].includes(statusOf(item))).length;
+      const overdueTasks = tasks.filter(item => {
+        if (inactiveTaskStatuses.includes(statusOf(item))) return false;
+        return item.dueDate && new Date(item.dueDate) < new Date();
+      }).length;
+      const taskTitles = activeTasks
+        .slice(0, 2)
+        .map(item => item.title || item.description || item.taskTitle)
+        .filter(Boolean);
+      const wonLeads = leads.filter(item => statusOf(item) === 'won').length;
+      const lostLeads = leads.filter(item => statusOf(item) === 'lost').length;
+      const openLeads = Math.max(leads.length - wonLeads - lostLeads, 0);
+      const activeLeads = sortLatest(leads.filter(item => statusOf(item) !== 'won'));
+      const activeLead = activeLeads[0];
+      const activeLeadInfo = activeLead
+        ? [leadNameOf(activeLead), activeLead.company, activeLead.status].filter(Boolean).join(' - ')
+        : '';
+      const upcomingMeetingItems = scheduledMeetings
+        .filter(item => item.scheduledDate && new Date(item.scheduledDate) >= new Date() && !['completed', 'done', 'cancelled'].includes(statusOf(item)))
+        .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+      const upcomingMeetings = upcomingMeetingItems.length;
+      const completedMeetings = scheduledMeetings.filter(item => ['completed', 'done'].includes(statusOf(item))).length;
+      const openProblems = problems.filter(item => !['solved', 'resolved', 'closed'].includes(statusOf(item))).length;
+      const solvedProblems = Math.max(problems.length - openProblems, 0);
+      const latestProblem = sortLatest(problems.filter(item => !['solved', 'resolved', 'closed'].includes(statusOf(item))))[0];
+      const scheduledInterviews = interviews.filter(item => ['scheduled', 'pending'].includes(statusOf(item))).length;
+      const completedInterviews = interviews.filter(item => ['completed', 'selected', 'rejected', 'cancelled'].includes(statusOf(item))).length;
+
+      setEmployeeOverview({
+        leaves: {
+          total: leaves.length,
+          pending: leaves.filter(item => statusOf(item) === 'pending').length,
+          approved: approvedLeaves,
+          rejected: rejectedLeaves,
+          daysTaken: leaveDaysTaken,
+          brief: visibleLeave && (leaveDate || leaveReason) ? `${leaveDate || 'Leave'}: ${leaveReason || 'No reason added'}` : ''
+        },
+        tasks: {
+          total: tasks.length,
+          active: activeTasks.length,
+          completed: completedTasks,
+          overdue: overdueTasks,
+          titles: taskTitles
+        },
+        attendance: {
+          total: attendance.length,
+          present: presentDays,
+          absent: absentDays,
+          late: lateDays,
+          halfDay: halfDays,
+          rate: attendance.length ? Math.round((presentDays / attendance.length) * 100) : 0
+        },
+        sales: {
+          total: leads.length,
+          won: wonLeads,
+          open: openLeads,
+          lost: lostLeads,
+          brief: activeLeadInfo
+        },
+        meetings: {
+          total: scheduledMeetings.length,
+          upcoming: upcomingMeetings,
+          completed: completedMeetings,
+          past: Math.max(scheduledMeetings.length - upcomingMeetings, 0),
+          brief: upcomingMeetingItems[0]
+            ? [upcomingMeetingItems[0].leadName, formatShortDate(upcomingMeetingItems[0].scheduledDate), upcomingMeetingItems[0].type || upcomingMeetingItems[0].title].filter(Boolean).join(' - ')
+            : ''
+        },
+        problems: {
+          total: problems.length,
+          open: openProblems,
+          solved: solvedProblems,
+          latest: latestProblem?.title || latestProblem?.description || latestProblem?.problem || ''
+        },
+        interviews: {
+          total: interviews.length,
+          pending: scheduledInterviews,
+          completed: completedInterviews
+        }
+      });
+    } catch (error) {
+      console.error('Failed to load employee overview:', error);
+      setEmployeeOverview(null);
+    } finally {
+      setOverviewLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showViewModal && selectedEmployee) {
+      fetchEmployeeOverview(selectedEmployee);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showViewModal, selectedEmployee?._id]);
+
+  const goToEmployeeDetailPage = (path) => {
+    setShowViewModal(false);
+    navigate(path);
+  };
+
+  const handleToggleFullEmployeeDetails = () => {
+    setShowFullEmployeeDetails(prev => !prev);
+    window.requestAnimationFrame(() => {
+      keyDetailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const getEmployeeRoleText = (employee = selectedEmployee) => [
+    getDepartmentName(employee?.workInfo?.department, ''),
+    employee?.workInfo?.position,
+    employee?.workInfo?.designation
+  ].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  const isSalesEmployee = (employee = selectedEmployee) => {
+    const roleText = getEmployeeRoleText(employee);
+    return ['sales', 'bde', 'businessdevelopment', 'businessdevelopmentexecutive'].some(key => roleText.includes(key));
+  };
+
+  const isDeveloperEmployee = (employee = selectedEmployee) => {
+    const roleText = getEmployeeRoleText(employee);
+    return ['developer', 'development', 'engineer', 'software', 'frontend', 'backend', 'fullstack'].some(key => roleText.includes(key));
+  };
+
+  const isHrEmployee = (employee = selectedEmployee) => {
+    const roleText = getEmployeeRoleText(employee);
+    return ['hr', 'humanresource', 'humanresources', 'recruiter', 'talent'].some(key => roleText.includes(key));
   };
 
   const handleEditEmployee = async (e) => {
@@ -1559,7 +1927,7 @@ const EmployeeManagement = () => {
       <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
 
       {/* Modal content */}
-      <div className="employee-details-view relative w-full max-w-3xl max-h-[74vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
+      <div className="employee-details-view relative w-full max-w-3xl lg:max-w-6xl max-h-[74vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
         <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-blue-100 bg-[#F8FAFC]/95 px-4 py-3 backdrop-blur sm:px-5">
           <h2 className="text-lg sm:text-xl font-bold text-slate-900">Employee Details</h2>
           <div className="flex items-center gap-2">
@@ -1611,6 +1979,195 @@ const EmployeeManagement = () => {
               </div>
             </div>
 
+            <section className="overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/60 to-indigo-50 p-3.5 shadow-sm sm:p-4">
+              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h3 className="text-base font-black text-slate-950 sm:text-lg">Complete Employee Snapshot</h3>
+                  <p className="mt-0.5 text-xs font-medium text-slate-500 sm:text-sm">Short role-based view for this employee only</p>
+                </div>
+                {overviewLoading && (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/80 px-2 py-1 text-[11px] font-medium text-blue-600 ring-1 ring-blue-100">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Syncing
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
+                <EmployeeOverviewCard
+                  icon={Calendar}
+                  title="Attendance"
+                  value={overviewLoading ? '...' : `${employeeOverview?.attendance?.rate || 0}%`}
+                  subtitle="Attendance rate"
+                  breakdown={[
+                    { label: 'Present', value: `${employeeOverview?.attendance?.present || 0} P` },
+                    { label: 'Absent', value: `${employeeOverview?.attendance?.absent || 0} A` },
+                    { label: 'Late', value: employeeOverview?.attendance?.late || 0 },
+                    { label: 'Half Day', value: employeeOverview?.attendance?.halfDay || 0 }
+                  ]}
+                  footer={`Attendance rate at ${employeeOverview?.attendance?.rate || 0}%`}
+                  progress={employeeOverview?.attendance?.rate || 0}
+                  cta="View attendance"
+                  tone="blue"
+                  onClick={() => goToEmployeeDetailPage('/admin/attendance')}
+                />
+                <EmployeeOverviewCard
+                  icon={Users}
+                  title="Leaves"
+                  value={overviewLoading ? '...' : employeeOverview?.leaves?.daysTaken || 0}
+                  subtitle="Approved days taken"
+                  breakdown={[
+                    { label: 'Pending', value: employeeOverview?.leaves?.pending || 0 },
+                    { label: 'Approved', value: employeeOverview?.leaves?.approved || 0 },
+                    { label: 'Rejected', value: employeeOverview?.leaves?.rejected || 0 },
+                    { label: 'Requests', value: employeeOverview?.leaves?.total || 0 }
+                  ]}
+                  note={employeeOverview?.leaves?.brief}
+                  footer="Leave requests"
+                  cta="View leave details"
+                  tone="amber"
+                  onClick={() => goToEmployeeDetailPage('/admin/leaves')}
+                />
+                <EmployeeOverviewCard
+                  icon={ClipboardList}
+                  title="Tasks"
+                  value={overviewLoading ? '...' : employeeOverview?.tasks?.total || 0}
+                  subtitle="Total assigned"
+                  breakdown={[
+                    { label: 'Active', value: employeeOverview?.tasks?.active || 0 },
+                    { label: 'Completed', value: employeeOverview?.tasks?.completed || 0 },
+                    { label: 'Overdue', value: employeeOverview?.tasks?.overdue || 0 },
+                    { label: 'Closed', value: employeeOverview?.tasks?.completed || 0 }
+                  ]}
+                  note={employeeOverview?.tasks?.titles?.length
+                    ? employeeOverview.tasks.titles.map((task, index) => `Task ${index + 1}: ${task}`).join(' | ')
+                    : ''}
+                  footer="Completion rate"
+                  progress={employeeOverview?.tasks?.total ? ((employeeOverview?.tasks?.completed || 0) / employeeOverview.tasks.total) * 100 : 0}
+                  cta="View task performance"
+                  tone="violet"
+                  onClick={() => goToEmployeeDetailPage('/admin/tasks')}
+                />
+                {isSalesEmployee(selectedEmployee) && (
+                  <>
+                    <EmployeeOverviewCard
+                      icon={TrendingUp}
+                      title="Sales"
+                      value={overviewLoading ? '...' : employeeOverview?.sales?.total || 0}
+                      subtitle="Assigned leads"
+                      breakdown={[
+                        { label: 'Won', value: employeeOverview?.sales?.won || 0 },
+                        { label: 'Open', value: employeeOverview?.sales?.open || 0 },
+                        { label: 'Lost', value: employeeOverview?.sales?.lost || 0 },
+                        { label: 'Pipeline', value: employeeOverview?.sales?.total || 0 }
+                      ]}
+                      note={employeeOverview?.sales?.brief}
+                      footer="Win rate"
+                      progress={employeeOverview?.sales?.total ? ((employeeOverview?.sales?.won || 0) / employeeOverview.sales.total) * 100 : 0}
+                      cta="View sales"
+                      tone="emerald"
+                      onClick={() => goToEmployeeDetailPage('/admin/sales')}
+                    />
+                    <EmployeeOverviewCard
+                      icon={BarChart3}
+                      title="Meetings"
+                      value={overviewLoading ? '...' : employeeOverview?.meetings?.total || 0}
+                      subtitle="Lead meetings"
+                      breakdown={[
+                        { label: 'Upcoming', value: employeeOverview?.meetings?.upcoming || 0 },
+                        { label: 'Completed', value: employeeOverview?.meetings?.completed || 0 },
+                        { label: 'Past', value: employeeOverview?.meetings?.past || 0 },
+                        { label: 'Total', value: employeeOverview?.meetings?.total || 0 }
+                      ]}
+                      note={employeeOverview?.meetings?.brief}
+                      footer=""
+                      cta="View meetings"
+                      tone="slate"
+                      onClick={() => goToEmployeeDetailPage('/admin/sales')}
+                    />
+                  </>
+                )}
+                {isDeveloperEmployee(selectedEmployee) && (
+                  <EmployeeOverviewCard
+                    icon={AlertCircle}
+                    title="Problems"
+                    value={overviewLoading ? '...' : employeeOverview?.problems?.total || 0}
+                    subtitle="Total reported"
+                    breakdown={[
+                      { label: 'Open', value: employeeOverview?.problems?.open || 0 },
+                      { label: 'Resolved', value: employeeOverview?.problems?.solved || 0 }
+                    ]}
+                    note={employeeOverview?.problems?.latest ? `Recent: ${employeeOverview.problems.latest}` : ''}
+                    footer="Open problems"
+                    cta="View problems"
+                    tone="slate"
+                    onClick={() => goToEmployeeDetailPage('/admin/problems')}
+                  />
+                )}
+                {isHrEmployee(selectedEmployee) && (
+                  <EmployeeOverviewCard
+                    icon={Calendar}
+                    title="Interviews"
+                    value={overviewLoading ? '...' : employeeOverview?.interviews?.total || 0}
+                    subtitle="Schedules created"
+                    breakdown={[
+                      { label: 'Scheduled', value: employeeOverview?.interviews?.pending || 0 },
+                      { label: 'Completed', value: employeeOverview?.interviews?.completed || 0 },
+                      { label: 'Total', value: employeeOverview?.interviews?.total || 0 }
+                    ]}
+                    footer="Interview scheduling"
+                    cta="View interviews"
+                    tone="emerald"
+                    onClick={() => goToEmployeeDetailPage('/admin/interviews')}
+                  />
+                )}
+              </div>
+            </section>
+
+            <section ref={keyDetailsRef} className="scroll-mt-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Key Details</h3>
+                  <p className="text-[11px] text-slate-500">A quick employee profile preview</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleFullEmployeeDetails}
+                  className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                >
+                  {showFullEmployeeDetails ? 'Show less' : 'Show more'}
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <label>Email</label>
+                  <p>{selectedEmployee.contactInfo?.personalEmail || selectedEmployee.user?.email || 'N/A'}</p>
+                </div>
+                <div>
+                  <label>Phone</label>
+                  <p>{selectedEmployee.contactInfo?.phone || 'N/A'}</p>
+                </div>
+                <div>
+                  <label>Joining Date</label>
+                  <p>{selectedEmployee.workInfo?.joiningDate ? new Date(selectedEmployee.workInfo.joiningDate).toLocaleDateString() : 'N/A'}</p>
+                </div>
+                <div>
+                  <label>Employment Type</label>
+                  <p>{selectedEmployee.workInfo?.employmentType || 'N/A'}</p>
+                </div>
+                <div>
+                  <label>Work Location</label>
+                  <p>{selectedEmployee.workInfo?.workLocation || 'N/A'}</p>
+                </div>
+                <div>
+                  <label>Status</label>
+                  <p>{selectedEmployee.status || 'Active'}</p>
+                </div>
+              </div>
+            </section>
+
+            {showFullEmployeeDetails && (
+              <>
             {/* Personal Information */}
             <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
               <h3 className="text-sm font-bold text-slate-900">Personal Information</h3>
@@ -1732,6 +2289,8 @@ const EmployeeManagement = () => {
                   </div>
                 </div>
               </div>
+            )}
+              </>
             )}
           </div>
         )}

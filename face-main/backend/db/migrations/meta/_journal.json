@@ -162,6 +162,13 @@
       "when": 1786451481203,
       "tag": "0022_gigantic_captain_flint",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1786964465602,
+      "tag": "0023_colossal_human_cannonball",
+      "breakpoints": true
     }
   ]
 }

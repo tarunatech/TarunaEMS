@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Calendar, Clock, FileText, X, DollarSign, CreditCard, ChevronLeft, ChevronRight, Wallet, Moon, Sun, ClipboardList } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Clock, FileText, X, DollarSign, CreditCard, ChevronLeft, ChevronRight, Wallet, Moon, Sun, ClipboardList, AlertCircle } from "lucide-react";
 import logo from "../../../assets/logo.jpg";
 import { useTheme } from "../../../hooks/useTheme";
 
@@ -16,6 +16,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) =
     { name: "Holiday Calendar", icon: Calendar, path: "/admin/holidays" },
     { name: "Department", icon: FileText, path: "/admin/department" },
     { name: "Task Management", icon: Calendar, path: "/admin/tasks" },
+    { name: "Problem Statements", icon: AlertCircle, path: "/admin/problems" },
     { name: "Sales", icon: DollarSign, path: "/admin/sales" },
     { name: "Interviews", icon: ClipboardList, path: "/admin/interviews" },
     { name: "Purchase Orders", icon: FileText, path: "/admin/purchase-orders" },

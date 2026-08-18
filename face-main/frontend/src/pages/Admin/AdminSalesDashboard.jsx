@@ -167,6 +167,9 @@ const AdminSalesDashboard = () => {
     if (pipeline.currentStage === 'sent_to_client' || pipeline.sentToClient?.sentAt) {
       return 'Proposal';
     }
+    if (pipeline.currentStage === 'proposal' || pipeline.proposal?.status === 'generated' || pipeline.proposal?.status === 'finalized') {
+      return 'Proposal';
+    }
     if (pipeline.approval?.status === 'approved') {
       return 'Qualified';
     }
@@ -244,6 +247,11 @@ const AdminSalesDashboard = () => {
     if (isInteractiveClick(event)) return;
     setSelectedLead(lead);
     setShowViewModal(true);
+  };
+
+  const openSelectedLeadPipeline = () => {
+    setShowViewModal(false);
+    setShowPipelineModal(true);
   };
 
   const getLeadSearchValue = (lead) => [lead.firstName, lead.lastName].filter(Boolean).join(' ') || lead.email || lead.company || '';
@@ -815,12 +823,25 @@ const AdminSalesDashboard = () => {
                 <h3 className="truncate text-lg font-bold text-slate-900 sm:text-2xl">{selectedLead.firstName} {selectedLead.lastName}</h3>
                 <p className="truncate text-xs text-slate-500 sm:text-sm">{selectedLead.company || 'No company'}{selectedLead.position ? ` • ${selectedLead.position}` : ''}</p>
               </div>
-              <button
-                onClick={() => setShowViewModal(false)}
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
+              <div className="flex flex-shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={openSelectedLeadPipeline}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 sm:text-sm"
+                  title="View Pipeline"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="hidden sm:inline">View Pipeline</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowViewModal(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  title="Close"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 gap-3 sm:gap-4 xl:grid-cols-[1.4fr_0.9fr]">
