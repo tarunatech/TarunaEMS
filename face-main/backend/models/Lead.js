@@ -73,11 +73,20 @@ const normalizeNote = (note = {}) => {
   return normalized;
 };
 
+const buildNextLeadId = async () => {
+  const rows = await db.select({ leadId: leads.leadId }).from(leads);
+  const maxNumber = rows.reduce((max, row) => {
+    const match = String(row.leadId || '').match(/^LEAD(\d+)$/i);
+    if (!match) return max;
+    return Math.max(max, Number(match[1]));
+  }, 0);
+  return `LEAD${String(maxNumber + 1).padStart(6, '0')}`;
+};
+
 const recomputeDerived = async (values, existing = null) => {
   const merged = { ...(existing || {}), ...values };
   if (!merged.leadId) {
-    const total = await Lead.countDocuments();
-    values.leadId = `LEAD${(total + 1).toString().padStart(6, '0')}`;
+    values.leadId = await buildNextLeadId();
     merged.leadId = values.leadId;
   }
   const meetings = asArray(merged.meetings).map((meeting, index) => normalizeMeeting(meeting, index, merged.leadId));
@@ -276,9 +285,20 @@ class LeadDocument {
       const values = await normalizeInput(this, this.__isNew ? null : this.__original);
       if (this.__isNew) {
         values.createdAt = new Date();
-        const [row] = await db.insert(leads).values(values).returning();
-        Object.assign(this, serialize(row), { __isNew: false, __original: serialize(row) });
-        return this;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          try {
+            const [row] = await db.insert(leads).values(values).returning();
+            Object.assign(this, serialize(row), { __isNew: false, __original: serialize(row) });
+            return this;
+          } catch (error) {
+            if (error?.code === '23505' && String(error?.constraint || '').includes('leadId')) {
+              values.leadId = await buildNextLeadId();
+              continue;
+            }
+            throw error;
+          }
+        }
+        throw new Error('Failed to generate a unique leadId after multiple attempts.');
       }
       const [row] = await db.update(leads).set(values).where(eq(leads.id, this._id)).returning();
       Object.assign(this, serialize(row), { __isNew: false, __original: serialize(row) });

@@ -9,6 +9,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const proposalDir = path.join(uploadsDir, 'proposals');
 const logoPath = path.resolve(__dirname, '../../frontend/public/Taruna-logo-text.png');
+const fixedContactDetails = {
+  website: 'www.tarunatech.com',
+  phone: '+91 910 6610 595',
+  email: 'tarunatechnology@gmail.com',
+  address: '709,710, Broadway Empire, Nilamber circle, Vasna Bhayli Main Rd, Bhayli, Vadodara, Gujarat 391410'
+};
 const ensureProposalDir = () => fs.mkdirSync(proposalDir, { recursive: true });
 const value = (input, fallback = '-') => input === undefined || input === null || input === '' ? fallback : String(input);
 const list = (input) => Array.isArray(input) ? input : [];
@@ -132,7 +138,7 @@ const addCoverPage = (doc, proposal) => {
   drawCircuitLines(doc);
 
   const desc = proposal.description || `Project details and budget projections for ${proposal.proposalType || 'WEB APP Development'}`;
-  doc.fillColor('#1e293b').font('Helvetica').fontSize(12).text(desc, 54, 355, { width: 340, lineGap: 3 });
+  doc.fillColor('#1e293b').font('Helvetica').fontSize(13.5).text(desc, 54, 355, { width: 340, lineGap: 4 });
 
   const presY = 445;
   doc.strokeColor('#db2777').lineWidth(2.5).moveTo(54, presY).lineTo(54, presY + 95).stroke();
@@ -160,7 +166,7 @@ const addThankYouPage = (doc, proposal) => {
   doc.fillColor('#db2777').font('Helvetica-Bold').fontSize(26).text('FOR INQUIRIES,', 54, 230, { width: 480 });
   doc.fillColor('#312e81').font('Helvetica-Bold').fontSize(26).text('CONTACT US', 54, 262, { width: 480 });
 
-  const contact = proposal.contactDetails || {};
+  const contact = fixedContactDetails;
   const web = value(contact.website, 'www.tarunatech.com');
   const phone = value(contact.phone, '+91 910 6610 595');
   const email = value(contact.email, 'tarunatechnology@gmail.com');
@@ -213,11 +219,11 @@ const ensureSectionLeadSpace = (doc, estimate, proposal) => {
 
 const paragraph = (doc, text, proposal) => {
   if (!hasText(text)) return;
-  ensureSpace(doc, 36, proposal);
+  ensureSpace(doc, 40, proposal);
   doc.fillColor('#334155').font('Helvetica').fontSize(11).text(String(text).trim(), 48, doc.y, {
     width: doc.page.width - 96,
     align: 'justify',
-    lineGap: 4
+    lineGap: 4.5
   });
   doc.moveDown(0.6);
 };
@@ -276,41 +282,124 @@ const pairedList = (doc, items, proposal, titleKey = 'title', bodyKey = 'descrip
 
 const table = (doc, title, rows, columns, proposal) => {
   if (!hasContent(rows)) return;
-  ensureSectionLeadSpace(doc, 72, proposal);
+  ensureSectionLeadSpace(doc, 82, proposal);
   sectionTitle(doc, title, proposal);
   const width = doc.page.width - 96;
   const colWidth = width / columns.length;
   const headerY = doc.y;
+  const rowPaddingY = 7;
+  const rowPaddingX = 6;
 
-  doc.fillColor('#0f172a').roundedRect(48, headerY, width, 24, 4).fill();
+  doc.fillColor('#0f172a').roundedRect(48, headerY, width, 26, 4).fill();
   columns.forEach((column, index) => {
     doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(8.5).text(
       column.label,
       54 + (index * colWidth),
-      headerY + 7,
-      { width: colWidth - 12, height: 14 }
+      headerY + 8,
+      { width: colWidth - 12, height: 12 }
     );
   });
 
-  doc.y = headerY + 28;
+  doc.y = headerY + 30;
 
   list(rows).forEach((row) => {
-    ensureSpace(doc, 32, proposal);
+    const cellHeights = columns.map((column) => {
+      const raw = row?.[column.key];
+      const display = column.format ? column.format(raw, row) : value(raw);
+      return doc.heightOfString(display, {
+        width: colWidth - (rowPaddingX * 2),
+        font: 'Helvetica',
+        size: 8.7,
+        lineGap: 2
+      });
+    });
+    const rowHeight = Math.max(26, Math.ceil(Math.max(...cellHeights) + (rowPaddingY * 2)));
+    ensureSpace(doc, rowHeight + 8, proposal);
     const startY = doc.y;
-    doc.fillColor('#f8fafc').rect(48, startY, width, 26).fill();
+    doc.fillColor('#f8fafc').rect(48, startY, width, rowHeight).fill();
     columns.forEach((column, index) => {
       const raw = row?.[column.key];
       const display = column.format ? column.format(raw, row) : value(raw);
       doc.fillColor('#334155').font('Helvetica').fontSize(8.5).text(
         display,
         54 + (index * colWidth),
-        startY + 7,
-        { width: colWidth - 12, height: 18 }
+        startY + rowPaddingY,
+        { width: colWidth - (rowPaddingX * 2), height: rowHeight - (rowPaddingY * 2), lineBreak: true }
       );
     });
-    doc.y = startY + 28;
+    doc.y = startY + rowHeight + 2;
   });
   doc.moveDown(0.5);
+};
+
+const drawSignatureLine = (doc, x, y, width) => {
+  doc.save();
+  doc.strokeColor('#0f172a').lineWidth(0.8).moveTo(x, y).lineTo(x + width, y).stroke();
+  doc.restore();
+};
+
+const renderAgreementAndSignatures = (doc, proposal) => {
+  const signatures = proposal.signatureDetails || {};
+  ensureSpace(doc, 170, proposal);
+
+  const left = 48;
+  const contentWidth = doc.page.width - 96;
+  const halfWidth = (contentWidth - 24) / 2;
+  const rightX = left + halfWidth + 24;
+
+  doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(14).text('Agreement and Signatures', left, doc.y, {
+    width: contentWidth
+  });
+  doc.y += 26;
+
+  const agreementText = 'By signing below, both parties acknowledge and agree to the terms and conditions set forth in this Agreement and commit to fulfill their respective obligations.';
+  doc.fillColor('#334155').font('Helvetica').fontSize(11.5).text(agreementText, left, doc.y, {
+    width: contentWidth,
+    lineGap: 4
+  });
+  doc.moveDown(1.2);
+
+  const firstRowY = doc.y + 8;
+  const labelGap = 8;
+  const fieldLineY = firstRowY + 14;
+
+  doc.fillColor('#0f172a').font('Helvetica').fontSize(11.5).text('Client Name:', left, firstRowY);
+  drawSignatureLine(doc, left + 78, fieldLineY, 155);
+
+  doc.fillColor('#0f172a').font('Helvetica').fontSize(11.5).text('Date:', rightX, firstRowY);
+  drawSignatureLine(doc, rightX + 40, fieldLineY, 150);
+
+  const secondRowY = firstRowY + 34;
+  doc.fillColor('#0f172a').font('Helvetica').fontSize(11.5).text('Client Signature:', left, secondRowY);
+  drawSignatureLine(doc, left + 102, secondRowY + 14, 190);
+
+  const thirdRowY = secondRowY + 34;
+  doc.fillColor('#0f172a').font('Helvetica').fontSize(11.5).text('Place:', left, thirdRowY);
+  drawSignatureLine(doc, left + 46, thirdRowY + 14, contentWidth - 46);
+
+  const bottomLineY = thirdRowY + 32;
+  doc.save();
+  doc.strokeColor('#0f172a').lineWidth(0.8).moveTo(left, bottomLineY).lineTo(left + contentWidth, bottomLineY).stroke();
+  doc.restore();
+
+  const authorizedLabelY = bottomLineY + 18;
+  doc.fillColor('#0f172a').font('Helvetica').fontSize(11.5).text(`| Authorized Signatory (${value(signatures.authorizedSignatory, 'Taruna Technology')}):`, left + 160, authorizedLabelY, {
+    width: 250,
+    align: 'center'
+  });
+  doc.fillColor('#0f172a').font('Helvetica').fontSize(11.5).text('| Date:', rightX + 140, authorizedLabelY, {
+    width: 70,
+    align: 'center'
+  });
+
+  const bottomFieldsY = authorizedLabelY + 16;
+  drawSignatureLine(doc, left + 80, bottomFieldsY, 245);
+  drawSignatureLine(doc, rightX + 86, bottomFieldsY, 150);
+
+  doc.fillColor('#0f172a').font('Helvetica').fontSize(11).text('|', left + 70, bottomFieldsY - 6);
+  doc.fillColor('#0f172a').font('Helvetica').fontSize(11).text('|', rightX + 236, bottomFieldsY - 6);
+
+  doc.y = bottomFieldsY + 18;
 };
 
 const renderSection = (doc, title, body, proposal) => {
@@ -433,16 +522,7 @@ export const generateProposalPdf = async ({ proposal }) => {
       ['Governing Law', sections.governingLaw]
     ].forEach(([title, body]) => renderSection(doc, title, body, proposal));
 
-    const signatures = proposal.signatureDetails || {};
-    sectionTitle(doc, 'Agreement & Signatures', proposal);
-    bullets(doc, [
-      `Client Name: ${value(signatures.clientName)}`,
-      `Client Date: ${value(signatures.clientDate)}`,
-      `Place: ${value(signatures.place)}`,
-      `Client Signature: ${value(signatures.clientSignature, '________________')}`,
-      `For Taruna Technology: ${value(signatures.authorizedSignatory, 'Authorized Signatory')}`,
-      `Taruna Date: ${value(signatures.tarunaDate)}`
-    ], proposal);
+    renderAgreementAndSignatures(doc, proposal);
 
     // Add final separate Thank You / Contact Us Page
     addThankYouPage(doc, proposal);

@@ -39,7 +39,7 @@ const defaultContactDetails = {
   website: 'www.tarunatech.com',
   phone: '+91 910 6610 595',
   email: 'tarunatechnology@gmail.com',
-  address: '709,710, Broadway Empire, Nilamber circle, Vasna-Bhayli Main Rd, Bhayli, Vadodara, Gujarat 391410'
+  address: '709,710, Broadway Empire, Nilamber circle, Vasna Bhayli Main Rd, Bhayli, Vadodara, Gujarat 391410'
 };
 
 const defaultSignatureDetails = {
@@ -62,6 +62,148 @@ const defaultPaymentRows = [
   { milestone: 'Development Review', description: 'After major modules are ready for review.', percentage: 30 },
   { milestone: 'Final Deployment', description: 'Before final deployment and handover.', percentage: 30 }
 ];
+
+const proposalTypeOptions = ['ERP Software', 'Website Development', 'Mobile App'];
+
+const proposalTypeTemplates = {
+  'ERP Software': {
+    title: 'ERP Software Proposal',
+    subtitle: 'CUSTOM ERP & PRODUCTION MANAGEMENT SYSTEM',
+    description: 'Project details and budget projections for a custom ERP and production management system.',
+    sections: {
+      companyIntroduction: 'Taruna Technology is a professional software development and IT services company specializing in custom business software, applications, CRM systems, ERP solutions, and automation. We help businesses streamline operations, improve efficiency, and gain better control through smart, technology-driven solutions.\n\nOur focus is on building scalable, secure, and user-friendly systems that align with each client\'s unique business needs. By combining strong technical expertise with a deep understanding of business processes, we deliver solutions that enhance productivity, reduce manual effort, and support long-term growth.\n\nAt Taruna Technology, we follow a strategic and consultative approach, ensuring every solution is tailored, reliable, and future-ready. We are committed to quality, innovation, and building long-term partnerships that enable businesses to succeed in an increasingly digital world.\n\nTaruna Technology - Smart Software Solutions for Growing Businesses.',
+      executiveSummary: 'Taruna Technology is pleased to present this comprehensive proposal for developing a tailored Enterprise Resource Planning (ERP) software solution. Our objective is to provide a robust, scalable, and user-friendly system designed to streamline your business operations, enhance data management, and foster improved decision-making across all departments.\n\nThis ERP solution aims to centralize critical business functions, from inventory and billing to reporting, into a single, cohesive platform. By automating routine tasks and providing real-time insights, our proposed system will empower your team to operate more efficiently, reduce manual errors, and allocate resources more effectively.\n\nTaruna Technology is dedicated to building a solution that not only meets your current needs but also provides a flexible foundation for future expansion and innovation, ensuring a significant return on your investment.',
+      projectObjectives: ['Centralize and integrate critical business data into a single platform.', 'Automate key operational workflows to reduce manual effort and errors.', 'Improve real-time reporting and analytics for informed decision-making.', 'Enhance inventory tracking and management efficiency.', 'Streamline billing and invoicing processes for faster transactions and payment tracking.', 'Provide a secure and role-based access control system for data integrity.'],
+      proposedSolution: 'We will develop a modern, secure, and scalable ERP system tailored to your requirements, utilizing our proven technology stack.',
+      scopeOfWork: 'Taruna Technology will design, develop, and deploy a feature-rich web app, including user-friendly interfaces and an integrated system for real-time data access and operational efficiency.',
+      coreModules: [
+        { title: 'Dashboard & Analytics', description: 'Real-time overview of key performance indicators and business summaries.', features: ['Customizable widgets for sales, inventory, and financial summaries', 'Quick links to frequently used modules and reports'] },
+        { title: 'Inventory Management', description: 'Product catalog, stock tracking, purchase orders, and vendor management.', features: ['Product catalog management with detailed descriptions', 'Real-time stock level tracking and alerts for low inventory', 'Purchase order generation and vendor management', 'Goods receipt and stock adjustment functionalities'] },
+        { title: 'Billing & Invoicing', description: 'Automated invoice generation and payment tracking.', features: ['Automated invoice generation from sales orders', 'Payment tracking and status updates', 'Customer account management and transaction history', 'Support for various payment methods and discounts'] },
+        { title: 'Reporting & Insights', description: 'Business reports for sales, inventory, and financial summaries.', features: ['Generate sales reports by product, customer, or period', 'Inventory valuation and movement reports', 'Financial summaries', 'Export functionality for reports'] },
+        { title: 'User & Role Management', description: 'Secure account and permission management.', features: ['Create and manage user accounts with distinct roles', 'Granular permission control based on user roles', 'Secure user authentication with password policies'] }
+      ],
+      technologyStack: [
+        { technology: 'Frontend', purpose: 'React.js, HTML5, CSS3' },
+        { technology: 'Backend', purpose: 'Node.js (Express.js)' },
+        { technology: 'Database', purpose: 'PostgreSQL' },
+        { technology: 'Deployment', purpose: 'Docker, Basic Cloud VM such as AWS EC2 or DigitalOcean' }
+      ],
+      systemWorkflow: [
+        { title: 'Workflow 1', description: 'User logs in -> Dashboard view -> Access modules based on role.' },
+        { title: 'Workflow 2', description: 'Product added/updated -> Inventory updated automatically -> Low stock alert generated.' },
+        { title: 'Workflow 3', description: 'Sales order created -> Invoice generated -> Payment received -> Invoice status updated to Paid.' },
+        { title: 'Workflow 4', description: 'Generate monthly sales report -> Analyze performance -> Make informed purchasing decisions.' },
+        { title: 'Workflow 5', description: 'Create new user account -> Assign specific roles and permissions -> User accesses designated modules.' }
+      ],
+      securityAndDataProtection: ['Role-based access control (RBAC) to ensure data privacy.', 'Data encryption in transit using HTTPS/SSL.', 'Secure password policies including hashing and salting.', 'Regular security audits and vulnerability assessments.', 'Input validation and sanitization to prevent injection attacks.', 'Comprehensive activity logging for audit trails.'],
+      hostingAndDeployment: ['Cloud-based hosting environment for scalability and reliability.', 'Automated daily database backups with point-in-time recovery.', '99.9% uptime commitment for continuous operation.', 'Monitoring and alerting for system performance and availability.', 'Secure network configuration with firewalls.'],
+      projectCostBreakdown: [
+        { component: 'UI/UX Design & Prototyping', cost: 7000 },
+        { component: 'Frontend Development (React.js)', cost: 8000 },
+        { component: 'Backend Development (Node.js/Express.js)', cost: 12000 },
+        { component: 'Core Module Implementation', cost: 9000 },
+        { component: 'Authentication & Security Setup', cost: 3000 },
+        { component: 'Testing & Quality Assurance', cost: 3000 },
+        { component: 'Initial Hosting & Deployment Setup', cost: 3000 }
+      ],
+      projectInvestmentDetails: 'Total One-Time Investment: Rs. 45,000\nDiscounted Offer Price: Rs. 35,000',
+      supportAndMaintenance: ['Free warranty support: 3 months', 'Bug fixes and minor improvements included', 'Optional AMC (Annual Maintenance) available upon request'],
+      deliverables: ['A fully developed and deployed web-based ERP application including all core modules.', 'Detailed project plan and scope document.', 'Comprehensive UI/UX design prototype.', 'Fully functional ERP web application.', 'User manual and training documentation.', 'Complete source code repository access.', 'Deployment guide and environment configuration.', 'Initial 30-day post-deployment technical support.', 'System architecture diagram.'],
+      conclusion: 'This integrated digital ERP solution will empower your business with complete operational control through a centralized system, real-time insights, improved accuracy with automated tracking and management, faster daily operations by reducing manual work, and enhanced decision-making through detailed reports.\n\nBy implementing this modern and scalable ERP platform, your business will achieve seamless coordination across all operations. This transformation will improve internal efficiency and elevate overall business performance, leading to long-term growth.',
+      hostingDetails: ['Dedicated VPS Server', 'Secure SSL Certificate', 'Optimized server configuration', 'Suitable for ERP-grade performance and data security', '1 year hosting validity'],
+      commercialClarification: ['The above amount is a one-time investment.', 'Includes complete ERP development plus 1-year VPS hosting.', 'Hosting renewal after 1 year will be charged separately.', 'No hidden costs.'],
+      whyUs: ['Proven experience in custom ERP and compliance systems.', 'Industry-specific solution design.', 'Transparent communication and documentation.', 'Scalable, secure, and future-ready architecture.', 'Dedicated support and long-term partnership approach.'],
+      termsAndConditions: ['Project scope is strictly limited to the features, modules, and functionalities explicitly mentioned in the approved proposal and documentation.', 'Project timeline will commence after proposal approval, receipt of the initial advance payment, and final requirement confirmation.', 'Payments must be made as per the agreed milestone-based payment schedule.', 'Client agrees to provide timely access to required data, nominate a single point of contact, and review deliverables reasonably.', 'Taruna Technology agrees to maintain strict confidentiality of all client data.', 'A 3-month free warranty period is provided post-deployment, covering bug fixes related to delivered features.', 'Upon full payment, the client will receive usage rights for the developed software.', 'This agreement shall be governed and interpreted in accordance with the laws of India. Any disputes shall be subject to the jurisdiction of Vadodara, Gujarat.'],
+      agreement: 'This Software Development Agreement is made and entered into between Taruna Technology and the client. By signing below, both parties acknowledge and agree to the terms and conditions set forth in this Agreement and commit to fulfill their respective obligations.'
+    }
+  },
+  'Website Development': {
+    title: 'Website Development Proposal',
+    subtitle: 'CUSTOM WEBSITE DESIGN & DEVELOPMENT',
+    description: 'Project details and budget projections for a professional business website.',
+    sections: {
+      companyIntroduction: 'Taruna Technology is a professional software development and IT services company specializing in custom business software, websites, applications, CRM systems, ERP solutions, and automation.',
+      executiveSummary: 'Taruna Technology is pleased to present this comprehensive proposal for the development of a professional and highly functional website. This initiative aims to establish a strong digital footprint, providing your business with an essential platform to engage with your target audience, showcase your offerings, and reinforce your brand identity in the competitive online landscape. A well-crafted website is crucial for modern business success, acting as a 24/7 digital storefront and information hub.',
+      projectObjectives: ['Establish a compelling and functional online presence for your organization.', 'Professionally design and develop a website that enhances visibility.', 'Facilitate customer interaction and support business growth.'],
+      proposedSolution: 'We will develop a professional, responsive, and easy-to-manage website with modern design, clear page structure, CMS support, inquiry forms, basic SEO setup, and deployment assistance.',
+      scopeOfWork: 'To establish a compelling and functional online presence for your organization through a professionally designed and developed website that enhances visibility, facilitates customer interaction, and supports business growth.',
+      coreModules: [
+        { title: 'Website Structure', description: 'Complete business website page structure.', features: ['Homepage with compelling hero section and key service highlights', 'About Us page detailing company history, mission, and team', 'Services/Products page with detailed descriptions and visuals', 'Blog/News section for content marketing and updates', 'Contact Us page with an inquiry form and location details', 'Privacy Policy and Terms of Service pages'] },
+        { title: 'Design', description: 'Customized, modern, and aesthetically pleasing user interface design.', features: ['Responsive design across desktop, tablet, and mobile', 'Intuitive navigation and user experience', 'Integration of client branding guidelines including logo, color palette, and typography', 'Selection of high-quality imagery and iconography'] },
+        { title: 'Development', description: 'Robust website development and CMS setup.', features: ['User-friendly Content Management System such as WordPress for easy content updates', 'Development of all agreed-upon pages with robust and clean code', 'Integration of contact forms and interactive elements', 'Basic Search Engine Optimization setup', 'Performance optimization for fast loading and cross-browser compatibility'] }
+      ],
+      technologyStack: [
+        { technology: 'React.js / Modern Frontend', purpose: 'Responsive website interface' },
+        { technology: 'Node.js / API Integration', purpose: 'Contact form and backend support where required' },
+        { technology: 'SEO Basics', purpose: 'Meta titles, descriptions, and clean structure' },
+        { technology: 'Hosting Deployment', purpose: 'Production-ready website launch' }
+      ],
+      systemWorkflow: [
+        { title: 'Content and Design Finalization', description: 'Website pages and content structure are finalized before development.' },
+        { title: 'Development and Review', description: 'Pages are built, reviewed, revised, and tested.' },
+        { title: 'Deployment', description: 'Approved website is deployed with required hosting/domain setup support.' }
+      ],
+      projectCostBreakdown: [
+        { component: 'Website Design & UI/UX', cost: 15000 },
+        { component: 'Website Development & CMS Setup', cost: 18000 },
+        { component: 'Content Integration & Basic SEO', cost: 7000 },
+        { component: 'Testing, Quality Assurance & Deployment', cost: 5000 },
+        { component: 'Project Management & Client Communication', cost: 5000 }
+      ],
+      projectInvestmentDetails: 'Total Cost (One-Time): Rs. 45,000\nSpecial Offer Discounted Price: Rs. 35,000 (One-Time)\nComplimentary Service: Logo Designing.',
+      securityAndDataProtection: ['Secure HTTPS connection', 'Basic SEO setup', 'Performance optimization', 'Cross-browser compatibility'],
+      supportAndMaintenance: ['Domain and hosting setup for 1st year included', 'SSL certificate included for 1 year', 'Basic post-launch support'],
+      deliverables: ['Fully developed, professional website', 'Domain and hosting setup for 1st year included', 'Secure HTTPS connection', 'Instagram and WhatsApp integration', 'Optimized for mobile and fast loading', 'Basic SEO setup to help you appear on search engines', 'No hidden charges - fully transparent package'],
+      whyUs: ['Professional website design and development', 'Modern responsive user interface', 'Transparent one-time pricing', 'Support for launch and deployment'],
+      termsAndConditions: ['The project includes a static website with up to 5 to 8 pages.', 'Project timeline is 7-10 working days from the date of 60% advance payment.', 'The total project cost is all inclusive.', '60% advance payment is required to start the project.', 'The remaining 40% must be paid before final deployment.', 'All payments made are non-refundable.', 'Domain registration is included for 1 year.', 'Web hosting is included for 1 year.', 'SSL certificate is included for 1 year.', 'Basic SEO setup is included.'],
+      agreement: 'This Website Development Agreement is made and entered into between Taruna Technology and the client. By signing below, both parties acknowledge the terms and conditions set forth in this Agreement and commit to fulfill their respective obligations.'
+    }
+  },
+  'Mobile App': {
+    title: 'Mobile App Proposal',
+    subtitle: 'CUSTOM MOBILE APPLICATION DEVELOPMENT',
+    description: 'Project details and budget projections for a custom mobile application.',
+    sections: {
+      companyIntroduction: 'Taruna Technology is a professional software development and IT services company specializing in custom mobile applications, business software, CRM systems, ERP solutions, and automation.',
+      executiveSummary: 'Taruna Technology is pleased to present this proposal for the development of a cutting-edge mobile application. This project aims to deliver a robust and intuitive digital platform, specifically designed to elevate user engagement and streamline essential services for your audience.\n\nOur solution will focus on creating a seamless and delightful user experience, ensuring that your customers can easily access information and interact with your services on the go. We understand the critical role a well-executed mobile presence plays in today\'s market.\n\nThis application will serve as a powerful tool to enhance your brand\'s accessibility, improve customer satisfaction, and provide a convenient channel for service delivery. By focusing on efficient functionality and an appealing interface, we commit to delivering an application that not only meets but exceeds user expectations, fostering loyalty and driving digital growth.\n\nOur commitment is to deliver a high-quality, cost-effective mobile application within the allocated budget of Rs. 45,000. Taruna Technology is dedicated to translating your vision into a practical, high-performing mobile solution that strengthens your digital footprint and contributes significantly to your business objectives.',
+      projectObjectives: ['Develop a user-friendly and feature-rich mobile application.', 'Enhance customer interaction and streamline core services.', 'Provide a modern digital platform accessible on both Android and iOS devices.'],
+      proposedSolution: 'We will develop a robust cross-platform mobile application with intuitive UI/UX, secure authentication, backend API integration, database support, notifications, testing, and deployment assistance.',
+      scopeOfWork: 'To develop a user-friendly and feature-rich mobile application that enhances customer interaction and streamlines core services, providing a modern digital platform accessible on both Android and iOS devices.',
+      coreModules: [
+        { title: 'Mobile App Structure', description: 'Core screens and mobile functionality.', features: ['User Registration and Login with secure authentication', 'Interactive Dashboard/Home Screen displaying key information', 'Comprehensive Profile Management for users to update personal details', 'Content Display Module for listing products, services, or articles', 'Advanced Search Functionality with filters', 'Integrated Notifications System for updates and alerts', 'Contact/Support Page with in-app messaging capabilities'] },
+        { title: 'Design', description: 'Intuitive and consistent mobile UI/UX.', features: ['Development of an intuitive and consistent user interface', 'Creation of an engaging user experience flow for seamless navigation', 'Integration of consistent branding elements and color schemes', 'Responsive design for various mobile screen sizes', 'Interactive wireframes and mockups for client review and approval'] },
+        { title: 'Development', description: 'Cross-platform mobile app development and backend integration.', features: ['Cross-platform mobile application development such as React Native or Flutter', 'Robust backend development for data management and API integration', 'Secure database setup and management', 'Testing and debugging across multiple devices and operating systems', 'Deployment assistance to Google Play Store and Apple App Store'] }
+      ],
+      technologyStack: [
+        { technology: 'React Native / Flutter', purpose: 'Cross-platform mobile app development' },
+        { technology: 'Node.js / Express.js', purpose: 'Backend APIs and app logic' },
+        { technology: 'PostgreSQL / Database', purpose: 'Secure structured data storage' },
+        { technology: 'Firebase / Push Services', purpose: 'Notifications where applicable' }
+      ],
+      systemWorkflow: [
+        { title: 'User Access', description: 'Users log in and access app features based on their role or account.' },
+        { title: 'Mobile Data Flow', description: 'App actions are saved through backend APIs and reflected in admin views.' },
+        { title: 'Testing and Release', description: 'App is tested on target devices before deployment or APK/build handover.' }
+      ],
+      projectCostBreakdown: [
+        { component: 'Project Management & Discovery', cost: 5000 },
+        { component: 'UI/UX Design & Wireframing', cost: 8000 },
+        { component: 'Mobile App Development (Frontend)', cost: 15000 },
+        { component: 'Backend Development & API Integration', cost: 10000 },
+        { component: 'Testing & Quality Assurance', cost: 4000 },
+        { component: 'Deployment & Go-Live Support', cost: 3000 }
+      ],
+      projectInvestmentDetails: 'Total Cost (One-Time): Rs. 45,000\nSpecial Offer Discounted Price: Rs. 35,000 (One-Time)\nComplimentary Service: Logo Designing.',
+      securityAndDataProtection: ['Secure authentication', 'Protected API communication', 'Secure database setup and management', 'Testing and debugging across multiple devices and operating systems'],
+      supportAndMaintenance: ['Deployment assistance to Google Play Store and Apple App Store', 'Testing support after delivery', 'Bug fixes for agreed project scope'],
+      deliverables: ['Fully developed professional mobile application', 'Backend development and API integration', 'Secure database setup', 'Optimized mobile experience', 'Deployment assistance', 'No hidden charges - fully transparent package'],
+      whyUs: ['Robust and intuitive mobile app development', 'Seamless user experience design', 'Cross-platform development approach', 'High-quality cost-effective delivery'],
+      termsAndConditions: ['Project timeline is 7-10 working days from the date of 60% advance payment where applicable.', 'The total project cost is all inclusive for the agreed scope.', '60% advance payment is required to start the project.', 'The remaining 40% must be paid before final deployment.', 'All payments made are non-refundable.', 'Third-party accounts, app store charges, domain, hosting, SSL, SMS, maps, or payment gateway charges are separate where applicable.', 'Basic support is included for agreed scope.'],
+      agreement: 'This Mobile App Development Agreement is made and entered into between Taruna Technology and the client. By signing below, both parties acknowledge the terms and conditions set forth in this Agreement and commit to fulfill their respective obligations.'
+    }
+  }
+};
 
 const buildDefaultCostRows = (amount = 0) => {
   const total = Number(amount || 0);
@@ -148,6 +290,26 @@ const escapeHtml = (value) => String(value ?? '-')
   .replace(/'/g, '&#039;');
 
 const asArray = (value) => Array.isArray(value) ? value : [];
+const hasTemplateValue = (value) => {
+  if (Array.isArray(value)) return value.length > 0;
+  if (value && typeof value === 'object') return Object.values(value).some(hasTemplateValue);
+  return value !== undefined && value !== null && String(value).trim() !== '' && String(value).trim() !== '0';
+};
+const mergeAvailable = (base = {}, incoming = {}) => {
+  const next = { ...base };
+  Object.entries(incoming || {}).forEach(([key, value]) => {
+    if (!hasTemplateValue(value)) return;
+    if (!Array.isArray(value) && value && typeof value === 'object') {
+      next[key] = mergeAvailable(base?.[key] || {}, value);
+    } else {
+      next[key] = value;
+    }
+  });
+  return next;
+};
+const getProposalTypeTemplate = (type = 'ERP Software') =>
+  proposalTypeTemplates[proposalTypeOptions.find(option => option.toLowerCase() === String(type || '').toLowerCase())] ||
+  proposalTypeTemplates['ERP Software'];
 const formatSectionToText = (value) => {
   if (value === undefined || value === null) return '';
   if (typeof value === 'string') return value;
@@ -187,62 +349,65 @@ const formatSectionToText = (value) => {
 };
 const asNonEmptyArray = (value, fallback = []) => Array.isArray(value) && value.length ? value : fallback;
 const leadName = (lead) => `${lead?.firstName || ''} ${lead?.lastName || ''}`.trim();
-const getProposalDefaults = (lead, clientDetails, quotation, proposal = {}) => ({
-  ...emptyForms.proposal,
-  ...proposal,
-  companyName: proposal.companyName || lead?.company || '',
-  customerName: proposal.customerName || leadName(lead),
-  proposalType: proposal.proposalType || 'ERP Software',
-  title: proposal.title || `${proposal.proposalType || 'ERP Software'} Proposal`,
-  subtitle: proposal.subtitle || clientDetails?.businessNeed || '',
-  pricing: {
-    ...emptyForms.proposal.pricing,
-    ...(proposal.pricing || {}),
-    totalPrice: proposal.pricing?.totalPrice ?? quotation?.amount ?? lead?.estimatedValue ?? '',
-    currency: proposal.pricing?.currency || quotation?.currency || 'INR'
-  },
-  validity: {
-    ...emptyForms.proposal.validity,
-    ...(proposal.validity || {}),
-    validUntil: toInputDate(proposal.validity?.validUntil || quotation?.validUntil)
-  },
-  sections: {
-    ...emptyForms.proposal.sections,
-    ...(proposal.sections || {}),
-    coreModules: asArray(proposal.sections?.coreModules),
-    technologyStack: asArray(proposal.sections?.technologyStack),
-    additionalModules: asArray(proposal.sections?.additionalModules),
-    systemWorkflow: asArray(proposal.sections?.systemWorkflow),
-    securityAndDataProtection: asArray(proposal.sections?.securityAndDataProtection),
-    hostingAndDeployment: asArray(proposal.sections?.hostingAndDeployment),
-    projectCostBreakdown: asNonEmptyArray(proposal.sections?.projectCostBreakdown, buildDefaultCostRows(proposal.pricing?.totalPrice ?? quotation?.amount ?? lead?.estimatedValue)),
-    supportAndMaintenance: asArray(proposal.sections?.supportAndMaintenance),
-    deliverables: asArray(proposal.sections?.deliverables),
-    hostingDetails: asArray(proposal.sections?.hostingDetails),
-    commercialClarification: asArray(proposal.sections?.commercialClarification),
-    whyUs: asArray(proposal.sections?.whyUs),
-    termsAndConditions: asArray(proposal.sections?.termsAndConditions),
-    projectTimeline: asNonEmptyArray(proposal.sections?.projectTimeline, defaultTimelineRows),
-    paymentTerms: asNonEmptyArray(proposal.sections?.paymentTerms, defaultPaymentRows),
-    hostingThirdPartyServices: proposal.sections?.hostingThirdPartyServices || emptyForms.proposal.sections.hostingThirdPartyServices,
-    termination: proposal.sections?.termination || emptyForms.proposal.sections.termination,
-    limitationOfLiability: proposal.sections?.limitationOfLiability || emptyForms.proposal.sections.limitationOfLiability
-  },
-  sectionTitles: {
-    ...(proposal.sectionTitles || {})
-  },
-  contactDetails: {
-    ...defaultContactDetails,
-    ...(proposal.contactDetails || {})
-  },
-  signatureDetails: {
-    ...defaultSignatureDetails,
-    ...(proposal.signatureDetails || {}),
-    clientName: proposal.signatureDetails?.clientName || proposal.customerName || leadName(lead)
-  },
-  aiInstructions: proposal.aiInstructions || '',
-  pdfUrl: proposal.pdfUrl || ''
-});
+const getProposalDefaults = (lead, clientDetails, quotation, proposal = {}) => {
+  const template = getProposalTypeTemplate(proposal.proposalType || 'ERP Software');
+  return {
+    ...emptyForms.proposal,
+    ...template,
+    ...proposal,
+    companyName: proposal.companyName || lead?.company || '',
+    customerName: proposal.customerName || leadName(lead),
+    proposalType: proposal.proposalType || 'ERP Software',
+    title: proposal.title || template.title,
+    subtitle: proposal.subtitle || template.subtitle || clientDetails?.businessNeed || '',
+    description: proposal.description || template.description || '',
+    pricing: {
+      ...emptyForms.proposal.pricing,
+      ...(proposal.pricing || {}),
+      totalPrice: proposal.pricing?.totalPrice ?? quotation?.amount ?? lead?.estimatedValue ?? '',
+      currency: proposal.pricing?.currency || quotation?.currency || 'INR'
+    },
+    validity: {
+      ...emptyForms.proposal.validity,
+      ...(proposal.validity || {}),
+      validUntil: toInputDate(proposal.validity?.validUntil || quotation?.validUntil)
+    },
+    sections: {
+      ...emptyForms.proposal.sections,
+      ...(template.sections || {}),
+      ...(proposal.sections || {}),
+      coreModules: asNonEmptyArray(proposal.sections?.coreModules, template.sections?.coreModules || []),
+      technologyStack: asNonEmptyArray(proposal.sections?.technologyStack, template.sections?.technologyStack || []),
+      additionalModules: asArray(proposal.sections?.additionalModules),
+      systemWorkflow: asNonEmptyArray(proposal.sections?.systemWorkflow, template.sections?.systemWorkflow || []),
+      securityAndDataProtection: asNonEmptyArray(proposal.sections?.securityAndDataProtection, template.sections?.securityAndDataProtection || []),
+      hostingAndDeployment: asArray(proposal.sections?.hostingAndDeployment),
+      projectCostBreakdown: asNonEmptyArray(proposal.sections?.projectCostBreakdown, template.sections?.projectCostBreakdown || buildDefaultCostRows(proposal.pricing?.totalPrice ?? quotation?.amount ?? lead?.estimatedValue)),
+      supportAndMaintenance: asNonEmptyArray(proposal.sections?.supportAndMaintenance, template.sections?.supportAndMaintenance || []),
+      deliverables: asNonEmptyArray(proposal.sections?.deliverables, template.sections?.deliverables || []),
+      hostingDetails: asArray(proposal.sections?.hostingDetails),
+      commercialClarification: asArray(proposal.sections?.commercialClarification),
+      whyUs: asNonEmptyArray(proposal.sections?.whyUs, template.sections?.whyUs || []),
+      termsAndConditions: asNonEmptyArray(proposal.sections?.termsAndConditions, template.sections?.termsAndConditions || []),
+      projectTimeline: asNonEmptyArray(proposal.sections?.projectTimeline, defaultTimelineRows),
+      paymentTerms: asNonEmptyArray(proposal.sections?.paymentTerms, defaultPaymentRows),
+      hostingThirdPartyServices: proposal.sections?.hostingThirdPartyServices || emptyForms.proposal.sections.hostingThirdPartyServices,
+      termination: proposal.sections?.termination || emptyForms.proposal.sections.termination,
+      limitationOfLiability: proposal.sections?.limitationOfLiability || emptyForms.proposal.sections.limitationOfLiability
+    },
+    sectionTitles: {
+      ...(proposal.sectionTitles || {})
+    },
+    contactDetails: defaultContactDetails,
+    signatureDetails: {
+      ...defaultSignatureDetails,
+      ...(proposal.signatureDetails || {}),
+      clientName: proposal.signatureDetails?.clientName || proposal.customerName || leadName(lead)
+    },
+    aiInstructions: proposal.aiInstructions || '',
+    pdfUrl: proposal.pdfUrl || ''
+  };
+};
 
 const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embedded = false }) => {
   const [pipeline, setPipeline] = useState(null);
@@ -314,6 +479,34 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
 
   const updateProposal = (key, value) => {
     setForms(prev => ({ ...prev, proposal: { ...prev.proposal, [key]: value } }));
+  };
+
+  const updateProposalType = (proposalType) => {
+    const template = getProposalTypeTemplate(proposalType);
+    setForms(prev => ({
+      ...prev,
+      proposal: {
+        ...prev.proposal,
+        proposalType,
+        title: template.title,
+        subtitle: template.subtitle,
+        description: template.description,
+        sections: {
+          ...prev.proposal.sections,
+          ...(template.sections || {}),
+          projectCostBreakdown: template.sections?.projectCostBreakdown?.length
+            ? template.sections.projectCostBreakdown
+            : buildDefaultCostRows(prev.proposal.pricing?.totalPrice),
+          projectTimeline: prev.proposal.sections?.projectTimeline?.length
+            ? prev.proposal.sections.projectTimeline
+            : defaultTimelineRows,
+          paymentTerms: prev.proposal.sections?.paymentTerms?.length
+            ? prev.proposal.sections.paymentTerms
+            : defaultPaymentRows
+        },
+        contactDetails: defaultContactDetails
+      }
+    }));
   };
 
   const updateProposalNested = (group, key, value) => {
@@ -574,12 +767,12 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
             ...prev.proposal,
             companyName: extracted.companyName || prev.proposal.companyName,
             customerName: extracted.customerName || prev.proposal.customerName,
-            proposalType: extracted.proposalType || prev.proposal.proposalType,
-            pricing: { ...prev.proposal.pricing, ...extracted.pricing },
-            validity: { ...prev.proposal.validity, ...extracted.validity },
-            contactDetails: { ...prev.proposal.contactDetails, ...extracted.contactDetails },
-            signatureDetails: { ...prev.proposal.signatureDetails, ...extracted.signatureDetails },
-            sections: { ...prev.proposal.sections, ...extracted.sections }
+            proposalType: hasTemplateValue(extracted.proposalType) ? extracted.proposalType : prev.proposal.proposalType,
+            pricing: mergeAvailable(prev.proposal.pricing, extracted.pricing),
+            validity: mergeAvailable(prev.proposal.validity, extracted.validity),
+            contactDetails: defaultContactDetails,
+            signatureDetails: mergeAvailable(prev.proposal.signatureDetails, extracted.signatureDetails),
+            sections: mergeAvailable(prev.proposal.sections, extracted.sections)
           }
         }));
         toast.success('Proposal fields populated from PDF!', { id: 'pdf-extract' });
@@ -664,7 +857,6 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
       ['Quotation Number', quotation.quotationNumber || '-'],
       ['Quotation Amount', amount],
       ['Valid Until', formatDate(quotation.validUntil)],
-      ['Quotation File URL', quotation.fileUrl || '-'],
       ['Quotation Notes', quotation.notes || '-']
     ];
 
@@ -807,7 +999,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
               <h2>Quotation Details</h2>
               <div class="grid">
                 ${rows.slice(12).map(([label, value]) => `
-                  <div class="field ${['Quotation File URL', 'Quotation Notes'].includes(label) ? 'wide' : ''}">
+                  <div class="field ${label === 'Quotation Notes' ? 'wide' : ''}">
                     <p class="label">${escapeHtml(label)}</p>
                     <p class="value ${label === 'Quotation Amount' ? 'amount' : ''}">${escapeHtml(value)}</p>
                   </div>
@@ -900,7 +1092,6 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                   <Input label="Amount" type="number" value={forms.quotation.amount} onChange={v => updateForm('quotation', 'amount', v)} />
                   <Input label="Currency" value={forms.quotation.currency} onChange={v => updateForm('quotation', 'currency', v)} />
                   <Input label="Valid Until" type="date" value={forms.quotation.validUntil} onChange={v => updateForm('quotation', 'validUntil', v)} />
-                  <Input label="Quotation File URL" value={forms.quotation.fileUrl} onChange={v => updateForm('quotation', 'fileUrl', v)} />
                   <Textarea label="Quotation Notes" value={forms.quotation.notes} onChange={v => updateForm('quotation', 'notes', v)} />
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -955,7 +1146,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                       <div className="grid gap-3 sm:grid-cols-2">
                         <Input label="Company Name" value={forms.proposal.companyName} onChange={v => updateProposal('companyName', v)} />
                         <Input label="Customer Name" value={forms.proposal.customerName} onChange={v => updateProposal('customerName', v)} />
-                        <Input label="Proposal Type" value={forms.proposal.proposalType} onChange={v => updateProposal('proposalType', v)} />
+                        <Select label="Proposal Type" value={forms.proposal.proposalType} onChange={updateProposalType} options={proposalTypeOptions} />
                         <Input label="Proposal Title" value={forms.proposal.title} onChange={v => updateProposal('title', v)} />
                         <Input label="Proposal Subtitle" value={forms.proposal.subtitle} onChange={v => updateProposal('subtitle', v)} />
                         <Input label="Valid Until" type="date" value={forms.proposal.validity?.validUntil} onChange={v => updateProposalNested('validity', 'validUntil', v)} />
@@ -1007,8 +1198,8 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                         <div className="rounded-xl border border-slate-200 bg-white p-3">
                           <h4 className="mb-3 text-sm font-bold text-slate-900">For Inquiries Contact Us</h4>
                           <div className="grid gap-3 sm:grid-cols-2">
-                            {Object.entries(defaultContactDetails).map(([key]) => (
-                              <Input key={key} label={key.replace(/([A-Z])/g, ' $1')} value={forms.proposal.contactDetails?.[key]} onChange={v => updateProposalObject('contactDetails', key, v)} />
+                            {Object.entries(defaultContactDetails).map(([key, value]) => (
+                              <Input key={key} label={key.replace(/([A-Z])/g, ' $1')} value={value} disabled />
                             ))}
                           </div>
                         </div>
@@ -1236,10 +1427,10 @@ const Info = ({ label, value }) => (
   </div>
 );
 
-const Input = ({ label, value, onChange, type = 'text' }) => (
+const Input = ({ label, value, onChange, type = 'text', disabled = false }) => (
   <label className="block">
     <span className="mb-1 block text-xs font-medium text-slate-500">{label}</span>
-    <input type={type} value={value || ''} onChange={(e) => onChange(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+    <input type={type} value={value || ''} onChange={(e) => onChange?.(e.target.value)} disabled={disabled} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-50 disabled:text-slate-600" />
   </label>
 );
 
@@ -1337,7 +1528,7 @@ const ProposalPreview = ({
 }) => {
   const sections = proposal.sections || {};
   const pricing = proposal.pricing || {};
-  const contact = proposal.contactDetails || defaultContactDetails;
+  const contact = defaultContactDetails;
   const signatures = proposal.signatureDetails || defaultSignatureDetails;
   const sectionText = (value) => formatSectionToText(value);
   const timelineRows = asArray(sections.projectTimeline);
@@ -1750,46 +1941,26 @@ const ProposalPreview = ({
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white shrink-0">
                 <Globe className="h-4 w-4" />
               </div>
-              <input
-                type="text"
-                value={contact.website || ''}
-                onChange={e => onObjectChange?.('contactDetails', 'website', e.target.value)}
-                className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none focus:bg-slate-100 rounded px-1"
-              />
+              <p className="w-full text-xs font-semibold text-slate-800">{contact.website}</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-fuchsia-600 text-white shrink-0">
                 <Phone className="h-4 w-4" />
               </div>
-              <input
-                type="text"
-                value={contact.phone || ''}
-                onChange={e => onObjectChange?.('contactDetails', 'phone', e.target.value)}
-                className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none focus:bg-slate-100 rounded px-1"
-              />
+              <p className="w-full text-xs font-semibold text-slate-800">{contact.phone}</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-900 text-white shrink-0">
                 <Mail className="h-4 w-4" />
               </div>
-              <input
-                type="text"
-                value={contact.email || ''}
-                onChange={e => onObjectChange?.('contactDetails', 'email', e.target.value)}
-                className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none focus:bg-slate-100 rounded px-1"
-              />
+              <p className="w-full text-xs font-semibold text-slate-800">{contact.email}</p>
             </div>
           </div>
         </div>
 
         {/* Centered Address & Website Footer */}
         <div className="relative mt-12 space-y-2 text-center text-xs text-slate-700">
-          <textarea
-            value={contact.address || ''}
-            onChange={e => onObjectChange?.('contactDetails', 'address', e.target.value)}
-            rows={2}
-            className="w-full resize-none text-center bg-transparent text-[11px] leading-relaxed text-slate-700 outline-none focus:bg-slate-100 rounded p-1"
-          />
+          <p className="w-full text-center text-[11px] leading-relaxed text-slate-700">{contact.address}</p>
           <p className="text-xs font-bold text-fuchsia-600">{contact.website || 'www.tarunatech.com'}</p>
         </div>
 

@@ -1,9 +1,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Groq from 'groq-sdk';
+import crypto from 'crypto';
 
 // TASK 8: Default 120 seconds for proposal/PDF extraction. Override via GEMINI_REQUEST_TIMEOUT_MS in .env
 const COOLDOWN_MS = Number(process.env.GOOGLE_AI_KEY_COOLDOWN_MS || 5 * 60 * 1000);
 const REQUEST_TIMEOUT_MS = Number(process.env.GEMINI_REQUEST_TIMEOUT_MS || process.env.GOOGLE_AI_TIMEOUT_MS || 120000);
+const RESPONSE_CACHE_TTL_MS = Number(process.env.GEMINI_RESPONSE_CACHE_TTL_MS || 10 * 60 * 1000);
+const RESPONSE_CACHE_MAX_ENTRIES = Number(process.env.GEMINI_RESPONSE_CACHE_MAX_ENTRIES || 200);
 
 // TASK 4: SDK is @google/generative-ai ^0.24.1 — compatible with gemini-3.6-flash via v1beta
 // TASK 5: No generation config (temperature, topP, topK) sent — gemini-3.6-flash does not accept these via the basic SDK path
@@ -37,6 +40,33 @@ const keys = Array.from({ length: 5 }, (_, index) => {
 }).filter(Boolean);
 
 let cursor = 0;
+const responseCache = new Map();
+
+const normalizePrompt = (prompt) => String(prompt || '').trim().replace(/\r\n/g, '\n');
+const cacheKeyFor = (prompt) => crypto.createHash('sha256').update(normalizePrompt(prompt)).digest('hex');
+
+const getCachedResponse = (prompt) => {
+  const key = cacheKeyFor(prompt);
+  const cached = responseCache.get(key);
+  if (!cached) return null;
+  if (cached.expiresAt <= Date.now()) {
+    responseCache.delete(key);
+    return null;
+  }
+  responseCache.delete(key);
+  responseCache.set(key, cached);
+  return cached.value;
+};
+
+const setCachedResponse = (prompt, value) => {
+  if (!RESPONSE_CACHE_TTL_MS || RESPONSE_CACHE_TTL_MS <= 0) return;
+  const key = cacheKeyFor(prompt);
+  if (responseCache.size >= RESPONSE_CACHE_MAX_ENTRIES) {
+    const oldestKey = responseCache.keys().next().value;
+    if (oldestKey) responseCache.delete(oldestKey);
+  }
+  responseCache.set(key, { value, expiresAt: Date.now() + RESPONSE_CACHE_TTL_MS });
+};
 
 // TASK 10: Error classification
 const classifyError = (error) => {
@@ -131,7 +161,14 @@ const tryWithKey = async (key, prompt) => {
 };
 
 export const generateGeminiText = async (prompt) => {
-  logPromptMetadata(prompt);
+  const normalizedPrompt = normalizePrompt(prompt);
+  const cached = getCachedResponse(normalizedPrompt);
+  if (cached) {
+    console.log('[Gemini Cache] Hit for prompt');
+    return cached;
+  }
+
+  logPromptMetadata(normalizedPrompt);
 
   let lastError = null;
 
@@ -143,7 +180,9 @@ export const generateGeminiText = async (prompt) => {
     key.lastUsedAt = new Date();
 
     try {
-      return await tryWithKey(key, prompt);
+      const response = await tryWithKey(key, normalizedPrompt);
+      setCachedResponse(normalizedPrompt, response);
+      return response;
     } catch (error) {
       lastError = error;
       const errorType = error._errorType || classifyError(error);
@@ -154,9 +193,10 @@ export const generateGeminiText = async (prompt) => {
 
   // TASK 11: Groq fallback before giving up
   try {
-    const groqResult = await tryGroqFallback(prompt);
+    const groqResult = await tryGroqFallback(normalizedPrompt);
     if (groqResult) {
       console.log('[AI Provider] Generated content using Groq AI fallback.');
+      setCachedResponse(normalizedPrompt, groqResult);
       return groqResult;
     }
   } catch (groqErr) {
