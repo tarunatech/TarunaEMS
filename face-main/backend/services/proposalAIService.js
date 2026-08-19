@@ -329,6 +329,33 @@ const requiredKeys = [
   'termsAndConditions'
 ];
 
+const aiGeneratedKeys = [
+  'executiveSummary',
+  'projectObjectives',
+  'proposedSolution',
+  'scopeOfWork',
+  'coreModules',
+  'technologyStack',
+  'systemWorkflow',
+  'securityAndDataProtection',
+  'deliverables'
+];
+
+const compactContext = ({ lead = {}, clientDetails = {}, quotation = {}, proposalInputs = {}, userInstructions = '' }) => ({
+  customerName: proposalInputs.customerName || text(`${lead.firstName || ''} ${lead.lastName || ''}`),
+  companyName: proposalInputs.companyName || lead.company || '',
+  proposalType: proposalInputs.proposalType || '',
+  totalPrice: proposalInputs.pricing?.totalPrice || quotation.amount || lead.estimatedValue || 0,
+  discountedPrice: proposalInputs.pricing?.discountedPrice || 0,
+  currency: proposalInputs.pricing?.currency || quotation.currency || 'INR',
+  businessNeed: clientDetails.businessNeed || '',
+  requirements: clientDetails.requirements || proposalInputs.sections?.scopeOfWork || '',
+  timeline: clientDetails.timeline || '',
+  budgetRange: clientDetails.budgetRange || '',
+  notes: clientDetails.notes || quotation.notes || '',
+  userInstructions: userInstructions || proposalInputs.aiInstructions || ''
+});
+
 const normalizeString = (value) => typeof value === 'string' ? value : '';
 const normalizeStringArray = (value) => asArray(value).map(item => typeof item === 'string' ? item : text(item.title || item.description || item.technology || item.purpose)).filter(Boolean);
 const normalizeModules = (value) => asArray(value).map(item => ({
@@ -405,7 +432,7 @@ const buildAiContext = ({ lead = {}, clientDetails = {}, quotation = {}, proposa
 });
 
 const buildPrompt = (input, section = '') => {
-  const context = buildAiContext(input);
+  const context = section ? compactContext(input) : buildAiContext(input);
   const sectionContext = section ? {
     sectionKey: section,
     currentSectionContent: input.proposalInputs?.sections?.[section] ?? null
@@ -424,13 +451,44 @@ ${JSON.stringify(context, null, 2)}
 ${sectionContext ? `\nSection to improve:\n${JSON.stringify(sectionContext, null, 2)}` : ''}`;
 };
 
+const buildLeanGenerationPrompt = (input) => {
+  const context = compactContext(input);
+  return `You are a senior proposal writer for Taruna Technology.
+Generate ONLY client-specific proposal content. Do not write fixed company intro, legal terms, agreement text, support text, why-us text, contact details, or commercial boilerplate.
+Keep the same factual meaning and professional style as the existing proposal system.
+Return STRICT JSON only. No markdown, no code fence, no explanation.
+Return only these keys when relevant: ${aiGeneratedKeys.join(', ')}.
+
+Rules:
+- executiveSummary: 2-3 concise professional paragraphs.
+- projectObjectives: 4-6 strings tailored to the requirements.
+- proposedSolution: 1 concise paragraph.
+- scopeOfWork: 1 concise paragraph.
+- coreModules: 4-6 objects with { "title": string, "description": string, "features": string[] }.
+- technologyStack: 3-5 objects with { "technology": string, "purpose": string }.
+- systemWorkflow: 3-5 objects with { "title": string, "description": string }.
+- securityAndDataProtection: 4-6 strings.
+- deliverables: 5-8 strings.
+- If requirements are thin, use sensible defaults for the proposal type.
+
+Context:
+${JSON.stringify(context)}`;
+};
+
 export const generateProposalContent = async (input) => {
   const fallback = fallbackContent(input);
   try {
-    const result = await generateGeminiText(buildPrompt(input));
+    const result = await generateGeminiText(buildLeanGenerationPrompt(input));
     const parsed = parseStrictJson(result.text);
+    const generated = Object.fromEntries(
+      Object.entries(parsed || {}).filter(([key]) => aiGeneratedKeys.includes(key))
+    );
+    const validated = validateProposalAIResponse({ ...fallback, ...generated }, fallback);
+    const generatedContent = Object.fromEntries(
+      aiGeneratedKeys.map((key) => [key, validated[key]]).filter(([, val]) => val !== undefined)
+    );
     return {
-      content: validateProposalAIResponse(parsed, fallback),
+      content: generatedContent,
       meta: { aiModel: result.model, aiProvider: 'gemini', keySlot: result.keySlot, usedFallback: false }
     };
   } catch (error) {
