@@ -346,41 +346,45 @@ export const getLeads = async (req, res) => {
     if (source && source !== 'all') {
       query.source = source;
     }
-    if (startDate || endDate) {
-      query.createdAt = {};
-      if (startDate) {
-        query.createdAt.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = end;
-      }
+    // If search term is provided and dates were not explicitly provided, omit createdAt date filter for search
+    if (search && !req.query.startDate && !req.query.endDate) {
+      delete query.createdAt;
     }
 
+    const fetchLimit = search ? 500 : limit * 1;
     let leads = await Lead.find(query)
       .populate('assignedTo', 'personalInfo.firstName personalInfo.lastName employeeId')
       .populate('assignedBy', 'name email')
       .populate('wonDetails.customerSuccessManager', 'personalInfo.firstName personalInfo.lastName')
       .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .limit(fetchLimit)
+      .skip(search ? 0 : (page - 1) * limit);
 
     // Apply search filter after population
     if (search) {
-      const searchTerm = search.toLowerCase();
+      const searchTerm = search.trim().toLowerCase();
       leads = leads.filter(lead => {
+        const leadName = `${lead.firstName || ''} ${lead.lastName || ''}`.trim().toLowerCase();
+        const firstName = lead.firstName?.toLowerCase() || '';
+        const lastName = lead.lastName?.toLowerCase() || '';
         const fullName = lead.fullName?.toLowerCase() || '';
         const email = lead.email?.toLowerCase() || '';
         const company = lead.company?.toLowerCase() || '';
         const phone = lead.phone?.toLowerCase() || '';
         const leadId = lead.leadId?.toLowerCase() || '';
+        const assignedName = [lead.assignedTo?.personalInfo?.firstName, lead.assignedTo?.personalInfo?.lastName].filter(Boolean).join(' ').toLowerCase();
+        const assignedEmpId = lead.assignedTo?.employeeId?.toLowerCase() || '';
         
-        return fullName.includes(searchTerm) || 
+        return leadName.includes(searchTerm) ||
+               firstName.includes(searchTerm) ||
+               lastName.includes(searchTerm) ||
+               fullName.includes(searchTerm) || 
                email.includes(searchTerm) || 
                company.includes(searchTerm) ||
                phone.includes(searchTerm) ||
-               leadId.includes(searchTerm);
+               leadId.includes(searchTerm) ||
+               assignedName.includes(searchTerm) ||
+               assignedEmpId.includes(searchTerm);
       });
     }
 

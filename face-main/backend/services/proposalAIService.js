@@ -280,6 +280,10 @@ export const buildProposalDefaults = ({ lead = {}, clientDetails = {}, quotation
 const fallbackContent = ({ clientDetails = {}, quotation = {}, proposalInputs = {} }) => {
   const template = getProposalTypeTemplate(proposalInputs.proposalType || 'ERP Software');
   const sections = template.sections || {};
+  const defaultIntellectualPropertyRights = 'Upon full payment of the agreed project fees, the client will receive a non-exclusive license to use the delivered software for internal business purposes. Taruna Technology retains ownership of its pre-existing tools, frameworks, code snippets, and reusable development components. Any transfer, resale, redistribution, or source-code disclosure beyond the agreed scope must be approved in writing by both parties.';
+  const defaultHostingThirdPartyServices = 'Hosting, domain registration, SSL certificates, email services, SMS gateways, payment gateways, app store accounts, and other third-party subscriptions are governed by the terms and pricing of the respective providers. Any renewal fees, provider charges, or external service limitations are the client’s responsibility unless expressly included in the signed proposal.';
+  const defaultTermination = 'Either party may terminate the project by providing written notice in accordance with the final agreement. If termination occurs, the client remains responsible for payment of all completed work, approved milestones, and any committed third-party costs incurred up to the termination date.';
+  const defaultLimitationOfLiability = 'Taruna Technology shall not be liable for indirect, incidental, special, or consequential damages arising from the use or inability to use the delivered solution. Our total liability for any claim related to the project will be limited to the amount actually paid for the specific services giving rise to the claim, subject to the final signed agreement.';
   return {
     executiveSummary: proposalInputs.sections?.executiveSummary || sections.executiveSummary || `This proposal outlines a focused ${proposalInputs.proposalType || 'software'} solution for ${proposalInputs.companyName || 'the client'}.`,
     companyIntroduction: proposalInputs.sections?.companyIntroduction || sections.companyIntroduction || 'Taruna Technology provides custom software, automation, and business workflow systems with a focus on reliable delivery and clear support.',
@@ -299,7 +303,10 @@ const fallbackContent = ({ clientDetails = {}, quotation = {}, proposalInputs = 
     commercialClarification: proposalInputs.sections?.commercialClarification?.length ? proposalInputs.sections.commercialClarification : [quotation.notes].filter(Boolean),
     termsAndConditions: proposalInputs.sections?.termsAndConditions?.length ? proposalInputs.sections.termsAndConditions : asArray(sections.termsAndConditions),
     warrantyAndSupport: proposalInputs.sections?.warrantyAndSupport || 'Warranty and support will be provided as mutually agreed in the final project agreement.',
-    intellectualPropertyRights: proposalInputs.sections?.intellectualPropertyRights || 'Ownership, usage, and source-code access will be handled as per the final commercial agreement.',
+    intellectualPropertyRights: proposalInputs.sections?.intellectualPropertyRights || defaultIntellectualPropertyRights,
+    hostingThirdPartyServices: proposalInputs.sections?.hostingThirdPartyServices || defaultHostingThirdPartyServices,
+    termination: proposalInputs.sections?.termination || defaultTermination,
+    limitationOfLiability: proposalInputs.sections?.limitationOfLiability || defaultLimitationOfLiability,
     governingLaw: proposalInputs.sections?.governingLaw || 'Governing law and dispute handling will be finalized in the signed agreement.'
   };
 };
@@ -340,6 +347,13 @@ const aiGeneratedKeys = [
   'securityAndDataProtection',
   'deliverables'
 ];
+
+const legalSectionKeys = new Set([
+  'intellectualPropertyRights',
+  'hostingThirdPartyServices',
+  'termination',
+  'limitationOfLiability'
+]);
 
 const compactContext = ({ lead = {}, clientDetails = {}, quotation = {}, proposalInputs = {}, userInstructions = '' }) => ({
   customerName: proposalInputs.customerName || text(`${lead.firstName || ''} ${lead.lastName || ''}`),
@@ -437,6 +451,15 @@ const buildPrompt = (input, section = '') => {
     sectionKey: section,
     currentSectionContent: input.proposalInputs?.sections?.[section] ?? null
   } : null;
+  const legalSectionGuidance = legalSectionKeys.has(section)
+    ? `
+Section-specific rules:
+- Write only the requested clause.
+- Keep it concise, formal, and contract-ready.
+- Do not include unrelated project scope, pricing, timelines, support, deliverables, or company introduction text.
+- Avoid bullet lists unless they are required for clarity.
+- Use 2-4 short sentences or 2-4 very short bullets only.`
+    : '';
 
   return `You are a senior proposal editor for a sales team.
 Your job is to improve proposal wording based on the user's instruction and the current section content.
@@ -446,6 +469,7 @@ If the user asks for more detail, add relevant detail. If the user asks to short
 Use the current content as the base and edit it like a real AI assistant would.
 Return STRICT JSON only. No markdown, no code fence, no explanation.
 ${section ? `Improve ONLY this section key: ${section}. Return JSON with exactly that key.` : `Return JSON with these keys: ${requiredKeys.join(', ')}.`}
+${legalSectionGuidance}
 Current context:
 ${JSON.stringify(context, null, 2)}
 ${sectionContext ? `\nSection to improve:\n${JSON.stringify(sectionContext, null, 2)}` : ''}`;

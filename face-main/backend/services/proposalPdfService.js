@@ -205,12 +205,12 @@ const ensureSpace = (doc, height = 80, proposal) => {
 };
 
 const sectionTitle = (doc, title, proposal) => {
-  ensureSpace(doc, 44, proposal);
+  ensureSpace(doc, 48, proposal);
   doc.moveDown(0.5);
-  doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(14).text(title, 48, doc.y, { width: doc.page.width - 96 });
+  doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(15.5).text(title, 48, doc.y, { width: doc.page.width - 96 });
   doc.moveTo(48, doc.y + 3).lineTo(168, doc.y + 3).strokeColor('#db2777').lineWidth(1.2).stroke();
   doc.fillColor('#0f172a');
-  doc.y += 14;
+  doc.y += 16;
 };
 
 const ensureSectionLeadSpace = (doc, estimate, proposal) => {
@@ -219,25 +219,25 @@ const ensureSectionLeadSpace = (doc, estimate, proposal) => {
 
 const paragraph = (doc, text, proposal) => {
   if (!hasText(text)) return;
-  ensureSpace(doc, 40, proposal);
-  doc.fillColor('#334155').font('Helvetica').fontSize(11).text(String(text).trim(), 48, doc.y, {
+  ensureSpace(doc, 44, proposal);
+  doc.fillColor('#334155').font('Helvetica').fontSize(12.5).text(String(text).trim(), 48, doc.y, {
     width: doc.page.width - 96,
     align: 'justify',
-    lineGap: 4.5
+    lineGap: 5
   });
   doc.moveDown(0.6);
 };
 
 const bullets = (doc, items, proposal) => {
   list(items).filter(hasContent).forEach((item) => {
-    ensureSpace(doc, 22, proposal);
+    ensureSpace(doc, 26, proposal);
     const startY = doc.y;
     const itemText = typeof item === 'string' ? item.replace(/^[-•]\s*/, '') : value(item.title || item.description);
     if (!hasText(itemText)) return;
     doc.fillColor('#db2777').font('Helvetica-Bold').fontSize(10).text('•', 48, startY);
-    doc.fillColor('#334155').font('Helvetica').fontSize(10).text(itemText.trim(), 62, startY, {
+    doc.fillColor('#334155').font('Helvetica').fontSize(11.5).text(itemText.trim(), 62, startY, {
       width: doc.page.width - 110,
-      lineGap: 3
+      lineGap: 3.8
     });
     doc.moveDown(0.35);
   });
@@ -251,7 +251,7 @@ const modules = (doc, items, proposal) => {
       paragraph(doc, item, proposal);
     } else {
       if (hasText(item.title)) {
-        doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(11).text(item.title, 48, doc.y, { width: doc.page.width - 96 });
+        doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(12.5).text(item.title, 48, doc.y, { width: doc.page.width - 96 });
       }
       if (hasText(item.description)) paragraph(doc, item.description, proposal);
       if (hasContent(item.features)) bullets(doc, item.features, proposal);
@@ -269,10 +269,10 @@ const pairedList = (doc, items, proposal, titleKey = 'title', bodyKey = 'descrip
       const t = value(item[titleKey] || item.technology);
       const d = value(item[bodyKey] || item.purpose, '');
       if (hasText(t)) {
-        doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(10.5).text(t, 48, doc.y, { width: doc.page.width - 96 });
+        doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(12).text(t, 48, doc.y, { width: doc.page.width - 96 });
         if (hasText(d)) {
-          doc.fillColor('#334155').font('Helvetica').fontSize(10.5).text(d, 48, doc.y + 14, { width: doc.page.width - 96, lineGap: 3 });
-          doc.y += 14;
+          doc.fillColor('#334155').font('Helvetica').fontSize(12).text(d, 48, doc.y + 16, { width: doc.page.width - 96, lineGap: 4 });
+          doc.y += 16;
         }
       }
     }
@@ -290,17 +290,17 @@ const table = (doc, title, rows, columns, proposal) => {
   const rowPaddingY = 7;
   const rowPaddingX = 6;
 
-  doc.fillColor('#0f172a').roundedRect(48, headerY, width, 26, 4).fill();
+  doc.fillColor('#0f172a').roundedRect(48, headerY, width, 28, 4).fill();
   columns.forEach((column, index) => {
-    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(8.5).text(
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(10).text(
       column.label,
       54 + (index * colWidth),
       headerY + 8,
-      { width: colWidth - 12, height: 12 }
+      { width: colWidth - 12, height: 14 }
     );
   });
 
-  doc.y = headerY + 30;
+  doc.y = headerY + 32;
 
   list(rows).forEach((row) => {
     const cellHeights = columns.map((column) => {
@@ -309,8 +309,8 @@ const table = (doc, title, rows, columns, proposal) => {
       return doc.heightOfString(display, {
         width: colWidth - (rowPaddingX * 2),
         font: 'Helvetica',
-        size: 8.7,
-        lineGap: 2
+        size: 10,
+        lineGap: 2.5
       });
     });
     const rowHeight = Math.max(26, Math.ceil(Math.max(...cellHeights) + (rowPaddingY * 2)));
@@ -320,11 +320,11 @@ const table = (doc, title, rows, columns, proposal) => {
     columns.forEach((column, index) => {
       const raw = row?.[column.key];
       const display = column.format ? column.format(raw, row) : value(raw);
-      doc.fillColor('#334155').font('Helvetica').fontSize(8.5).text(
+      doc.fillColor('#334155').font('Helvetica').fontSize(10).text(
         display,
         54 + (index * colWidth),
         startY + rowPaddingY,
-        { width: colWidth - (rowPaddingX * 2), height: rowHeight - (rowPaddingY * 2), lineBreak: true }
+        { width: colWidth - (rowPaddingX * 2), height: rowHeight - (rowPaddingY * 2), lineBreak: true, lineGap: 2.5 }
       );
     });
     doc.y = startY + rowHeight + 2;

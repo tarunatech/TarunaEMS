@@ -63,6 +63,11 @@ const defaultPaymentRows = [
   { milestone: 'Final Deployment', description: 'Before final deployment and handover.', percentage: 30 }
 ];
 
+const defaultIntellectualPropertyRights = 'Upon full payment of the agreed project fees, the client will receive a non-exclusive license to use the delivered software for internal business purposes. Taruna Technology retains ownership of its pre-existing tools, frameworks, code snippets, and reusable development components. Any transfer, resale, redistribution, or source-code disclosure beyond the agreed scope must be approved in writing by both parties.';
+const defaultHostingThirdPartyServices = 'Hosting, domain registration, SSL certificates, email services, SMS gateways, payment gateways, app store accounts, and other third-party subscriptions are governed by the terms and pricing of the respective providers. Any renewal fees, provider charges, or external service limitations are the client’s responsibility unless expressly included in the signed proposal.';
+const defaultTermination = 'Either party may terminate the project by providing written notice in accordance with the final agreement. If termination occurs, the client remains responsible for payment of all completed work, approved milestones, and any committed third-party costs incurred up to the termination date.';
+const defaultLimitationOfLiability = 'Taruna Technology shall not be liable for indirect, incidental, special, or consequential damages arising from the use or inability to use the delivered solution. Our total liability for any claim related to the project will be limited to the amount actually paid for the specific services giving rise to the claim, subject to the final signed agreement.';
+
 const proposalTypeOptions = ['ERP Software', 'Website Development', 'Mobile App'];
 
 const proposalTypeTemplates = {
@@ -257,10 +262,10 @@ const emptyForms = {
       whyUs: [],
       agreement: '',
       warrantyAndSupport: '',
-      intellectualPropertyRights: '',
-      hostingThirdPartyServices: '',
-      termination: '',
-      limitationOfLiability: '',
+      intellectualPropertyRights: defaultIntellectualPropertyRights,
+      hostingThirdPartyServices: defaultHostingThirdPartyServices,
+      termination: defaultTermination,
+      limitationOfLiability: defaultLimitationOfLiability,
       governingLaw: '',
       termsAndConditions: [],
       projectTimeline: defaultTimelineRows,
@@ -1228,9 +1233,9 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                         embedded={embedded}
                       />
 
-                      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                        <div className="flex flex-col gap-3">
-                          <div className="flex flex-wrap items-center gap-2">
+                      <div className="rounded-xl border border-slate-200 bg-white p-2.5 sm:p-3 shadow-sm">
+                        <div className="flex flex-col gap-2 sm:gap-3">
+                          <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
                             {/* Hidden PDF file input */}
                             <input
                               ref={pdfUploadRef}
@@ -1242,49 +1247,49 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                             <button
                               onClick={() => pdfUploadRef.current?.click()}
                               disabled={saving || extractingPdf}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
+                              className="inline-flex items-center justify-center gap-1 sm:gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
                             >
-                              {extractingPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                              {extractingPdf ? 'Extracting...' : 'Upload PDF'}
+                              {extractingPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : <Upload className="h-3.5 w-3.5 shrink-0" />}
+                              <span className="truncate">{extractingPdf ? 'Extracting...' : 'Upload PDF'}</span>
                             </button>
                             <button
                               onClick={generateProposalWithAI}
                               disabled={saving || extractingPdf}
-                              className="rounded-lg bg-fuchsia-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-fuchsia-700 disabled:opacity-60"
+                              className="inline-flex items-center justify-center rounded-lg bg-fuchsia-600 px-2 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-bold text-white shadow-sm transition hover:bg-fuchsia-700 disabled:opacity-60"
                             >
-                              Generate Proposal with AI
+                              <span className="truncate">Generate with AI</span>
                             </button>
                             <button
                               onClick={() => saveProposal('draft')}
                               disabled={saving || extractingPdf}
-                              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                              className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
                             >
-                              Save Draft
+                              <span className="truncate">Save Draft</span>
                             </button>
                             <button
                               onClick={() => saveProposal('finalized')}
                               disabled={saving || extractingPdf}
-                              className="rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
+                              className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-2 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
                             >
-                              Save Final
+                              <span className="truncate">Save Final</span>
                             </button>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
                             <button
                               onClick={() => generateProposalPdf(false)}
                               disabled={saving || extractingPdf}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
+                              className="inline-flex items-center justify-center gap-1 sm:gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
                             >
-                              <Download className="h-3.5 w-3.5" />
-                              Generate / View PDF
+                              <Download className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">View PDF</span>
                             </button>
                             <button
                               onClick={() => transition('sent_to_client', 'Proposal completed and ready to send')}
                               disabled={saving || extractingPdf}
-                              className="rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60"
+                              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-2 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60"
                             >
-                              Send to Client Stage
+                              <span className="truncate">Send to Client Stage</span>
                             </button>
                           </div>
                         </div>
@@ -1420,12 +1425,20 @@ const Badge = ({ status }) => {
   return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${classes[status] || classes.not_submitted}`}>{(status || 'not_submitted').replaceAll('_', ' ')}</span>;
 };
 
-const Info = ({ label, value }) => (
-  <div>
+const Info = ({ label, value }) => {
+  const isEmail = String(label || '').toLowerCase() === 'email';
+  return (
+  <div className="min-w-0">
     <p className="text-xs text-slate-500">{label}</p>
-    <p className="font-medium text-slate-900">{value || '-'}</p>
+    <p
+      title={isEmail && value ? String(value) : undefined}
+      className={`min-w-0 font-medium leading-snug text-slate-900 ${isEmail ? 'truncate text-[13px]' : 'break-words [overflow-wrap:anywhere]'}`}
+    >
+      {value || '-'}
+    </p>
   </div>
-);
+  );
+};
 
 const Input = ({ label, value, onChange, type = 'text', disabled = false }) => (
   <label className="block">
@@ -1443,28 +1456,28 @@ const Textarea = ({ label, value, onChange }) => (
 
 const ProposalRowsEditor = ({ title, rows = [], fields, onChange, onAdd, onRemove, compact = false }) => (
   <div className="rounded-xl border border-slate-200 bg-white p-3">
-    <div className="mb-3 flex items-center justify-between gap-2">
-      <h4 className="text-sm font-bold text-slate-900">{title}</h4>
-      <button type="button" onClick={onAdd} className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">Add Row</button>
+    <div className="mb-2.5 flex items-center justify-between gap-2">
+      <h4 className="text-xs sm:text-sm font-bold text-slate-900">{title}</h4>
+      <button type="button" onClick={onAdd} className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] sm:text-xs font-semibold text-slate-600 hover:bg-slate-50">+ Add Row</button>
     </div>
     {compact && (
-      <div className={`mb-2 grid gap-2 px-1 text-[10px] font-bold uppercase tracking-wide text-slate-400 ${fields.length === 2 ? 'grid-cols-[minmax(0,1fr)_120px_auto]' : 'grid-cols-[minmax(0,1fr)_minmax(140px,1fr)_minmax(90px,0.8fr)_auto]'}`}>
+      <div className={`hidden sm:grid mb-2 gap-2 px-1 text-[10px] font-bold uppercase tracking-wide text-slate-400 ${fields.length === 2 ? 'grid-cols-[minmax(0,1fr)_120px_auto]' : 'grid-cols-[minmax(0,1fr)_minmax(140px,1fr)_minmax(90px,0.8fr)_auto]'}`}>
         {fields.map(([, label]) => <span key={label}>{label}</span>)}
         <span />
       </div>
     )}
     <div className="space-y-2">
       {asArray(rows).map((row, index) => (
-        <div key={`${title}-${index}`} className={`grid gap-2 rounded-lg bg-slate-50 p-2 ${compact ? (fields.length === 2 ? 'grid-cols-[minmax(0,1fr)_120px_auto] items-center' : 'grid-cols-[minmax(0,1fr)_minmax(140px,1fr)_minmax(90px,0.8fr)_auto] items-center') : 'sm:grid-cols-[repeat(auto-fit,minmax(130px,1fr))_auto]'}`}>
+        <div key={`${title}-${index}`} className={`grid gap-1.5 sm:gap-2 rounded-lg bg-slate-50 p-2 ${compact ? (fields.length === 2 ? 'grid-cols-[1fr_80px_24px] sm:grid-cols-[minmax(0,1fr)_120px_auto] items-center' : 'grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(140px,1fr)_minmax(90px,0.8fr)_auto] items-center') : 'sm:grid-cols-[repeat(auto-fit,minmax(130px,1fr))_auto]'}`}>
           {compact ? (
             <>
               {fields.map(([field, label]) => (
-                <label key={field} className="block">
-                  <span className="mb-1 block text-[10px] font-medium text-slate-500 sm:hidden">{label}</span>
+                <label key={field} className="block min-w-0">
+                  <span className="mb-0.5 block text-[10px] font-medium text-slate-500 sm:hidden">{label}</span>
                   <input
                     value={row?.[field] || ''}
                     onChange={v => onChange(index, field, v.target.value)}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs sm:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </label>
               ))}
@@ -1474,7 +1487,7 @@ const ProposalRowsEditor = ({ title, rows = [], fields, onChange, onAdd, onRemov
               <Input key={field} label={label} value={row?.[field]} onChange={v => onChange(index, field, v)} />
             ))
           )}
-          <button type="button" onClick={() => onRemove(index)} className="self-center rounded-lg px-2 py-2 text-xs font-bold text-red-500 hover:bg-red-50">x</button>
+          <button type="button" onClick={() => onRemove(index)} className="self-center justify-self-end sm:justify-self-auto rounded-lg px-1.5 py-1 text-xs font-bold text-red-500 hover:bg-red-50" title="Remove row">✕</button>
         </div>
       ))}
     </div>
@@ -1537,34 +1550,34 @@ const ProposalPreview = ({
   const page = (key, defaultTitle, children) => {
     const title = proposal.sectionTitles?.[key] || defaultTitle;
     return (
-      <div className={`proposal-page relative mx-auto mb-4 min-h-[560px] overflow-hidden rounded-sm bg-white p-6 shadow-lg ring-1 ring-slate-300 flex flex-col justify-between ${embedded ? 'max-w-[500px]' : 'max-w-[440px]'}`}>
+      <div className={`proposal-page relative mx-auto mb-3 sm:mb-4 min-h-[460px] sm:min-h-[560px] w-full overflow-hidden rounded-sm bg-white p-3.5 sm:p-6 shadow-md sm:shadow-lg ring-1 ring-slate-300 flex flex-col justify-between ${embedded ? 'max-w-full sm:max-w-[500px]' : 'max-w-full sm:max-w-[440px]'}`}>
         {/* Background Watermark - Brighter Logo */}
         <img
           src="/Taruna-logo-text.png"
           alt=""
-          className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.12]"
+          className="pointer-events-none absolute left-1/2 top-1/2 h-48 w-48 sm:h-64 sm:w-64 -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.12]"
         />
 
-        <div className={`relative min-h-[500px] ${embedded ? 'text-[15px]' : 'text-sm'}`}>
+        <div className={`relative min-h-[400px] sm:min-h-[500px] ${embedded ? 'text-xs sm:text-[15px]' : 'text-xs sm:text-sm'}`}>
           {/* Decent, Smaller Top Header Logo Only */}
-          <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-2">
-            <img src="/Taruna-logo-text.png" alt="" className={embedded ? 'h-7 w-auto object-contain' : 'h-6 w-auto object-contain'} />
-            <span className={`${embedded ? 'text-[11px]' : 'text-[10px]'} font-semibold text-fuchsia-600 uppercase tracking-wider`}>{proposal.proposalType || 'Project Proposal'}</span>
+          <div className="mb-3 sm:mb-4 flex items-center justify-between border-b border-slate-100 pb-2">
+            <img src="/Taruna-logo-text.png" alt="" className={embedded ? 'h-5 sm:h-7 w-auto object-contain' : 'h-4 sm:h-6 w-auto object-contain'} />
+            <span className={`${embedded ? 'text-[10px] sm:text-[11px]' : 'text-[9px] sm:text-[10px]'} font-semibold text-fuchsia-600 uppercase tracking-wider`}>{proposal.proposalType || 'Project Proposal'}</span>
           </div>
 
           {/* Page Title */}
-          <div className="mt-4 border-l-4 border-fuchsia-500 pl-3">
+          <div className="mt-2 sm:mt-4 border-l-4 border-fuchsia-500 pl-2.5 sm:pl-3">
             <input
               type="text"
               value={title}
               onChange={e => onTitleChange?.(key, e.target.value)}
               placeholder="Page Title"
-              className={`w-full bg-transparent ${embedded ? 'text-[21px]' : 'text-xl'} font-black uppercase leading-tight text-slate-950 outline-none transition focus:bg-fuchsia-50/50 focus:ring-1 focus:ring-fuchsia-300 rounded px-1 -ml-1`}
+              className={`w-full bg-transparent ${embedded ? 'text-base sm:text-[21px]' : 'text-base sm:text-xl'} font-black uppercase leading-tight text-slate-950 outline-none transition focus:bg-fuchsia-50/50 focus:ring-1 focus:ring-fuchsia-300 rounded px-1 -ml-1`}
             />
           </div>
 
           {/* Children Content */}
-          <div className={`mt-5 ${embedded ? 'text-[15px] leading-8' : 'text-sm leading-7'} text-slate-700`}>{children}</div>
+          <div className={`mt-3 sm:mt-5 ${embedded ? 'text-xs sm:text-[15px] leading-6 sm:leading-8' : 'text-xs sm:text-sm leading-6 sm:leading-7'} text-slate-700`}>{children}</div>
         </div>
       </div>
     );
@@ -1574,12 +1587,12 @@ const ProposalPreview = ({
   const costTotal = costRows.reduce((sum, row) => sum + Number(row?.cost || 0), 0);
 
   return (
-    <div className="employee-sales-pipeline-preview max-h-[78vh] overflow-y-auto rounded-2xl border border-slate-200 bg-slate-200/80 p-3">
+    <div className="employee-sales-pipeline-preview max-h-[70vh] sm:max-h-[78vh] overflow-y-auto rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-200/80 p-2 sm:p-3">
       {/* Cover Page (First Page - Matching Image 1) */}
-      <div className={`proposal-page relative mx-auto mb-4 min-h-[560px] overflow-hidden rounded-sm bg-white p-6 shadow-lg ring-1 ring-slate-300 flex flex-col justify-between ${embedded ? 'max-w-[500px]' : 'max-w-[440px]'}`}>
+      <div className={`proposal-page relative mx-auto mb-3 sm:mb-4 min-h-[460px] sm:min-h-[560px] w-full overflow-hidden rounded-sm bg-white p-3.5 sm:p-6 shadow-md sm:shadow-lg ring-1 ring-slate-300 flex flex-col justify-between ${embedded ? 'max-w-full sm:max-w-[500px]' : 'max-w-full sm:max-w-[440px]'}`}>
         <div className="relative">
           {/* Centered Top Company Logo */}
-          <img src="/Taruna-logo-text.png" alt="Taruna Technology" className={embedded ? 'mx-auto h-22 w-auto object-contain mb-6' : 'mx-auto h-20 w-auto object-contain mb-6'} />
+          <img src="/Taruna-logo-text.png" alt="Taruna Technology" className={embedded ? 'mx-auto h-14 sm:h-22 w-auto object-contain mb-4 sm:mb-6' : 'mx-auto h-12 sm:h-20 w-auto object-contain mb-4 sm:mb-6'} />
 
           {/* Defined Pink Subtitle */}
           <input
@@ -1587,17 +1600,17 @@ const ProposalPreview = ({
             value={proposal.subtitle || proposal.proposalType || ''}
             onChange={e => onProposalChange?.('subtitle', e.target.value)}
             placeholder="CUSTOM ERP & PRODUCTION MANAGEMENT SYSTEM"
-            className={`w-full bg-transparent ${embedded ? 'text-[12px]' : 'text-[11px]'} font-black uppercase tracking-wider text-fuchsia-600 outline-none focus:bg-fuchsia-50/50 rounded px-1 -ml-1`}
+            className={`w-full bg-transparent ${embedded ? 'text-[10px] sm:text-[12px]' : 'text-[9px] sm:text-[11px]'} font-black uppercase tracking-wider text-fuchsia-600 outline-none focus:bg-fuchsia-50/50 rounded px-1 -ml-1`}
           />
 
           {/* Big Main Title: PROJECT PROPOSAL */}
-          <div className="mt-2 text-3xl font-black uppercase leading-none text-indigo-900">
+          <div className="mt-2 text-xl sm:text-3xl font-black uppercase leading-none text-indigo-900">
             <input
               type="text"
               value={proposal.title || 'PROJECT PROPOSAL'}
               onChange={e => onProposalChange?.('title', e.target.value)}
               placeholder="PROJECT PROPOSAL"
-              className={`w-full bg-transparent ${embedded ? 'text-[2.05rem]' : 'text-3xl'} font-black uppercase leading-tight text-indigo-900 outline-none focus:bg-indigo-50/50 rounded px-1 -ml-1`}
+              className={`w-full bg-transparent ${embedded ? 'text-lg sm:text-[2.05rem]' : 'text-xl sm:text-3xl'} font-black uppercase leading-tight text-indigo-900 outline-none focus:bg-indigo-50/50 rounded px-1 -ml-1`}
             />
           </div>
 
@@ -1668,26 +1681,26 @@ const ProposalPreview = ({
       {page('projectCostBreakdown', 'Project Cost Breakdown', (
         <div className="space-y-3">
           <div className="overflow-hidden rounded-lg border border-slate-200 text-xs">
-            <div className="grid grid-cols-[1.8fr_1fr_auto] bg-slate-900 px-2 py-2 font-bold text-white">
+            <div className="grid grid-cols-[1fr_80px_24px] sm:grid-cols-[1.8fr_1fr_auto] bg-slate-900 px-2 py-1.5 font-bold text-white text-[11px] sm:text-xs">
               <div>Module / Service</div>
               <div>Cost (₹)</div>
               <div></div>
             </div>
             {costRows.map((row, index) => (
-              <div key={index} className="grid grid-cols-[1.8fr_1fr_auto] items-center border-t border-slate-200 px-2 py-1 gap-1">
+              <div key={index} className="grid grid-cols-[1fr_80px_24px] sm:grid-cols-[1.8fr_1fr_auto] items-center border-t border-slate-200 px-1.5 py-1 gap-1 text-[11px] sm:text-xs">
                 <input
                   type="text"
                   value={row?.component || ''}
                   onChange={e => onSectionRowChange?.('projectCostBreakdown', index, 'component', e.target.value)}
                   placeholder="Component Name"
-                  className="w-full bg-transparent py-1 text-slate-800 outline-none focus:bg-blue-50/50 rounded px-1"
+                  className="w-full bg-transparent py-1 text-slate-800 outline-none focus:bg-blue-50/50 rounded px-1 min-w-0"
                 />
                 <input
                   type="number"
                   value={row?.cost || ''}
                   onChange={e => onSectionRowChange?.('projectCostBreakdown', index, 'cost', e.target.value)}
                   placeholder="0"
-                  className="w-full bg-transparent py-1 font-semibold text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1"
+                  className="w-full bg-transparent py-1 font-semibold text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1 min-w-0"
                 />
                 <button
                   type="button"
@@ -1707,7 +1720,7 @@ const ProposalPreview = ({
             >
               + Add Row
             </button>
-            <p className="text-sm font-black text-slate-950">Total: {formatProposalMoney(costTotal || pricing.totalPrice, pricing.currency)}</p>
+            <p className="text-xs sm:text-sm font-black text-slate-950">Total: {formatProposalMoney(costTotal || pricing.totalPrice, pricing.currency)}</p>
           </div>
         </div>
       ))}

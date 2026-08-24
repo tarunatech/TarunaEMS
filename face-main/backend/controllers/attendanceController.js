@@ -1062,8 +1062,8 @@ export const getAllAttendance = async (req, res) => {
           as: 'userData'
         }
       },
-      { $unwind: '$employeeData' },
-      { $unwind: '$userData' }
+      { $unwind: { path: '$employeeData', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$userData', preserveNullAndEmptyArrays: true } }
     ];
 
     // Department filter - match the employee's stored department id before replacing it with a display name.
@@ -1102,14 +1102,28 @@ export const getAllAttendance = async (req, res) => {
       }
     );
 
-    // Search filter
+    // Search filter - match full name, individual name parts, user name, or employee ID
     if (search) {
+      pipeline.push({
+        $addFields: {
+          _fullName: {
+            $concat: [
+              { $ifNull: ['$employeeData.personalInfo.firstName', ''] },
+              ' ',
+              { $ifNull: ['$employeeData.personalInfo.lastName', ''] }
+            ]
+          }
+        }
+      });
       pipeline.push({
         $match: {
           $or: [
             { 'employeeData.personalInfo.firstName': { $regex: search, $options: 'i' } },
             { 'employeeData.personalInfo.lastName': { $regex: search, $options: 'i' } },
-            { 'userData.employeeId': { $regex: search, $options: 'i' } }
+            { '_fullName': { $regex: search, $options: 'i' } },
+            { 'userData.name': { $regex: search, $options: 'i' } },
+            { 'userData.employeeId': { $regex: search, $options: 'i' } },
+            { 'employeeData.employeeId': { $regex: search, $options: 'i' } }
           ]
         }
       });

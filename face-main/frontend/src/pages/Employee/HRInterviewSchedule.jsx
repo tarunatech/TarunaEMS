@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CalendarClock, CheckCircle, Clock, FileText, Plus, RefreshCw, Upload, UserRound, X, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
@@ -351,7 +352,12 @@ const HRInterviewSchedule = () => {
                           <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">{item.status}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <ResumePreview item={item} compact />
+                          <div className="flex justify-end gap-2">
+                            <Link to={`/employee/candidates/${item._id}`} className="inline-flex items-center rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100">
+                              View Profile
+                            </Link>
+                            <ResumePreview item={item} compact />
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -377,7 +383,10 @@ const HRInterviewSchedule = () => {
                       <p className="truncate">{item.email} | {item.phone}</p>
                       <p className="truncate">{item.interviewMode || 'N/A'} | {item.interviewRound || '-'}</p>
                     </div>
-                    <div className="mt-3 flex justify-end">
+                    <div className="mt-3 flex justify-end gap-2">
+                      <Link to={`/employee/candidates/${item._id}`} className="inline-flex items-center rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100">
+                        View Profile
+                      </Link>
                       <ResumePreview item={item} compact />
                     </div>
                   </div>

@@ -113,39 +113,26 @@ const WelcomeSection = ({
           </div>
         </div>
 
-        <div className="flex flex-col items-start md:items-end">
-          <div className="font-mono text-3xl sm:text-4xl font-extrabold leading-none tracking-wider text-white drop-shadow-[0_3px_14px_rgba(255,255,255,0.16)] md:text-6xl">
+        <div className="flex flex-col items-start md:items-end w-full md:w-auto pt-3 md:pt-0 border-t border-white/10 md:border-t-0">
+          <div className="font-mono text-2xl sm:text-4xl font-extrabold leading-none tracking-wider text-white drop-shadow-[0_3px_14px_rgba(255,255,255,0.16)] md:text-5xl">
             {currentTime}
           </div>
-          <p className="mt-2 sm:mt-3 text-sm sm:text-base font-medium text-slate-300">
+          <p className="mt-1 sm:mt-2 text-xs sm:text-base font-medium text-slate-300">
             {formattedDate}
           </p>
-          <div className="mt-4 sm:mt-5 flex flex-col items-start gap-2 sm:gap-3 sm:flex-row sm:items-center md:justify-end">
-            <p className="text-xs sm:text-sm font-medium text-slate-300">
-              Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : currentTime}
+          <div className="mt-3 sm:mt-4 flex flex-row items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
+            <p className="text-[11px] sm:text-sm font-medium text-slate-300/90 truncate">
+              Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : currentTime}
             </p>
-            {/* <button
-              onClick={toggleAutoRefresh}
-              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold shadow-lg transition-all duration-300 ${
-                isAutoRefreshEnabled
-                  ? 'border-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-600 text-white shadow-indigo-950/25 hover:shadow-indigo-400/20'
-                  : 'border-white/20 bg-white/12 text-slate-200 backdrop-blur-md hover:bg-white/18'
-              }`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  isAutoRefreshEnabled ? 'bg-white animate-pulse' : 'bg-slate-400'
-                }`}
-              />
-              Auto-refresh {isAutoRefreshEnabled ? 'ON' : 'OFF'}
-            </button> */}
             <button
               onClick={manualRefresh}
               disabled={loading}
-              className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-slate-900 px-2 py-2 text-sm font-bold text-indigo-700 shadow-lg shadow-slate-950/10 transition-all duration-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              aria-label="Refresh Dashboard Data"
+              className="inline-flex items-center gap-1.5 rounded-full border border-indigo-300/30 bg-indigo-500/20 hover:bg-indigo-500/35 active:scale-95 px-2.5 py-1 text-xs font-medium text-indigo-100 backdrop-blur-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer shrink-0"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Refreshing...' : ''}
+              <RefreshCw className={`h-3.5 w-3.5 text-indigo-200 ${loading ? 'animate-spin' : ''}`} />
+              <span className="text-[11px] sm:text-xs font-semibold">{loading ? 'Refreshing...' : 'Refresh'}</span>
             </button>
           </div>
         </div>

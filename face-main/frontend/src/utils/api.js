@@ -623,6 +623,16 @@ export const interviewAPI = {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   getAll: () => API.get('/interviews/admin'),
+  getCandidate: (id) => API.get(`/interviews/candidates/${id}`),
+  updateCandidate: (id, data) => API.put(`/interviews/candidates/${id}`, data),
+  getAdminCandidate: (id) => API.get(`/interviews/admin/candidates/${id}`),
+  addProfileRecord: (candidateId, type, data) => API.post(`/interviews/candidates/${candidateId}/${type}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  updateProfileRecord: (candidateId, type, recordId, data) => API.put(`/interviews/candidates/${candidateId}/${type}/${recordId}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  deleteProfileRecord: (candidateId, type, recordId) => API.delete(`/interviews/candidates/${candidateId}/${type}/${recordId}`),
   updateStatus: (id, status) => API.patch(`/interviews/admin/${id}/status`, { status }),
   delete: (id) => API.delete(`/interviews/admin/${id}`)
 };

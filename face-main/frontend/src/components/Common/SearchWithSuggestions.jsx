@@ -87,8 +87,8 @@ const SearchWithSuggestions = ({
   );
 
   return (
-    <div ref={wrapperRef} className={`relative ${className}`}>
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+    <div ref={wrapperRef} className={`relative flex items-center ${className}`}>
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10 shrink-0" />
       <input
         type="text"
         value={value}
@@ -102,21 +102,22 @@ const SearchWithSuggestions = ({
         }}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
         placeholder={placeholder}
-        className={`w-full rounded-lg border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 ${inputClassName}`}
+        className={`w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-9 pr-9 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 ${inputClassName}`}
       />
-      {value && (
+      {value ? (
         <button
           type="button"
           onClick={() => {
             onChange('');
             setOpen(false);
           }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+          style={{ position: 'absolute', right: '0.625rem', top: '50%', transform: 'translateY(-50%)' }}
+          className="flex items-center justify-center h-6 w-6 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors z-10"
           title="Clear search"
         >
           <X className="h-4 w-4" />
         </button>
-      )}
+      ) : null}
       {suggestionMenu ? createPortal(suggestionMenu, document.body) : null}
     </div>
   );

@@ -198,7 +198,7 @@ const AddEmployeeModal = ({
   const currentPoseIndex = posesCaptured.length;
   const currentPose = currentPoseIndex < POSES.length ? POSES[currentPoseIndex] : null;
   return (
-    <div className="fixed inset-y-0 left-0 right-0 lg:left-64 z-[9999] flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-y-0 left-0 right-0 lg:left-64 z-[9999] flex items-center justify-center p-2 sm:p-4">
       {/* Enhanced backdrop with blur - Click to close */}
       <div
         className="fixed inset-0 bg-slate-950/35 backdrop-blur-sm"
@@ -210,26 +210,28 @@ const AddEmployeeModal = ({
 
       {/* Modal content - Prevent click propagation */}
       <div
-        className="relative bg-[#F8FAFC] border border-blue-100 rounded-2xl p-4 sm:p-5 w-full max-w-4xl max-h-[86vh] overflow-y-auto shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
+        className="relative bg-[#F8FAFC] border border-blue-100 rounded-xl sm:rounded-2xl p-3 sm:p-5 w-full max-w-4xl max-h-[92vh] sm:max-h-[86vh] overflow-y-auto shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-3 border-b border-blue-100">
-          <div className="flex items-center flex-wrap gap-2">
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Add New Employee</h2>
-            <div className="flex items-center space-x-2">
-              <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
-                }`}>
+        <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-blue-100">
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-base sm:text-2xl font-bold text-slate-900 truncate">
+              <span className="sm:hidden">Add Employee</span>
+              <span className="hidden sm:inline">Add New Employee</span>
+            </h2>
+            <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+              <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
                 1
               </div>
-              <div className={`w-6 h-1 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-slate-200'}`}></div>
-              <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
-                }`}>
+              <div className={`w-4 sm:w-6 h-0.5 sm:h-1 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-slate-200'}`}></div>
+              <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
                 2
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-2 text-xs sm:text-sm text-emerald-600">
+
+          <div className="flex items-center space-x-2 shrink-0">
+            <div className="hidden sm:flex items-center space-x-2 text-xs sm:text-sm text-emerald-600">
               <Camera className="w-4 h-4" />
               <span>Face Registration (Optional)</span>
             </div>
@@ -238,7 +240,7 @@ const AddEmployeeModal = ({
                 resetForm();
                 onClose();
               }}
-              className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-white rounded-lg transition-all duration-200"
+              className="p-1 sm:p-1.5 text-slate-500 hover:text-slate-900 hover:bg-white rounded-lg transition-all duration-200"
               aria-label="Close modal"
               type="button"
             >
@@ -247,47 +249,47 @@ const AddEmployeeModal = ({
           </div>
         </div>
         {currentStep === 1 ? (
-          <form onSubmit={handleFormNext} className="space-y-6 sm:space-y-8">
+          <form onSubmit={handleFormNext} className="space-y-4 sm:space-y-8">
             {/* Personal Information */}
-            <div className="space-y-4">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Personal Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="space-y-2.5 sm:space-y-4">
+              <h3 className="text-sm sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-1 sm:pb-2">Personal Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">First Name *</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">First Name *</label>
                   <input
                     type="text"
                     value={newEmployee.personalInfo.firstName}
                     onChange={(e) => updateEmployee('personalInfo', e.target.value, 'firstName')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Last Name *</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Last Name *</label>
                   <input
                     type="text"
                     value={newEmployee.personalInfo.lastName}
                     onChange={(e) => updateEmployee('personalInfo', e.target.value, 'lastName')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Date of Birth *</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Date of Birth *</label>
                   <input
                     type="date"
                     value={newEmployee.personalInfo.dateOfBirth}
                     onChange={(e) => updateEmployee('personalInfo', e.target.value, 'dateOfBirth')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Gender *</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Gender *</label>
                   <select
                     value={newEmployee.personalInfo.gender}
                     onChange={(e) => updateEmployee('personalInfo', e.target.value, 'gender')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   >
                     <option value="">Select Gender</option>
@@ -297,11 +299,11 @@ const AddEmployeeModal = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Blood Group</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Blood Group</label>
                   <select
                     value={newEmployee.personalInfo.bloodGroup}
                     onChange={(e) => updateEmployee('personalInfo', e.target.value, 'bloodGroup')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="">Select Blood Group</option>
                     {bloodGroups.map(bg => (
@@ -312,59 +314,59 @@ const AddEmployeeModal = ({
               </div>
             </div>
             {/* Contact Information */}
-            <div className="space-y-4">
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Contact Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-2.5 sm:space-y-4">
+              <h3 className="text-sm sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-1 sm:pb-2">Contact Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Email *</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Email *</label>
                   <input
                     type="email"
                     value={newEmployee.contactInfo.personalEmail}
                     onChange={(e) => updateEmployee('contactInfo', e.target.value, 'personalEmail')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Phone *</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Phone *</label>
                   <input
                     type="tel"
                     value={newEmployee.contactInfo.phone}
                     onChange={(e) => updateEmployee('contactInfo', e.target.value, 'phone')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <h4 className="text-sm sm:text-md font-semibold text-slate-900 mb-2 sm:mb-3">Emergency Contact</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                  <h4 className="text-xs sm:text-md font-semibold text-slate-900 mb-1.5 sm:mb-3">Emergency Contact</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Name *</label>
+                      <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Name *</label>
                       <input
                         type="text"
                         value={newEmployee.contactInfo.emergencyContact.name}
                         onChange={(e) => updateEmployee('contactInfo', e.target.value, 'emergencyContact', 'name')}
-                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                        className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Relationship *</label>
+                      <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Relationship *</label>
                       <input
                         type="text"
                         value={newEmployee.contactInfo.emergencyContact.relationship}
                         onChange={(e) => updateEmployee('contactInfo', e.target.value, 'emergencyContact', 'relationship')}
-                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                        className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Phone *</label>
+                      <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Phone *</label>
                       <input
                         type="tel"
                         value={newEmployee.contactInfo.emergencyContact.phone}
                         onChange={(e) => updateEmployee('contactInfo', e.target.value, 'emergencyContact', 'phone')}
-                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                        className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                         required
                       />
                     </div>
@@ -373,25 +375,25 @@ const AddEmployeeModal = ({
               </div>
             </div>
             {/* Work Information */}
-            <div className="space-y-4">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Work Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="space-y-2.5 sm:space-y-4">
+              <h3 className="text-sm sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-1 sm:pb-2">Work Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Position *</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Position *</label>
                   <input
                     type="text"
                     value={newEmployee.workInfo.position}
                     onChange={(e) => updateEmployee('workInfo', e.target.value, 'position')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Department *</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Department *</label>
                   <select
                     value={newEmployee.workInfo.department}
                     onChange={(e) => updateEmployee('workInfo', e.target.value, 'department')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   >
                     <option value="">Select Department</option>
@@ -401,12 +403,12 @@ const AddEmployeeModal = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Basic Salary *</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Basic Salary *</label>
                   <input
                     type="number"
                     value={newEmployee.salaryInfo.basicSalary}
                     onChange={(e) => updateEmployee('salaryInfo', parseFloat(e.target.value) || 0, 'basicSalary')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                     min="0"
                   />
@@ -414,60 +416,60 @@ const AddEmployeeModal = ({
               </div>
             </div>
             {/* Bank Information */}
-            <div className="space-y-4">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Bank Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="space-y-2.5 sm:space-y-4">
+              <h3 className="text-sm sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-1 sm:pb-2">Bank Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Account Holder Name</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Account Holder Name</label>
                   <input
                     type="text"
                     value={newEmployee.bankInfo.accountHolderName}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value, 'accountHolderName')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Account Number</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Account Number</label>
                   <input
                     type="text"
                     value={newEmployee.bankInfo.accountNumber}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value, 'accountNumber')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Bank Name</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Bank Name</label>
                   <input
                     type="text"
                     value={newEmployee.bankInfo.bankName}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value, 'bankName')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Branch Name</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Branch Name</label>
                   <input
                     type="text"
                     value={newEmployee.bankInfo.branchName}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value, 'branchName')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">IFSC Code</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">IFSC Code</label>
                   <input
                     type="text"
                     value={newEmployee.bankInfo.ifscCode}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value.toUpperCase(), 'ifscCode')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 mb-1 sm:mb-2">Account Type</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Account Type</label>
                   <select
                     value={newEmployee.bankInfo.accountType}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value, 'accountType')}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="Savings">Savings</option>
                     <option value="Current">Current</option>
@@ -475,14 +477,14 @@ const AddEmployeeModal = ({
                 </div>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-slate-200">
+            <div className="sticky bottom-0 -mx-3 -mb-3 p-3 sm:p-0 sm:static sm:mx-0 sm:mb-0 bg-white/95 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none border-t border-slate-200 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-6 z-20">
               <button
                 type="button"
                 onClick={() => {
                   resetForm();
                   onClose();
                 }}
-                className="px-4 sm:px-6 py-2.5 sm:py-3 border border-slate-300 text-slate-700 text-sm rounded-lg bg-white hover:bg-slate-50 transition-colors"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border border-slate-300 text-slate-700 text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl bg-white hover:bg-slate-50 transition-colors"
               >
                 Cancel
               </button>
@@ -492,13 +494,13 @@ const AddEmployeeModal = ({
                   // Create employee without face registration
                   await handleCreateEmployee();
                 }}
-                className="px-4 sm:px-6 py-2.5 sm:py-3 border border-slate-300 text-slate-700 text-sm rounded-lg bg-white hover:bg-slate-50 transition-colors"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border border-slate-300 text-slate-700 text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl bg-white hover:bg-slate-50 transition-colors"
               >
                 Skip Face & Create
               </button>
               <button
                 type="submit"
-                className="px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-sm"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white font-semibold text-xs sm:text-sm rounded-lg sm:rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-sm"
               >
                 Next: Face Registration
               </button>
@@ -2358,55 +2360,54 @@ const EmployeeManagement = () => {
           </div>
         </div>
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(99,102,241,0.10)', '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">{employees.length}</h3>
-                <p className="text-slate-500 text-xs sm:text-sm">Total Employees</p>
-              </div>
-              <div className="premium-icon w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl">
-                <User className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-              </div>
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-4">
+          <div className="relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
+            <div className="absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-44 sm:h-44 rounded-full bg-purple-100/80 pointer-events-none transition-transform duration-500 group-hover:scale-105" />
+            <div className="relative z-10 min-w-0 pr-1.5 sm:pr-2">
+              <h3 className="text-base sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-none mb-0.5 sm:mb-1.5 tracking-tight truncate">{employees.length}</h3>
+              <p className="text-[11px] sm:text-xs font-medium text-slate-500 truncate leading-snug">Total Employees</p>
+            </div>
+            <div className="relative z-10 shrink-0 w-8 h-8 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-lg sm:rounded-2xl flex items-center justify-center text-white bg-gradient-to-br from-[#7f56d9] to-[#6941c6] shadow-md shadow-purple-500/20">
+              <User className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white stroke-[2.2]" />
             </div>
           </div>
-          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(16,185,129,0.10)', '--icon-gradient': 'linear-gradient(135deg,#10b981,#0d9488)', '--icon-shadow': '0 12px 24px rgba(16,185,129,0.25)' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">
-                  {employees.filter(e => e.hasFaceRegistered).length}
-                </h3>
-                <p className="text-slate-500 text-xs sm:text-sm">Face Registered</p>
-              </div>
-              <div className="premium-icon w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl">
-                <Camera className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-              </div>
+
+          <div className="relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
+            <div className="absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-44 sm:h-44 rounded-full bg-emerald-100/80 pointer-events-none transition-transform duration-500 group-hover:scale-105" />
+            <div className="relative z-10 min-w-0 pr-1.5 sm:pr-2">
+              <h3 className="text-base sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-none mb-0.5 sm:mb-1.5 tracking-tight truncate">
+                {employees.filter(e => e.hasFaceRegistered).length}
+              </h3>
+              <p className="text-[11px] sm:text-xs font-medium text-slate-500 truncate leading-snug">Face Registered</p>
+            </div>
+            <div className="relative z-10 shrink-0 w-8 h-8 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-lg sm:rounded-2xl flex items-center justify-center text-white bg-gradient-to-br from-[#12b76a] to-[#039855] shadow-md shadow-emerald-500/20">
+              <Camera className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white stroke-[2.2]" />
             </div>
           </div>
-          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(245,158,11,0.10)', '--icon-gradient': 'linear-gradient(135deg,#f59e0b,#ea580c)', '--icon-shadow': '0 12px 24px rgba(245,158,11,0.25)' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">
-                  {new Set(employees.map(e => getDepartmentName(e.workInfo?.department, '')).filter(Boolean)).size}
-                </h3>
-                <p className="text-slate-500 text-xs sm:text-sm">Departments</p>
-              </div>
-              <div className="premium-icon w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl">
-                <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-              </div>
+
+          <div className="relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
+            <div className="absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-44 sm:h-44 rounded-full bg-orange-100/80 pointer-events-none transition-transform duration-500 group-hover:scale-105" />
+            <div className="relative z-10 min-w-0 pr-1.5 sm:pr-2">
+              <h3 className="text-base sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-none mb-0.5 sm:mb-1.5 tracking-tight truncate">
+                {new Set(employees.map(e => getDepartmentName(e.workInfo?.department, '')).filter(Boolean)).size}
+              </h3>
+              <p className="text-[11px] sm:text-xs font-medium text-slate-500 truncate leading-snug">Departments</p>
+            </div>
+            <div className="relative z-10 shrink-0 w-8 h-8 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-lg sm:rounded-2xl flex items-center justify-center text-white bg-gradient-to-br from-[#f79009] to-[#dc6803] shadow-md shadow-orange-500/20">
+              <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white stroke-[2.2]" />
             </div>
           </div>
-          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(236,72,153,0.10)', '--icon-gradient': 'linear-gradient(135deg,#ec4899,#e11d48)', '--icon-shadow': '0 12px 24px rgba(236,72,153,0.25)' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">
-                  {employees.filter(e => e.status === 'Active' || !e.status).length}
-                </h3>
-                <p className="text-slate-500 text-xs sm:text-sm">Active</p>
-              </div>
-              <div className="premium-icon w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl">
-                <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-              </div>
+
+          <div className="relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
+            <div className="absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-44 sm:h-44 rounded-full bg-pink-100/80 pointer-events-none transition-transform duration-500 group-hover:scale-105" />
+            <div className="relative z-10 min-w-0 pr-1.5 sm:pr-2">
+              <h3 className="text-base sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-none mb-0.5 sm:mb-1.5 tracking-tight truncate">
+                {employees.filter(e => e.status === 'Active' || !e.status).length}
+              </h3>
+              <p className="text-[11px] sm:text-xs font-medium text-slate-500 truncate leading-snug">Active</p>
+            </div>
+            <div className="relative z-10 shrink-0 w-8 h-8 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-lg sm:rounded-2xl flex items-center justify-center text-white bg-gradient-to-br from-[#ee46bc] to-[#c11574] shadow-md shadow-pink-500/20">
+              <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white stroke-[2.2]" />
             </div>
           </div>
         </div>

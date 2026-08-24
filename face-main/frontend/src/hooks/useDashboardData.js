@@ -1,91 +1,263 @@
 // hooks/useDashboardData.js
 import { useState, useEffect, useCallback } from 'react';
-import { dashboardAPI } from '../utils/api';
-import { Users, Building2, Calendar, UserCheck } from 'lucide-react';
+import API, { dashboardAPI, leadAPI, salesPipelineAPI } from '../utils/api';
+import { Users, ListChecks, Target, CalendarDays } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+const getArrayCount = (payload) => {
+  if (Array.isArray(payload)) return payload.length;
+  if (Array.isArray(payload?.data)) return payload.data.length;
+  if (Array.isArray(payload?.leads)) return payload.leads.length;
+  return Number(payload?.count || payload?.total || 0);
+};
+
+const findStatusCount = (statusDistribution = [], status) => {
+  const target = String(status).toLowerCase();
+  const item = statusDistribution.find(entry => String(entry._id || entry.status || '').toLowerCase() === target);
+  return item?.count || 0;
+};
+
+const formatEmployeeName = (employee) => {
+  const firstName = employee?.personalInfo?.firstName || '';
+  const lastName = employee?.personalInfo?.lastName || '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  if (fullName) return fullName;
+  return employee?.fullName || employee?.user?.name || employee?.name || 'Unassigned';
+};
+
+const formatLeadName = (lead) => {
+  const fullName = `${lead?.firstName || ''} ${lead?.lastName || ''}`.trim();
+  return fullName || lead?.fullName || lead?.company || 'Lead';
+};
+
+const isSameDay = (a, b) => {
+  const left = new Date(a);
+  const right = new Date(b);
+  return left.toDateString() === right.toDateString();
+};
 
 export const useDashboardData = () => {
   const [state, setState] = useState({
     stats: [],
+    attentionItems: [],
+    taskHealth: [],
     recentActivities: [],
     upcomingEvents: [],
     loading: true,
     error: null
   });
 
-  const createDefaultStats = useCallback((data = {}) => [
+  const createDefaultStats = useCallback((data = {}, leadStats = {}, taskStats = {}, upcomingMeetings = [], recentActivities = [], overdueTasks = [], overdueFollowUps = []) => {
+    const employeeNames = recentActivities
+      .filter((activity) => activity.category === 'employee')
+      .slice(0, 3)
+      .map((activity) => activity.user || activity.description || activity.action)
+      .filter(Boolean);
+    const leadNames = overdueFollowUps
+      .slice(0, 3)
+      .map((lead) => formatLeadName(lead))
+      .filter(Boolean);
+    const taskNames = overdueTasks
+      .slice(0, 3)
+      .map((task) => task?.title || task?.description || 'Task')
+      .filter(Boolean);
+    const meetingNames = upcomingMeetings
+      .slice(0, 3)
+      .map((meeting) => meeting?.leadName || meeting?.title || 'Lead')
+      .filter(Boolean);
+
+    return [
+      {
+        title: 'Employees',
+        value: data.totalEmployees || 0,
+        icon: Users,
+        change: `${data.activeEmployees || 0} active`,
+        changeType: 'positive',
+        detail: employeeNames.length ? employeeNames.join(' • ') : 'Recent employee additions',
+        path: '/admin/employees'
+      },
+      {
+        title: 'Leads',
+        value: (leadStats.statusStats || []).reduce((sum, item) => sum + (item.count || 0), 0),
+        icon: Target,
+        change: `${leadStats.todayFollowUps || 0} today`,
+        changeType: leadStats.overdueFollowUps > 0 ? 'negative' : 'neutral',
+        detail: leadNames.length ? leadNames.join(' • ') : 'Leads waiting on follow-up',
+        path: '/admin/sales',
+        newCount: findStatusCount(leadStats.statusStats || [], 'New'),
+        hoverItems: overdueFollowUps.slice(0, 10).map((lead) => ({
+          primary: formatLeadName(lead),
+          secondary: lead.company || lead.source || 'Direct Inquiry',
+          status: lead.status || 'New'
+        }))
+      },
+      {
+        title: 'Tasks',
+        value: taskStats.total || data.totalTasks || 0,
+        icon: ListChecks,
+        change: `${taskStats.inProgress || 0} active`,
+        changeType: taskStats.overdue > 0 ? 'negative' : 'positive',
+        detail: taskNames.length ? taskNames.join(' • ') : 'Tasks needing attention',
+        path: '/admin/tasks',
+        hoverItems: overdueTasks.slice(0, 10).map((task) => ({
+          primary: task?.title || task?.description || 'Task',
+          secondary: formatEmployeeName(task?.assignedTo),
+          status: task?.status || 'In Progress'
+        }))
+      },
+      {
+        title: 'Meetings',
+        value: upcomingMeetings.length,
+        icon: CalendarDays,
+        change: upcomingMeetings.length
+          ? `today: ${String(upcomingMeetings[0]?.leadName || 'lead').split(' ')[0]}...`
+          : 'no meetings today',
+        changeType: upcomingMeetings.length > 0 ? 'positive' : 'neutral',
+        detail: meetingNames.length ? meetingNames.join(' • ') : 'Upcoming sales meetings',
+        path: '/admin/sales',
+        hoverItems: upcomingMeetings.slice(0, 4).map((meeting) => ({
+          primary: meeting?.leadName || meeting?.title || 'Meeting',
+          secondary: meeting?.date
+            ? new Date(meeting.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : 'Today',
+          status: 'Scheduled'
+        }))
+      }
+    ];
+  }, []);
+
+  const createAttentionItems = useCallback((data = {}, leadStats = {}, taskStats = {}, pendingApprovals = [], overdueFollowUps = [], overdueTasks = [], pendingLeaves = []) => {
+    const leadFollowUpNames = (overdueFollowUps || []).slice(0, 3).map(item => formatLeadName(item));
+    const overdueTaskDetail = (overdueTasks || []).slice(0, 2).map(item => {
+      const taskTitle = item?.title || 'Task';
+      const employee = formatEmployeeName(item?.assignedTo);
+      return `${taskTitle} — ${employee}`;
+    });
+    const pendingLeaveDetail = (pendingLeaves || []).slice(0, 2).map(item => {
+      const employee = formatEmployeeName(item?.employee);
+      const leaveType = item?.leaveType || 'Leave';
+      return `${employee} • ${leaveType}`;
+    });
+    const taskReviewDetail = (overdueTasks || [])
+      .filter(item => item?.status === 'Review' || item?.progress === 100)
+      .slice(0, 2)
+      .map(item => `${item?.title || 'Task'} • ${formatEmployeeName(item?.assignedTo)}`);
+
+    return [
     {
-      title: "Total Employees",
-      value: data.totalEmployees || 0,
-      icon: Users,
-      color: "from-pink-500 to-purple-500",
-      changeType: "positive",
-      path: "/admin/employees"
+      label: 'overdue tasks',
+      value: taskStats.overdue || data.overdueTasks || 0,
+      detail: overdueTaskDetail.length ? overdueTaskDetail.join(' · ') : 'Team items waiting',
+      actionLabel: 'Open',
+      path: '/admin/tasks',
+      tone: 'rose'
     },
     {
-      title: "Active Employees",
-      value: data.activeEmployees || 0,
-      icon: UserCheck,
-      color: "from-green-500 to-emerald-500",
-      changeType: "negative",
-      path: "/admin/employees"
+      label: 'leave approvals',
+      value: data.pendingLeaves || 0,
+      detail: pendingLeaveDetail.length ? pendingLeaveDetail.join(' · ') : 'Admin review pending',
+      actionLabel: 'Review',
+      path: '/admin/leaves',
+      tone: 'amber'
     },
     {
-      title: "Departments",
-      value: data.departments || 0,
-      icon: Building2,
-      color: "from-blue-500 to-indigo-500",
-      changeType: "positive",
-      path: "/admin/department"
+      label: 'task review',
+      value: findStatusCount(taskStats.statusDistribution || [], 'Review'),
+      detail: taskReviewDetail.length ? taskReviewDetail.join(' · ') : 'Tasks awaiting review',
+      actionLabel: 'Review',
+      path: '/admin/tasks',
+      tone: 'violet'
     },
     {
-      title: "Leaves Today",
-      value: data.leavesToday || 0,
-      icon: Calendar,
-      color: "from-yellow-500 to-orange-500",
-      changeType: "neutral",
-      path: "/admin/leaves"
+      label: 'lead follow-ups',
+      value: getArrayCount(overdueFollowUps) || leadStats.overdueFollowUps || 0,
+      detail: leadFollowUpNames.length ? leadFollowUpNames.join(' · ') : 'Leads waiting on touchpoints',
+      actionLabel: 'View',
+      path: '/admin/sales',
+      tone: 'orange'
     }
-  ], []);
+  ];
+  }, []);
+
+  const createTaskHealth = useCallback((taskStats = {}, overdueTasks = [], allTasks = []) => {
+    const statusDistribution = taskStats.statusDistribution || [];
+    const completed = taskStats.completed || findStatusCount(statusDistribution, 'Completed');
+    const inProgress = taskStats.inProgress || findStatusCount(statusDistribution, 'In Progress');
+    const notStarted = findStatusCount(statusDistribution, 'Not Started');
+    const review = findStatusCount(statusDistribution, 'Review');
+
+    const mapTaskTitles = (taskList) => taskList.map(t => ({
+      title: t?.title || t?.description || 'Untitled Task',
+      assignee: formatEmployeeName(t?.assignedTo)
+    }));
+
+    const completedTasks = mapTaskTitles(allTasks.filter(t => String(t?.status).toLowerCase() === 'completed'));
+    const inProgressTasks = mapTaskTitles(allTasks.filter(t => String(t?.status).toLowerCase() === 'in progress'));
+    const notStartedTasks = mapTaskTitles(allTasks.filter(t => String(t?.status).toLowerCase() === 'not started' || String(t?.status).toLowerCase() === 'pending'));
+    const reviewTasks = mapTaskTitles(allTasks.filter(t => String(t?.status).toLowerCase() === 'review'));
+    
+    // For overdue, fallback to overdueTasks if allTasks filter returns empty
+    const overdueList = allTasks.filter(t => t?.isOverdue || (t?.dueDate && new Date(t.dueDate) < new Date() && t?.status !== 'Completed'));
+    const overdueTasksMapped = mapTaskTitles(overdueList.length > 0 ? overdueList : overdueTasks);
+
+    return [
+      { label: 'Completed', value: completed, tone: 'emerald', tasks: [] },
+      { label: 'In Progress', value: inProgress, tone: 'blue', tasks: inProgressTasks },
+      { label: 'Not Started', value: notStarted, tone: 'slate', tasks: notStartedTasks },
+      { label: 'Review', value: review, tone: 'violet', tasks: reviewTasks },
+      { label: 'Overdue', value: taskStats.overdue || 0, tone: 'rose', tasks: overdueTasksMapped }
+    ];
+  }, []);
 
   const fetchDashboardData = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      const [statsResponse, activitiesResponse, eventsResponse] = await Promise.all([
+      const [statsResponse, activitiesResponse, eventsResponse, taskStatsResponse, leadStatsResponse, pendingApprovalsResponse, overdueFollowUpsResponse, overdueTasksResponse, allTasksResponse, pendingLeavesResponse] = await Promise.all([
         dashboardAPI.getAdminStats(),
         dashboardAPI.getRecentActivities(),
-        dashboardAPI.getUpcomingEvents()
+        dashboardAPI.getUpcomingEvents(),
+        API.get('/tasks/stats').catch(() => ({ data: { success: false, stats: {} } })),
+        leadAPI.getLeadStats().catch(() => ({ data: { success: false, data: {} } })),
+        salesPipelineAPI.getPendingApprovals().catch(() => ({ data: { success: false, data: [] } })),
+        leadAPI.getOverdueFollowUps().catch(() => ({ data: { success: false, data: [] } })),
+        API.get('/tasks', { params: { overdue: 'true', limit: 15 } }).catch(() => ({ data: { success: false, tasks: [] } })),
+        API.get('/tasks', { params: { limit: 50 } }).catch(() => ({ data: { success: false, tasks: [] } })),
+        API.get('/leaves', { params: { status: 'Pending', limit: 10 } }).catch(() => ({ data: { success: false, leaves: [] } }))
       ]);
 
-      const newState = {
+      const dashboardStats = statsResponse.data.success ? statsResponse.data : {};
+      const taskStats = taskStatsResponse.data.success ? taskStatsResponse.data.stats || {} : {};
+      const leadStats = leadStatsResponse.data.success ? leadStatsResponse.data.data || {} : {};
+      const pendingApprovals = pendingApprovalsResponse.data.success ? pendingApprovalsResponse.data.data || [] : [];
+      const overdueFollowUps = overdueFollowUpsResponse.data.success ? overdueFollowUpsResponse.data.data || [] : [];
+      const overdueTasks = overdueTasksResponse.data.success ? overdueTasksResponse.data.tasks || [] : [];
+      const allTasks = allTasksResponse.data.success ? (allTasksResponse.data.tasks || allTasksResponse.data.data || []) : [];
+      const pendingLeaves = pendingLeavesResponse.data.success ? pendingLeavesResponse.data.leaves || [] : [];
+      const upcomingMeetings = (eventsResponse.data.success ? eventsResponse.data.events || [] : [])
+        .filter((event) => event.type === 'meeting' || String(event.title || '').toLowerCase().includes('meeting'))
+        .map((event) => ({
+          ...event,
+          leadName: String(event.title || '')
+            .replace(/^.*meeting:\s*/i, '')
+            .trim() || 'Lead'
+        }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      const todayMeeting = upcomingMeetings.find((event) => isSameDay(event.date, new Date()));
+      const upcomingMeetingStats = todayMeeting
+        ? [todayMeeting, ...upcomingMeetings.filter((event) => event !== todayMeeting)]
+        : upcomingMeetings;
+
+      setState(prev => ({
+        ...prev,
         loading: false,
-        error: null
-      };
-
-      // Process stats data
-      if (statsResponse.data.success) {
-        const data = statsResponse.data;
-        newState.stats = createDefaultStats(data);
-      } else {
-        newState.stats = createDefaultStats();
-      }
-
-      // Process activities data
-      if (activitiesResponse.data.success) {
-        newState.recentActivities = activitiesResponse.data.activities || [];
-      } else {
-        newState.recentActivities = [];
-      }
-
-      // Process events data
-      if (eventsResponse.data.success) {
-        newState.upcomingEvents = eventsResponse.data.events || [];
-      } else {
-        newState.upcomingEvents = [];
-      }
-
-      setState(prev => ({ ...prev, ...newState }));
+        error: null,
+        stats: createDefaultStats(dashboardStats, leadStats, taskStats, upcomingMeetingStats, activitiesResponse.data.success ? activitiesResponse.data.activities || [] : [], overdueTasks, overdueFollowUps),
+        attentionItems: createAttentionItems(dashboardStats, leadStats, taskStats, pendingApprovals, overdueFollowUps, overdueTasks, pendingLeaves),
+        taskHealth: createTaskHealth(taskStats, overdueTasks, allTasks),
+        recentActivities: activitiesResponse.data.success ? activitiesResponse.data.activities || [] : [],
+        upcomingEvents: eventsResponse.data.success ? eventsResponse.data.events || [] : []
+      }));
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -98,11 +270,13 @@ export const useDashboardData = () => {
         loading: false,
         error: errorMessage,
         stats: createDefaultStats(),
+        attentionItems: createAttentionItems(),
+        taskHealth: createTaskHealth(),
         recentActivities: [],
         upcomingEvents: []
       }));
     }
-  }, [createDefaultStats]);
+  }, [createAttentionItems, createDefaultStats, createTaskHealth]);
 
   const refreshData = useCallback(() => {
     fetchDashboardData();
@@ -118,4 +292,3 @@ export const useDashboardData = () => {
     isLoading: state.loading
   };
 };
-

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { BarChart3, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, Loader2, Star, Target, User, X } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { BarChart3, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, Loader2, Search, Star, Target, User, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { performanceService } from '../../services/taskService';
 
@@ -61,9 +61,10 @@ const MetricCard = ({ title, value, icon: Icon, tone = 'indigo' }) => {
   );
 };
 
-const AdminPerformanceReview = () => {
+const AdminPerformanceReview = ({ search = '' }) => {
   const [month, setMonth] = useState(getCurrentMonth());
   const [reviews, setReviews] = useState([]);
+  const [searchTerm, setSearchTerm] = useState(search);
   const [aggregates, setAggregates] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedReview, setSelectedReview] = useState(null);
@@ -71,6 +72,28 @@ const AdminPerformanceReview = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [adminRating, setAdminRating] = useState(0);
   const [adminComment, setAdminComment] = useState('');
+
+  useEffect(() => {
+    if (search) {
+      setSearchTerm(search);
+    }
+  }, [search]);
+
+  const filteredReviews = useMemo(() => {
+    const term = (searchTerm || '').trim().toLowerCase();
+    if (!term) return reviews;
+    return reviews.filter((row) => {
+      const emp = row.employee;
+      if (!emp) return false;
+      const firstName = emp.personalInfo?.firstName?.toLowerCase() || '';
+      const lastName = emp.personalInfo?.lastName?.toLowerCase() || '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      const empName = emp.name?.toLowerCase() || emp.user?.name?.toLowerCase() || fullName;
+      const empCode = (emp.employeeId || emp.user?.employeeId || '').toLowerCase();
+      const email = (emp.user?.email || emp.contactInfo?.personalEmail || '').toLowerCase();
+      return fullName.includes(term) || empName.includes(term) || empCode.includes(term) || email.includes(term);
+    });
+  }, [reviews, searchTerm]);
 
   const fetchTeamPerformance = async (targetMonth = month) => {
     try {
@@ -141,14 +164,37 @@ const AdminPerformanceReview = () => {
           <h2 className="text-lg font-bold text-slate-900">Monthly Performance Review</h2>
           <p className="text-sm text-slate-500">Review completed tasks by on-time delivery.</p>
         </div>
-        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-1">
-          <button onClick={() => setMonth(shiftMonth(month, -1))} className="rounded-md p-2 text-slate-500 hover:bg-slate-50">
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <span className="min-w-[9rem] text-center text-sm font-semibold text-slate-900">{formatMonth(month)}</span>
-          <button onClick={() => setMonth(shiftMonth(month, 1))} className="rounded-md p-2 text-slate-500 hover:bg-slate-50">
-            <ChevronRight className="h-4 w-4" />
-          </button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex items-center">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 z-10 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search performance..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-64 pl-9 pr-9 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 placeholder-slate-400"
+            />
+            {searchTerm ? (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                style={{ position: 'absolute', right: '0.625rem', top: '50%', transform: 'translateY(-50%)' }}
+                className="flex items-center justify-center h-6 w-6 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors z-10"
+                title="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-1">
+            <button onClick={() => setMonth(shiftMonth(month, -1))} className="rounded-md p-2 text-slate-500 hover:bg-slate-50">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="min-w-[9rem] text-center text-sm font-semibold text-slate-900">{formatMonth(month)}</span>
+            <button onClick={() => setMonth(shiftMonth(month, 1))} className="rounded-md p-2 text-slate-500 hover:bg-slate-50">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -173,7 +219,7 @@ const AdminPerformanceReview = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {reviews.map((item) => (
+              {filteredReviews.map((item) => (
                 <tr
                   key={item.employee._id}
                   onClick={() => openReviewModal(item)}
@@ -212,7 +258,7 @@ const AdminPerformanceReview = () => {
                   </td>
                 </tr>
               ))}
-              {reviews.length === 0 && (
+              {filteredReviews.length === 0 && (
                 <tr>
                   <td colSpan="6" className="p-12 text-center text-slate-500">No employees found for this month.</td>
                 </tr>

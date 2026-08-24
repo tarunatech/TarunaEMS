@@ -5,7 +5,9 @@ import WelcomeSection from '../Dashboard/WelcomeSection';
 import StatCard from '../Dashboard/StatCard';
 import RecentActivities from '../Dashboard/RecentActivities';
 import UpcomingEvents from '../Dashboard/UpcomingEvents';
+import LeadOverviewSection from '../Dashboard/LeadOverviewSection';
 import QuickActions from '../Dashboard/QuickActions';
+import DashboardInsights from '../Dashboard/DashboardInsights';
 import LoadingSpinner from '../../Common/LoadingSpinner';
 import { useDashboardData } from '../../../hooks/useDashboardData';
 import { useRealTimeUpdates } from '../../../hooks/useRealTimeUpdates';
@@ -19,7 +21,9 @@ const AdminDashboard = () => {
     upcomingEvents,
     loading,
     error,
-    refreshData
+    refreshData,
+    attentionItems,
+    taskHealth
   } = useDashboardData();
 
   const {
@@ -31,7 +35,7 @@ const AdminDashboard = () => {
 
   // Memoized components for performance
   const statsGrid = useMemo(() => (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+    <div className="relative z-20 grid grid-cols-2 gap-2.5 overflow-visible sm:gap-4 lg:grid-cols-4">
       {stats.map((stat, index) => (
         <StatCard key={stat.title} stat={stat} index={index} />
       ))}
@@ -39,7 +43,7 @@ const AdminDashboard = () => {
   ), [stats]);
 
   const contentGrid = useMemo(() => (
-    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3.5 sm:gap-5 lg:grid-cols-2">
       <RecentActivities activities={recentActivities} loading={loading} />
       <UpcomingEvents events={upcomingEvents} loading={loading} />
     </div>
@@ -74,18 +78,16 @@ const AdminDashboard = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-3.5 sm:space-y-5">
         {/* Control Bar */}
         {error && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            {error && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
               <div className="text-red-400 text-sm">
                 ⚠️ Some data may be outdated
               </div>
-            )}
+            </div>
           </div>
-        </div>
         )}
 
         {/* Welcome Section */}
@@ -101,6 +103,14 @@ const AdminDashboard = () => {
         {/* Stats Grid */}
         {statsGrid}
 
+        {/* Dashboard Insights */}
+        <div className="relative z-10">
+          <DashboardInsights attentionItems={attentionItems} taskHealth={taskHealth} />
+        </div>
+
+        {/* Active Leads Overview Section */}
+        <LeadOverviewSection />
+
         {/* Content Grid */}
         {contentGrid}
 
@@ -112,3 +122,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

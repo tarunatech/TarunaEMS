@@ -31,17 +31,20 @@ export const createTask = async (req, res) => {
       });
     }
 
-    // If employee, they can only assign to themselves
+    // Determine creator employee record
+    let creatorEmployee = null;
     if (req.user.role === 'employee') {
-      const employee = await Employee.findOne({ user: req.user.id });
-      if (!employee || (req.body.assignedTo !== employee._id.toString() && req.body.assignedTo !== req.user.id)) {
+      creatorEmployee = await Employee.findOne({ user: req.user.id });
+      if (!creatorEmployee) {
         return res.status(403).json({
           success: false,
-          message: 'Employees can only assign tasks to themselves.'
+          message: 'Employee record not found.'
         });
       }
-      // Always use the Employee record ID for assignedTo
-      req.body.assignedTo = employee._id;
+      // Default assignedTo to creator if not specified
+      if (!req.body.assignedTo) {
+        req.body.assignedTo = creatorEmployee._id;
+      }
     }
 
     const errors = validationResult(req);
@@ -64,7 +67,11 @@ export const createTask = async (req, res) => {
       });
     }
 
-    // Create the task (simplified - no title, project, category required)
+    const isSelfAssigned = creatorEmployee
+      ? String(req.body.assignedTo) === String(creatorEmployee._id)
+      : false;
+
+    // Create the task
     const taskData = {
       title: req.body.title || 'Task',
       description: req.body.description,
@@ -77,7 +84,7 @@ export const createTask = async (req, res) => {
       estimatedHours: req.body.estimatedHours || 0,
       status: 'Not Started',
       progress: 0,
-      isSelfAssigned: req.user.role === 'employee'
+      isSelfAssigned
     };
 
     console.log('Creating task with data:', taskData);

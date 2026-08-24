@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import {
   Plus,
@@ -34,7 +35,8 @@ import { employeeAPI } from '../../utils/api'; // Use the same API as employee m
 import { taskService } from '../../services/taskService';
 
 const AdminTaskManagement = () => {
-
+  const location = useLocation();
+  const initialSearch = location.state?.employeeFilter || location.state?.search || '';
 
   const { user } = useAuth();
   const {
@@ -49,9 +51,82 @@ const AdminTaskManagement = () => {
   } = useTasks();
 
   const [filteredTasks, setFilteredTasks] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const [statusFilter, setStatusFilter] = useState(location.state?.statusFilter || '');
   const [priorityFilter, setPriorityFilter] = useState('');
+
+  useEffect(() => {
+    const navSearch = location.state?.employeeFilter || location.state?.search || '';
+    if (navSearch) {
+      setSearchTerm(navSearch);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const navStatus = location.state?.statusFilter || '';
+    if (navStatus) {
+      setStatusFilter(navStatus);
+    }
+  }, [location.state]);
+
+  const isNavigatedFromStatCard = Boolean(location.state?.employeeFilter || location.state?.search);
+
+  const activeEmployeeTasks = useMemo(() => {
+    const term = (searchTerm || '').trim().toLowerCase();
+    if (!term) return tasks;
+    return tasks.filter(task => {
+      const matchesSearch = (task.title || '').toLowerCase().includes(term) ||
+        (task.description || '').toLowerCase().includes(term) ||
+        (task.assignedTo?.user?.name || '').toLowerCase().includes(term) ||
+        (task.assignedTo?.personalInfo?.firstName || '').toLowerCase().includes(term) ||
+        (task.assignedTo?.personalInfo?.lastName || '').toLowerCase().includes(term) ||
+        (task.assignedTo?.employeeId || '').toLowerCase().includes(term);
+
+      return matchesSearch;
+    });
+  }, [tasks, searchTerm]);
+
+  const activeStats = useMemo(() => {
+    if (!isNavigatedFromStatCard && !searchTerm.trim()) {
+      return {
+        total: stats?.total || 0,
+        inProgress: stats?.inProgress || 0,
+        completed: stats?.completed || 0,
+        overdue: stats?.overdue || 0,
+        priorityDistribution: stats?.priorityDistribution || []
+      };
+    }
+
+    const total = activeEmployeeTasks.length;
+    const inProgress = activeEmployeeTasks.filter(t => t.status === 'In Progress' || t.status === 'Pending').length;
+    const completed = activeEmployeeTasks.filter(t => t.status === 'Completed' || t.status === 'Closed').length;
+    const now = new Date();
+    const overdue = activeEmployeeTasks.filter(t => t.status === 'Overdue' || (t.dueDate && new Date(t.dueDate) < now && t.status !== 'Completed' && t.status !== 'Closed')).length;
+
+    const priorityCounts = {};
+    activeEmployeeTasks.forEach(t => {
+      const p = t.priority || 'Medium';
+      priorityCounts[p] = (priorityCounts[p] || 0) + 1;
+    });
+
+    const priorityDistribution = Object.entries(priorityCounts).map(([_id, count]) => ({ _id, count }));
+
+    return {
+      total,
+      inProgress,
+      completed,
+      overdue,
+      priorityDistribution
+    };
+  }, [isNavigatedFromStatCard, searchTerm, activeEmployeeTasks, stats]);
+
+  const activeRecentTasks = useMemo(() => {
+    if (!isNavigatedFromStatCard && !searchTerm.trim()) {
+      return tasks.slice(0, 4);
+    }
+    return activeEmployeeTasks.slice(0, 4);
+  }, [isNavigatedFromStatCard, searchTerm, tasks, activeEmployeeTasks]);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -171,7 +246,9 @@ const AdminTaskManagement = () => {
       const matchesSearch = (task.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (task.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (task.assignedTo?.user?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = !statusFilter || task.status === statusFilter;
+      const matchesStatus = !statusFilter || (statusFilter === 'Overdue'
+        ? (task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'Completed' && task.status !== 'Closed')
+        : task.status === statusFilter);
       const matchesPriority = !priorityFilter || task.priority === priorityFilter;
 
       return matchesSearch && matchesStatus && matchesPriority;
@@ -430,7 +507,7 @@ const AdminTaskManagement = () => {
           <div className="premium-stat-card rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div className="min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold leading-tight text-slate-900">{stats?.total || 0}</h3>
+                <h3 className="text-lg sm:text-xl font-bold leading-tight text-slate-900">{activeStats.total}</h3>
                 <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Total Tasks</p>
               </div>
               <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm shadow-blue-600/20">
@@ -442,7 +519,7 @@ const AdminTaskManagement = () => {
           <div className="premium-stat-card rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div className="min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold leading-tight text-blue-700">{stats?.inProgress || 0}</h3>
+                <h3 className="text-lg sm:text-xl font-bold leading-tight text-blue-700">{activeStats.inProgress}</h3>
                 <p className="text-slate-500 text-[11px] sm:text-xs font-medium">In Progress</p>
               </div>
               <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm shadow-blue-600/20">
@@ -454,7 +531,7 @@ const AdminTaskManagement = () => {
           <div className="premium-stat-card rounded-xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div className="min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold leading-tight text-emerald-700">{stats?.completed || 0}</h3>
+                <h3 className="text-lg sm:text-xl font-bold leading-tight text-emerald-700">{activeStats.completed}</h3>
                 <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Completed</p>
               </div>
               <div className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm shadow-emerald-600/20">
@@ -466,7 +543,7 @@ const AdminTaskManagement = () => {
           <div className="premium-stat-card rounded-xl border border-red-100 bg-gradient-to-br from-white to-red-50/60 p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div className="min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold leading-tight text-red-700">{stats?.overdue || 0}</h3>
+                <h3 className="text-lg sm:text-xl font-bold leading-tight text-red-700">{activeStats.overdue}</h3>
                 <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Overdue</p>
               </div>
               <div className="w-8 h-8 sm:w-9 sm:h-9 bg-red-600 rounded-lg flex items-center justify-center shadow-sm shadow-red-600/20">
@@ -582,7 +659,7 @@ const AdminTaskManagement = () => {
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
                       <th className="text-left p-3 text-xs text-slate-600 font-semibold">Description</th>
-                      <th className="text-left p-3 text-xs text-slate-600 font-semibold">Assigned To</th>
+                      <th className="text-left p-3 text-xs text-slate-600 font-semibold">Assigned From</th>
                       <th className="text-left p-3 text-xs text-slate-600 font-semibold">Priority</th>
                       <th className="text-left p-3 text-xs text-slate-600 font-semibold">Status</th>
                       <th className="text-left p-3 text-xs text-slate-600 font-semibold">Progress</th>
@@ -634,8 +711,10 @@ const AdminTaskManagement = () => {
                               <p className="text-slate-900 text-sm font-semibold line-clamp-1">{task.title || 'Untitled Task'}</p>
                               <p className="mt-0.5 text-slate-500 text-xs line-clamp-2">{task.description || 'No description'}</p>
                             </td>
-                            <td className="p-3 italic text-xs text-slate-500">
-                              (Assigned above)
+                            <td className="p-3 text-xs text-slate-700 font-semibold">
+                              {task.isSelfAssigned
+                                ? 'Self'
+                                : task.assignedBy?.name || (task.assignedBy?.role === 'admin' ? 'Admin' : 'Admin')}
                             </td>
                             <td className="p-3">
                               <span className={`px-2.5 py-1 text-[11px] rounded-full ${getPriorityColor(task.priority)}`}>
@@ -764,6 +843,14 @@ const AdminTaskManagement = () => {
 
                           <div className="grid grid-cols-2 gap-3 text-xs">
                             <div>
+                              <p className="text-slate-500">Assigned From</p>
+                              <p className="font-semibold text-slate-900">
+                                {task.isSelfAssigned
+                                  ? 'Self'
+                                  : task.assignedBy?.name || 'Admin'}
+                              </p>
+                            </div>
+                            <div>
                               <p className="text-slate-500">Priority</p>
                               <span className={`px-2 py-1 text-xs rounded-full ${getPriorityColor(task.priority)}`}>
                                 {task.priority}
@@ -796,7 +883,7 @@ const AdminTaskManagement = () => {
                           <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-200">
                             <button
                               onClick={() => handleViewTask(task)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-blue-200"
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-blue-200"
                               title="View Details"
                             >
                               <Eye className="w-4 h-4" />
@@ -806,14 +893,14 @@ const AdminTaskManagement = () => {
                                 setSelectedTask(task);
                                 setShowEditModal(true);
                               }}
-                            className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-amber-200"
+                              className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-amber-200"
                               title="Edit"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteTask(task._id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200"
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200"
                               title="Delete"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -835,8 +922,8 @@ const AdminTaskManagement = () => {
                   <BarChart3 className="w-4 h-4 text-blue-600" />
                 </div>
                 <div className="space-y-3">
-                  {stats?.priorityDistribution?.map((priority) => {
-                    const percentage = stats.total > 0 ? (priority.count / stats.total) * 100 : 0;
+                  {activeStats?.priorityDistribution?.map((priority) => {
+                    const percentage = activeStats.total > 0 ? (priority.count / activeStats.total) * 100 : 0;
                     return (
                       <div key={priority._id} className="space-y-2">
                         <div className="flex justify-between items-center">
@@ -862,7 +949,7 @@ const AdminTaskManagement = () => {
                   <Clock className="w-4 h-4 text-blue-600" />
                 </div>
                 <div className="space-y-3">
-                  {tasks.slice(0, 4).map((task) => (
+                  {activeRecentTasks.map((task) => (
                     <div key={task._id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
                       <div className="flex-1 min-w-0 mr-3">
                         <p className="text-slate-900 text-sm font-medium line-clamp-1">{task.title || 'Untitled Task'}</p>
@@ -881,7 +968,7 @@ const AdminTaskManagement = () => {
                       </div>
                     </div>
                   ))}
-                  {tasks.length === 0 && (
+                  {activeRecentTasks.length === 0 && (
                     <div className="text-center py-4">
                       <p className="text-slate-500">No tasks created yet</p>
                     </div>
@@ -1154,18 +1241,18 @@ const AdminTaskManagement = () => {
             {/* View Task Modal */}
             {
               showViewModal && selectedTask && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-0 sm:p-2 md:p-4">
+                <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-2 md:p-4">
                   <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
-                  <div className="relative bg-white border border-slate-200 rounded-2xl p-1 sm:p-3 md:p-4 lg:p-6 w-full sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl max-h-[85vh] overflow-auto shadow-xl">
-                    <div className="flex items-center justify-between mb-4 sm:mb-6">
-                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">Task Details</h2>
+                  <div className="task-details-modal-scroll relative w-full rounded-t-3xl border border-slate-200 bg-white p-2.5 shadow-xl max-h-[92dvh] overflow-y-auto sm:rounded-2xl sm:p-4 md:p-4 lg:p-5 sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl sm:max-h-[85vh]">
+                    <div className="mb-3 flex items-start justify-between gap-2 sm:mb-6 sm:gap-3">
+                      <h2 className="text-[13px] font-bold tracking-tight text-slate-900 sm:text-lg md:text-xl">Task Details</h2>
                       <div className="flex shrink-0 items-center gap-2">
                         <button
                           onClick={() => {
                             setShowViewModal(false);
                             setShowEditModal(true);
                           }}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800 sm:px-3 sm:text-sm"
+                          className="inline-flex items-center gap-1 rounded-lg border border-blue-100 bg-blue-50 px-2 py-1 text-[9px] font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm"
                         >
                           <Edit className="h-3.5 w-3.5" />
                           Edit
@@ -1181,86 +1268,94 @@ const AdminTaskManagement = () => {
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-                          <div className="flex-1 min-w-0 mr-3">
-                            <p className="text-slate-900 font-semibold line-clamp-1">{selectedTask.title || 'Untitled Task'}</p>
-                            <p className="mt-1 text-sm text-slate-500 line-clamp-2">{selectedTask.description || 'No description'}</p>
+                        <div className="flex flex-col gap-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-4">
+                          <div className="min-w-0 flex-1">
+                            <p className="line-clamp-1 text-[12px] font-semibold text-slate-900 sm:text-base">{selectedTask.title || 'Untitled Task'}</p>
+                            <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-slate-500 sm:mt-1 sm:text-sm">{selectedTask.description || 'No description'}</p>
                           </div>
-                          <span className={`px-3 py-1 text-sm rounded-full flex-shrink-0 ${getStatusColor(selectedTask.status)}`}>
+                          <span className={`inline-flex w-fit flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-3 sm:py-1 sm:text-sm ${getStatusColor(selectedTask.status)}`}>
                             {selectedTask.status}
                           </span>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 md:gap-5">
+                          <div className="space-y-2 sm:space-y-4">
                             <div>
-                              <label className="text-sm text-slate-500">Assigned To</label>
-                              <p className="text-slate-900 font-medium">
+                              <label className="text-[10px] text-slate-500 sm:text-sm">Assigned To</label>
+                              <p className="text-[11px] font-medium leading-snug text-slate-900 sm:text-base">
                                 {selectedTask.assignedTo?.user?.name || selectedTask.assignedTo?.fullName || 'Unknown Employee'}
                               </p>
-                              <p className="text-slate-500 text-sm">
+                              <p className="text-[9px] text-slate-500 sm:text-sm">
                                 {selectedTask.assignedTo?.user?.employeeId || selectedTask.assignedTo?.employeeId || 'N/A'}
                               </p>
                             </div>
                             <div>
-                              <label className="text-sm text-slate-500">Priority</label>
-                              <span className={`inline-block px-2 py-1 text-xs rounded-full ${getPriorityColor(selectedTask.priority)}`}>
+                              <label className="text-[10px] text-slate-500 sm:text-sm">Assigned From</label>
+                              <p className="text-[11px] font-medium leading-snug text-slate-900 sm:text-base">
+                                {selectedTask.isSelfAssigned
+                                  ? 'Self (Employee)'
+                                  : selectedTask.assignedBy?.name || 'Admin'}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-slate-500 sm:text-sm">Priority</label>
+                              <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] sm:px-2 sm:py-1 sm:text-xs ${getPriorityColor(selectedTask.priority)}`}>
                                 {selectedTask.priority}
                               </span>
                             </div>
                             <div>
-                              <label className="text-sm text-slate-500">Created</label>
-                              <p className="text-slate-900 font-medium">{formatDate(selectedTask.createdAt)}</p>
+                              <label className="text-[10px] text-slate-500 sm:text-sm">Created</label>
+                              <p className="text-[11px] font-medium leading-snug text-slate-900 sm:text-base">{formatDate(selectedTask.createdAt)}</p>
                             </div>
                           </div>
-                          <div className="space-y-4">
+                          <div className="space-y-2 sm:space-y-4">
                             <div>
-                              <label className="text-sm text-slate-500">Due Date</label>
-                              <p className={`font-medium ${isOverdue(selectedTask.dueDate, selectedTask.status) ? 'text-red-600' : 'text-slate-900'}`}>
+                              <label className="text-[10px] text-slate-500 sm:text-sm">Due Date</label>
+                              <p className={`text-[11px] font-medium leading-snug sm:text-base ${isOverdue(selectedTask.dueDate, selectedTask.status) ? 'text-red-600' : 'text-slate-900'}`}>
                                 {formatDate(selectedTask.dueDate)}
                               </p>
                             </div>
                             <div>
-                              <label className="text-sm text-slate-500">Progress</label>
-                              <div className="flex items-center space-x-2">
-                                <div className="flex-1 bg-slate-200 rounded-full h-2">
+                              <label className="text-[10px] text-slate-500 sm:text-sm">Progress</label>
+                              <div className="flex items-center gap-1.5">
+                                <div className="flex-1 rounded-full bg-slate-200 h-1.5 sm:h-2">
                                   <div
-                                    className="bg-blue-600 h-2 rounded-full"
+                                    className="bg-blue-600 h-1.5 rounded-full sm:h-2"
                                     style={{ width: `${selectedTask.progress}%` }}
                                   ></div>
                                 </div>
-                                <span className="text-blue-700 text-sm">{selectedTask.progress}%</span>
+                                <span className="w-8 text-right text-[9px] text-blue-700 sm:w-auto sm:text-sm">{selectedTask.progress}%</span>
                               </div>
                             </div>
                             <div>
-                              <label className="text-sm text-slate-500">Hours</label>
-                              <p className="text-slate-900 font-medium">
+                              <label className="text-[10px] text-slate-500 sm:text-sm">Hours</label>
+                              <p className="text-[11px] font-medium leading-snug text-slate-900 sm:text-base">
                                 {Math.round(selectedTask.actualHours || 0)} / {selectedTask.estimatedHours || 0} hrs
                               </p>
                             </div>
                             <div>
-                              <label className="text-sm text-slate-500">Last Updated</label>
-                              <p className="text-slate-900 font-medium">{formatDate(selectedTask.updatedAt)}</p>
+                              <label className="text-[10px] text-slate-500 sm:text-sm">Last Updated</label>
+                              <p className="text-[11px] font-medium leading-snug text-slate-900 sm:text-base">{formatDate(selectedTask.updatedAt)}</p>
                             </div>
                           </div>
                         </div>
                         <div>
-                          <label className="text-sm text-slate-500">Title</label>
-                          <p className="text-slate-900 bg-white p-3 rounded-lg mt-1 border border-slate-200 font-semibold">{selectedTask.title || 'Untitled Task'}</p>
+                          <label className="text-[10px] text-slate-500 sm:text-sm">Title</label>
+                          <p className="mt-0.5 rounded-lg border border-slate-200 bg-white p-2 text-[10px] font-semibold leading-snug text-slate-900 sm:mt-1 sm:p-3 sm:text-base">{selectedTask.title || 'Untitled Task'}</p>
                         </div>
                         <div>
-                          <label className="text-sm text-slate-500">Description</label>
-                          <p className="text-slate-900 bg-slate-50 p-3 rounded-lg mt-1 border border-slate-200">{selectedTask.description}</p>
+                          <label className="text-[10px] text-slate-500 sm:text-sm">Description</label>
+                          <p className="mt-0.5 rounded-lg border border-slate-200 bg-slate-50 p-2 text-[10px] leading-snug text-slate-900 sm:mt-1 sm:p-3 sm:text-sm">{selectedTask.description}</p>
                         </div>
                         {selectedTask.status === 'Review' && (
-                          <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-4 shadow-[0_10px_30px_rgba(79,70,229,0.08)]">
-                            <div className="mb-4 flex items-start justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-semibold text-slate-900">Review Decision</p>
-                                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                          <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-2.5 shadow-[0_10px_30px_rgba(79,70,229,0.08)] sm:p-4">
+                            <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 sm:mb-4">
+                              <div className="min-w-0">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-purple-700 sm:text-xs">Review Decision</p>
+                                <p className="mt-0.5 max-w-[34rem] text-[9px] leading-snug text-slate-500 sm:mt-1 sm:text-xs">
                                   Employee has submitted this task for admin review. Approve it, reject it, or request specific changes.
                                 </p>
                               </div>
-                              <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
+                              <span className="whitespace-nowrap rounded-full bg-purple-100 px-2 py-0.5 text-[9px] font-semibold text-purple-700 sm:px-3 sm:py-1 sm:text-xs">
                                 Pending Review
                               </span>
                             </div>
@@ -1270,35 +1365,35 @@ const AdminTaskManagement = () => {
                               onChange={(e) => setReviewFeedback(e.target.value)}
                               rows={3}
                               placeholder="Add feedback for rejection or requested changes..."
-                              className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                              className="w-full resize-none rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 sm:px-3 sm:text-sm"
                             />
 
-                            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                            <div className="mt-2.5 grid grid-cols-3 gap-1.5 sm:gap-3">
                               <button
                                 type="button"
                                 onClick={() => handleReviewTask('approve')}
                                 disabled={!!reviewLoading}
-                                className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex min-w-0 items-center justify-center rounded-xl bg-emerald-600 px-1.5 py-2 text-[9px] font-semibold leading-none text-white shadow-sm transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3 sm:py-2.5 sm:text-sm"
                               >
-                                {reviewLoading === 'approve' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                {reviewLoading === 'approve' ? <Loader2 className="mr-1 h-3 w-3 animate-spin sm:mr-2 sm:h-4 sm:w-4" /> : <CheckCircle className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />}
                                 Approve
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleReviewTask('changes')}
                                 disabled={!!reviewLoading}
-                                className="inline-flex items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex min-w-0 items-center justify-center rounded-xl bg-amber-500 px-1.5 py-2 text-[9px] font-semibold leading-none text-white shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3 sm:py-2.5 sm:text-sm"
                               >
-                                {reviewLoading === 'changes' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                                {reviewLoading === 'changes' ? <Loader2 className="mr-1 h-3 w-3 animate-spin sm:mr-2 sm:h-4 sm:w-4" /> : <RefreshCw className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />}
                                 Changes
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleReviewTask('reject')}
                                 disabled={!!reviewLoading}
-                                className="inline-flex items-center justify-center rounded-xl bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex min-w-0 items-center justify-center rounded-xl bg-red-600 px-1.5 py-2 text-[9px] font-semibold leading-none text-white shadow-sm transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3 sm:py-2.5 sm:text-sm"
                               >
-                                {reviewLoading === 'reject' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AlertTriangle className="mr-2 h-4 w-4" />}
+                                {reviewLoading === 'reject' ? <Loader2 className="mr-1 h-3 w-3 animate-spin sm:mr-2 sm:h-4 sm:w-4" /> : <AlertTriangle className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />}
                                 Reject
                               </button>
                             </div>
@@ -1306,19 +1401,19 @@ const AdminTaskManagement = () => {
                         )}
                         {selectedTask.comments && selectedTask.comments.length > 0 && (
                           <div>
-                            <label className="text-sm text-slate-500">Recent Comments ({selectedTask.comments.length})</label>
-                            <div className="space-y-2 mt-2 max-h-40 overflow-y-auto">
+                            <label className="text-[10px] text-slate-500 sm:text-sm">Recent Comments ({selectedTask.comments.length})</label>
+                            <div className="mt-1.5 space-y-1.5 max-h-40 overflow-y-auto sm:mt-2 sm:space-y-2">
                               {selectedTask.comments.slice(-3).map((comment) => (
-                                <div key={comment._id} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                  <div className="flex items-center space-x-2 mb-1">
-                                    <span className="text-slate-900 text-sm font-medium">
+                                <div key={comment._id} className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                                  <div className="mb-0.5 flex items-center space-x-2">
+                                    <span className="text-[11px] font-medium text-slate-900">
                                       {comment.user?.name || 'Unknown'}
                                     </span>
-                                    <span className="text-slate-500 text-xs">
+                                    <span className="text-[9px] text-slate-500">
                                       {formatDate(comment.createdAt)}
                                     </span>
                                   </div>
-                                  <p className="text-slate-600 text-sm">{comment.text}</p>
+                                  <p className="text-[10px] leading-snug text-slate-600">{comment.text}</p>
                                 </div>
                               ))}
                             </div>
@@ -1331,9 +1426,9 @@ const AdminTaskManagement = () => {
               )}
           </div>
         ) : activeTab === 'daybooks' ? (
-          <AdminDayBookReview />
+          <AdminDayBookReview search={searchTerm} />
         ) : (
-          <AdminPerformanceReview />
+          <AdminPerformanceReview search={searchTerm} />
         )}
       </div>
     </AdminLayout >

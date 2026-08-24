@@ -7,12 +7,13 @@ import {
   GitBranch, Loader2
 } from 'lucide-react';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
-import { leadAPI } from '../../utils/api';
+import { leadAPI, salesPipelineAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const SalesPage = () => {
   // State
   const [leads, setLeads] = useState([]);
+  const [pipelines, setPipelines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -55,14 +56,19 @@ const SalesPage = () => {
     deliveryDate: ''
   });
 
-  // Fetch employee's leads
   const fetchLeads = async () => {
     try {
       setLoading(true);
       const email = localStorage.getItem('userEmail');
-      const response = await leadAPI.getLeads({ assignedTo: email });
-      if (response.data.success) {
-        setLeads(response.data.data.leads || []);
+      const [leadsRes, pipelinesRes] = await Promise.all([
+        leadAPI.getLeads({ assignedTo: email }),
+        salesPipelineAPI.getAll()
+      ]);
+      if (leadsRes.data.success) {
+        setLeads(leadsRes.data.data.leads || []);
+      }
+      if (pipelinesRes.data.success) {
+        setPipelines(pipelinesRes.data.data || []);
       }
     } catch (err) {
       console.error('Failed to load leads:', err);
@@ -77,15 +83,47 @@ const SalesPage = () => {
     fetchLeads();
   }, []);
 
-  // Stats (mocked for demo — replace with real API if available)
-  const stats = {
-    actualSales: leads
-      .filter(l => l.status === 'Won' || l.wonDetails?.wonDate || l.actualValue > 0)
-      .reduce((sum, l) => {
-        const wonAmount = Number(l.wonDetails?.finalValue || l.actualValue || l.estimatedValue || 0);
-        return sum + wonAmount;
-      }, 0)
-  };;
+  // Stats & Stage Value Helper
+  const getLeadStageValue = (lead) => {
+    if (!lead) return 0;
+    const pipeline = (pipelines || []).find(p => String(p.lead?._id || p.lead) === String(lead._id));
+
+    const isWon = lead.status === 'Won' || lead.status === 'won' || pipeline?.outcome?.status === 'won' || pipeline?.currentStage === 'won_closed' || (lead.wonDetails?.finalValue !== undefined && lead.wonDetails?.finalValue !== null && Number(lead.wonDetails?.finalValue) > 0) || (pipeline?.outcome?.finalValue !== undefined && pipeline?.outcome?.finalValue !== null && Number(pipeline?.outcome?.finalValue) > 0) || !!lead.wonDetails?.wonDate;
+
+    if (isWon) {
+      const finalVal = pipeline?.outcome?.finalValue !== undefined && pipeline?.outcome?.finalValue !== null && pipeline?.outcome?.finalValue !== ''
+        ? Number(pipeline.outcome.finalValue)
+        : (lead.wonDetails?.finalValue !== undefined && lead.wonDetails?.finalValue !== null && lead.wonDetails?.finalValue !== ''
+          ? Number(lead.wonDetails.finalValue)
+          : Number(lead.actualValue || lead.estimatedValue || 0));
+      return isNaN(finalVal) ? 0 : finalVal;
+    }
+
+    const stageVal = pipeline?.outcome?.finalValue || pipeline?.proposal?.pricing?.totalPrice || pipeline?.quotation?.totalAmount || pipeline?.quotation?.amount || lead.wonDetails?.finalValue || lead.proposalData?.pricing?.totalPrice || lead.quotationData?.amount || lead.actualValue || lead.estimatedValue || 0;
+
+    const num = Number(stageVal);
+    return isNaN(num) ? 0 : num;
+  };
+
+  const stats = useMemo(() => {
+    const pipelineByLeadId = new Map(
+      (pipelines || [])
+        .filter(p => p?.lead?._id || p?.lead)
+        .map(p => [String(p.lead?._id || p.lead), p])
+    );
+
+    const actualSales = leads.reduce((sum, l) => {
+      const pipeline = pipelineByLeadId.get(String(l._id));
+      const isWon = l.status === 'Won' || l.status === 'won' || pipeline?.outcome?.status === 'won' || pipeline?.currentStage === 'won_closed' || (l.wonDetails?.finalValue !== undefined && l.wonDetails?.finalValue !== null && Number(l.wonDetails?.finalValue) > 0) || (pipeline?.outcome?.finalValue !== undefined && pipeline?.outcome?.finalValue !== null && Number(pipeline?.outcome?.finalValue) > 0) || !!l.wonDetails?.wonDate;
+
+      if (isWon) {
+        return sum + getLeadStageValue(l);
+      }
+      return sum;
+    }, 0);
+
+    return { actualSales };
+  }, [leads, pipelines]);
 
   const upcomingMeetings = useMemo(() => {
     const now = new Date();
@@ -426,7 +464,7 @@ const SalesPage = () => {
                           <p className="text-xs text-slate-500">{lead.company || '—'}</p>
                         </td>
                         <td className="py-3 text-blue-600 font-medium">
-                          {formatCurrency(lead.estimatedValue)}
+                          {formatCurrency(getLeadStageValue(lead))}
                         </td>
                         <td className="py-3">
                           <span className={`employee-sales-chip px-2 py-1 rounded-full text-xs ${getStatusColor(lead.status)}`}>
@@ -461,28 +499,13 @@ const SalesPage = () => {
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            {/* <button
-                              onClick={() => {
-                                setSelectedLead(lead);
-                                setEditingMeeting(null);
-                                setMeetingData(prev => ({
-                                  ...prev,
-                                  leadId: lead._id,
-                                  scheduledDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16)
-                                }));
-                                setShowMeetingModal(true);
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
-                            >
-                              <Phone className="w-3.5 h-3.5" />
-                            </button> */}
                             {lead.status !== 'Won' && (
                               <button
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   setSelectedLead(lead);
                                   setWonData({
-                                    finalValue: lead.estimatedValue || '',
+                                    finalValue: getLeadStageValue(lead) || '',
                                     recurringRevenue: '',
                                     onboardingStatus: 'Not Started',
                                     satisfactionScore: '',
@@ -557,28 +580,13 @@ const SalesPage = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        {/* <button
-                          onClick={() => {
-                            setSelectedLead(lead);
-                            setEditingMeeting(null);
-                            setMeetingData(prev => ({
-                              ...prev,
-                              leadId: lead._id,
-                              scheduledDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16)
-                            }));
-                            setShowMeetingModal(true);
-                          }}
-                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
-                        >
-                          <Phone className="w-4 h-4" />
-                        </button> */}
                         {lead.status !== 'Won' && (
                           <button
                             onClick={(event) => {
                               event.stopPropagation();
                               setSelectedLead(lead);
                               setWonData({
-                                finalValue: lead.estimatedValue || '',
+                                finalValue: getLeadStageValue(lead) || '',
                                 recurringRevenue: '',
                                 onboardingStatus: 'Not Started',
                                 satisfactionScore: '',
@@ -619,7 +627,7 @@ const SalesPage = () => {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-slate-500">Value</p>
-                        <p className="text-blue-600 font-medium">{formatCurrency(lead.estimatedValue)}</p>
+                        <p className="text-blue-600 font-medium">{formatCurrency(getLeadStageValue(lead))}</p>
                       </div>
                       <div>
                         <p className="text-slate-500">Status</p>
@@ -685,7 +693,7 @@ const SalesPage = () => {
         <Modal title={`${selectedLead.firstName} ${selectedLead.lastName}`} onClose={() => setShowViewModal(false)} size="wide">
           <div className="space-y-3 sm:space-y-5">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
-              <SummaryTile label="Deal Value" value={formatCurrency(selectedLead.estimatedValue)} icon={DollarSign} tone="blue" />
+              <SummaryTile label="Deal Value" value={formatCurrency(getLeadStageValue(selectedLead))} icon={DollarSign} tone="blue" />
               <SummaryTile label="Status" value={selectedLead.status || 'New'} icon={Target} tone="slate" />
               <SummaryTile label="Priority" value={selectedLead.priority || 'Medium'} icon={AlertCircle} tone="amber" />
               <SummaryTile label="Meetings" value={getLeadUpcomingMeetings(selectedLead).length} icon={Calendar} tone="indigo" />

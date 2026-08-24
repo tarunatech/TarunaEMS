@@ -3,12 +3,13 @@ import React, { useState, useEffect, useRef, useCallback, useLayoutEffect, useMe
 import { useLocation, useNavigate } from 'react-router-dom';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
 import {
-  User, Clock, Calendar, DollarSign, CheckCircle, AlertCircle, MapPin, Bell, Award, Target, TrendingUp, FileText, MessageCircle, X, Send, Bot, Camera, Download, Users, Loader2
+  User, Clock, Calendar, DollarSign, CheckCircle, AlertCircle, MapPin, Bell, Award, Target, TrendingUp, FileText, MessageCircle, X, Send, Bot, Camera, Download, Users, Loader2, CheckSquare, AlertTriangle, Video, Briefcase, HelpCircle
 } from 'lucide-react';
 import GroupChatModal from '../../components/Employee/GroupChat/GroupChatModal';
 import toast from 'react-hot-toast';
-import { employeeAPI, authAPI, attendanceAPI, payslipAPI, dashboardAPI, getApiFileUrl } from '../../utils/api';
+import { employeeAPI, authAPI, attendanceAPI, payslipAPI, dashboardAPI, leadAPI, getApiFileUrl } from '../../utils/api';
 import API from '../../utils/api';
+import { taskService } from '../../services/taskService';
 import { geolocationUtils } from '../../utils/geolocationUtils';
 import io from 'socket.io-client';
 
@@ -55,6 +56,229 @@ const getPersonDisplayName = (person, fallback = 'Employee') => {
 
   return [directName, fullName, userName, personalName]
     .find((name) => name && !/^unknown( user)?$/i.test(name)) || fallback;
+};
+
+// Helper to generate role-relevant stat cards (Active Tasks + Overdue info, Meetings for Sales, Problem Statements for Developers, Interviews for HR)
+const generateRoleStats = (employee = {}, realStats = null, tasksList = [], rawMeetingsList = [], rawEventsList = []) => {
+  const cleanStr = (val) => {
+    if (!val) return '';
+    if (typeof val === 'object') return (val.name || val.title || val.code || val.role || '').toLowerCase();
+    return String(val).toLowerCase();
+  };
+
+  const deptStr = cleanStr(employee.workInfo?.department || employee.department || employee.user?.department);
+  const posStr = cleanStr(employee.workInfo?.designation || employee.position || employee.designation || employee.user?.position || employee.user?.designation);
+  const userRole = cleanStr(employee.role || employee.user?.role);
+  const empName = cleanStr(employee.name || employee.fullName || employee.user?.name);
+  
+  const roleStr = `${deptStr} ${posStr} ${userRole} ${empName}`.toLowerCase();
+  const now = new Date();
+
+  const activeTasksList = tasksList.filter(t => t.status !== 'completed' && t.status !== 'approved');
+  const overdueTasksCount = activeTasksList.filter(t => t.dueDate && new Date(t.dueDate) < now).length;
+
+  const presentVal = realStats?.presentDays !== undefined ? realStats.presentDays.toString() : '0';
+  const presentChange = realStats ? `${realStats.lateDays || 0} late, ${realStats.halfDays || 0} half days` : 'This Month';
+
+  // Stat 1: Days Present
+  const stat1 = {
+    title: 'Days Present',
+    value: presentVal,
+    subtitle: 'This Month',
+    icon: CheckCircle,
+    color: 'from-green-500 to-green-600',
+    change: presentChange
+  };
+
+  // Stat 2: Leave Balance
+  const stat2 = {
+    title: 'Leave Balance',
+    value: employee.leaveBalance?.remaining?.toString() || '30',
+    subtitle: 'Days Remaining',
+    icon: Calendar,
+    color: 'from-blue-500 to-blue-600',
+    change: `${employee.leaveBalance?.total || 30} total allocated`
+  };
+
+  // Stat 3: Active Tasks (Includes Overdue Tasks count in small font under it!)
+  const overdueText = overdueTasksCount > 0 ? ` • ${overdueTasksCount} overdue` : '';
+  const stat3 = {
+    title: 'Active Tasks',
+    value: activeTasksList.length.toString(),
+    subtitle: 'Assigned Tasks',
+    icon: CheckSquare,
+    color: 'from-purple-500 to-purple-600',
+    change: `${tasksList.length} Total${overdueText}`
+  };
+
+  // Consolidate meetings from leadAPI, dashboardAPI events, and task list
+  const combinedMeetings = [];
+
+  // Helper to format date/time nicely
+  const formatTimeStr = (rawDate, rawTime) => {
+    if (rawTime) return rawTime;
+    if (!rawDate) return '';
+    try {
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
+  };
+
+  // 1. From leadAPI getUpcomingMeetings
+  if (Array.isArray(rawMeetingsList)) {
+    rawMeetingsList.forEach(m => {
+      if (m) {
+        const meetingObj = m.meeting || m;
+        const leadName = m.fullName || m.leadName || '';
+        const companyName = m.company || m.clientName || '';
+        const clientLabel = leadName ? (companyName ? `${leadName} (${companyName})` : leadName) : companyName;
+        
+        const title = meetingObj.title || m.title || (clientLabel ? `Meeting w/ ${clientLabel}` : 'Lead Meeting');
+        const scheduledTime = formatTimeStr(meetingObj.scheduledDate || m.date, meetingObj.startTime || m.time);
+        
+        combinedMeetings.push({
+          title,
+          clientLabel,
+          time: scheduledTime,
+          date: meetingObj.scheduledDate || m.date,
+          displaySummary: `Next: ${title}${clientLabel && !title.toLowerCase().includes(clientLabel.toLowerCase()) ? ' (' + clientLabel + ')' : ''}${scheduledTime ? ' @ ' + scheduledTime : ''}`
+        });
+      }
+    });
+  }
+
+  // 2. From dashboardAPI getUpcomingEvents (type === 'meeting')
+  if (Array.isArray(rawEventsList)) {
+    rawEventsList.forEach(ev => {
+      if (ev && (ev.type === 'meeting' || String(ev.title || '').toLowerCase().includes('meeting'))) {
+        const title = ev.title || ev.name || 'Sales Meeting';
+        const scheduledTime = formatTimeStr(ev.date || ev.startDate, ev.time);
+        combinedMeetings.push({
+          title,
+          clientLabel: '',
+          time: scheduledTime,
+          date: ev.date || ev.startDate,
+          displaySummary: `Next: ${title}${scheduledTime ? ' @ ' + scheduledTime : ''}`
+        });
+      }
+    });
+  }
+
+  // 3. From taskService getTasks (where category/title/type includes meeting/sales/client)
+  if (Array.isArray(tasksList)) {
+    tasksList.forEach(t => {
+      const title = (t.title || '').toLowerCase();
+      const cat = (t.category || '').toLowerCase();
+      const type = (t.type || '').toLowerCase();
+      if (title.includes('meeting') || cat.includes('meeting') || type.includes('meeting') ||
+          title.includes('sales') || cat.includes('sales') || type.includes('sales') ||
+          title.includes('client') || title.includes('demo')) {
+        const scheduledTime = formatTimeStr(t.dueDate || t.createdAt, null);
+        combinedMeetings.push({
+          title: t.title || 'Client Meeting',
+          clientLabel: '',
+          time: scheduledTime,
+          date: t.dueDate || t.createdAt,
+          displaySummary: `Next: ${t.title}${scheduledTime ? ' @ ' + scheduledTime : ''}`
+        });
+      }
+    });
+  }
+
+  // Filter out duplicates by displaySummary/title
+  const uniqueMeetings = [];
+  const seenTitles = new Set();
+  combinedMeetings.forEach(m => {
+    const key = (m.title || '').toLowerCase().trim();
+    if (key && !seenTitles.has(key)) {
+      seenTitles.add(key);
+      uniqueMeetings.push(m);
+    }
+  });
+
+  const interviewTasks = tasksList.filter(t => {
+    const title = (t.title || '').toLowerCase();
+    const cat = (t.category || '').toLowerCase();
+    return title.includes('interview') || cat.includes('interview') || title.includes('hiring') || title.includes('candidate');
+  });
+
+  const problemTasks = tasksList.filter(t => {
+    const title = (t.title || '').toLowerCase();
+    const cat = (t.category || '').toLowerCase();
+    return title.includes('problem') || cat.includes('problem') || title.includes('bug') || cat.includes('bug') || title.includes('feature') || title.includes('issue');
+  });
+
+  const isSales = roleStr.includes('sales') || roleStr.includes('market') || roleStr.includes('business') || roleStr.includes('bd') || roleStr.includes('bde') || roleStr.includes('bdm') || roleStr.includes('lead') || roleStr.includes('client') || roleStr.includes('account') || uniqueMeetings.length > 0;
+  
+  const isHR = roleStr.includes('hr') || roleStr.includes('recruit') || roleStr.includes('hiring') || roleStr.includes('human') || roleStr.includes('people') || interviewTasks.length > 0;
+
+  const isDev = roleStr.includes('dev') || roleStr.includes('software') || roleStr.includes('tech') || roleStr.includes('engineer') || roleStr.includes('code') || roleStr.includes('programmer') || roleStr.includes('web') || roleStr.includes('frontend') || roleStr.includes('backend') || roleStr.includes('fullstack') || roleStr.includes('qa') || roleStr.includes('test') || problemTasks.length > 0;
+
+  // Stat 4: Role-Specific Highlight Card (Sales: Meetings, Dev: Problem Statements, HR: Interviews)
+  let stat4;
+
+  if (isSales) {
+    // Sales Employee Card: Meetings & Next Meeting Brief
+    const nextMeeting = uniqueMeetings[0];
+    const meetingDetail = nextMeeting ? nextMeeting.displaySummary : 'No upcoming meetings';
+
+    stat4 = {
+      title: 'Meetings',
+      value: uniqueMeetings.length.toString(),
+      subtitle: 'Scheduled Meetings',
+      icon: Video,
+      color: 'from-pink-500 to-pink-600',
+      change: meetingDetail
+    };
+  } else if (isHR) {
+    // HR Employee Card: Interviews & Next Interview Brief
+    const activeInterviews = interviewTasks.filter(t => t.status !== 'completed' && t.status !== 'approved');
+    const nextInterview = activeInterviews[0] || interviewTasks[0] || activeTasksList[0];
+    const interviewCount = interviewTasks.length || activeTasksList.length || 0;
+    const interviewDetail = nextInterview ? `Next: ${nextInterview.title}` : 'No upcoming interviews';
+
+    stat4 = {
+      title: 'Interviews',
+      value: interviewCount.toString(),
+      subtitle: 'Scheduled Interviews',
+      icon: Users,
+      color: 'from-pink-500 to-pink-600',
+      change: interviewDetail
+    };
+  } else if (isDev) {
+    // Developer / Tech Employee Card: Problem Statements
+    const activeProblems = problemTasks.filter(t => t.status !== 'completed' && t.status !== 'approved');
+    const nextProblem = activeProblems[0] || activeTasksList[0];
+    const problemCount = activeProblems.length || activeTasksList.length || 0;
+    const problemDetail = nextProblem ? `Next: ${nextProblem.title}` : 'All problems resolved';
+
+    stat4 = {
+      title: 'Problem Statements',
+      value: problemCount.toString(),
+      subtitle: 'Assigned Problems',
+      icon: HelpCircle,
+      color: 'from-pink-500 to-pink-600',
+      change: problemDetail
+    };
+  } else {
+    // Default Role Card
+    const nextTask = activeTasksList[0];
+    const taskDetail = nextTask ? `Next: ${nextTask.title}` : 'All priorities up to date';
+
+    stat4 = {
+      title: 'Upcoming Priority',
+      value: activeTasksList.length.toString(),
+      subtitle: 'Primary Deliverable',
+      icon: Target,
+      color: 'from-pink-500 to-pink-600',
+      change: taskDetail
+    };
+  }
+
+  return [stat1, stat2, stat3, stat4];
 };
 
 const EmployeeDashboard = () => {
@@ -283,58 +507,57 @@ const EmployeeDashboard = () => {
             id: employee.id || employee.user?._id || employee._id,
             employeeId: employee.employeeId || employee._id
           });
+          // Fetch attendance, tasks, meetings, and events concurrently to build dynamic role stats
+          let realStats = null;
+          let tasksList = [];
+          let meetingsList = [];
+          let eventsList = [];
 
-          const stats = [
-            { title: 'Days Present', value: '...', subtitle: 'This Month', icon: CheckCircle, color: 'from-green-500 to-green-600', change: 'Calculating...' },
-            { title: 'Leave Balance', value: employee.leaveBalance?.remaining?.toString() || '30', subtitle: 'Days Remaining', icon: Calendar, color: 'from-blue-500 to-blue-600', change: `${employee.leaveBalance?.total || 30} total allocated` },
-            { title: 'Current Salary', value: `₹${employee.salaryInfo?.basicSalary?.toLocaleString() || '60,000'}`, subtitle: 'Basic Salary', icon: DollarSign, color: 'from-purple-500 to-purple-600', change: 'Monthly' },
-            { title: 'Years of Service', value: employee.yearsOfService?.toString() || '0', subtitle: 'Years', icon: Target, color: 'from-pink-500 to-pink-600', change: `Since ${employee.workInfo?.joiningDate ? new Date(employee.workInfo.joiningDate).getFullYear() : 'N/A'}` }
-          ];
-          setDashboardStats(stats);
+          try {
+            const [attendanceStatusRes, statsRes, tasksRes, meetingsRes, eventsRes] = await Promise.allSettled([
+              attendanceAPI.getTodayAttendance(),
+              attendanceAPI.getEmployeeAttendanceStats(),
+              taskService.getTasks(),
+              leadAPI.getUpcomingMeetings(),
+              dashboardAPI.getUpcomingEvents()
+            ]);
+
+            if (attendanceStatusRes.status === 'fulfilled' && attendanceStatusRes.value.data?.success) {
+              const data = attendanceStatusRes.value.data;
+              setTodayAttendance(data.data);
+              setHasCheckedIn(data.hasCheckedIn);
+              setHasCheckedOut(data.hasCheckedOut);
+            }
+
+            if (statsRes.status === 'fulfilled' && statsRes.value.data?.success) {
+              realStats = statsRes.value.data.data;
+            }
+
+            if (tasksRes.status === 'fulfilled') {
+              const val = tasksRes.value;
+              tasksList = Array.isArray(val) ? val : (val?.tasks || val?.data || []);
+            }
+
+            if (meetingsRes.status === 'fulfilled') {
+              const val = meetingsRes.value?.data;
+              meetingsList = val?.data || val?.meetings || (Array.isArray(val) ? val : []);
+            }
+
+            if (eventsRes.status === 'fulfilled') {
+              const val = eventsRes.value?.data;
+              eventsList = val?.events || (Array.isArray(val) ? val : []);
+              setRecentNotices(eventsList);
+            }
+          } catch (err) {
+            console.error('Error fetching auxiliary dashboard data:', err);
+          }
+
+          const dynamicStats = generateRoleStats(employee, realStats, tasksList, meetingsList, eventsList);
+          setDashboardStats(dynamicStats);
         } else {
           console.error('Failed to fetch employee profile:', profileResponse);
           toast.error('Unable to load your profile data');
           setDefaultStats();
-        }
-
-        try {
-          const [attendanceStatusRes, statsRes] = await Promise.all([
-            attendanceAPI.getTodayAttendance(),
-            attendanceAPI.getEmployeeAttendanceStats()
-          ]);
-
-          if (attendanceStatusRes.data.success) {
-            const data = attendanceStatusRes.data;
-            setTodayAttendance(data.data);
-            setHasCheckedIn(data.hasCheckedIn);
-            setHasCheckedOut(data.hasCheckedOut);
-          }
-
-          if (statsRes.data.success) {
-            const realStats = statsRes.data.data;
-            setDashboardStats(prev => {
-              if (!prev) return prev;
-              const updated = [...prev];
-              updated[0] = { ...updated[0], value: realStats.presentDays.toString(), change: `${realStats.lateDays} late, ${realStats.halfDays} half days` };
-              return updated;
-            });
-          }
-        } catch (error) {
-          if (error.response?.status !== 404) {
-            console.error('Error fetching today attendance or stats:', error);
-          }
-        }
-
-        try {
-          setNoticesLoading(true);
-          const eventsRes = await dashboardAPI.getUpcomingEvents();
-          if (eventsRes.data?.success) {
-            setRecentNotices(eventsRes.data.events || []);
-          }
-        } catch (error) {
-          console.error('Error fetching latest notices:', error);
-        } finally {
-          setNoticesLoading(false);
         }
       } catch (error) {
         console.error('Error fetching employee ', error);
@@ -375,13 +598,8 @@ const EmployeeDashboard = () => {
     }
   };
 
-  const setDefaultStats = () => {
-    setDashboardStats([
-      { title: 'Days Present', value: '0', subtitle: 'This Month', icon: CheckCircle, color: 'from-green-500 to-green-600', change: 'No data' },
-      { title: 'Leave Balance', value: '30', subtitle: 'Days Remaining', icon: Calendar, color: 'from-blue-500 to-blue-600', change: '30 total allocated' },
-      { title: 'Current Salary', value: '₹0', subtitle: 'Basic Salary', icon: DollarSign, color: 'from-purple-500 to-purple-600', change: 'Monthly' },
-      { title: 'Years of Service', value: '0', subtitle: 'Years', icon: Target, color: 'from-pink-500 to-pink-600', change: 'N/A' }
-    ]);
+  const setDefaultStats = (employee = {}) => {
+    setDashboardStats(generateRoleStats(employee, null, []));
   };
 
   useEffect(() => {
@@ -1165,7 +1383,7 @@ const EmployeeDashboard = () => {
                 <div>
                   <h3 className="text-[22px] font-semibold text-slate-900 mb-0.5 tracking-tight">{stat.value}</h3>
                   <p className="text-slate-500 text-[13px] mb-2">{stat.title}</p>
-                  <p className="text-[11.5px] text-indigo-600 font-medium">{stat.change}</p>
+                  <p className="text-[11.5px] text-indigo-600 font-medium truncate" title={stat.change}>{stat.change}</p>
                 </div>
               </div>
             ))}
@@ -1617,221 +1835,262 @@ const EmployeeDashboard = () => {
 
         {/* Payslip Modal */}
         {showPayslipModal && employeeData && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-            <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[99998]" onClick={() => setShowPayslipModal(false)} />
-            <div className="relative z-[99999] bg-white border border-slate-200 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-slate-900/10 animate-enter" style={{ animationDuration: '0.2s' }}>
-              <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                <h2 className="text-[15px] font-semibold text-slate-900 flex items-center">
-                  <FileText className="w-4 h-4 mr-2 text-indigo-600" strokeWidth={1.75} />
-                  Salary Slip — {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
-                </h2>
-                <button onClick={() => setShowPayslipModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">
-                  <X className="w-[18px] h-[18px]" />
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 md:p-6">
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[99998]" onClick={() => setShowPayslipModal(false)} />
+            <div className="relative z-[99999] bg-white border border-slate-200/80 rounded-2xl w-full max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-slate-900/20 animate-enter" style={{ animationDuration: '0.2s' }}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 shadow-2xs">
+                    <FileText className="w-4 h-4" strokeWidth={1.75} />
+                  </div>
+                  <div>
+                    <h2 className="text-[15px] font-bold text-slate-900 tracking-tight leading-none">
+                      Salary Slip — {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
+                    </h2>
+                    <p className="text-[11px] font-medium text-slate-500 mt-0.5">Official Monthly Compensation Breakdown</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowPayslipModal(false)} className="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-slate-700 hover:shadow-xs border border-transparent hover:border-slate-200 transition-all duration-150">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="p-6 space-y-5">
+
+              <div className="p-4 space-y-3.5">
                 {payslipLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
                   </div>
                 ) : !currentPayslip ? (
-                  <div className="text-center py-12">
-                    <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <FileText className="w-6 h-6 text-slate-400" strokeWidth={1.75} />
+                  <div className="text-center py-10">
+                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <FileText className="w-5 h-5 text-slate-400" strokeWidth={1.5} />
                     </div>
-                    <p className="text-slate-700 text-[14px] font-medium">No payslip generated for current month</p>
-                    <p className="text-slate-400 text-[12.5px] mt-1.5">Please contact HR for more information</p>
+                    <p className="text-slate-800 text-[14px] font-semibold">No payslip generated for current month</p>
+                    <p className="text-slate-400 text-[12px] mt-0.5">Please contact HR for more information</p>
                   </div>
                 ) : (
                   <>
-                    {/* Employee Info */}
-                    <div className="bg-slate-50 border border-slate-200/70 rounded-lg p-4">
-                      <h3 className="text-[13.5px] font-semibold text-slate-900 mb-3">Employee Details</h3>
-                      <div className="grid grid-cols-2 gap-3 text-[12.5px]">
-                        <div>
-                          <span className="text-slate-500">Name:</span>
-                          <span className="text-slate-900 ml-2">{currentPayslip.employeeName || 'N/A'}</span>
+                    {/* Top Row: Employee Info & Attendance Summary */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Employee Info Card */}
+                      <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-3 space-y-1.5">
+                        <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-slate-600 mb-1">Employee Details</h3>
+                        <div className="grid grid-cols-2 gap-2 text-[12px]">
+                          <div>
+                            <span className="text-slate-400 font-medium block text-[10.5px]">Employee Name</span>
+                            <span className="text-slate-900 font-semibold truncate block">{currentPayslip.employeeName || 'N/A'}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium block text-[10.5px]">Employee ID</span>
+                            <span className="text-slate-900 font-semibold">{currentPayslip.employeeId || 'N/A'}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium block text-[10.5px]">Pay Period</span>
+                            <span className="text-slate-900 font-semibold">
+                              {new Date(currentPayslip.period.year, currentPayslip.period.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-medium block text-[10.5px]">Status</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 capitalize">
+                              {currentPayslip.status || 'Generated'}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-slate-500">Employee ID:</span>
-                          <span className="text-slate-900 ml-2">{currentPayslip.employeeId || 'N/A'}</span>
+                      </div>
+
+                      {/* Attendance Summary */}
+                      {currentPayslip.attendance ? (
+                        <div className="bg-indigo-50/40 border border-indigo-100 rounded-xl p-3">
+                          <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-indigo-700 mb-1.5">Attendance Summary</h3>
+                          <div className="grid grid-cols-4 gap-1.5 text-center">
+                            <div className="bg-white p-1.5 rounded-lg border border-indigo-100/80 shadow-2xs">
+                              <span className="text-[16px] font-bold text-slate-900 block leading-tight">{currentPayslip.attendance.workingDays || 0}</span>
+                              <span className="text-[10px] font-medium text-slate-500">Working</span>
+                            </div>
+                            <div className="bg-white p-1.5 rounded-lg border border-emerald-100 shadow-2xs">
+                              <span className="text-[16px] font-bold text-emerald-600 block leading-tight">{currentPayslip.attendance.presentDays || 0}</span>
+                              <span className="text-[10px] font-medium text-slate-500">Present</span>
+                            </div>
+                            <div className="bg-white p-1.5 rounded-lg border border-amber-100 shadow-2xs">
+                              <span className="text-[16px] font-bold text-amber-600 block leading-tight">{currentPayslip.attendance.leaveDays || 0}</span>
+                              <span className="text-[10px] font-medium text-slate-500">Leave</span>
+                            </div>
+                            <div className="bg-white p-1.5 rounded-lg border border-rose-100 shadow-2xs">
+                              <span className="text-[16px] font-bold text-rose-600 block leading-tight">{currentPayslip.attendance.absentDays || 0}</span>
+                              <span className="text-[10px] font-medium text-slate-500">Absent</span>
+                            </div>
+                          </div>
                         </div>
+                      ) : (
+                        <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-3 flex items-center justify-center text-slate-400 text-xs">
+                          No attendance data recorded
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Middle Row: Earnings & Deductions Side-by-Side */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Earnings Column */}
+                      <div className="bg-emerald-50/40 border border-emerald-200/60 rounded-xl p-3.5 flex flex-col justify-between">
                         <div>
-                          <span className="text-slate-500">Period:</span>
-                          <span className="text-slate-900 ml-2">
-                            {new Date(currentPayslip.period.year, currentPayslip.period.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
+                          <div className="flex items-center justify-between mb-2 border-b border-emerald-200/60 pb-1.5">
+                            <h3 className="text-[13px] font-bold text-emerald-800">Earnings</h3>
+                            <span className="text-[10.5px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">Allowances</span>
+                          </div>
+                          <div className="space-y-1.5 text-[12px]">
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Basic Salary</span>
+                              <span className="font-semibold text-slate-900">₹{(currentPayslip.earnings?.basicSalary || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">HRA</span>
+                              <span className="font-semibold text-slate-900">₹{(currentPayslip.earnings?.hra || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Medical Allowance</span>
+                              <span className="font-semibold text-slate-900">₹{(currentPayslip.earnings?.medical || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Transport Allowance</span>
+                              <span className="font-semibold text-slate-900">₹{(currentPayslip.earnings?.transport || 0).toLocaleString()}</span>
+                            </div>
+                            {(currentPayslip.earnings?.bonus || 0) > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-slate-600">Bonus</span>
+                                <span className="font-semibold text-slate-900">₹{(currentPayslip.earnings?.bonus || 0).toLocaleString()}</span>
+                              </div>
+                            )}
+                            {(currentPayslip.earnings?.overtime || 0) > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-slate-600">Overtime</span>
+                                <span className="font-semibold text-slate-900">₹{(currentPayslip.earnings?.overtime || 0).toLocaleString()}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Other Allowances</span>
+                              <span className="font-semibold text-slate-900">₹{(currentPayslip.earnings?.otherAllowances || 0).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-between border-t border-emerald-200/80 pt-2 mt-2 font-bold text-[13px]">
+                          <span className="text-emerald-800">Gross Earnings</span>
+                          <span className="text-emerald-800">₹{(currentPayslip.grossEarnings || 0).toLocaleString()}</span>
+                        </div>
+                      </div>
+
+                      {/* Deductions Column */}
+                      <div className="bg-rose-50/40 border border-rose-200/60 rounded-xl p-3.5 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between mb-2 border-b border-rose-200/60 pb-1.5">
+                            <h3 className="text-[13px] font-bold text-rose-800">Deductions</h3>
+                            <span className="text-[10.5px] font-semibold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md">Taxes & PF</span>
+                          </div>
+                          <div className="space-y-1.5 text-[12px]">
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Provident Fund (PF)</span>
+                              <span className="font-semibold text-slate-900">₹{(currentPayslip.deductions?.pf || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">ESI</span>
+                              <span className="font-semibold text-slate-900">₹{(currentPayslip.deductions?.esi || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Income Tax</span>
+                              <span className="font-semibold text-slate-900">₹{(currentPayslip.deductions?.tax || 0).toLocaleString()}</span>
+                            </div>
+                            {(currentPayslip.deductions?.professionalTax || 0) > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-slate-600">Professional Tax</span>
+                                <span className="font-semibold text-slate-900">₹{(currentPayslip.deductions?.professionalTax || 0).toLocaleString()}</span>
+                              </div>
+                            )}
+                            {(currentPayslip.deductions?.loanDeduction || 0) > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-slate-600">Loan Deduction</span>
+                                <span className="font-semibold text-slate-900">₹{(currentPayslip.deductions?.loanDeduction || 0).toLocaleString()}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">Other Deductions</span>
+                              <span className="font-semibold text-slate-900">₹{(currentPayslip.deductions?.otherDeductions || 0).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-between border-t border-rose-200/80 pt-2 mt-2 font-bold text-[13px]">
+                          <span className="text-rose-800">Total Deductions</span>
+                          <span className="text-rose-800">₹{(currentPayslip.totalDeductions || 0).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Row: Net Salary Callout & Bank Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                      <div className="md:col-span-2 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-xl p-3.5 shadow-md flex items-center justify-between">
+                        <div>
+                          <p className="text-[10.5px] font-bold uppercase tracking-widest text-indigo-300">Take-Home Pay</p>
+                          <p className="text-[12.5px] text-slate-300 font-medium mt-0.5">Net Salary Credited</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[22px] sm:text-[25px] font-extrabold tracking-tight text-white leading-none">
+                            ₹{(currentPayslip.netSalary || 0).toLocaleString()}
                           </span>
                         </div>
-                        <div>
-                          <span className="text-slate-500">Status:</span>
-                          <span className="text-slate-900 ml-2 capitalize">{currentPayslip.status || 'N/A'}</span>
-                        </div>
                       </div>
+
+                      {/* Bank Details */}
+                      {currentPayslip.bankInfo ? (
+                        <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 space-y-0.5 text-[11px]">
+                          <p className="font-bold text-slate-800 text-[11.5px] mb-0.5">Bank Account</p>
+                          <div className="flex justify-between text-slate-600">
+                            <span>Bank:</span>
+                            <span className="font-medium text-slate-900 truncate max-w-[110px]">{currentPayslip.bankInfo.bankName || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-600">
+                            <span>A/C:</span>
+                            <span className="font-medium text-slate-900">{currentPayslip.bankInfo.accountNumber || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-600">
+                            <span>IFSC:</span>
+                            <span className="font-medium text-slate-900">{currentPayslip.bankInfo.ifscCode || 'N/A'}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-center md:justify-end">
+                          <button
+                            onClick={handleDownloadPayslip}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-[13px] font-semibold rounded-xl hover:from-indigo-500 hover:to-indigo-600 transition-all duration-150 shadow-md hover:shadow-indigo-500/25"
+                          >
+                            <Download className="w-4 h-4" strokeWidth={2} />
+                            Download PDF
+                          </button>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Attendance Info */}
-                    {currentPayslip.attendance && (
-                      <div className="bg-slate-50 border border-slate-200/70 rounded-lg p-4">
-                        <h3 className="text-[13.5px] font-semibold text-indigo-600 mb-3">Attendance Summary</h3>
-                        <div className="grid grid-cols-2 gap-3 text-[12.5px]">
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Working Days:</span>
-                            <span className="text-slate-900">{currentPayslip.attendance.workingDays || 0}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Present Days:</span>
-                            <span className="text-slate-900">{currentPayslip.attendance.presentDays || 0}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Leave Days:</span>
-                            <span className="text-slate-900">{currentPayslip.attendance.leaveDays || 0}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Absent Days:</span>
-                            <span className="text-slate-900">{currentPayslip.attendance.absentDays || 0}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Earnings */}
-                    <div className="bg-emerald-50/60 border border-emerald-100 rounded-lg p-4">
-                      <h3 className="text-[13.5px] font-semibold text-emerald-700 mb-3">Earnings</h3>
-                      <div className="space-y-1.5 text-[12.5px]">
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">Basic Salary</span>
-                          <span className="text-slate-900">₹{(currentPayslip.earnings?.basicSalary || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">HRA</span>
-                          <span className="text-slate-900">₹{(currentPayslip.earnings?.hra || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">Medical Allowance</span>
-                          <span className="text-slate-900">₹{(currentPayslip.earnings?.medical || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">Transport Allowance</span>
-                          <span className="text-slate-900">₹{(currentPayslip.earnings?.transport || 0).toLocaleString()}</span>
-                        </div>
-                        {(currentPayslip.earnings?.bonus || 0) > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-600">Bonus</span>
-                            <span className="text-slate-900">₹{(currentPayslip.earnings?.bonus || 0).toLocaleString()}</span>
-                          </div>
-                        )}
-                        {(currentPayslip.earnings?.overtime || 0) > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-600">Overtime</span>
-                            <span className="text-slate-900">₹{(currentPayslip.earnings?.overtime || 0).toLocaleString()}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">Other Allowances</span>
-                          <span className="text-slate-900">₹{(currentPayslip.earnings?.otherAllowances || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between border-t border-emerald-200 pt-2 font-semibold">
-                          <span className="text-emerald-700">Gross Earnings</span>
-                          <span className="text-emerald-700">₹{(currentPayslip.grossEarnings || 0).toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Deductions */}
-                {currentPayslip && (
-                  <>
-                    <div className="bg-red-50/60 border border-red-100 rounded-lg p-4">
-                      <h3 className="text-[13.5px] font-semibold text-red-700 mb-3">Deductions</h3>
-                      <div className="space-y-1.5 text-[12.5px]">
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">Provident Fund (PF)</span>
-                          <span className="text-slate-900">₹{(currentPayslip.deductions?.pf || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">ESI</span>
-                          <span className="text-slate-900">₹{(currentPayslip.deductions?.esi || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">Tax</span>
-                          <span className="text-slate-900">₹{(currentPayslip.deductions?.tax || 0).toLocaleString()}</span>
-                        </div>
-                        {(currentPayslip.deductions?.professionalTax || 0) > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-600">Professional Tax</span>
-                            <span className="text-slate-900">₹{(currentPayslip.deductions?.professionalTax || 0).toLocaleString()}</span>
-                          </div>
-                        )}
-                        {(currentPayslip.deductions?.loanDeduction || 0) > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-600">Loan Deduction</span>
-                            <span className="text-slate-900">₹{(currentPayslip.deductions?.loanDeduction || 0).toLocaleString()}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">Other Deductions</span>
-                          <span className="text-slate-900">₹{(currentPayslip.deductions?.otherDeductions || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between border-t border-red-200 pt-2 font-semibold">
-                          <span className="text-red-700">Total Deductions</span>
-                          <span className="text-red-700">₹{(currentPayslip.totalDeductions || 0).toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Net Salary */}
-                    <div className="bg-indigo-50/60 rounded-lg p-4 border border-indigo-100">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[14px] font-semibold text-slate-900">Net Salary</span>
-                        <span className="text-[20px] font-semibold text-indigo-600">₹{(currentPayslip.netSalary || 0).toLocaleString()}</span>
-                      </div>
-                    </div>
-
-                    {/* Bank Info */}
+                    {/* Remarks & Download Row if Bank Info exists */}
                     {currentPayslip.bankInfo && (
-                      <div className="bg-slate-50 border border-slate-200/70 rounded-lg p-4">
-                        <h3 className="text-[13.5px] font-semibold text-slate-900 mb-3">Bank Details</h3>
-                        <div className="space-y-1.5 text-[12.5px]">
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Bank Name:</span>
-                            <span className="text-slate-900">{currentPayslip.bankInfo.bankName || 'N/A'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Account Number:</span>
-                            <span className="text-slate-900">{currentPayslip.bankInfo.accountNumber || 'N/A'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">IFSC Code:</span>
-                            <span className="text-slate-900">{currentPayslip.bankInfo.ifscCode || 'N/A'}</span>
-                          </div>
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                        <div className="min-w-0">
+                          {currentPayslip.remarks && (
+                            <p className="text-[11.5px] text-slate-500 truncate">
+                              <span className="font-semibold text-slate-700">Remarks: </span>
+                              {currentPayslip.remarks}
+                            </p>
+                          )}
                         </div>
+                        <button
+                          onClick={handleDownloadPayslip}
+                          className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-[13px] font-semibold rounded-xl hover:from-indigo-500 hover:to-indigo-600 transition-all duration-150 shadow-md hover:shadow-indigo-500/25 shrink-0"
+                        >
+                          <Download className="w-4 h-4" strokeWidth={2} />
+                          Download Payslip PDF
+                        </button>
                       </div>
                     )}
-
-                    {/* Remarks */}
-                    {currentPayslip.remarks && (
-                      <div className="bg-slate-50 border border-slate-200/70 rounded-lg p-4">
-                        <h3 className="text-[13.5px] font-semibold text-slate-900 mb-2">Remarks</h3>
-                        <p className="text-slate-600 text-[12.5px]">{currentPayslip.remarks}</p>
-                      </div>
-                    )}
-
-                    {/* Download Button */}
-                    <div className="flex justify-center pt-2">
-                      <button
-                        onClick={handleDownloadPayslip}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-[13.5px] font-medium rounded-lg hover:bg-indigo-500 transition-colors duration-150"
-                      >
-                        <Download className="w-4 h-4" strokeWidth={1.75} />
-                        Download Payslip PDF
-                      </button>
-                    </div>
                   </>
                 )}
-
-
-                <p className="text-[11px] text-slate-400 text-center">This is a computer generated payslip and does not require a signature.</p>
               </div>
             </div>
           </div>

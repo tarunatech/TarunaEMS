@@ -777,7 +777,7 @@ const AdminPayslips = () => {
         {showViewModal && selectedPayslip && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
-            <div className="relative flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+            <div className="relative flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl lg:max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
               <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3 sm:border-b-0 sm:px-6 sm:pb-0 sm:pt-6">
                 <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Payslip Details</h2>
                 <button

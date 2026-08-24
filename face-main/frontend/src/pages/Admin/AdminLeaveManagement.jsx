@@ -371,102 +371,98 @@ const AdminLeaveManagement = () => {
               onClick={() => setShowModal(false)}
               className="shrink-0 text-slate-500 hover:text-slate-900"
             >
-              <XCircle className="w-6 h-6" />
+              <XCircle className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
 
           {selectedLeave && (
-            <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
-              <div className="flex items-center space-x-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:space-x-4 sm:p-4">
-                <div className="premium-icon h-10 w-10 shrink-0 rounded-full sm:h-12 sm:w-12" style={{ '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
-                  <User className="h-5 w-5 sm:h-6 sm:w-6" />
+            <div className="space-y-3 sm:space-y-6 p-3 sm:p-6">
+              <div className="flex items-center space-x-2.5 sm:space-x-4 rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:p-4">
+                <div className="premium-icon h-9 w-9 shrink-0 rounded-full sm:h-12 sm:w-12" style={{ '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
+                  <User className="h-4 w-4 sm:h-6 sm:w-6" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="truncate text-base font-bold text-slate-900 sm:text-lg">
+                  <h3 className="truncate text-sm sm:text-lg font-bold text-slate-900">
                     {selectedLeave.employee?.fullName ||
                       selectedLeave.employee?.personalInfo?.firstName + ' ' + selectedLeave.employee?.personalInfo?.lastName ||
                       selectedLeave.employee?.user?.name}
                   </h3>
-                  <p className="text-sm text-blue-600">{selectedLeave.employee?.employeeId || selectedLeave.employee?.user?.employeeId}</p>
+                  <p className="text-xs sm:text-sm text-blue-600">{selectedLeave.employee?.employeeId || selectedLeave.employee?.user?.employeeId}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm text-slate-500">Leave Type</label>
-                    <p className="text-slate-900 font-medium">{selectedLeave.leaveType}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-500">Start Date</label>
-                    <p className="text-slate-900 font-medium">{new Date(selectedLeave.startDate).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-500">End Date</label>
-                    <p className="text-slate-900 font-medium">{new Date(selectedLeave.endDate).toLocaleDateString()}</p>
-                  </div>
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 sm:p-0 sm:border-0 sm:bg-transparent">
+                <div>
+                  <label className="text-[11px] sm:text-sm font-medium text-slate-500">Leave Type</label>
+                  <p className="text-xs sm:text-base font-semibold text-slate-900 capitalize">{selectedLeave.leaveType}</p>
                 </div>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm text-slate-500">Duration</label>
-                    <p className="text-slate-900 font-medium">
-                      {selectedLeave.isHalfDay ? `0.5 day (${selectedLeave.halfDaySession})` : `${selectedLeave.totalDays} days`}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-500">Applied Date</label>
-                    <p className="text-slate-900 font-medium">{new Date(selectedLeave.appliedDate).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-500">Status:</label>
-                    <span className={`inline-block ml-2 px-1 py-1 text-xs rounded-full ${getStatusColor(selectedLeave.status)}`}>
-                      {selectedLeave.status}
-                    </span>
-                  </div>
+                <div>
+                  <label className="text-[11px] sm:text-sm font-medium text-slate-500">Duration</label>
+                  <p className="text-xs sm:text-base font-semibold text-slate-900">
+                    {selectedLeave.isHalfDay ? `0.5 day (${selectedLeave.halfDaySession})` : `${selectedLeave.totalDays} days`}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-[11px] sm:text-sm font-medium text-slate-500">Start Date</label>
+                  <p className="text-xs sm:text-base font-semibold text-slate-900">{new Date(selectedLeave.startDate).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <label className="text-[11px] sm:text-sm font-medium text-slate-500">End Date</label>
+                  <p className="text-xs sm:text-base font-semibold text-slate-900">{new Date(selectedLeave.endDate).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <label className="text-[11px] sm:text-sm font-medium text-slate-500">Applied Date</label>
+                  <p className="text-xs sm:text-base font-semibold text-slate-900">{new Date(selectedLeave.appliedDate).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5">Status</label>
+                  <span className={`inline-block px-2 py-0.5 text-[11px] sm:text-xs font-semibold rounded-full ${getStatusColor(selectedLeave.status)}`}>
+                    {selectedLeave.status}
+                  </span>
                 </div>
               </div>
 
               <div>
-                <label className="text-sm text-slate-500">Reason</label>
-                <p className="text-slate-900 bg-slate-50 border border-slate-200 p-2 rounded-xl mt-1 text-sm sm:text-base">{selectedLeave.reason}</p>
+                <label className="text-[11px] sm:text-sm font-medium text-slate-500">Reason</label>
+                <p className="text-xs sm:text-base text-slate-900 bg-slate-50 border border-slate-200 p-2 sm:p-3 rounded-lg sm:rounded-xl mt-0.5">{selectedLeave.reason}</p>
               </div>
 
               {selectedLeave.approverComments && (
                 <div>
-                  <label className="text-sm text-slate-500">Previous Comments</label>
-                  <p className="text-slate-900 bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1 text-sm sm:text-base">{selectedLeave.approverComments}</p>
+                  <label className="text-[11px] sm:text-sm font-medium text-slate-500">Previous Comments</label>
+                  <p className="text-xs sm:text-base text-slate-900 bg-slate-50 border border-slate-200 p-2 sm:p-3 rounded-lg sm:rounded-xl mt-0.5">{selectedLeave.approverComments}</p>
                 </div>
               )}
 
               {selectedLeave.status.toLowerCase() === 'pending' && (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div>
-                    <label className="text-sm text-slate-500">Comments (Optional)</label>
+                    <label className="text-[11px] sm:text-sm font-medium text-slate-500">Comments (Optional)</label>
                     <textarea
                       value={comments}
                       onChange={(e) => setComments(e.target.value)}
-                      rows="3"
-                      className="premium-input w-full px-4 py-3 rounded-xl text-slate-900 placeholder-slate-400 mt-1"
+                      rows="2"
+                      className="premium-input w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 mt-1"
                       placeholder="Add comments for the employee..."
                       maxLength="300"
                     />
                   </div>
 
-                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-end sm:space-x-4 sm:gap-0">
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end sm:space-x-4">
                     <button
                       onClick={() => handleReject(selectedLeave._id, comments)}
                       disabled={actionLoading}
-                      className="flex items-center justify-center rounded-lg border border-red-200 bg-white px-6 py-3 text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
+                      className="flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
                     >
-                      {actionLoading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
+                      {actionLoading ? <Loader className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5 mr-1.5" />}
                       Reject
                     </button>
                     <button
                       onClick={() => handleApprove(selectedLeave._id, comments)}
                       disabled={actionLoading}
-                      className="premium-primary-button flex items-center justify-center rounded-lg px-6 py-3 font-semibold transition-all duration-200 disabled:opacity-50"
+                      className="premium-primary-button flex items-center justify-center rounded-lg px-3 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-200 disabled:opacity-50"
                     >
-                      {actionLoading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                      {actionLoading ? <Loader className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5 mr-1.5" />}
                       Approve
                     </button>
                   </div>
@@ -506,51 +502,51 @@ const AdminLeaveManagement = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-6">
-          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(99,102,241,0.10)', '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
-            <div className="flex items-center justify-between gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4 md:gap-6">
+          <div className="premium-stat-card rounded-xl sm:rounded-2xl p-2 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(99,102,241,0.10)', '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
+            <div className="flex items-center justify-between gap-1.5 sm:gap-2">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">{stats.total}</h3>
-                <p className="text-xs text-slate-500 sm:text-sm">Total Applications</p>
+                <h3 className="text-base font-bold text-slate-900 sm:text-xl md:text-2xl">{stats.total}</h3>
+                <p className="text-[11px] text-slate-500 sm:text-sm">Total Applications</p>
               </div>
-              <div className="premium-icon h-9 w-9 shrink-0 rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
-                <FileText className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+              <div className="premium-icon h-7 w-7 shrink-0 rounded-lg sm:h-10 sm:w-10 sm:rounded-xl md:h-12 md:w-12">
+                <FileText className="h-3.5 w-3.5 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(245,158,11,0.10)', '--icon-gradient': 'linear-gradient(135deg,#f59e0b,#ea580c)', '--icon-shadow': '0 12px 24px rgba(245,158,11,0.25)' }}>
-            <div className="flex items-center justify-between gap-2">
+          <div className="premium-stat-card rounded-xl sm:rounded-2xl p-2 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(245,158,11,0.10)', '--icon-gradient': 'linear-gradient(135deg,#f59e0b,#ea580c)', '--icon-shadow': '0 12px 24px rgba(245,158,11,0.25)' }}>
+            <div className="flex items-center justify-between gap-1.5 sm:gap-2">
               <div>
-                <h3 className="text-lg font-bold text-yellow-700 sm:text-xl md:text-2xl">{stats.pending}</h3>
-                <p className="text-xs text-slate-500 sm:text-sm">Pending</p>
+                <h3 className="text-base font-bold text-yellow-700 sm:text-xl md:text-2xl">{stats.pending}</h3>
+                <p className="text-[11px] text-slate-500 sm:text-sm">Pending</p>
               </div>
-              <div className="premium-icon h-9 w-9 shrink-0 rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
-                <Clock className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+              <div className="premium-icon h-7 w-7 shrink-0 rounded-lg sm:h-10 sm:w-10 sm:rounded-xl md:h-12 md:w-12">
+                <Clock className="h-3.5 w-3.5 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(16,185,129,0.10)', '--icon-gradient': 'linear-gradient(135deg,#10b981,#0d9488)', '--icon-shadow': '0 12px 24px rgba(16,185,129,0.25)' }}>
-            <div className="flex items-center justify-between gap-2">
+          <div className="premium-stat-card rounded-xl sm:rounded-2xl p-2 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(16,185,129,0.10)', '--icon-gradient': 'linear-gradient(135deg,#10b981,#0d9488)', '--icon-shadow': '0 12px 24px rgba(16,185,129,0.25)' }}>
+            <div className="flex items-center justify-between gap-1.5 sm:gap-2">
               <div>
-                <h3 className="text-lg font-bold text-green-700 sm:text-xl md:text-2xl">{stats.approved}</h3>
-                <p className="text-xs text-slate-500 sm:text-sm">Approved</p>
+                <h3 className="text-base font-bold text-green-700 sm:text-xl md:text-2xl">{stats.approved}</h3>
+                <p className="text-[11px] text-slate-500 sm:text-sm">Approved</p>
               </div>
-              <div className="premium-icon h-9 w-9 shrink-0 rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
-                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+              <div className="premium-icon h-7 w-7 shrink-0 rounded-lg sm:h-10 sm:w-10 sm:rounded-xl md:h-12 md:w-12">
+                <CheckCircle className="h-3.5 w-3.5 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(236,72,153,0.10)', '--icon-gradient': 'linear-gradient(135deg,#ec4899,#e11d48)', '--icon-shadow': '0 12px 24px rgba(236,72,153,0.25)' }}>
-            <div className="flex items-center justify-between gap-2">
+          <div className="premium-stat-card rounded-xl sm:rounded-2xl p-2 sm:p-4 md:p-6" style={{ '--stat-soft': 'rgba(236,72,153,0.10)', '--icon-gradient': 'linear-gradient(135deg,#ec4899,#e11d48)', '--icon-shadow': '0 12px 24px rgba(236,72,153,0.25)' }}>
+            <div className="flex items-center justify-between gap-1.5 sm:gap-2">
               <div>
-                <h3 className="text-lg font-bold text-red-700 sm:text-xl md:text-2xl">{stats.rejected}</h3>
-                <p className="text-xs text-slate-500 sm:text-sm">Rejected</p>
+                <h3 className="text-base font-bold text-red-700 sm:text-xl md:text-2xl">{stats.rejected}</h3>
+                <p className="text-[11px] text-slate-500 sm:text-sm">Rejected</p>
               </div>
-              <div className="premium-icon h-9 w-9 shrink-0 rounded-xl sm:h-10 sm:w-10 md:h-12 md:w-12">
-                <XCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+              <div className="premium-icon h-7 w-7 shrink-0 rounded-lg sm:h-10 sm:w-10 sm:rounded-xl md:h-12 md:w-12">
+                <XCircle className="h-3.5 w-3.5 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </div>
             </div>
           </div>

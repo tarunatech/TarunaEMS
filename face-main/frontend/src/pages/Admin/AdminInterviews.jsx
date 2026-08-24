@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { CalendarClock, FileText, RefreshCw, Trash2, UserRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
@@ -8,10 +9,20 @@ import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions
 const statuses = ['Scheduled', 'Completed', 'Selected', 'Rejected', 'Cancelled'];
 
 const AdminInterviews = () => {
+  const location = useLocation();
+  const initialSearch = location.state?.employeeFilter || location.state?.search || '';
+
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialSearch);
   const [previewResume, setPreviewResume] = useState(null);
+
+  useEffect(() => {
+    const navSearch = location.state?.employeeFilter || location.state?.search || '';
+    if (navSearch) {
+      setSearch(navSearch);
+    }
+  }, [location.state]);
 
   const fetchInterviews = async () => {
     try {
@@ -158,7 +169,12 @@ const AdminInterviews = () => {
                           <div>
                             <p className="font-bold text-slate-900">{item.candidateName}</p>
                             <p className="text-sm text-slate-500">{item.position}</p>
-                            <ResumePreview item={item} />
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <Link to={`/admin/candidates/${item._id}`} className="inline-flex items-center rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100">
+                                View Profile
+                              </Link>
+                              <ResumePreview item={item} />
+                            </div>
                           </div>
                         </div>
                       </td>

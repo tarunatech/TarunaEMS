@@ -39,6 +39,7 @@ import EmployeeExpenses from './pages/Employee/EmployeeExpenses';
 import HRInterviewSchedule from './pages/Employee/HRInterviewSchedule';
 import AdminInterviews from './pages/Admin/AdminInterviews';
 import AdminProblemStatements from './pages/Admin/AdminProblemStatements';
+import CandidateProfile from './pages/Candidate/CandidateProfile';
 
 function App() {
   return (
@@ -132,6 +133,11 @@ function App() {
               <AdminInterviews />
             </ProtectedRoute>
           } />
+          <Route path="/admin/candidates/:candidateId" element={
+            <ProtectedRoute role="admin">
+              <CandidateProfile mode="admin" />
+            </ProtectedRoute>
+          } />
           <Route path="/admin/problems" element={
             <ProtectedRoute role="admin">
               <AdminProblemStatements />
@@ -200,6 +206,11 @@ function App() {
                 <Route path="hr-interviews" element={
                   <ProtectedRoute role="employee">
                     <HRInterviewSchedule />
+                  </ProtectedRoute>
+                } />
+                <Route path="candidates/:candidateId" element={
+                  <ProtectedRoute role="employee">
+                    <CandidateProfile mode="hr" />
                   </ProtectedRoute>
                 } />
                 <Route path="profile" element={

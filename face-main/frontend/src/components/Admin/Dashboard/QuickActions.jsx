@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Calendar, Award, Clock, Building2, DollarSign, FileText, UserCheck } from 'lucide-react';
+import { Users, Calendar, Award, Clock, Building2, DollarSign, FileText } from 'lucide-react';
 
 const QuickActions = ({ userRole = 'admin' }) => {
   const navigate = useNavigate();
@@ -10,49 +10,42 @@ const QuickActions = ({ userRole = 'admin' }) => {
       icon: Users,
       label: 'Manage Employees',
       href: '/admin/employees',
-      color: 'neon-pink',
       description: 'Add, edit, or remove employees'
     },
     {
       icon: Calendar,
-      label: 'Leave Management',
+      label: 'Leave Requests',
       href: '/admin/leaves',
-      color: 'neon-purple',
       description: 'Review and approve leave requests'
     },
     {
       icon: Award,
       label: 'Task Management',
       href: '/admin/tasks',
-      color: 'neon-pink',
       description: 'Assign and track tasks'
     },
     {
       icon: Building2,
       label: 'Departments',
       href: '/admin/department',
-      color: 'neon-purple',
       description: 'Manage company departments'
     },
     {
       icon: Clock,
       label: 'Attendance',
       href: '/admin/attendance',
-      color: 'neon-pink',
       description: 'Monitor employee attendance'
     },
     {
       icon: DollarSign,
       label: 'Sales Dashboard',
       href: '/admin/sales',
-      color: 'neon-pink',
       description: 'View sales performance'
     },
     {
       icon: FileText,
       label: 'Purchase Orders',
       href: '/admin/purchase-orders',
-      color: 'neon-purple',
       description: 'Manage purchase orders'
     }
   ];
@@ -62,39 +55,39 @@ const QuickActions = ({ userRole = 'admin' }) => {
       icon: Clock,
       label: 'Check In/Out',
       href: '/employee/attendance',
-      color: 'neon-pink',
       description: 'Mark your attendance'
     },
     {
       icon: Calendar,
       label: 'Apply for Leave',
       href: '/employee/leaves',
-      color: 'neon-purple',
       description: 'Submit leave applications'
     },
     {
       icon: Award,
       label: 'My Tasks',
       href: '/employee/tasks',
-      color: 'neon-pink',
       description: 'View assigned tasks'
     },
     {
       icon: DollarSign,
       label: 'Sales',
       href: '/employee/sales',
-      color: 'neon-purple',
       description: 'View your sales'
     }
   ];
 
   const actions = userRole === 'admin' ? adminActions : employeeActions;
   const visibleActions = actions.slice(0, userRole === 'admin' ? 8 : 4);
+  
   const actionAccents = [
     'text-indigo-600 bg-indigo-50 border-indigo-100',
     'text-emerald-600 bg-emerald-50 border-emerald-100',
     'text-amber-600 bg-amber-50 border-amber-100',
-    'text-pink-600 bg-pink-50 border-pink-100'
+    'text-pink-600 bg-pink-50 border-pink-100',
+    'text-cyan-600 bg-cyan-50 border-cyan-100',
+    'text-violet-600 bg-violet-50 border-violet-100',
+    'text-rose-600 bg-rose-50 border-rose-100'
   ];
 
   const handleActionClick = (href) => {
@@ -102,42 +95,35 @@ const QuickActions = ({ userRole = 'admin' }) => {
   };
 
   return (
-    <div className="admin-quick-actions bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)]">
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <h2 className="text-base sm:text-lg font-bold text-slate-950">Quick Actions</h2>
+    <div className="admin-quick-actions bg-white border border-slate-200/80 rounded-xl p-3.5 sm:p-4 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm sm:text-base font-bold text-slate-900">Quick Actions</h2>
         {userRole === 'admin' && (
-          <span className="admin-quick-actions-badge text-[11px] sm:text-xs px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
-            Admin Panel
+          <span className="admin-quick-actions-badge text-[10px] sm:text-xs font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
+            Admin Shortcuts
           </span>
         )}
       </div>
       
-      <div className={`grid gap-3 sm:gap-4 ${
+      <div className={`grid gap-2 sm:gap-2.5 ${
         userRole === 'admin' 
-          ? 'grid-cols-2 md:grid-cols-4' 
-          : 'grid-cols-2 md:grid-cols-2 lg:grid-cols-4'
+          ? 'grid-cols-2 sm:grid-cols-4' 
+          : 'grid-cols-2 sm:grid-cols-4'
       }`}>
         {visibleActions.map((action, index) => (
           <button
             key={index}
             onClick={() => handleActionClick(action.href)}
-            className="admin-quick-action-card p-3 sm:p-4 rounded-xl border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/60 transition-all duration-300 group relative overflow-hidden bg-white shadow-sm hover:shadow-md"
+            className="admin-quick-action-card flex items-center gap-2.5 p-2 sm:p-2.5 rounded-lg border border-slate-200/80 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all duration-200 group text-left bg-white"
             title={action.description}
           >
-            <div className="admin-quick-action-sheen absolute inset-0 bg-gradient-to-r from-transparent via-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            
-            <div className="relative z-10">
-              <div className={`mx-auto mb-2 sm:mb-3 flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl border ${actionAccents[index % actionAccents.length]} transition-all duration-300 group-hover:scale-110`}>
-                <action.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <p className="admin-quick-action-label text-xs sm:text-sm text-slate-600 group-hover:text-slate-900 transition-colors duration-300 leading-tight">
+            <div className={`flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg border ${actionAccents[index % actionAccents.length]} transition-transform duration-200 group-hover:scale-105`}>
+              <action.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="admin-quick-action-label text-xs sm:text-xs font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors truncate">
                 {action.label}
               </p>
-            </div>
-
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-20">
-              {action.description}
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-900"></div>
             </div>
           </button>
         ))}

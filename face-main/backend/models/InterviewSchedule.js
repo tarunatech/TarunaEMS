@@ -6,7 +6,8 @@ import { users } from '../db/schema/user.js';
 const MODES = new Set(['Online', 'Offline', 'Telephonic']);
 const STATUSES = new Set(['Scheduled', 'Completed', 'Selected', 'Rejected', 'Cancelled']);
 const REQUIRED_FIELDS = ['candidateName', 'email', 'phone', 'resumeFile', 'position', 'experience', 'interviewDate', 'interviewTime', 'interviewMode', 'interviewRound', 'skills', 'notes', 'createdBy'];
-const WRITABLE_FIELDS = [...REQUIRED_FIELDS, 'resumeUrl', 'status', 'createdAt', 'updatedAt'];
+const PROFILE_FIELDS = ['education', 'experienceHistory', 'certifications', 'documents'];
+const WRITABLE_FIELDS = [...REQUIRED_FIELDS, ...PROFILE_FIELDS, 'resumeUrl', 'status', 'createdAt', 'updatedAt'];
 
 const columnByField = {
   id: interviewSchedules.id,
@@ -45,6 +46,9 @@ const trim = (value) => (value === undefined || value === null ? value : String(
 
 const normalizeInput = (data = {}, { partial = false } = {}) => {
   const normalized = pickWritable(data);
+  if (partial && normalized.createdBy && typeof normalized.createdBy === 'object') {
+    delete normalized.createdBy;
+  }
 
   if (!partial) {
     for (const field of REQUIRED_FIELDS) {
@@ -74,6 +78,11 @@ const normalizeInput = (data = {}, { partial = false } = {}) => {
       size: Number(resumeFile.size),
     };
   }
+  for (const field of PROFILE_FIELDS) {
+    if (normalized[field] !== undefined && !Array.isArray(normalized[field])) {
+      throw new Error(`${field} must be an array`);
+    }
+  }
   if (normalized.createdAt !== undefined) normalized.createdAt = normalizeDate(normalized.createdAt);
   if (normalized.updatedAt !== undefined) normalized.updatedAt = normalizeDate(normalized.updatedAt);
   normalized.updatedAt = new Date();
@@ -91,7 +100,15 @@ const buildWhere = (query = {}) => {
   return conditions.length === 1 ? conditions[0] : and(...conditions);
 };
 
-const serialize = (row) => row ? { ...row, _id: row.id, resumeFile: row.resumeFile || null } : null;
+const serialize = (row) => row ? {
+  ...row,
+  _id: row.id,
+  resumeFile: row.resumeFile || null,
+  education: Array.isArray(row.education) ? row.education : [],
+  experienceHistory: Array.isArray(row.experienceHistory) ? row.experienceHistory : [],
+  certifications: Array.isArray(row.certifications) ? row.certifications : [],
+  documents: Array.isArray(row.documents) ? row.documents : [],
+} : null;
 
 const pickFields = (obj, selection = '') => {
   if (!obj || !selection) return obj;

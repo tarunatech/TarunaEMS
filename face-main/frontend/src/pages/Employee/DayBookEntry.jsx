@@ -448,23 +448,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                                 />
 
-                                {slot.taskRef && (
-                                    <div className="mt-2 flex items-center space-x-2">
-                                        <span className="flex items-center rounded bg-blue-100 px-2 py-1 text-[10px] font-medium text-blue-700">
-                                            <CheckCircle className="mr-1 h-3 w-3" />
-                                            Linked to Task
-                                        </span>
-                                        <button
-                                            onClick={() => {
-                                                handleSlotChange(index, 'taskRef', null);
-                                                handleSlotChange(index, 'workType', 'Other');
-                                            }}
-                                            className="text-[10px] text-slate-400 transition-colors duration-200 hover:text-red-600"
-                                        >
-                                            Unlink
-                                        </button>
-                                    </div>
-                                )}
+
                             </>
                         )}
                     </div>

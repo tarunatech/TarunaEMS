@@ -231,6 +231,10 @@ const evaluateExpression = (row, expression) => {
     return evaluateCondition(row, condition) ? evaluateExpression(row, whenTrue) : evaluateExpression(row, whenFalse);
   }
 
+  if ('$concat' in expression) {
+    return expression.$concat.map((part) => evaluateExpression(row, part) ?? '').join('');
+  }
+
   unsupported(`aggregate expression "${Object.keys(expression)[0]}"`);
 };
 
@@ -650,10 +654,16 @@ Attendance.aggregate = async (pipeline = []) => {
     } else if (stage.$lookup) {
       rows = await lookupRows(rows, stage.$lookup);
     } else if (stage.$unwind) {
-      const path = typeof stage.$unwind === 'string' ? stage.$unwind.replace(/^\$/, '') : stage.$unwind.path.replace(/^\$/, '');
+      const isObj = typeof stage.$unwind === 'object';
+      const path = isObj ? stage.$unwind.path.replace(/^\$/, '') : stage.$unwind.replace(/^\$/, '');
+      const preserve = isObj && stage.$unwind.preserveNullAndEmptyArrays;
       rows = rows.flatMap((row) => {
         const value = getNested(row, path);
-        if (!Array.isArray(value)) return value ? [row] : [];
+        if (!Array.isArray(value)) {
+          if (value || preserve) return [row];
+          return [];
+        }
+        if (value.length === 0) return preserve ? [row] : [];
         return value.map((item) => {
           const clone = { ...row };
           setNested(clone, path, item);

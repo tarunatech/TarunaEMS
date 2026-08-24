@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import { 
   Users, Calendar, Clock, MapPin, Search, Download,
@@ -11,17 +12,22 @@ import { attendanceAPI, departmentAPI } from '../../utils/api';
 const ATTENDANCE_STATUS_OPTIONS = ['Present', 'Late', 'Half Day', 'Absent', 'Work from Home'];
 
 const AdminAttendance = () => {
+  const location = useLocation();
+  const initialSearch = location.state?.employeeFilter || location.state?.search || '';
+  const today = new Date().toISOString().slice(0, 10);
+
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [attendanceSummary, setAttendanceSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
-  const [selectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [selectedDate] = useState(today);
+  const [selectedMonth, setSelectedMonth] = useState('');
   const [filters, setFilters] = useState({
-    startDate: new Date().toISOString().slice(0, 10),
-    endDate: new Date().toISOString().slice(0, 10),
+    startDate: today,
+    endDate: today,
     department: '',
     status: '',
-    search: ''
+    search: initialSearch
   });
   const [pagination, setPagination] = useState({
     current: 1,
@@ -46,6 +52,19 @@ const AdminAttendance = () => {
   useEffect(() => {
     fetchDepartments();
   }, []);
+
+  useEffect(() => {
+    const navSearch = location.state?.employeeFilter || location.state?.search || '';
+    if (navSearch) {
+      setFilters(prev => ({
+        ...prev,
+        search: navSearch,
+        startDate: today,
+        endDate: today
+      }));
+      setSelectedMonth('');
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
@@ -99,7 +118,26 @@ const AdminAttendance = () => {
   };
 
   const handleFilterChange = (key, value) => {
+    if (key === 'startDate' || key === 'endDate') {
+      setSelectedMonth('');
+    }
     setFilters(prev => ({ ...prev, [key]: value }));
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  const handleMonthChange = (monthStr) => {
+    setSelectedMonth(monthStr);
+    if (!monthStr) return;
+    const [year, month] = monthStr.split('-').map(Number);
+    const firstDay = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDayNum = new Date(year, month, 0).getDate();
+    const lastDay = `${year}-${String(month).padStart(2, '0')}-${String(lastDayNum).padStart(2, '0')}`;
+
+    setFilters(prev => ({
+      ...prev,
+      startDate: firstDay,
+      endDate: lastDay
+    }));
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
@@ -112,6 +150,7 @@ const AdminAttendance = () => {
       status: '',
       search: ''
     });
+    setSelectedMonth('');
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
@@ -390,7 +429,16 @@ const AdminAttendance = () => {
         {/* Filters */}
         <div className="premium-panel rounded-2xl p-4 sm:p-5">
             <h3 className="text-base font-bold text-slate-900 mb-3">Filters & Search</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+              <div>
+                <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Select Month</label>
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => handleMonthChange(e.target.value)}
+                  className="premium-input w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
+                />
+              </div>
               <div>
                 <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Start Date</label>
                 <input

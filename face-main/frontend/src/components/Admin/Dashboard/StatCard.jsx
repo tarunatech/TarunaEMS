@@ -1,80 +1,209 @@
 // components/Dashboard/StatCard.js
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { User, CalendarClock, TrendingUp } from 'lucide-react';
 
-const StatCard = ({ stat, index }) => {
+const StatCard = ({ stat, index = 0 }) => {
   const navigate = useNavigate();
 
-  const accents = [
+  const themes = [
     {
-      icon: 'from-indigo-500 to-violet-600',
-      glow: 'shadow-indigo-500/25',
-      corner: 'bg-indigo-50',
-      ring: 'ring-indigo-100',
-      hover: 'hover:border-indigo-200'
+      name: 'purple',
+      iconBox: 'bg-gradient-to-br from-[#7f56d9] to-[#6941c6] shadow-md shadow-purple-500/20',
+      circleBg: 'bg-purple-100/80',
+      panelBg: 'bg-gradient-to-br from-[#7f56d9] to-[#6941c6]',
+      pillBg: 'bg-white/15',
+      itemBorder: 'border-white/20',
+      dotColor: 'bg-violet-200',
     },
     {
-      icon: 'from-emerald-500 to-teal-600',
-      glow: 'shadow-emerald-500/25',
-      corner: 'bg-emerald-50',
-      ring: 'ring-emerald-100',
-      hover: 'hover:border-emerald-200'
+      name: 'teal',
+      iconBox: 'bg-gradient-to-br from-[#12b76a] to-[#039855] shadow-md shadow-emerald-500/20',
+      circleBg: 'bg-emerald-100/80',
+      panelBg: 'bg-gradient-to-br from-[#12b76a] to-[#027a48]',
+      pillBg: 'bg-white/15',
+      itemBorder: 'border-white/20',
+      dotColor: 'bg-emerald-200',
     },
     {
-      icon: 'from-amber-500 to-orange-600',
-      glow: 'shadow-amber-500/25',
-      corner: 'bg-amber-50',
-      ring: 'ring-amber-100',
-      hover: 'hover:border-amber-200'
+      name: 'orange',
+      iconBox: 'bg-gradient-to-br from-[#f79009] to-[#dc6803] shadow-md shadow-orange-500/20',
+      circleBg: 'bg-orange-100/80',
+      panelBg: 'bg-gradient-to-br from-[#f79009] to-[#b54708]',
+      pillBg: 'bg-white/15',
+      itemBorder: 'border-white/20',
+      dotColor: 'bg-amber-200',
     },
     {
-      icon: 'from-pink-500 to-rose-600',
-      glow: 'shadow-pink-500/25',
-      corner: 'bg-pink-50',
-      ring: 'ring-pink-100',
-      hover: 'hover:border-pink-200'
+      name: 'pink',
+      iconBox: 'bg-gradient-to-br from-[#ee46bc] to-[#c11574] shadow-md shadow-pink-500/20',
+      circleBg: 'bg-pink-100/80',
+      panelBg: 'bg-gradient-to-br from-[#ee46bc] to-[#9e1268]',
+      pillBg: 'bg-white/15',
+      itemBorder: 'border-white/20',
+      dotColor: 'bg-pink-200',
     }
   ];
 
-  const accent = accents[index % accents.length];
+  let themeIndex = index % themes.length;
+  if (stat?.color) {
+    const col = String(stat.color).toLowerCase();
+    if (col.includes('purple') || col.includes('indigo') || col.includes('violet')) themeIndex = 0;
+    else if (col.includes('emerald') || col.includes('teal') || col.includes('green')) themeIndex = 1;
+    else if (col.includes('amber') || col.includes('orange') || col.includes('yellow')) themeIndex = 2;
+    else if (col.includes('pink') || col.includes('rose') || col.includes('red')) themeIndex = 3;
+  }
 
-  const getChangeStyles = (changeType) => {
-    const styles = {
-      positive: 'text-emerald-600 bg-emerald-50 border border-emerald-100',
-      negative: 'text-rose-600 bg-rose-50 border border-rose-100',
-      neutral: 'text-slate-500 bg-slate-50 border border-slate-100'
-    };
-    return styles[changeType] || styles.neutral;
-  };
+  const theme = themes[themeIndex];
 
   const handleClick = () => {
-    if (stat.path) {
+    if (stat?.path) {
       navigate(stat.path);
     }
   };
 
+  const IconComponent = stat?.icon;
+  const valueDisplay = typeof stat?.value === 'number' ? stat.value.toLocaleString() : (stat?.value ?? 0);
+
+  // Inline bracket badge config for Tasks, Meetings and Leads
+  const bracketBadge = (() => {
+    const title = String(stat?.title || '').toLowerCase();
+    if (title === 'tasks') {
+      const activeCount = stat?.change ? String(stat.change).replace(/\D.*$/, '').trim() : '0';
+      return { label: 'active', value: activeCount || '0' };
+    }
+    if (title === 'meetings') {
+      const count = typeof stat?.value === 'number' ? stat.value : (stat?.value ?? 0);
+      return { label: 'today', value: count };
+    }
+    if (title === 'leads') {
+      return { label: 'new', value: stat?.newCount ?? 0 };
+    }
+    return null;
+  })();
+
+  // Theme accent colors for badge
+  const themeAccentColors = [
+    { text: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200/70' },
+    { text: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200/70' },
+    { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200/70' },
+    { text: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-200/70' },
+  ];
+  const accent = themeAccentColors[themeIndex];
+
+  // Hover panel — Tasks, Meetings and Leads
+  const cardTitle = String(stat?.title || '').toLowerCase();
+  const hasHoverPanel = (cardTitle === 'tasks' || cardTitle === 'meetings' || cardTitle === 'leads') && stat?.hoverItems?.length > 0;
+  const hoverPanelLabel = cardTitle === 'tasks' ? 'Active Tasks' : cardTitle === 'leads' ? 'Overdue Follow-ups' : "Today's Meetings";
+  const HoverItemIcon = cardTitle === 'tasks' ? User : cardTitle === 'leads' ? TrendingUp : CalendarClock;
+
   return (
     <div
-      className={`dashboard-stat-card group relative overflow-hidden bg-white border border-slate-200/70 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.07)] hover:shadow-[0_18px_36px_rgba(15,23,42,0.12)] hover:-translate-y-1 ${accent.hover} transition-all duration-300 ${stat.path ? 'cursor-pointer' : ''}`}
+      tabIndex={0}
+      role="button"
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+      className={`relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-between group ${stat?.path ? 'cursor-pointer' : ''} focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
     >
-      <div className={`dashboard-card-wash absolute -top-12 -right-12 h-28 w-28 sm:-top-16 sm:-right-16 sm:h-36 sm:w-36 rounded-full ${accent.corner} transition-transform duration-300 group-hover:scale-110`} />
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <div className={`relative w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br ${accent.icon} border border-white/70 rounded-xl flex items-center justify-center shadow-lg ${accent.glow} ring-2 sm:ring-4 ${accent.ring}`}>
-          <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
+      {/* Smooth Side Circle Background Arc */}
+      <div className={`absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-44 sm:h-44 rounded-full ${theme.circleBg} pointer-events-none transition-transform duration-500 group-hover:scale-105`} />
+
+      {/* Left Content: Number on top, Label on bottom */}
+      <div className="relative z-10 min-w-0 pr-1.5 sm:pr-2">
+        <div className="flex items-baseline gap-1.5 sm:gap-2 mb-0.5 sm:mb-1.5">
+          <h3 className="text-base sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-none tracking-tight">
+            {valueDisplay}
+          </h3>
+          {bracketBadge && (
+            <span
+              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[9px] sm:text-[10px] font-semibold tracking-wide leading-none ${accent.bg} ${accent.border} ${accent.text} transition-opacity duration-200`}
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              <span className="opacity-60 font-medium">(</span>
+              {bracketBadge.label}:&nbsp;<span className="font-bold">{bracketBadge.value}</span>
+              <span className="opacity-60 font-medium">)</span>
+            </span>
+          )}
         </div>
-        {stat.change && (
-          <span className={`relative whitespace-nowrap text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full transition-colors ${getChangeStyles(stat.changeType)}`}>
-            {stat.change}
-          </span>
-        )}
+        <p className="text-[11px] sm:text-xs font-medium text-slate-500 truncate leading-snug">
+          {stat?.title}
+        </p>
       </div>
-      <div className="relative">
-        <h3 className="truncate text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 mb-0.5 sm:mb-1 transition-colors">
-          {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
-        </h3>
-        <p className="text-slate-500 text-[11px] sm:text-sm font-medium leading-tight">{stat.title}</p>
-      </div>
+
+      {/* Right Content: Squircle Icon Box */}
+      {IconComponent && (
+        <div className={`relative z-10 shrink-0 w-8 h-8 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-lg sm:rounded-2xl flex items-center justify-center text-white ${theme.iconBox} transition-transform duration-300 group-hover:scale-105`}>
+          <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white stroke-[2.2]" />
+        </div>
+      )}
+
+      {/* ── Hover Detail Panel ── Tasks & Meetings only */}
+      {hasHoverPanel && (
+        <div
+          className={`
+            absolute inset-x-0 bottom-0 z-20 ${theme.panelBg}
+            rounded-b-xl sm:rounded-b-[22px] px-3 py-2.5 sm:px-4 sm:py-3
+            translate-y-full group-hover:translate-y-0
+            transition-transform duration-300 ease-out
+            max-h-full flex flex-col
+          `}
+          style={{ willChange: 'transform' }}
+        >
+          {/* Panel header */}
+          <div className="flex items-center gap-1.5 mb-2">
+            <HoverItemIcon className="w-3 h-3 text-white/70 shrink-0" />
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-white/70 leading-none">
+              {hoverPanelLabel}
+            </span>
+          </div>
+
+          {/* Items */}
+          <ul
+            className={`space-y-1.5 ${
+              cardTitle === 'tasks' || cardTitle === 'leads'
+                ? 'flex-1 min-h-0 overflow-y-auto pr-0.5 stat-task-scroll'
+                : ''
+            }`}
+          >
+            {(cardTitle === 'tasks' || cardTitle === 'leads' ? stat.hoverItems : stat.hoverItems.slice(0, 3)).map((item, i) => (
+              <li
+                key={i}
+                className={`flex items-start gap-2 border-b last:border-b-0 pb-1.5 last:pb-0 ${theme.itemBorder}`}
+              >
+                <span className={`mt-[4px] h-1.5 w-1.5 shrink-0 rounded-full ${theme.dotColor}`} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-[11px] font-semibold text-white leading-snug truncate">
+                    {item.primary}
+                  </p>
+                  {item.secondary && (
+                    <p className="text-[9px] sm:text-[10px] text-white/65 leading-snug truncate mt-0.5">
+                      {item.secondary}
+                    </p>
+                  )}
+                </div>
+                {item.status && (
+                  <span className={`shrink-0 self-center text-[8px] sm:text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${theme.pillBg} text-white/90 leading-none whitespace-nowrap`}>
+                    {item.status}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+          {/* Thin scrollbar for task list */}
+          <style>{`
+            .stat-task-scroll::-webkit-scrollbar { width: 3px; }
+            .stat-task-scroll::-webkit-scrollbar-track { background: transparent; }
+            .stat-task-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.30); border-radius: 99px; }
+            .stat-task-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.50); }
+            .stat-task-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.30) transparent; }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 };

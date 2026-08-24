@@ -3,15 +3,17 @@ import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
 import db from '../db/index.js';
 import { problems } from '../db/schema/problem.js';
 import { users } from '../db/schema/user.js';
+import { employees } from '../db/schema/employee.js';
 
 const STATUSES = new Set(['Pending', 'Solved']);
-const WRITABLE_FIELDS = ['description', 'reportedBy', 'solvedBy', 'status', 'solvedAt', 'createdAt'];
+const WRITABLE_FIELDS = ['description', 'reportedBy', 'assignedTo', 'solvedBy', 'status', 'solvedAt', 'createdAt'];
 
 const columnByField = {
   id: problems.id,
   _id: problems.id,
   description: problems.description,
   reportedBy: problems.reportedBy,
+  assignedTo: problems.assignedTo,
   solvedBy: problems.solvedBy,
   status: problems.status,
   solvedAt: problems.solvedAt,
@@ -83,11 +85,34 @@ const populateOne = async (doc, path, select) => {
   if (!doc) return doc;
   const paths = String(path).split(/\s+/).filter(Boolean);
   for (const singlePath of paths) {
-    if ((singlePath === 'reportedBy' || singlePath === 'solvedBy') && doc[singlePath]) {
+    if (singlePath === 'assignedTo' && doc[singlePath]) {
+      const employeeId = typeof doc[singlePath] === 'object' ? doc[singlePath].id || doc[singlePath]._id : doc[singlePath];
+      const [employee] = await db.select().from(employees).where(eq(employees.id, employeeId)).limit(1);
+      const assignedEmployee = employee
+        ? {
+            ...employee,
+            _id: employee.id,
+            fullName: `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`.trim(),
+          }
+        : null;
+      doc[singlePath] = pickFields(assignedEmployee, select);
+    } else if ((singlePath === 'reportedBy' || singlePath === 'solvedBy') && doc[singlePath]) {
       const userId = typeof doc[singlePath] === 'object' ? doc[singlePath].id || doc[singlePath]._id : doc[singlePath];
       const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-      doc[singlePath] = pickFields(user ? { ...user, _id: user.id } : null, select);
-    } else if (singlePath === 'solvedBy' && !doc[singlePath]) {
+      const [employee] = await db.select().from(employees).where(eq(employees.user, userId)).limit(1);
+      const populatedUser = user
+        ? {
+            ...user,
+            _id: user.id,
+            personalInfo: employee?.personalInfo || user.personalInfo,
+            fullName: employee
+              ? `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`.trim()
+              : user.name,
+            employeeId: employee?.employeeId || user.employeeId,
+          }
+        : null;
+      doc[singlePath] = pickFields(populatedUser, select);
+    } else if ((singlePath === 'assignedTo' || singlePath === 'solvedBy') && !doc[singlePath]) {
       doc[singlePath] = null;
     } else {
       unsupported(`populate path "${singlePath}"`);

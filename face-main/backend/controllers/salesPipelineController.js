@@ -199,6 +199,22 @@ export const updatePipelineSection = async (req, res) => {
     if (section === 'outcome' && ['won', 'lost'].includes(pipeline.outcome?.status)) {
       assertStageTransition(pipeline, 'won_closed');
       appendStageHistory(pipeline, 'won_closed', req.user.id, `Deal marked ${pipeline.outcome.status}`);
+
+      const isWon = pipeline.outcome.status === 'won';
+      if (isWon) {
+        const finalVal = Number(pipeline.outcome.finalValue) || Number(pipeline.quotation?.totalAmount) || Number(lead.estimatedValue) || 0;
+        await Lead.findByIdAndUpdate(lead._id, {
+          status: 'Won',
+          actualValue: finalVal,
+          wonDetails: {
+            finalValue: finalVal,
+            wonDate: pipeline.outcome.closedAt || new Date(),
+            notes: pipeline.outcome.notes || ''
+          }
+        });
+      } else {
+        await Lead.findByIdAndUpdate(lead._id, { status: 'Lost' });
+      }
     }
 
     await pipeline.save();
@@ -451,8 +467,25 @@ export const getPendingApprovals = async (req, res) => {
 
 export const getAllPipelines = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin access required.' });
+    if (req.user.role === 'employee') {
+      const employee = await getEmployeeForUser(req.user.id);
+      if (!employee) {
+        return res.json({ success: true, data: [] });
+      }
+      const assignedLeads = await Lead.find({ assignedTo: employee._id });
+      const leadIdSet = new Set((assignedLeads || []).map(l => String(l._id)));
+
+      // Fetch all pipelines and filter in JS since SalesPipeline model
+      // doesn't support MongoDB-style $in queries (uses Drizzle ORM)
+      const allPipelines = await populatePipeline(
+        SalesPipeline.find({}).sort({ updatedAt: -1 })
+      );
+      const pipelines = allPipelines.filter(p => {
+        const leadId = p.lead ? String(p.lead._id || p.lead.id || p.lead) : null;
+        return leadId && leadIdSet.has(leadId);
+      });
+
+      return res.json({ success: true, data: pipelines });
     }
 
     const pipelines = await populatePipeline(

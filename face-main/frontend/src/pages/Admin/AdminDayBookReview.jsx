@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Calendar,
     User,
@@ -11,18 +11,42 @@ import {
     Loader2,
     MessageSquare,
     Trash2,
-    FileText
+    FileText,
+    Search
 } from 'lucide-react';
 import { taskService } from '../../services/taskService';
 import toast from 'react-hot-toast';
 
-const AdminDayBookReview = () => {
+const AdminDayBookReview = ({ search = '' }) => {
     const [dayBooks, setDayBooks] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState(search);
     const [selectedDayBook, setSelectedDayBook] = useState(null);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [adminComment, setAdminComment] = useState('');
     const [taskStatuses, setTaskStatuses] = useState({});
+
+    useEffect(() => {
+        if (search) {
+            setSearchTerm(search);
+        }
+    }, [search]);
+
+    const filteredDayBooks = useMemo(() => {
+        const term = (searchTerm || '').trim().toLowerCase();
+        if (!term) return dayBooks;
+        return dayBooks.filter((db) => {
+            const emp = db.employee;
+            if (!emp) return false;
+            const firstName = emp.personalInfo?.firstName?.toLowerCase() || '';
+            const lastName = emp.personalInfo?.lastName?.toLowerCase() || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            const empName = emp.user?.name?.toLowerCase() || fullName;
+            const empCode = (emp.employeeId || emp.user?.employeeId || '').toLowerCase();
+            const email = (emp.user?.email || emp.contactInfo?.personalEmail || '').toLowerCase();
+            return fullName.includes(term) || empName.includes(term) || empCode.includes(term) || email.includes(term);
+        });
+    }, [dayBooks, searchTerm]);
 
     const fetchDayBooks = async () => {
         try {
@@ -128,6 +152,30 @@ const AdminDayBookReview = () => {
 
     return (
         <div className="space-y-6 bg-slate-50">
+            <div className="flex items-center justify-between gap-4 p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                <div className="relative flex-1 max-w-md flex items-center">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 z-10 pointer-events-none" />
+                    <input
+                        type="text"
+                        placeholder="Search employee or EOD report..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-9 pr-9 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 placeholder-slate-400"
+                    />
+                    {searchTerm ? (
+                        <button
+                            type="button"
+                            onClick={() => setSearchTerm('')}
+                            style={{ position: 'absolute', right: '0.625rem', top: '50%', transform: 'translateY(-50%)' }}
+                            className="flex items-center justify-center h-6 w-6 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors z-10"
+                            title="Clear filter"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    ) : null}
+                </div>
+            </div>
+
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
@@ -141,7 +189,7 @@ const AdminDayBookReview = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                            {dayBooks.map((db) => (
+                            {filteredDayBooks.map((db) => (
                                 <tr key={db._id} onClick={(event) => openDayBookReview(event, db)} className="hover:bg-blue-50 transition-all duration-200 cursor-pointer">
                                     <td className="p-6 text-slate-700 font-medium">
                                         {new Date(db.date).toLocaleDateString('en-US', {
@@ -192,7 +240,7 @@ const AdminDayBookReview = () => {
                                     </td>
                                 </tr>
                             ))}
-                            {dayBooks.length === 0 && (
+                            {filteredDayBooks.length === 0 && (
                                 <tr>
                                     <td colSpan="5" className="p-16 text-center">
                                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -212,7 +260,7 @@ const AdminDayBookReview = () => {
             {showReviewModal && selectedDayBook && (
                 <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowReviewModal(false)} />
-                    <div className="relative bg-white border border-slate-200 rounded-2xl shadow-xl p-4 sm:p-5 w-full max-w-xl max-h-[82vh] overflow-y-auto">
+                    <div className="relative bg-white border border-slate-200 rounded-2xl shadow-xl p-5 sm:p-7 w-full max-w-2xl max-h-[88vh] overflow-y-auto">
                         <div className="flex items-start justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
                             <div>
                                 <h2 className="text-lg sm:text-xl font-bold text-slate-900">EOD Report Review</h2>
@@ -242,32 +290,9 @@ const AdminDayBookReview = () => {
                                             {slot.workType}
                                         </span>
                                     </div>
-                                    <p className="text-slate-700 text-xs sm:text-sm mb-3 bg-white border border-slate-200 p-2.5 rounded-lg">
+                                    <p className="text-slate-700 text-xs sm:text-sm bg-white border border-slate-200 p-2.5 rounded-lg">
                                         {slot.description || <span className="text-slate-400 italic">No description provided</span>}
                                     </p>
-
-                                    {slot.taskRef && (
-                                        <div className="mt-2 p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                            <div className="flex items-center space-x-3">
-                                                <CheckCircle className="w-4 h-4 text-blue-600" />
-                                                <div>
-                                                    <p className="text-slate-900 text-xs font-medium">Linked Task Status</p>
-                                                    <p className="text-slate-500 text-[10px] line-clamp-1">{slot.taskRef.description}</p>
-                                                </div>
-                                            </div>
-                                            <select
-                                                value={taskStatuses[slot.taskRef._id] || slot.taskRef.status}
-                                                onChange={(e) => setTaskStatuses({ ...taskStatuses, [slot.taskRef._id]: e.target.value })}
-                                                className="bg-white border border-slate-300 rounded-lg text-xs text-slate-700 px-2 py-1.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                                            >
-                                                <option value="Not Started">Not Started</option>
-                                                <option value="In Progress">In Progress</option>
-                                                <option value="Review">Review</option>
-                                                <option value="Completed">Completed</option>
-                                                <option value="On Hold">On Hold</option>
-                                            </select>
-                                        </div>
-                                    )}
                                 </div>
                             ))}
 
