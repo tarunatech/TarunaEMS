@@ -49,79 +49,81 @@ const EmployeeOverviewCard = ({
   value,
   subtitle,
   breakdown = [],
-  note,
-  footer,
   progress,
   cta,
   tone = 'blue',
   onClick
 }) => {
   const tones = {
-    blue: { gradient: 'from-blue-500 to-indigo-500', text: 'text-blue-700', bg: 'bg-blue-50', ring: 'ring-blue-100' },
-    amber: { gradient: 'from-amber-400 to-orange-500', text: 'text-amber-700', bg: 'bg-amber-50', ring: 'ring-amber-100' },
-    violet: { gradient: 'from-violet-500 to-fuchsia-500', text: 'text-violet-700', bg: 'bg-violet-50', ring: 'ring-violet-100' },
-    emerald: { gradient: 'from-emerald-500 to-teal-500', text: 'text-emerald-700', bg: 'bg-emerald-50', ring: 'ring-emerald-100' },
-    slate: { gradient: 'from-slate-600 to-slate-800', text: 'text-slate-700', bg: 'bg-slate-50', ring: 'ring-slate-200' }
+    blue:    { gradient: 'from-blue-500 to-indigo-600',    accent: '#3b82f6', text: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100',  divider: 'bg-blue-100' },
+    amber:   { gradient: 'from-amber-400 to-orange-500',  accent: '#f59e0b', text: 'text-amber-600',  bg: 'bg-amber-50',  border: 'border-amber-100', divider: 'bg-amber-100' },
+    violet:  { gradient: 'from-violet-500 to-purple-600', accent: '#8b5cf6', text: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100',divider: 'bg-violet-100' },
+    emerald: { gradient: 'from-emerald-500 to-teal-500',  accent: '#10b981', text: 'text-emerald-600',bg: 'bg-emerald-50',border: 'border-emerald-100',divider: 'bg-emerald-100' },
+    slate:   { gradient: 'from-slate-500 to-slate-700',   accent: '#64748b', text: 'text-slate-600',  bg: 'bg-slate-50',  border: 'border-slate-200',  divider: 'bg-slate-200' },
+    rose:    { gradient: 'from-rose-500 to-pink-500',     accent: '#f43f5e', text: 'text-rose-600',   bg: 'bg-rose-50',   border: 'border-rose-100',   divider: 'bg-rose-100' }
   };
-  const toneClass = tones[tone] || tones.blue;
+  const t = tones[tone] || tones.blue;
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group relative grid min-h-[132px] grid-cols-1 gap-3 overflow-hidden rounded-2xl border border-white/80 bg-white p-4 text-left shadow-sm ring-1 ${toneClass.ring} transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 lg:grid-cols-[minmax(150px,0.9fr)_minmax(220px,1.1fr)]`}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border ${t.border} bg-white text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl active:translate-y-0 shrink-0`}
+      style={{ flex: '1 0 190px', minWidth: 190, maxWidth: 260 }}
     >
-      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${toneClass.gradient}`} />
-      <div className="min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${toneClass.bg} ${toneClass.text}`}>
-              {React.createElement(icon, { className: 'h-4 w-4' })}
-            </span>
-            <p className="truncate text-[11px] font-black uppercase tracking-wide text-slate-600">{title}</p>
-          </div>
-          <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 text-slate-300 transition-colors group-hover:text-blue-600 lg:hidden" />
-        </div>
+      {/* Top accent bar */}
+      <div className={`h-1 w-full bg-gradient-to-r ${t.gradient}`} />
 
-        <div className="mt-3">
-          <p className="truncate text-[30px] font-black leading-none text-slate-950">{value}</p>
-          <p className="mt-1 truncate text-sm font-semibold text-slate-500">{subtitle}</p>
-        </div>
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${t.bg} ${t.text}`}>
+          {React.createElement(icon, { className: 'h-3.5 w-3.5' })}
+        </span>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{title}</p>
       </div>
 
-      <div className="flex min-w-0 flex-col">
-        <div className="grid grid-cols-4 gap-1.5 text-xs">
-          {breakdown.map((item) => (
-            <div key={item.label} className="min-w-0 rounded-lg bg-slate-50 px-1.5 py-1.5 text-center ring-1 ring-slate-100">
-              <p className="truncate text-[9.5px] font-semibold leading-tight text-slate-500">{item.label}</p>
-              <p className="mt-0.5 truncate text-[11px] font-black leading-tight text-slate-900">{item.value}</p>
+      {/* Divider */}
+      <div className={`mx-4 h-px ${t.divider} opacity-50`} />
+
+      {/* Main value */}
+      <div className="px-4 pt-3 pb-2">
+        <p className={`text-3xl font-black leading-none ${t.text}`}>{value}</p>
+        <p className="mt-0.5 text-[11px] font-medium text-slate-400">{subtitle}</p>
+      </div>
+
+      {/* Breakdown grid */}
+      {breakdown.length > 0 && (
+        <div className="grid grid-cols-2 gap-px mx-4 mb-3 overflow-hidden rounded-xl border border-slate-100">
+          {breakdown.map((item, i) => (
+            <div
+              key={item.label}
+              className={`flex items-center justify-between px-2.5 py-2 ${
+                i % 2 === 0 ? 'bg-slate-50' : 'bg-white'
+              }`}
+            >
+              <span className="text-[10px] font-semibold text-slate-400 truncate">{item.label}</span>
+              <span className="text-[11px] font-black text-slate-800 ml-1 shrink-0">{item.value}</span>
             </div>
           ))}
         </div>
+      )}
 
-        {note && (
-          <p className="mt-2 truncate rounded-lg bg-white/70 px-2 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-100">
-            {note}
-          </p>
-        )}
-
-        <div className="mt-auto pt-2.5">
-          {footer && <p className="mb-2 truncate text-xs font-semibold text-slate-500">{footer}</p>}
-          {typeof progress === 'number' && (
-            <div className="mb-2">
-              <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-                <div
-                  className={`h-full rounded-full bg-gradient-to-r ${toneClass.gradient}`}
-                  style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }}
-                />
-              </div>
-            </div>
-          )}
-          <div className="flex items-center gap-1 text-xs font-bold text-slate-400 transition-colors group-hover:text-blue-600">
-            {cta || 'View details'}
-            <ArrowUpRight className="h-3.5 w-3.5" />
+      {/* Progress bar */}
+      {typeof progress === 'number' && (
+        <div className="px-4 pb-1">
+          <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
+            <div
+              className={`h-full rounded-full bg-gradient-to-r ${t.gradient} transition-all duration-700`}
+              style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }}
+            />
           </div>
         </div>
+      )}
+
+      {/* Footer CTA */}
+      <div className={`mt-auto flex items-center justify-between px-4 py-2.5 ${t.bg} border-t ${t.border}`}>
+        <span className={`text-[10px] font-bold ${t.text} truncate`}>{cta || 'View details'}</span>
+        <ArrowUpRight className={`h-3.5 w-3.5 ${t.text} opacity-70 group-hover:opacity-100 transition-opacity shrink-0`} />
       </div>
     </button>
   );
@@ -691,6 +693,7 @@ const EmployeeManagement = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employeeOverview, setEmployeeOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
+  const [recentActivities, setRecentActivities] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [faceRegistrationEnabled, setFaceRegistrationEnabled] = useState(true); // Face registration is now OPTIONAL
@@ -1265,6 +1268,7 @@ const EmployeeManagement = () => {
   const fetchEmployeeOverview = async (employee) => {
     if (!employee) return;
     setOverviewLoading(true);
+    setRecentActivities([]);
     const employeeId = getSelectedEmployeeKey(employee);
     const employeeEmail = getSelectedEmployeeEmail(employee);
 
@@ -1418,6 +1422,84 @@ const EmployeeManagement = () => {
           completed: completedInterviews
         }
       });
+
+      // Build recent activities timeline from raw data
+      const activityItems = [];
+      const pushActivity = (type, icon, color, label, detail, date) => {
+        if (!date) return;
+        const d = new Date(date);
+        if (!isNaN(d.getTime())) activityItems.push({ type, icon, color, label, detail, date: d });
+      };
+      // Attendance
+      attendance.slice(0, 10).forEach(r => {
+        const s = statusOf(r);
+        const displayStatus = s === 'present' || s === 'checked-in' || s === 'checked out' || s === 'checked-out' ? 'Checked In'
+          : s === 'absent' ? 'Absent'
+          : s.includes('late') ? 'Checked In Late'
+          : s.includes('half') ? 'Half Day'
+          : s.includes('work') ? 'Work From Home'
+          : 'Attendance Logged';
+        const color = displayStatus === 'Checked In' ? 'blue'
+          : displayStatus === 'Absent' ? 'rose'
+          : displayStatus === 'Checked In Late' ? 'amber'
+          : displayStatus === 'Half Day' ? 'violet'
+          : 'slate';
+        pushActivity('attendance', 'calendar', color, displayStatus, r.notes || '', r.date || r.checkIn || r.createdAt);
+      });
+      // Tasks
+      sortLatest(tasks).slice(0, 8).forEach(t => {
+        const s = statusOf(t);
+        const label = ['completed', 'done'].includes(s) ? 'Task Completed'
+          : s === 'in-progress' || s === 'inprogress' ? 'Task In Progress'
+          : s === 'overdue' ? 'Task Overdue'
+          : 'Task Assigned';
+        const color = ['completed', 'done'].includes(s) ? 'emerald'
+          : s === 'overdue' ? 'rose'
+          : s.includes('progress') ? 'violet'
+          : 'blue';
+        pushActivity('task', 'clipboard', color, label, t.title || t.description || 'Task', t.updatedAt || t.createdAt);
+      });
+      // Leaves
+      sortLatest(leaves).slice(0, 6).forEach(l => {
+        const s = statusOf(l);
+        const label = s === 'approved' ? 'Leave Approved'
+          : s === 'rejected' ? 'Leave Rejected'
+          : 'Leave Requested';
+        const color = s === 'approved' ? 'emerald' : s === 'rejected' ? 'rose' : 'amber';
+        const detail = [l.leaveType || l.type, l.reason || l.leaveReason].filter(Boolean).join(' · ');
+        pushActivity('leave', 'users', color, label, detail, l.updatedAt || l.createdAt || l.appliedDate);
+      });
+      // Sales leads
+      sortLatest(leads).slice(0, 6).forEach(ld => {
+        const s = statusOf(ld);
+        const label = s === 'won' ? 'Lead Won'
+          : s === 'lost' ? 'Lead Lost'
+          : 'Lead Updated';
+        const color = s === 'won' ? 'emerald' : s === 'lost' ? 'rose' : 'blue';
+        const detail = leadNameOf(ld) + (ld.company ? ` · ${ld.company}` : '');
+        pushActivity('lead', 'trending', color, label, detail, ld.updatedAt || ld.createdAt);
+      });
+      // Meetings
+      sortLatest(scheduledMeetings).slice(0, 5).forEach(m => {
+        const s = statusOf(m);
+        const label = ['completed', 'done'].includes(s) ? 'Meeting Completed'
+          : new Date(m.scheduledDate) >= new Date() ? 'Meeting Scheduled'
+          : 'Meeting Held';
+        const color = ['completed', 'done'].includes(s) ? 'emerald' : 'slate';
+        const detail = [m.leadName, m.type || m.title, formatShortDate(m.scheduledDate)].filter(Boolean).join(' · ');
+        pushActivity('meeting', 'bar', color, label, detail, m.scheduledDate || m.createdAt);
+      });
+      // Problems
+      sortLatest(problems).slice(0, 4).forEach(p => {
+        const s = statusOf(p);
+        const label = ['solved', 'resolved', 'closed'].includes(s) ? 'Problem Resolved' : 'Problem Reported';
+        const color = ['solved', 'resolved', 'closed'].includes(s) ? 'emerald' : 'rose';
+        pushActivity('problem', 'alert', color, label, p.title || p.description || p.problem || '', p.updatedAt || p.createdAt);
+      });
+      // Sort all activities by date descending
+      activityItems.sort((a, b) => b.date - a.date);
+      setRecentActivities(activityItems.slice(0, 20));
+
     } catch (error) {
       console.error('Failed to load employee overview:', error);
       setEmployeeOverview(null);
@@ -1434,8 +1516,11 @@ const EmployeeManagement = () => {
   }, [showViewModal, selectedEmployee?._id]);
 
   const goToEmployeeDetailPage = (path) => {
+    const firstName = selectedEmployee?.personalInfo?.firstName || '';
+    const lastName = selectedEmployee?.personalInfo?.lastName || '';
+    const fullName = `${firstName} ${lastName}`.trim() || selectedEmployee?.user?.name || '';
     setShowViewModal(false);
-    navigate(path);
+    navigate(path, { state: { employeeFilter: fullName } });
   };
 
   const handleToggleFullEmployeeDetails = () => {
@@ -1953,61 +2038,156 @@ const EmployeeManagement = () => {
         </div>
         {selectedEmployee && (
           <div className="space-y-4 p-4 sm:p-5">
-            {/* Header */}
-            <div className="flex items-center space-x-3 rounded-xl border border-blue-100 bg-white p-3 shadow-sm">
-              <div className="h-12 w-12 rounded-xl flex items-center justify-center overflow-hidden border border-blue-100 bg-blue-50">
-                {selectedEmployee.user?.profileImage ? (
-                  <img
-                    src={getFullImageUrl(selectedEmployee.user.profileImage)}
-                    alt={selectedEmployee.fullName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User className="h-6 w-6 text-blue-600" />
-                )}
-              </div>
-              <div className="min-w-0">
-                <h3 className="truncate text-lg font-bold text-slate-900">{selectedEmployee.fullName}</h3>
-                <p className="truncate text-sm font-medium text-blue-600">{selectedEmployee.workInfo?.position}</p>
-                <p className="truncate text-xs text-slate-500">
-                  {getDepartmentName(selectedEmployee.workInfo?.department, 'N/A')}
-                </p>
-                <p className="text-xs text-slate-500">ID: {selectedEmployee.employeeId || selectedEmployee.user?.employeeId}</p>
-                {selectedEmployee.hasFaceRegistered && (
-                  <span className="mt-1 inline-block rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700">
-                    Face Registered
-                  </span>
-                )}
+            {/* ── Premium Profile Hero ─── */}
+            <div className="relative overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+
+              {/* Decorative blobs — light, subtle */}
+              <div className="pointer-events-none absolute top-0 right-0 h-48 w-48 rounded-full bg-blue-100/60 blur-3xl translate-x-1/3 -translate-y-1/3" />
+              <div className="pointer-events-none absolute bottom-0 left-0 h-36 w-36 rounded-full bg-indigo-100/50 blur-2xl -translate-x-1/4 translate-y-1/4" />
+
+              <div className="relative flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-5">
+                {/* Avatar */}
+                <div className="relative shrink-0">
+                  <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl overflow-hidden border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-100 shadow-md">
+                    {selectedEmployee.user?.profileImage ? (
+                      <img
+                        src={getFullImageUrl(selectedEmployee.user.profileImage)}
+                        alt={selectedEmployee.fullName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600">
+                        <span className="text-3xl font-black text-white select-none">
+                          {(selectedEmployee.personalInfo?.firstName?.[0] || selectedEmployee.fullName?.[0] || 'E').toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Status dot */}
+                  <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white shadow ${
+                    (selectedEmployee.status === 'Active' || !selectedEmployee.status) ? 'bg-emerald-500' : 'bg-slate-400'
+                  }`} />
+                </div>
+
+                {/* Main info */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-xl font-black text-slate-900 sm:text-2xl tracking-tight">
+                      {selectedEmployee.fullName || `${selectedEmployee.personalInfo?.firstName || ''} ${selectedEmployee.personalInfo?.lastName || ''}`.trim() || 'Employee'}
+                    </h3>
+                    {selectedEmployee.hasFaceRegistered && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                        <CheckCircle className="h-3 w-3" />
+                        Face ID
+                      </span>
+                    )}
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
+                      (selectedEmployee.status === 'Active' || !selectedEmployee.status)
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                        : 'bg-slate-100 border-slate-200 text-slate-600'
+                    }`}>
+                      {selectedEmployee.status || 'Active'}
+                    </span>
+                  </div>
+
+                  <p className="mt-0.5 text-sm font-semibold text-blue-600">
+                    {selectedEmployee.workInfo?.position || selectedEmployee.workInfo?.designation || 'Employee'}
+                  </p>
+
+                  {/* Info chips row */}
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {/* Department */}
+                    {getDepartmentName(selectedEmployee.workInfo?.department, '') && (
+                      <div className="flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-100 px-2.5 py-1">
+                        <Users className="h-3 w-3 text-blue-400 shrink-0" />
+                        <span className="text-[11px] font-semibold text-slate-700">{getDepartmentName(selectedEmployee.workInfo?.department, 'N/A')}</span>
+                      </div>
+                    )}
+                    {/* Employee ID */}
+                    <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 border border-slate-200 px-2.5 py-1">
+                      <User className="h-3 w-3 text-slate-400 shrink-0" />
+                      <span className="text-[11px] font-semibold text-slate-700">{selectedEmployee.employeeId || selectedEmployee.user?.employeeId || 'N/A'}</span>
+                    </div>
+                    {/* Email */}
+                    {(selectedEmployee.contactInfo?.personalEmail || selectedEmployee.user?.email) && (
+                      <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 border border-slate-200 px-2.5 py-1">
+                        <Mail className="h-3 w-3 text-slate-400 shrink-0" />
+                        <span className="text-[11px] font-semibold text-slate-700 truncate max-w-[160px]">{selectedEmployee.contactInfo?.personalEmail || selectedEmployee.user?.email}</span>
+                      </div>
+                    )}
+                    {/* Phone */}
+                    {selectedEmployee.contactInfo?.phone && (
+                      <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 border border-slate-200 px-2.5 py-1">
+                        <span className="text-[10px] text-slate-400">📞</span>
+                        <span className="text-[11px] font-semibold text-slate-700">{selectedEmployee.contactInfo.phone}</span>
+                      </div>
+                    )}
+                    {/* Join Date */}
+                    {selectedEmployee.workInfo?.joiningDate && (
+                      <div className="flex items-center gap-1.5 rounded-lg bg-indigo-50 border border-indigo-100 px-2.5 py-1">
+                        <Calendar className="h-3 w-3 text-indigo-400 shrink-0" />
+                        <span className="text-[11px] font-semibold text-slate-700">Joined {new Date(selectedEmployee.workInfo.joiningDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                      </div>
+                    )}
+                    {/* Employment Type */}
+                    {selectedEmployee.workInfo?.employmentType && (
+                      <div className="flex items-center gap-1.5 rounded-lg bg-violet-50 border border-violet-100 px-2.5 py-1">
+                        <span className="text-[11px] font-semibold text-slate-700">{selectedEmployee.workInfo.employmentType}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right-side actions (desktop) */}
+                <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => { setShowViewModal(false); setShowEditModal(true); }}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 hover:border-blue-300"
+                  >
+                    <Edit className="h-3.5 w-3.5" />
+                    Edit Profile
+                  </button>
+                  {overviewLoading && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-100 px-2.5 py-1 text-[10px] font-semibold text-blue-500">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Syncing data...
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
-            <section className="overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/60 to-indigo-50 p-3.5 shadow-sm sm:p-4">
-              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white/70 p-3.5 shadow-sm sm:p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-base font-black text-slate-950 sm:text-lg">Complete Employee Snapshot</h3>
-                  <p className="mt-0.5 text-xs font-medium text-slate-500 sm:text-sm">Short role-based view for this employee only</p>
+                  <h3 className="text-sm font-black text-slate-800">Employee Snapshot</h3>
+                  <p className="text-[11px] font-medium text-slate-400">Role-based performance overview</p>
                 </div>
                 {overviewLoading && (
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/80 px-2 py-1 text-[11px] font-medium text-blue-600 ring-1 ring-blue-100">
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-600 ring-1 ring-blue-100">
                     <Loader2 className="h-3 w-3 animate-spin" />
-                    Syncing
+                    Loading
                   </span>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
+              {/* Horizontal scrollable stat cards */}
+              <div
+                className="flex gap-3 overflow-x-auto pb-2"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent' }}
+              >
                 <EmployeeOverviewCard
                   icon={Calendar}
                   title="Attendance"
                   value={overviewLoading ? '...' : `${employeeOverview?.attendance?.rate || 0}%`}
                   subtitle="Attendance rate"
                   breakdown={[
-                    { label: 'Present', value: `${employeeOverview?.attendance?.present || 0} P` },
-                    { label: 'Absent', value: `${employeeOverview?.attendance?.absent || 0} A` },
+                    { label: 'Present', value: employeeOverview?.attendance?.present || 0 },
+                    { label: 'Absent', value: employeeOverview?.attendance?.absent || 0 },
                     { label: 'Late', value: employeeOverview?.attendance?.late || 0 },
                     { label: 'Half Day', value: employeeOverview?.attendance?.halfDay || 0 }
                   ]}
-                  footer={`Attendance rate at ${employeeOverview?.attendance?.rate || 0}%`}
                   progress={employeeOverview?.attendance?.rate || 0}
                   cta="View attendance"
                   tone="blue"
@@ -2016,37 +2196,31 @@ const EmployeeManagement = () => {
                 <EmployeeOverviewCard
                   icon={Users}
                   title="Leaves"
-                  value={overviewLoading ? '...' : employeeOverview?.leaves?.daysTaken || 0}
+                  value={overviewLoading ? '...' : `${employeeOverview?.leaves?.daysTaken || 0} days`}
                   subtitle="Approved days taken"
                   breakdown={[
                     { label: 'Pending', value: employeeOverview?.leaves?.pending || 0 },
                     { label: 'Approved', value: employeeOverview?.leaves?.approved || 0 },
                     { label: 'Rejected', value: employeeOverview?.leaves?.rejected || 0 },
-                    { label: 'Requests', value: employeeOverview?.leaves?.total || 0 }
+                    { label: 'Total', value: employeeOverview?.leaves?.total || 0 }
                   ]}
-                  note={employeeOverview?.leaves?.brief}
-                  footer="Leave requests"
-                  cta="View leave details"
+                  cta="View leaves"
                   tone="amber"
                   onClick={() => goToEmployeeDetailPage('/admin/leaves')}
                 />
                 <EmployeeOverviewCard
                   icon={ClipboardList}
                   title="Tasks"
-                  value={overviewLoading ? '...' : employeeOverview?.tasks?.total || 0}
-                  subtitle="Total assigned"
+                  value={overviewLoading ? '...' : `${employeeOverview?.tasks?.total || 0} total`}
+                  subtitle="Assigned tasks"
                   breakdown={[
                     { label: 'Active', value: employeeOverview?.tasks?.active || 0 },
                     { label: 'Completed', value: employeeOverview?.tasks?.completed || 0 },
                     { label: 'Overdue', value: employeeOverview?.tasks?.overdue || 0 },
-                    { label: 'Closed', value: employeeOverview?.tasks?.completed || 0 }
+                    { label: 'Total', value: employeeOverview?.tasks?.total || 0 }
                   ]}
-                  note={employeeOverview?.tasks?.titles?.length
-                    ? employeeOverview.tasks.titles.map((task, index) => `Task ${index + 1}: ${task}`).join(' | ')
-                    : ''}
-                  footer="Completion rate"
                   progress={employeeOverview?.tasks?.total ? ((employeeOverview?.tasks?.completed || 0) / employeeOverview.tasks.total) * 100 : 0}
-                  cta="View task performance"
+                  cta="View tasks"
                   tone="violet"
                   onClick={() => goToEmployeeDetailPage('/admin/tasks')}
                 />
@@ -2055,7 +2229,7 @@ const EmployeeManagement = () => {
                     <EmployeeOverviewCard
                       icon={TrendingUp}
                       title="Sales"
-                      value={overviewLoading ? '...' : employeeOverview?.sales?.total || 0}
+                      value={overviewLoading ? '...' : `${employeeOverview?.sales?.total || 0} leads`}
                       subtitle="Assigned leads"
                       breakdown={[
                         { label: 'Won', value: employeeOverview?.sales?.won || 0 },
@@ -2063,8 +2237,6 @@ const EmployeeManagement = () => {
                         { label: 'Lost', value: employeeOverview?.sales?.lost || 0 },
                         { label: 'Pipeline', value: employeeOverview?.sales?.total || 0 }
                       ]}
-                      note={employeeOverview?.sales?.brief}
-                      footer="Win rate"
                       progress={employeeOverview?.sales?.total ? ((employeeOverview?.sales?.won || 0) / employeeOverview.sales.total) * 100 : 0}
                       cta="View sales"
                       tone="emerald"
@@ -2073,16 +2245,14 @@ const EmployeeManagement = () => {
                     <EmployeeOverviewCard
                       icon={BarChart3}
                       title="Meetings"
-                      value={overviewLoading ? '...' : employeeOverview?.meetings?.total || 0}
+                      value={overviewLoading ? '...' : `${employeeOverview?.meetings?.total || 0} total`}
                       subtitle="Lead meetings"
                       breakdown={[
                         { label: 'Upcoming', value: employeeOverview?.meetings?.upcoming || 0 },
-                        { label: 'Completed', value: employeeOverview?.meetings?.completed || 0 },
+                        { label: 'Done', value: employeeOverview?.meetings?.completed || 0 },
                         { label: 'Past', value: employeeOverview?.meetings?.past || 0 },
                         { label: 'Total', value: employeeOverview?.meetings?.total || 0 }
                       ]}
-                      note={employeeOverview?.meetings?.brief}
-                      footer=""
                       cta="View meetings"
                       tone="slate"
                       onClick={() => goToEmployeeDetailPage('/admin/sales')}
@@ -2093,16 +2263,14 @@ const EmployeeManagement = () => {
                   <EmployeeOverviewCard
                     icon={AlertCircle}
                     title="Problems"
-                    value={overviewLoading ? '...' : employeeOverview?.problems?.total || 0}
-                    subtitle="Total reported"
+                    value={overviewLoading ? '...' : `${employeeOverview?.problems?.open || 0} open`}
+                    subtitle="Reported problems"
                     breakdown={[
                       { label: 'Open', value: employeeOverview?.problems?.open || 0 },
                       { label: 'Resolved', value: employeeOverview?.problems?.solved || 0 }
                     ]}
-                    note={employeeOverview?.problems?.latest ? `Recent: ${employeeOverview.problems.latest}` : ''}
-                    footer="Open problems"
                     cta="View problems"
-                    tone="slate"
+                    tone="rose"
                     onClick={() => goToEmployeeDetailPage('/admin/problems')}
                   />
                 )}
@@ -2110,19 +2278,101 @@ const EmployeeManagement = () => {
                   <EmployeeOverviewCard
                     icon={Calendar}
                     title="Interviews"
-                    value={overviewLoading ? '...' : employeeOverview?.interviews?.total || 0}
+                    value={overviewLoading ? '...' : `${employeeOverview?.interviews?.total || 0} total`}
                     subtitle="Schedules created"
                     breakdown={[
                       { label: 'Scheduled', value: employeeOverview?.interviews?.pending || 0 },
                       { label: 'Completed', value: employeeOverview?.interviews?.completed || 0 },
                       { label: 'Total', value: employeeOverview?.interviews?.total || 0 }
                     ]}
-                    footer="Interview scheduling"
                     cta="View interviews"
                     tone="emerald"
                     onClick={() => goToEmployeeDetailPage('/admin/interviews')}
                   />
                 )}
+              </div>
+            </section>
+
+            {/* ── Recent Activities ─────────────────────────────────────── */}
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900">Recent Activity</h3>
+                    <p className="text-[10px] font-medium text-slate-400">Timeline of employee actions</p>
+                  </div>
+                </div>
+                {overviewLoading && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-semibold text-indigo-600">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Loading
+                  </span>
+                )}
+              </div>
+
+              <div className="divide-y divide-slate-50 max-h-52 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent' }}>
+                {!overviewLoading && recentActivities.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-300">
+                      <BarChart3 className="h-6 w-6" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-400">No recent activity</p>
+                    <p className="text-xs text-slate-300">Activity will appear as the employee uses the system</p>
+                  </div>
+                )}
+                {recentActivities.map((activity, idx) => {
+                  const colorMap = {
+                    blue:    { dot: 'bg-blue-500',    badge: 'bg-blue-50 text-blue-700 ring-blue-100' },
+                    amber:   { dot: 'bg-amber-500',   badge: 'bg-amber-50 text-amber-700 ring-amber-100' },
+                    violet:  { dot: 'bg-violet-500',  badge: 'bg-violet-50 text-violet-700 ring-violet-100' },
+                    emerald: { dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 ring-emerald-100' },
+                    slate:   { dot: 'bg-slate-400',   badge: 'bg-slate-50 text-slate-600 ring-slate-200' },
+                    rose:    { dot: 'bg-rose-500',    badge: 'bg-rose-50 text-rose-700 ring-rose-100' }
+                  };
+                  const c = colorMap[activity.color] || colorMap.slate;
+                  const relTime = (() => {
+                    const diff = Date.now() - activity.date.getTime();
+                    const mins = Math.floor(diff / 60000);
+                    const hrs = Math.floor(diff / 3600000);
+                    const days = Math.floor(diff / 86400000);
+                    if (mins < 1) return 'just now';
+                    if (mins < 60) return `${mins}m ago`;
+                    if (hrs < 24) return `${hrs}h ago`;
+                    if (days < 7) return `${days}d ago`;
+                    return activity.date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                  })();
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50/60"
+                    >
+                      {/* Timeline dot + line */}
+                      <div className="relative mt-1 flex shrink-0 flex-col items-center">
+                        <span className={`h-2.5 w-2.5 rounded-full ring-2 ring-white ${c.dot}`} />
+                        {idx < recentActivities.length - 1 && (
+                          <span className="mt-1 h-full w-px bg-slate-100" style={{ minHeight: 20 }} />
+                        )}
+                      </div>
+                      {/* Content */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ring-1 ${c.badge}`}>
+                              {activity.label}
+                            </span>
+                            {activity.detail && (
+                              <p className="mt-1 truncate text-[11px] text-slate-500">{activity.detail}</p>
+                            )}
+                          </div>
+                          <span className="shrink-0 text-[10px] font-semibold text-slate-300">{relTime}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </section>
 

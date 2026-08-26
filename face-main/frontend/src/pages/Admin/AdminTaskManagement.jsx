@@ -21,7 +21,8 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  FileCheck
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminDayBookReview from './AdminDayBookReview';
@@ -87,18 +88,9 @@ const AdminTaskManagement = () => {
   }, [tasks, searchTerm]);
 
   const activeStats = useMemo(() => {
-    if (!isNavigatedFromStatCard && !searchTerm.trim()) {
-      return {
-        total: stats?.total || 0,
-        inProgress: stats?.inProgress || 0,
-        completed: stats?.completed || 0,
-        overdue: stats?.overdue || 0,
-        priorityDistribution: stats?.priorityDistribution || []
-      };
-    }
-
     const total = activeEmployeeTasks.length;
     const inProgress = activeEmployeeTasks.filter(t => t.status === 'In Progress' || t.status === 'Pending').length;
+    const review = activeEmployeeTasks.filter(t => (t.status || '').toLowerCase().includes('review')).length;
     const completed = activeEmployeeTasks.filter(t => t.status === 'Completed' || t.status === 'Closed').length;
     const now = new Date();
     const overdue = activeEmployeeTasks.filter(t => t.status === 'Overdue' || (t.dueDate && new Date(t.dueDate) < now && t.status !== 'Completed' && t.status !== 'Closed')).length;
@@ -111,14 +103,28 @@ const AdminTaskManagement = () => {
 
     const priorityDistribution = Object.entries(priorityCounts).map(([_id, count]) => ({ _id, count }));
 
+    const fallbackReview = tasks.filter(t => (t.status || '').toLowerCase().includes('review')).length;
+
+    if (!isNavigatedFromStatCard && !searchTerm.trim()) {
+      return {
+        total: stats?.total ?? total,
+        inProgress: stats?.inProgress ?? inProgress,
+        review: stats?.review ?? stats?.inReview ?? fallbackReview,
+        completed: stats?.completed ?? completed,
+        overdue: stats?.overdue ?? overdue,
+        priorityDistribution: stats?.priorityDistribution || priorityDistribution
+      };
+    }
+
     return {
       total,
       inProgress,
+      review,
       completed,
       overdue,
       priorityDistribution
     };
-  }, [isNavigatedFromStatCard, searchTerm, activeEmployeeTasks, stats]);
+  }, [isNavigatedFromStatCard, searchTerm, activeEmployeeTasks, stats, tasks]);
 
   const activeRecentTasks = useMemo(() => {
     if (!isNavigatedFromStatCard && !searchTerm.trim()) {
@@ -126,6 +132,45 @@ const AdminTaskManagement = () => {
     }
     return activeEmployeeTasks.slice(0, 4);
   }, [isNavigatedFromStatCard, searchTerm, tasks, activeEmployeeTasks]);
+
+  // Task preview lists for stat card hover tooltips
+  const now = new Date();
+  const previewTotal = useMemo(() => tasks.slice(0, 20), [tasks]);
+  const previewInProgress = useMemo(() =>
+    tasks.filter(t => t.status === 'In Progress' || t.status === 'Pending').slice(0, 20),
+    [tasks]);
+  const previewCompleted = useMemo(() => {
+    const completedTasks = tasks.filter(t => t.status === 'Completed' || t.status === 'Closed');
+
+    // Sort newest completed/updated first
+    const sorted = [...completedTasks].sort((a, b) => {
+      const dateA = new Date(a.completedDate || a.updatedAt || a.createdAt || 0).getTime();
+      const dateB = new Date(b.completedDate || b.updatedAt || b.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
+
+    const now = Date.now();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+    // Filter to only include tasks completed within the last 7 days
+    const recentCompleted = sorted.filter(t => {
+      const taskTime = new Date(t.completedDate || t.updatedAt || t.createdAt || 0).getTime();
+      if (!taskTime) return true;
+      return (now - taskTime) <= SEVEN_DAYS_MS;
+    });
+
+    return recentCompleted.slice(0, 20);
+  }, [tasks]);
+  const previewOverdue = useMemo(() =>
+    tasks.filter(t =>
+      t.status === 'Overdue' ||
+      (t.dueDate && new Date(t.dueDate) < now && t.status !== 'Completed' && t.status !== 'Closed')
+    ).slice(0, 20),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tasks]);
+  const previewReview = useMemo(() =>
+    tasks.filter(t => (t.status || '').toLowerCase().includes('review')).slice(0, 20),
+    [tasks]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -503,54 +548,211 @@ const AdminTaskManagement = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          <div className="premium-stat-card rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold leading-tight text-slate-900">{activeStats.total}</h3>
-                <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Total Tasks</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+
+          {/* ── Total Tasks ── */}
+          <div className="group relative">
+            <div className="premium-stat-card rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold leading-tight text-slate-900">{activeStats.total}</h3>
+                  <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Total Tasks</p>
+                </div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm shadow-blue-600/20">
+                  <Target className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                </div>
               </div>
-              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm shadow-blue-600/20">
-                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            {/* Hover tooltip */}
+            <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 w-64 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+              <div className="rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-900/10 overflow-hidden">
+                <div className="flex items-center gap-2 border-b border-blue-50 bg-blue-50/70 px-3 py-2">
+                  <Target className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                  <span className="text-[11px] font-black uppercase tracking-wider text-blue-700">All Tasks</span>
+                  <span className="ml-auto rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">{activeStats.total}</span>
+                </div>
+                {previewTotal.length === 0 ? (
+                  <p className="px-3 py-3 text-[11px] text-slate-400 text-center">No tasks yet</p>
+                ) : (
+                  <ul className="divide-y divide-slate-50 max-h-48 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
+                    {previewTotal.map(t => (
+                      <li key={t._id} className="flex items-start gap-2 px-3 py-2">
+                        <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+                        <div className="min-w-0">
+                          <p className="truncate text-[11px] font-semibold text-slate-800">{t.title || 'Untitled'}</p>
+                          <p className="truncate text-[10px] text-slate-400">{t.assignedTo?.user?.name || t.assignedTo?.fullName || 'Unassigned'}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold leading-tight text-blue-700">{activeStats.inProgress}</h3>
-                <p className="text-slate-500 text-[11px] sm:text-xs font-medium">In Progress</p>
+          {/* ── In Progress ── */}
+          <div className="group relative">
+            <div className="premium-stat-card rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold leading-tight text-blue-700">{activeStats.inProgress}</h3>
+                  <p className="text-slate-500 text-[11px] sm:text-xs font-medium">In Progress</p>
+                </div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm shadow-blue-600/20">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                </div>
               </div>
-              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm shadow-blue-600/20">
-                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 w-64 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+              <div className="rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-900/10 overflow-hidden">
+                <div className="flex items-center gap-2 border-b border-blue-50 bg-blue-50/70 px-3 py-2">
+                  <Clock className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                  <span className="text-[11px] font-black uppercase tracking-wider text-blue-700">In Progress</span>
+                  <span className="ml-auto rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">{activeStats.inProgress}</span>
+                </div>
+                {previewInProgress.length === 0 ? (
+                  <p className="px-3 py-3 text-[11px] text-slate-400 text-center">No active tasks</p>
+                ) : (
+                  <ul className="divide-y divide-slate-50 max-h-48 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
+                    {previewInProgress.map(t => (
+                      <li key={t._id} className="flex items-start gap-2 px-3 py-2">
+                        <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                        <div className="min-w-0">
+                          <p className="truncate text-[11px] font-semibold text-slate-800">{t.title || 'Untitled'}</p>
+                          <p className="truncate text-[10px] text-slate-400">{t.assignedTo?.user?.name || t.assignedTo?.fullName || 'Unassigned'}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold leading-tight text-emerald-700">{activeStats.completed}</h3>
-                <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Completed</p>
+          {/* ── Pending Review ── */}
+          <div className="group relative">
+            <div className="premium-stat-card rounded-xl border border-amber-100 bg-gradient-to-br from-white to-amber-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold leading-tight text-amber-700">{activeStats.review}</h3>
+                  <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Pending Review</p>
+                </div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-amber-600 rounded-lg flex items-center justify-center shadow-sm shadow-amber-600/20">
+                  <FileCheck className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                </div>
               </div>
-              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm shadow-emerald-600/20">
-                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 w-64 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+              <div className="rounded-xl border border-amber-100 bg-white shadow-xl shadow-amber-900/10 overflow-hidden">
+                <div className="flex items-center gap-2 border-b border-amber-50 bg-amber-50/70 px-3 py-2">
+                  <FileCheck className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-700">Pending Review</span>
+                  <span className="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">{activeStats.review}</span>
+                </div>
+                {previewReview.length === 0 ? (
+                  <p className="px-3 py-3 text-[11px] text-slate-400 text-center">No tasks pending review</p>
+                ) : (
+                  <ul className="divide-y divide-slate-50 max-h-48 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
+                    {previewReview.map(t => (
+                      <li key={t._id} className="flex items-start gap-2 px-3 py-2">
+                        <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                        <div className="min-w-0">
+                          <p className="truncate text-[11px] font-semibold text-slate-800">{t.title || 'Untitled'}</p>
+                          <p className="truncate text-[10px] text-slate-400">{t.assignedTo?.user?.name || t.assignedTo?.fullName || 'Unassigned'}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="premium-stat-card rounded-xl border border-red-100 bg-gradient-to-br from-white to-red-50/60 p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold leading-tight text-red-700">{activeStats.overdue}</h3>
-                <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Overdue</p>
+          {/* ── Completed ── */}
+          <div className="group relative">
+            <div className="premium-stat-card rounded-xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold leading-tight text-emerald-700">{activeStats.completed}</h3>
+                  <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Completed</p>
+                </div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm shadow-emerald-600/20">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                </div>
               </div>
-              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-red-600 rounded-lg flex items-center justify-center shadow-sm shadow-red-600/20">
-                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 w-64 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+              <div className="rounded-xl border border-emerald-100 bg-white shadow-xl shadow-emerald-900/10 overflow-hidden">
+                <div className="flex items-center gap-2 border-b border-emerald-50 bg-emerald-50/70 px-3 py-2">
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700">Recently Completed</span>
+                  <span className="ml-auto rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">{previewCompleted.length}</span>
+                </div>
+                {previewCompleted.length === 0 ? (
+                  <p className="px-3 py-3 text-[11px] text-slate-400 text-center">No tasks completed in last 7 days</p>
+                ) : (
+                  <ul className="divide-y divide-slate-50 max-h-48 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
+                    {previewCompleted.map(t => {
+                      const dateVal = t.completedDate || t.updatedAt || t.createdAt;
+                      const dateStr = dateVal ? new Date(dateVal).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
+                      return (
+                        <li key={t._id} className="flex items-start gap-2 px-3 py-2">
+                          <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <p className="truncate text-[11px] font-semibold text-slate-800">{t.title || 'Untitled'}</p>
+                              {dateStr && <span className="text-[9px] font-medium text-emerald-600 shrink-0">{dateStr}</span>}
+                            </div>
+                            <p className="truncate text-[10px] text-slate-400">{t.assignedTo?.user?.name || t.assignedTo?.fullName || 'Unassigned'}</p>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             </div>
           </div>
+
+          {/* ── Overdue ── */}
+          <div className="group relative">
+            <div className="premium-stat-card rounded-xl border border-red-100 bg-gradient-to-br from-white to-red-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold leading-tight text-red-700">{activeStats.overdue}</h3>
+                  <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Overdue</p>
+                </div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-red-600 rounded-lg flex items-center justify-center shadow-sm shadow-red-600/20">
+                  <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                </div>
+              </div>
+            </div>
+            <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 w-64 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+              <div className="rounded-xl border border-red-100 bg-white shadow-xl shadow-red-900/10 overflow-hidden">
+                <div className="flex items-center gap-2 border-b border-red-50 bg-red-50/70 px-3 py-2">
+                  <AlertTriangle className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                  <span className="text-[11px] font-black uppercase tracking-wider text-red-700">Overdue</span>
+                  <span className="ml-auto rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700">{activeStats.overdue}</span>
+                </div>
+                {previewOverdue.length === 0 ? (
+                  <p className="px-3 py-3 text-[11px] text-slate-400 text-center">No overdue tasks 🎉</p>
+                ) : (
+                  <ul className="divide-y divide-slate-50 max-h-48 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
+                    {previewOverdue.map(t => (
+                      <li key={t._id} className="flex items-start gap-2 px-3 py-2">
+                        <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+                        <div className="min-w-0">
+                          <p className="truncate text-[11px] font-semibold text-slate-800">{t.title || 'Untitled'}</p>
+                          <p className="truncate text-[10px] text-slate-400">{t.assignedTo?.user?.name || t.assignedTo?.fullName || 'Unassigned'}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+
         </div>
 
         {/* Tabs */}

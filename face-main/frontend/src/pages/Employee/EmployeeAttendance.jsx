@@ -515,6 +515,8 @@ const EmployeeAttendance = () => {
                           }
                         } catch (error) {
                           console.error('Check-in error:', error);
+
+
                           toast.error(error.response?.data?.message || 'Failed to mark check-in');
                         } finally {
                           setLoading(false);
@@ -555,31 +557,31 @@ const EmployeeAttendance = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="attendance-soft-row p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
-                  <p className="text-slate-500 text-[12px]">Check In</p>
-                  <p className="text-slate-900 font-semibold">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+                <div className="attendance-soft-row p-2.5 sm:p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
+                  <p className="text-slate-500 text-[11px] sm:text-[12px]">Check In</p>
+                  <p className="text-slate-900 text-sm sm:text-base font-semibold">
                     {todayAttendance ? formatTime(todayAttendance.checkInTime) : '--:--'}
                   </p>
                 </div>
-                <div className="attendance-soft-row p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
-                  <p className="text-slate-500 text-[12px]">Check Out</p>
-                  <p className="text-slate-900 font-semibold">
+                <div className="attendance-soft-row p-2.5 sm:p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
+                  <p className="text-slate-500 text-[11px] sm:text-[12px]">Check Out</p>
+                  <p className="text-slate-900 text-sm sm:text-base font-semibold">
                     {todayAttendance ? formatTime(todayAttendance.checkOutTime) : '--:--'}
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="attendance-soft-row p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
-                  <p className="text-slate-500 text-[12px]">Working Time</p>
-                  <p className="text-indigo-600 font-semibold">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+                <div className="attendance-soft-row p-2.5 sm:p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
+                  <p className="text-slate-500 text-[11px] sm:text-[12px]">Working Time</p>
+                  <p className="text-indigo-600 text-sm sm:text-base font-semibold">
                     {hasCheckedIn && !hasCheckedOut ? formatWorkingTime(realTimeWorkingTime) : (workingTime ? workingTime.total : '00:00')}
                   </p>
                 </div>
-                <div className="attendance-soft-row p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
-                  <p className="text-slate-500 text-[12px]">Status</p>
-                  <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(todayAttendance?.status)}`}>
+                <div className="attendance-soft-row p-2.5 sm:p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
+                  <p className="text-slate-500 text-[11px] sm:text-[12px]">Status</p>
+                  <span className={`text-[11px] sm:text-xs px-2 py-0.5 sm:py-1 rounded-full ${getStatusColor(todayAttendance?.status)}`}>
                     {todayAttendance?.status || 'Not Marked'}
                   </span>
                 </div>
@@ -589,41 +591,41 @@ const EmployeeAttendance = () => {
         </div>
 
         {attendanceStats && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '120ms' }}>
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
+            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-3 sm:p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '120ms' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-500 text-[12px]">Total Days</p>
-                  <p className="text-[22px] font-semibold tracking-tight text-slate-900">{attendanceStats.totalDays}</p>
+                  <p className="text-slate-500 text-[11px] sm:text-[12px]">Total Days</p>
+                  <p className="text-lg sm:text-[22px] font-semibold tracking-tight text-slate-900">{attendanceStats.totalDays}</p>
                 </div>
-                <TrendingUp strokeWidth={1.75} className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                <TrendingUp strokeWidth={1.75} className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
               </div>
             </div>
-            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '160ms' }}>
+            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-3 sm:p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '160ms' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-500 text-[12px]">Present Days</p>
-                  <p className="text-[22px] font-semibold tracking-tight text-emerald-600">{attendanceStats.presentDays}</p>
+                  <p className="text-slate-500 text-[11px] sm:text-[12px]">Present Days</p>
+                  <p className="text-lg sm:text-[22px] font-semibold tracking-tight text-emerald-600">{attendanceStats.presentDays}</p>
                 </div>
-                <CheckCircle strokeWidth={1.75} className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                <CheckCircle strokeWidth={1.75} className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
               </div>
             </div>
-            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '200ms' }}>
+            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-3 sm:p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '200ms' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-500 text-[12px]">Late Days</p>
-                  <p className="text-[22px] font-semibold tracking-tight text-amber-600">{attendanceStats.lateDays}</p>
+                  <p className="text-slate-500 text-[11px] sm:text-[12px]">Late Days</p>
+                  <p className="text-lg sm:text-[22px] font-semibold tracking-tight text-amber-600">{attendanceStats.lateDays}</p>
                 </div>
-                <AlertCircle strokeWidth={1.75} className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                <AlertCircle strokeWidth={1.75} className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
               </div>
             </div>
-            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '240ms' }}>
+            <div className="attendance-soft-panel animate-enter bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-3 sm:p-5 transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]" style={{ animationDelay: '240ms' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-500 text-[12px]">Half Days</p>
-                  <p className="text-[22px] font-semibold tracking-tight text-amber-600">{attendanceStats.halfDays}</p>
+                  <p className="text-slate-500 text-[11px] sm:text-[12px]">Half Days</p>
+                  <p className="text-lg sm:text-[22px] font-semibold tracking-tight text-amber-600">{attendanceStats.halfDays}</p>
                 </div>
-                <Timer strokeWidth={1.75} className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                <Timer strokeWidth={1.75} className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
               </div>
             </div>
           </div>

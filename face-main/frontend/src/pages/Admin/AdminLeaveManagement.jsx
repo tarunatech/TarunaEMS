@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import ReactCalendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import api from '../../utils/api';
@@ -19,6 +20,8 @@ import toast from 'react-hot-toast';
 import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 
 const AdminLeaveManagement = () => {
+  const location = useLocation();
+  const initialSearch = location.state?.employeeFilter || location.state?.search || '';
   const leaveTypeOptions = [
     { value: 'casual', label: 'Casual' },
     { value: 'sick', label: 'Sick' },
@@ -36,7 +39,7 @@ const AdminLeaveManagement = () => {
     rejected: 0
   });
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState('');
   const [leaveTypeFilter, setLeaveTypeFilter] = useState('');
   const [selectedLeave, setSelectedLeave] = useState(null);
@@ -44,6 +47,13 @@ const AdminLeaveManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    const navSearch = location.state?.employeeFilter || location.state?.search || '';
+    if (navSearch) {
+      setSearchTerm(navSearch);
+    }
+  }, [location.state]);
 
   const fetchLeaves = async () => {
     try {

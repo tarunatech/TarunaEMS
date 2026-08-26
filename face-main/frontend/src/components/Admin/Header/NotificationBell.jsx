@@ -238,15 +238,6 @@ const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead,
                 ))
               )}
             </div>
-
-            {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="border-t border-slate-200 bg-slate-50 p-3">
-                <button className="w-full rounded-lg py-2 text-center text-xs text-slate-500 transition-all duration-200 hover:bg-white hover:text-slate-900">
-                  View All Notifications
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>

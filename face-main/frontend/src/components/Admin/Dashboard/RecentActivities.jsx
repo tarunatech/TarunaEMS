@@ -116,8 +116,6 @@ const RecentActivities = ({ activities = [], loading = false }) => {
                   <div className="mt-2 rounded-lg border border-slate-200/80 bg-white/80 px-3 py-1">
                     <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] text-slate-600">
                       <span className="inline-flex items-center gap-1 font-medium text-slate-700">
-                        {/* <UserRound className="h-3.5 w-3.5 text-violet-500" /> */}
-                        {/* {activity.details.employeeName} */}
                          Task :{activity.description && (
                       <p className="mt- text-[11px] leading-relaxed text-slate-500">
                         {activity.description}

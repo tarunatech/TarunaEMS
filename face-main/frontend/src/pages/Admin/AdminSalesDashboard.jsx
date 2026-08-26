@@ -14,7 +14,7 @@ import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions
 
 const AdminSalesDashboard = () => {
   const location = useLocation();
-  const initialSearch = location.state?.search || location.state?.leadName || location.state?.leadFilter || '';
+  const initialSearch = location.state?.employeeFilter || location.state?.search || location.state?.leadName || location.state?.leadFilter || '';
 
   // State
   const [leads, setLeads] = useState([]);
@@ -182,7 +182,7 @@ const AdminSalesDashboard = () => {
   }, []);
 
   useEffect(() => {
-    const passedSearch = location.state?.search || location.state?.leadName || location.state?.leadFilter;
+    const passedSearch = location.state?.employeeFilter || location.state?.search || location.state?.leadName || location.state?.leadFilter;
     if (passedSearch) {
       setFilters(prev => ({
         ...prev,

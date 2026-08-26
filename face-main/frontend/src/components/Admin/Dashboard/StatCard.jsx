@@ -115,13 +115,13 @@ const StatCard = ({ stat, index = 0 }) => {
 
       {/* Left Content: Number on top, Label on bottom */}
       <div className="relative z-10 min-w-0 pr-1.5 sm:pr-2">
-        <div className="flex items-baseline gap-1.5 sm:gap-2 mb-0.5 sm:mb-1.5">
+        <div className="flex items-center flex-wrap gap-1 sm:gap-1.5 mb-0.5 sm:mb-1.5">
           <h3 className="text-base sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-none tracking-tight">
             {valueDisplay}
           </h3>
           {bracketBadge && (
             <span
-              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[9px] sm:text-[10px] font-semibold tracking-wide leading-none ${accent.bg} ${accent.border} ${accent.text} transition-opacity duration-200`}
+              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[9.5px] sm:text-[10.5px] font-semibold tracking-wide leading-none whitespace-nowrap shrink-0 ${accent.bg} ${accent.border} ${accent.text} transition-opacity duration-200`}
               style={{ fontVariantNumeric: 'tabular-nums' }}
             >
               <span className="opacity-60 font-medium">(</span>

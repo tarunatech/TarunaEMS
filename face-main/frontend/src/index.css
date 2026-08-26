@@ -1253,19 +1253,6 @@ html.theme-dark .premium-loading-spinner-message {
   color: #e2e8f0 !important;
 }
 
-html.theme-dark .admin-page-shell .animate-spin.text-blue-600,
-html.theme-dark main .animate-spin.text-blue-600 {
-  color: #60a5fa !important;
-}
-
-html.theme-dark .admin-page-shell .animate-spin.border-neon-pink,
-html.theme-dark main .animate-spin.border-neon-pink,
-html.theme-dark .admin-page-shell .animate-spin.border-b-2.border-neon-pink,
-html.theme-dark main .animate-spin.border-b-2.border-neon-pink {
-  border-color: rgba(96, 165, 250, 0.18) !important;
-  border-bottom-color: #60a5fa !important;
-}
-
 .dashboard-panel,
 .dashboard-stat-card {
   backdrop-filter: blur(18px);
@@ -1316,8 +1303,7 @@ html.theme-dark .dashboard-panel {
 }
 
 html.theme-dark .dashboard-stat-card {
-  background:
-    linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(17, 24, 39, 0.92)) !important;
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(17, 24, 39, 0.92)) !important;
   border-color: rgba(148, 163, 184, 0.22) !important;
   box-shadow: 0 16px 38px rgba(0, 0, 0, 0.30) !important;
 }
@@ -1346,102 +1332,67 @@ html.theme-dark .dashboard-soft-row:hover {
   border-color: rgba(129, 140, 248, 0.36) !important;
 }
 
-html.theme-dark .employee-attendance-page {
-  background: transparent !important;
+/* Stat Cards Dark Circle Arcs & Accent Badges */
+html.theme-dark .bg-purple-100\/80,
+html.theme-dark .bg-emerald-100\/80,
+html.theme-dark .bg-orange-100\/80,
+html.theme-dark .bg-pink-100\/80 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-html.theme-dark .attendance-soft-panel {
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(17, 24, 39, 0.92)) !important;
-  border-color: rgba(148, 163, 184, 0.20) !important;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28) !important;
+html.theme-dark .bg-purple-50 {
+  background-color: rgba(147, 51, 234, 0.18) !important;
+  color: #c084fc !important;
 }
 
-html.theme-dark .attendance-soft-panel:hover {
-  border-color: rgba(129, 140, 248, 0.34) !important;
-  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(96, 165, 250, 0.06) !important;
+html.theme-dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #6ee7b7 !important;
 }
 
-html.theme-dark .attendance-soft-row {
-  background: rgba(30, 41, 59, 0.46) !important;
+html.theme-dark .bg-orange-50 {
+  background-color: rgba(249, 115, 22, 0.18) !important;
+  color: #fdba74 !important;
+}
+
+html.theme-dark .bg-pink-50 {
+  background-color: rgba(236, 72, 153, 0.18) !important;
+  color: #f472b6 !important;
+}
+
+/* Needs Your Attention & Task Health Panel Dark Rows & Badges */
+html.theme-dark .bg-slate-50\/70,
+html.theme-dark .bg-slate-50\/80 {
+  background-color: rgba(30, 41, 59, 0.6) !important;
   border-color: rgba(148, 163, 184, 0.16) !important;
-  box-shadow: none !important;
 }
 
-html.theme-dark .attendance-soft-row:hover {
-  background: rgba(37, 99, 235, 0.10) !important;
-  border-color: rgba(129, 140, 248, 0.26) !important;
+html.theme-dark .dashboard-panel button.group:hover {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+  border-color: rgba(129, 140, 248, 0.35) !important;
 }
 
-html.theme-dark .attendance-note-panel {
-  background: rgba(79, 70, 229, 0.10) !important;
-  border-color: rgba(129, 140, 248, 0.18) !important;
+html.theme-dark .dashboard-panel button .bg-white,
+html.theme-dark .dashboard-panel .bg-white {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #f8fafc !important;
 }
 
-html.theme-dark .attendance-note-panel,
-html.theme-dark .attendance-note-panel p,
-html.theme-dark .attendance-note-panel div {
-  color: #a5b4fc !important;
+html.theme-dark .dashboard-panel button .text-slate-700,
+html.theme-dark .dashboard-panel button .text-slate-800,
+html.theme-dark .dashboard-panel button .text-slate-900,
+html.theme-dark .dashboard-panel button .text-slate-950 {
+  color: #f8fafc !important;
 }
 
-html.theme-dark .employee-tasks-page {
-  background: transparent !important;
+html.theme-dark .dashboard-panel button .text-slate-500,
+html.theme-dark .dashboard-panel button .text-slate-600 {
+  color: #94a3b8 !important;
 }
 
-html.theme-dark .employee-tasks-panel,
-html.theme-dark .employee-task-card,
-html.theme-dark .employee-tasks-modal {
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(17, 24, 39, 0.92)) !important;
-  border-color: rgba(148, 163, 184, 0.20) !important;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28) !important;
-}
-
-html.theme-dark .employee-tasks-panel:hover,
-html.theme-dark .employee-task-card:hover {
-  border-color: rgba(129, 140, 248, 0.34) !important;
-  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(96, 165, 250, 0.06) !important;
-}
-
-html.theme-dark .employee-tasks-row,
-html.theme-dark .employee-tasks-inner-row {
-  background: rgba(30, 41, 59, 0.46) !important;
-  border-color: rgba(148, 163, 184, 0.16) !important;
-  box-shadow: none !important;
-}
-
-html.theme-dark .employee-tasks-inner-row {
-  background: rgba(15, 23, 42, 0.42) !important;
-}
-
-html.theme-dark .employee-tasks-page .bg-slate-200,
-html.theme-dark .employee-tasks-modal .bg-slate-200 {
-  background: rgba(51, 65, 85, 0.76) !important;
-}
-
-html.theme-dark .employee-tasks-page .bg-indigo-50,
-html.theme-dark .employee-tasks-modal .bg-indigo-50 {
-  background: rgba(79, 70, 229, 0.14) !important;
-}
-
-html.theme-dark .employee-tasks-page .bg-emerald-50,
-html.theme-dark .employee-tasks-modal .bg-emerald-50 {
-  background: rgba(16, 185, 129, 0.14) !important;
-}
-
-html.theme-dark .employee-tasks-page .bg-amber-50,
-html.theme-dark .employee-tasks-modal .bg-amber-50 {
-  background: rgba(245, 158, 11, 0.14) !important;
-}
-
-html.theme-dark .employee-tasks-page .bg-red-50,
-html.theme-dark .employee-tasks-modal .bg-red-50 {
-  background: rgba(239, 68, 68, 0.14) !important;
-}
-
-html.theme-dark .employee-task-card .bg-slate-100,
-html.theme-dark .employee-tasks-modal .bg-slate-100 {
-  background: rgba(100, 116, 139, 0.18) !important;
-  color: #cbd5e1 !important;
-  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+html.theme-dark .dashboard-panel button .ring-slate-200\/70 {
+  --tw-ring-color: rgba(148, 163, 184, 0.22) !important;
 }
 
 html.theme-dark .employee-task-card .bg-indigo-100,
