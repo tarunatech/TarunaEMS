@@ -47,14 +47,14 @@ const MetricCard = ({ title, value, icon: Icon, tone = 'indigo' }) => {
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[12px] text-slate-500">{title}</p>
-          <h3 className="mt-1 text-xl font-semibold text-slate-900">{value}</h3>
+    <div className="rounded-xl border border-slate-200 bg-white p-3 sm:p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] sm:text-[12px] text-slate-500 truncate">{title}</p>
+          <h3 className="mt-0.5 sm:mt-1 text-lg sm:text-xl font-semibold text-slate-900">{value}</h3>
         </div>
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ring-1 ${toneClasses[tone]}`}>
-          <Icon className="h-5 w-5" />
+        <div className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg ring-1 ${toneClasses[tone]}`}>
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       </div>
     </div>
@@ -198,7 +198,7 @@ const AdminPerformanceReview = ({ search = '' }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <MetricCard title="Avg team rating" value={aggregates?.avgRating || 0} icon={Star} tone="amber" />
         <MetricCard title="Team on-time rate" value={`${aggregates?.teamOnTimeRate || 0}%`} icon={CheckCircle} tone="emerald" />
         <MetricCard title="Tasks closed" value={aggregates?.totalTasksClosed || 0} icon={Target} tone="indigo" />

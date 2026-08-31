@@ -83,12 +83,14 @@ const generatePayslipPDF = async (payslip, employee) => {
     doc.fontSize(10).font('Helvetica');
 
     const deductions = [
-      ['Provident Fund', payslip.deductions.pf],
-      ['ESI', payslip.deductions.esi],
-      ['Income Tax', payslip.deductions.tax],
-      ['Professional Tax', payslip.deductions.professionalTax],
-      ['Loan Deduction', payslip.deductions.loanDeduction],
-      ['Other Deductions', payslip.deductions.otherDeductions]
+      ['Provident Fund', payslip.deductions?.pf || 0],
+      ['ESI', payslip.deductions?.esi || 0],
+      ['Income Tax', payslip.deductions?.tax || 0],
+      ['Professional Tax', payslip.deductions?.professionalTax || 0],
+      ['Loan Deduction', payslip.deductions?.loanDeduction || 0],
+      ['Late Check-in Deduction', payslip.deductions?.lateDeduction || 0],
+      ['Half Day Deduction', payslip.deductions?.halfDayDeduction || 0],
+      ['Other Deductions', payslip.deductions?.otherDeductions || 0]
     ].filter(([_, val]) => val > 0);
 
     deductions.forEach(([label, value]) => {
@@ -222,27 +224,48 @@ export const generatePayslip = async (req, res) => {
     ).length;
     const absentDays = workingDays - presentDays - leaveDays;
 
+    const lateDaysCount = attendanceRecords.filter(a =>
+      ['late', 'Late'].includes(a.status) || a.isLate === true
+    ).length;
+    const autoLateDeduction = lateDaysCount * 200;
+
+    const halfDaysCount = attendanceRecords.filter(a =>
+      ['Half Day', 'half_day', 'Half-day'].includes(a.status) || a.isHalfDay === true
+    ).length;
+
+    const basicSalaryVal = earnings?.basicSalary ?? employee.salaryInfo?.basicSalary ?? 0;
+    const hraVal = earnings?.hra ?? employee.salaryInfo?.allowances?.hra ?? 0;
+    const medicalVal = earnings?.medical ?? employee.salaryInfo?.allowances?.medical ?? 0;
+    const transportVal = earnings?.transport ?? employee.salaryInfo?.allowances?.transport ?? 0;
+    const otherAllowancesVal = earnings?.otherAllowances ?? employee.salaryInfo?.allowances?.other ?? 0;
+    const grossBase = basicSalaryVal + hraVal + medicalVal + transportVal + otherAllowancesVal;
+
+    const dailySalary = workingDays > 0 ? (grossBase / workingDays) : 0;
+    const autoHalfDayDeduction = Math.round(halfDaysCount * (dailySalary / 2));
+
     const payslipData = {
       employee: employeeId,
       employeeId: employee.employeeId,
       employeeName: `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`,
       period: { month, year },
       earnings: {
-        basicSalary: earnings?.basicSalary ?? employee.salaryInfo.basicSalary,
-        hra: earnings?.hra ?? employee.salaryInfo.allowances?.hra ?? 0,
-        medical: earnings?.medical ?? employee.salaryInfo.allowances?.medical ?? 0,
-        transport: earnings?.transport ?? employee.salaryInfo.allowances?.transport ?? 0,
+        basicSalary: basicSalaryVal,
+        hra: hraVal,
+        medical: medicalVal,
+        transport: transportVal,
         bonus: earnings?.bonus ?? 0,
         overtime: earnings?.overtime ?? 0,
-        otherAllowances: earnings?.otherAllowances ?? employee.salaryInfo.allowances?.other ?? 0
+        otherAllowances: otherAllowancesVal
       },
       deductions: {
-        pf: deductions?.pf ?? employee.salaryInfo.deductions?.pf ?? 0,
-        esi: deductions?.esi ?? employee.salaryInfo.deductions?.esi ?? 0,
-        tax: deductions?.tax ?? employee.salaryInfo.deductions?.tax ?? 0,
+        pf: deductions?.pf ?? employee.salaryInfo?.deductions?.pf ?? 0,
+        esi: deductions?.esi ?? employee.salaryInfo?.deductions?.esi ?? 0,
+        tax: deductions?.tax ?? employee.salaryInfo?.deductions?.tax ?? 0,
         professionalTax: deductions?.professionalTax ?? 0,
         loanDeduction: deductions?.loanDeduction ?? 0,
-        otherDeductions: deductions?.otherDeductions ?? employee.salaryInfo.deductions?.other ?? 0
+        lateDeduction: deductions?.lateDeduction ?? autoLateDeduction,
+        halfDayDeduction: deductions?.halfDayDeduction ?? autoHalfDayDeduction,
+        otherDeductions: deductions?.otherDeductions ?? employee.salaryInfo?.deductions?.other ?? 0
       },
       attendance: {
         workingDays,
@@ -656,7 +679,24 @@ export const generateBulkPayslips = async (req, res) => {
           ['leave', 'Leave', 'approved_leave'].includes(a.status)
         ).length;
 
+        const lateDaysCount = attendanceRecords.filter(a =>
+          ['late', 'Late'].includes(a.status) || a.isLate === true
+        ).length;
+        const autoLateDeduction = lateDaysCount * 200;
+
+        const halfDaysCount = attendanceRecords.filter(a =>
+          ['Half Day', 'half_day', 'Half-day'].includes(a.status) || a.isHalfDay === true
+        ).length;
+
         const salaryFactor = basicSalary / (employee.salaryInfo?.basicSalary || basicSalary || 1);
+        const grossBase = basicSalary +
+          Math.round((employee.salaryInfo?.allowances?.hra || 0) * salaryFactor) +
+          Math.round((employee.salaryInfo?.allowances?.medical || 0) * salaryFactor) +
+          Math.round((employee.salaryInfo?.allowances?.transport || 0) * salaryFactor) +
+          Math.round((employee.salaryInfo?.allowances?.other || 0) * salaryFactor);
+
+        const dailySalary = workingDays > 0 ? (grossBase / workingDays) : 0;
+        const autoHalfDayDeduction = Math.round(halfDaysCount * (dailySalary / 2));
 
         const payslipData = {
           employee: employee._id,
@@ -665,16 +705,18 @@ export const generateBulkPayslips = async (req, res) => {
           period: { month, year },
           earnings: {
             basicSalary: basicSalary,
-            hra: Math.round((employee.salaryInfo.allowances?.hra || 0) * salaryFactor),
-            medical: Math.round((employee.salaryInfo.allowances?.medical || 0) * salaryFactor),
-            transport: Math.round((employee.salaryInfo.allowances?.transport || 0) * salaryFactor),
-            otherAllowances: Math.round((employee.salaryInfo.allowances?.other || 0) * salaryFactor)
+            hra: Math.round((employee.salaryInfo?.allowances?.hra || 0) * salaryFactor),
+            medical: Math.round((employee.salaryInfo?.allowances?.medical || 0) * salaryFactor),
+            transport: Math.round((employee.salaryInfo?.allowances?.transport || 0) * salaryFactor),
+            otherAllowances: Math.round((employee.salaryInfo?.allowances?.other || 0) * salaryFactor)
           },
           deductions: {
-            pf: Math.round((employee.salaryInfo.deductions?.pf || 0) * salaryFactor),
-            esi: Math.round((employee.salaryInfo.deductions?.esi || 0) * salaryFactor),
-            tax: Math.round((employee.salaryInfo.deductions?.tax || 0) * salaryFactor),
-            otherDeductions: Math.round((employee.salaryInfo.deductions?.other || 0) * salaryFactor)
+            pf: Math.round((employee.salaryInfo?.deductions?.pf || 0) * salaryFactor),
+            esi: Math.round((employee.salaryInfo?.deductions?.esi || 0) * salaryFactor),
+            tax: Math.round((employee.salaryInfo?.deductions?.tax || 0) * salaryFactor),
+            lateDeduction: autoLateDeduction,
+            halfDayDeduction: autoHalfDayDeduction,
+            otherDeductions: Math.round((employee.salaryInfo?.deductions?.other || 0) * salaryFactor)
           },
           attendance: {
             workingDays,
@@ -747,6 +789,111 @@ export const generateBulkPayslips = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message
+    });
+  }
+};
+
+export const getPayslipPreview = async (req, res) => {
+  try {
+    const { employeeId, month, year } = req.query;
+
+    if (!employeeId || !month || !year) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee ID, month, and year are required'
+      });
+    }
+
+    const employee = await Employee.findById(employeeId)
+      .populate('user', 'name email')
+      .populate('workInfo.department', 'name');
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    const m = Number(month);
+    const y = Number(year);
+    const startDate = new Date(y, m - 1, 1);
+    const endDate = new Date(y, m, 0);
+    const workingDays = endDate.getDate();
+
+    const attendanceRecords = await Attendance.find({
+      $or: [
+        { employee: employeeId },
+        { user: employee.user?._id }
+      ],
+      date: { $gte: startDate, $lte: endDate }
+    });
+
+    const presentDays = attendanceRecords.filter(a =>
+      ['present', 'Present', 'late', 'Late'].includes(a.status)
+    ).length;
+    const leaveDays = attendanceRecords.filter(a =>
+      ['leave', 'Leave', 'approved_leave'].includes(a.status)
+    ).length;
+    const absentDays = Math.max(0, workingDays - presentDays - leaveDays);
+
+    const lateDaysCount = attendanceRecords.filter(a =>
+      ['late', 'Late'].includes(a.status) || a.isLate === true
+    ).length;
+    const autoLateDeduction = lateDaysCount * 200;
+
+    const halfDaysCount = attendanceRecords.filter(a =>
+      ['Half Day', 'half_day', 'Half-day'].includes(a.status) || a.isHalfDay === true
+    ).length;
+
+    const basicSalary = employee.salaryInfo?.basicSalary || 0;
+    const hra = employee.salaryInfo?.allowances?.hra || 0;
+    const medical = employee.salaryInfo?.allowances?.medical || 0;
+    const transport = employee.salaryInfo?.allowances?.transport || 0;
+    const otherAllowances = employee.salaryInfo?.allowances?.other || 0;
+    const grossBase = basicSalary + hra + medical + transport + otherAllowances;
+
+    const dailySalary = workingDays > 0 ? (grossBase / workingDays) : 0;
+    const autoHalfDayDeduction = Math.round(halfDaysCount * (dailySalary / 2));
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        employeeId: employee._id,
+        period: { month: m, year: y },
+        workingDays,
+        presentDays,
+        leaveDays,
+        absentDays,
+        lateDays: lateDaysCount,
+        halfDays: halfDaysCount,
+        dailySalary: Math.round(dailySalary),
+        earnings: {
+          basicSalary,
+          hra,
+          medical,
+          transport,
+          bonus: 0,
+          overtime: 0,
+          otherAllowances
+        },
+        deductions: {
+          pf: employee.salaryInfo?.deductions?.pf || 0,
+          esi: employee.salaryInfo?.deductions?.esi || 0,
+          tax: employee.salaryInfo?.deductions?.tax || 0,
+          professionalTax: 0,
+          loanDeduction: 0,
+          lateDeduction: autoLateDeduction,
+          halfDayDeduction: autoHalfDayDeduction,
+          otherDeductions: employee.salaryInfo?.deductions?.other || 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching payslip preview:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to calculate payslip preview'
     });
   }
 };

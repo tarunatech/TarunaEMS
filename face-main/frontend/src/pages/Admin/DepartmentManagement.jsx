@@ -19,7 +19,7 @@ import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions
 const ModalShell = ({ title, onClose, children, className = '' }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
     <div className="fixed inset-0 bg-slate-900/30" onClick={onClose} />
-    <div className={`premium-panel relative flex max-h-[90dvh] w-[calc(100vw-1rem)] max-w-sm flex-col overflow-hidden rounded-xl sm:max-h-[90vh] sm:w-full sm:max-w-4xl sm:rounded-2xl ${className}`}>
+    <div className={`premium-panel relative flex max-h-[70dvh] sm:max-h-[90vh] w-[calc(100vw-1rem)] max-w-sm flex-col overflow-hidden rounded-xl sm:w-full sm:max-w-4xl sm:rounded-2xl ${className}`}>
       <style>{`
         .department-modal-scroll {
           scrollbar-width: none;
@@ -253,7 +253,7 @@ const DepartmentManagement = () => {
 
   return (
     <AdminLayout>
-      <div className="admin-page-shell space-y-6 text-slate-900">
+      <div className="admin-page-shell w-full max-w-full overflow-x-hidden space-y-4 sm:space-y-6 text-slate-900">
         <div className="flex flex-col justify-between gap-3 sm:gap-4 md:flex-row md:items-center">
           <div>
             <h1 className="premium-page-title text-xl font-bold sm:text-2xl">Department Management</h1>
@@ -339,7 +339,7 @@ const DepartmentManagement = () => {
           </div>
         </div>
 
-        <div className="premium-panel overflow-hidden rounded-2xl">
+        <div className="overflow-hidden rounded-2xl md:premium-panel">
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full">
               <thead className="border-b border-slate-200 bg-slate-50">
@@ -370,13 +370,12 @@ const DepartmentManagement = () => {
                     <td className="p-4 text-slate-700 sm:p-6">{department.employeeCount || 0}</td>
                     <td className="p-4 sm:p-6">
                       <span
-                        className={`rounded-full px-3 py-1 text-xs ${
-                          department.status === 'Active'
-                            ? 'bg-green-100 text-green-700'
-                            : department.status === 'Inactive'
+                        className={`rounded-full px-3 py-1 text-xs ${department.status === 'Active'
+                          ? 'bg-green-100 text-green-700'
+                          : department.status === 'Inactive'
                             ? 'bg-red-100 text-red-700'
                             : 'bg-yellow-100 text-yellow-700'
-                        }`}
+                          }`}
                       >
                         {department.status}
                       </span>
@@ -418,28 +417,28 @@ const DepartmentManagement = () => {
             </table>
           </div>
 
-          <div className="scrollbar-hide md:hidden max-h-[68dvh] overflow-y-auto overscroll-contain p-3">
-            <div className="grid gap-3">
+          <div className="scrollbar-hide md:hidden max-h-[68dvh] overflow-y-auto overscroll-contain p-0 w-full max-w-full overflow-x-hidden">
+            <div className="grid gap-2.5 w-full max-w-full">
               {filteredDepartments.map((department) => (
                 <div
                   key={department._id}
                   onClick={(event) => openDepartmentDetails(event, department)}
-                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-200 cursor-pointer hover:border-blue-200 hover:bg-blue-50/40 active:bg-indigo-50/60"
+                  className="w-full max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm transition-all duration-200 cursor-pointer hover:border-blue-200 hover:bg-blue-50/40 active:bg-indigo-50/60"
                 >
-                  <div className="mb-3 flex items-start justify-between gap-2">
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50">
-                        <Building className="h-5 w-5 text-blue-600" />
+                  <div className="mb-2.5 flex items-center justify-between gap-2 min-w-0">
+                    <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50">
+                        <Building className="h-4.5 w-4.5 text-blue-600" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-slate-900">{department.name}</p>
+                        <p className="truncate text-sm font-semibold text-slate-900">{department.name}</p>
                         <p className="text-xs text-slate-500">{department.code}</p>
                       </div>
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-1">
                       <button
                         onClick={() => openViewModal(department)}
-                        className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                        className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
                         title="View Details"
                         aria-label={`View ${department.name}`}
                       >
@@ -450,7 +449,7 @@ const DepartmentManagement = () => {
                           setSelectedDepartment(department);
                           setShowEditModal(true);
                         }}
-                        className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                        className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
                         title="Edit"
                         aria-label={`Edit ${department.name}`}
                       >
@@ -458,7 +457,7 @@ const DepartmentManagement = () => {
                       </button>
                       <button
                         onClick={() => handleDeleteDepartment(department._id)}
-                        className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                        className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
                         title="Delete"
                         aria-label={`Delete ${department.name}`}
                       >
@@ -466,32 +465,31 @@ const DepartmentManagement = () => {
                       </button>
                     </div>
                   </div>
-                  <div className="space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-slate-500">Manager</span>
-                      <span className="truncate text-right font-medium text-slate-800">{department.manager || 'Not assigned'}</span>
+                  <div className="space-y-2 rounded-lg bg-slate-50 p-2.5 text-xs">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-slate-500 shrink-0">Manager</span>
+                      <span className="truncate text-right font-medium text-slate-800 min-w-0">{department.manager || 'Not assigned'}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-slate-500">Employees</span>
-                      <span className="font-medium text-slate-800">{department.employeeCount || 0}</span>
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-slate-500 shrink-0">Employees</span>
+                      <span className="font-medium text-slate-800 shrink-0">{department.employeeCount || 0}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-slate-500">Status</span>
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-slate-500 shrink-0">Status</span>
                       <span
-                        className={`inline-flex flex-shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium leading-none ${
-                          department.status === 'Active'
-                            ? 'bg-green-100 text-green-700'
-                            : department.status === 'Inactive'
+                        className={`inline-flex flex-shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold leading-none ${department.status === 'Active'
+                          ? 'bg-green-100 text-green-700'
+                          : department.status === 'Inactive'
                             ? 'bg-red-100 text-red-700'
                             : 'bg-yellow-100 text-yellow-700'
-                        }`}
+                          }`}
                       >
                         {department.status}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-slate-500">Budget</span>
-                      <span className="truncate text-right font-medium text-slate-800">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-slate-500 shrink-0">Budget</span>
+                      <span className="truncate text-right font-medium text-slate-800 min-w-0">
                         {department.budget ? `₹${department.budget.toLocaleString()}` : '-'}
                       </span>
                     </div>
@@ -774,8 +772,8 @@ const DepartmentManagement = () => {
       {showViewModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
           <div className="fixed inset-0 bg-slate-900/40" onClick={() => setShowViewModal(false)} />
-          <div className="premium-panel relative max-h-[90dvh] w-[calc(100vw-1rem)] max-w-sm overflow-hidden rounded-xl sm:max-h-[90vh] sm:w-full sm:max-w-4xl sm:rounded-2xl">
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:mb-6 sm:border-b-0 sm:bg-transparent sm:p-6 sm:pb-0">
+          <div className="premium-panel relative flex max-h-[65dvh] sm:max-h-[90vh] w-[calc(100vw-1rem)] max-w-sm flex-col overflow-hidden rounded-xl sm:w-full sm:max-w-4xl sm:rounded-2xl">
+            <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:mb-6 sm:border-b-0 sm:bg-transparent sm:p-6 sm:pb-0">
               <h2 className="min-w-0 truncate text-base font-bold text-slate-900 sm:text-2xl">Department Details</h2>
               <div className="flex shrink-0 items-center gap-2">
                 <button
@@ -795,7 +793,7 @@ const DepartmentManagement = () => {
             </div>
 
             {selectedDepartment && (
-              <div className="department-modal-scroll max-h-[calc(90dvh-3rem)] space-y-3 overflow-y-auto overscroll-contain p-3 sm:max-h-none sm:space-y-6 sm:overflow-visible sm:p-6 sm:pt-0">
+              <div className="department-modal-scroll max-h-[calc(65dvh-3rem)] space-y-2.5 overflow-y-auto overscroll-contain p-2.5 sm:max-h-none sm:space-y-6 sm:overflow-visible sm:p-6 sm:pt-0">
                 <div className="flex items-center space-x-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:space-x-4 sm:p-4">
                   <div className="premium-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-full sm:h-16 sm:w-16" style={{ '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
                     <Building className="h-5 w-5 sm:h-8 sm:w-8" />
@@ -814,25 +812,24 @@ const DepartmentManagement = () => {
                       <p className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
                         <span className="text-slate-900">Manager:</span>
                         <span className="min-w-0 break-words">
-                        {selectedDepartment.manager || 'Not assigned'}
+                          {selectedDepartment.manager || 'Not assigned'}
                         </span>
                       </p>
                       <p className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
                         <span className="text-slate-900">Location:</span>
                         <span className="min-w-0 break-words">
-                        {selectedDepartment.location || 'Not specified'}
+                          {selectedDepartment.location || 'Not specified'}
                         </span>
                       </p>
                       <p className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
                         <span className="text-slate-900">Status:</span>
                         <span
-                          className={`w-fit rounded-full px-2 py-1 text-xs sm:ml-2 ${
-                            selectedDepartment.status === 'Active'
-                              ? 'bg-green-100 text-green-700'
-                              : selectedDepartment.status === 'Inactive'
+                          className={`w-fit rounded-full px-2 py-1 text-xs sm:ml-2 ${selectedDepartment.status === 'Active'
+                            ? 'bg-green-100 text-green-700'
+                            : selectedDepartment.status === 'Inactive'
                               ? 'bg-red-100 text-red-700'
                               : 'bg-yellow-100 text-yellow-700'
-                          }`}
+                            }`}
                         >
                           {selectedDepartment.status}
                         </span>
@@ -840,7 +837,7 @@ const DepartmentManagement = () => {
                       <p className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
                         <span className="text-slate-900">Employees:</span>
                         <span>
-                        {selectedDepartment.employeeCount || 0}
+                          {selectedDepartment.employeeCount || 0}
                         </span>
                       </p>
                     </div>
@@ -903,9 +900,9 @@ const DepartmentManagement = () => {
                               <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${employee.status === 'Active'
                                 ? 'bg-green-100 text-green-700'
                                 : employee.status === 'Inactive'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-slate-100 text-slate-700'
-                              }`}>
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-slate-100 text-slate-700'
+                                }`}>
                                 {employee.status || 'Unknown'}
                               </span>
                             </div>

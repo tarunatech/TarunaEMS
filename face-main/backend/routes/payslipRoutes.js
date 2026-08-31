@@ -8,7 +8,8 @@ import {
   downloadPayslip,
   updatePayslipStatus,
   deletePayslip,
-  generateBulkPayslips
+  generateBulkPayslips,
+  getPayslipPreview
 } from '../controllers/payslipController.js';
 
 const router = express.Router();
@@ -19,6 +20,7 @@ router.post('/generate', generatePayslip);
 router.post('/bulk-generate', generateBulkPayslips);
 
 router.get('/', getPayslips);
+router.get('/preview', getPayslipPreview);
 router.get('/employee/:employeeId', getEmployeePayslips);
 router.get('/:id/download', downloadPayslip);
 router.get('/:id', getPayslipById);

@@ -29,7 +29,7 @@ const AdminPayslips = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedPayslip, setSelectedPayslip] = useState(null);
   const [generating, setGenerating] = useState(false);
-  
+
   const currentDate = new Date();
   const [bulkFormData, setBulkFormData] = useState({
     employeeId: '',
@@ -50,7 +50,7 @@ const AdminPayslips = () => {
   };
   const [filterMonth, setFilterMonth] = useState(currentDate.getMonth() + 1);
   const [filterYear, setFilterYear] = useState(currentDate.getFullYear());
-  
+
   const [formData, setFormData] = useState({
     employeeId: '',
     month: currentDate.getMonth() + 1,
@@ -70,6 +70,8 @@ const AdminPayslips = () => {
       tax: 0,
       professionalTax: 0,
       loanDeduction: 0,
+      lateDeduction: 0,
+      halfDayDeduction: 0,
       otherDeductions: 0
     },
     remarks: ''
@@ -111,6 +113,29 @@ const AdminPayslips = () => {
     }
   };
 
+  const fetchPayslipPreview = async (employeeId, month, year) => {
+    if (!employeeId || !month || !year) return;
+    try {
+      const response = await payslipAPI.getPayslipPreview({ employeeId, month, year });
+      if (response.data?.success && response.data?.data) {
+        const preview = response.data.data;
+        setFormData(prev => ({
+          ...prev,
+          earnings: {
+            ...prev.earnings,
+            ...preview.earnings
+          },
+          deductions: {
+            ...prev.deductions,
+            ...preview.deductions
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching payslip preview:', error);
+    }
+  };
+
   const handleEmployeeSelect = async (employeeId) => {
     const employee = employees.find(e => e._id === employeeId);
     if (employee) {
@@ -132,9 +157,12 @@ const AdminPayslips = () => {
           tax: employee.salaryInfo?.deductions?.tax || 0,
           professionalTax: 0,
           loanDeduction: 0,
+          lateDeduction: 0,
+          halfDayDeduction: 0,
           otherDeductions: employee.salaryInfo?.deductions?.other || 0
         }
       }));
+      await fetchPayslipPreview(employeeId, formData.month, formData.year);
     }
   };
 
@@ -214,7 +242,7 @@ const AdminPayslips = () => {
       if (results.success?.length > 0 || results.regenerated?.length > 0) {
         toast.success(message);
       }
-      
+
       if (results.skipped?.length > 0) {
         const confirmed = window.confirm(
           `Some payslips in the selected range already exist.\n\n` +
@@ -273,7 +301,7 @@ const AdminPayslips = () => {
 
   const handleDelete = async (payslipId) => {
     if (!window.confirm('Are you sure you want to delete this payslip?')) return;
-    
+
     try {
       await payslipAPI.deletePayslip(payslipId);
       toast.success('Payslip deleted');
@@ -366,14 +394,14 @@ const AdminPayslips = () => {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <Calendar className="w-5 h-5 text-slate-400" />
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
+              <Calendar className="w-4 h-4 text-slate-400" />
               <select
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(parseInt(e.target.value))}
-                className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
               >
                 {months.map((month, index) => (
                   <option key={index} value={index + 1}>{month}</option>
@@ -382,7 +410,7 @@ const AdminPayslips = () => {
               <select
                 value={filterYear}
                 onChange={(e) => setFilterYear(parseInt(e.target.value))}
-                className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
               >
                 {years.map(year => (
                   <option key={year} value={year}>{year}</option>
@@ -391,12 +419,12 @@ const AdminPayslips = () => {
             </div>
             <button
               onClick={fetchPayslips}
-              className="px-4 py-2 bg-white border border-blue-200 hover:bg-blue-50 text-blue-600 rounded-lg flex items-center space-x-2 transition-all duration-200"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-white border border-blue-200 hover:bg-blue-50 text-blue-600 rounded-lg flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm transition-all duration-200"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Refresh</span>
             </button>
-            <div className="ml-auto text-slate-500">
+            <div className="ml-auto text-slate-500 text-xs sm:text-sm">
               Total: {payslips.length} payslips
             </div>
           </div>
@@ -494,143 +522,154 @@ const AdminPayslips = () => {
         </div>
 
         {showGenerateModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-2.5 pt-6 pb-20 sm:items-center sm:p-4">
             <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowGenerateModal(false)} />
-            <div className="relative bg-white border border-slate-200 rounded-xl shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-slate-900">Generate Payslip</h2>
+            <div className="relative flex max-h-[380px] sm:max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+              <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 px-3.5 py-2.5 backdrop-blur sm:px-6 sm:py-3.5">
+                <h2 className="text-base font-bold text-slate-900 sm:text-xl">Generate Payslip</h2>
                 <button
                   onClick={() => setShowGenerateModal(false)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
+                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleGeneratePayslip} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Employee *</label>
-                    <select
-                      value={formData.employeeId}
-                      onChange={(e) => handleEmployeeSelect(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                      required
-                    >
-                      <option value="">Select Employee</option>
-                      {employees.map(emp => (
-                        <option key={emp._id} value={emp._id}>
-                          {emp.personalInfo?.firstName} {emp.personalInfo?.lastName} ({emp.employeeId})
-                        </option>
-                      ))}
-                    </select>
+              <form onSubmit={handleGeneratePayslip} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <div className="task-details-modal-scroll min-h-0 flex-1 space-y-3 overflow-y-auto px-3.5 py-3 sm:space-y-6 sm:px-6 sm:py-4">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Employee *</label>
+                      <select
+                        value={formData.employeeId}
+                        onChange={(e) => handleEmployeeSelect(e.target.value)}
+                        className="w-full px-2.5 py-1.5 sm:px-4 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                        required
+                      >
+                        <option value="">Select Employee</option>
+                        {employees.map(emp => (
+                          <option key={emp._id} value={emp._id}>
+                            {emp.personalInfo?.firstName} {emp.personalInfo?.lastName} ({emp.employeeId})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Month *</label>
+                      <select
+                        value={formData.month}
+                        onChange={(e) => setFormData(prev => ({ ...prev, month: parseInt(e.target.value) }))}
+                        className="w-full px-2.5 py-1.5 sm:px-4 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                      >
+                        {months.map((month, index) => (
+                          <option key={index} value={index + 1}>{month}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Year *</label>
+                      <select
+                        value={formData.year}
+                        onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
+                        className="w-full px-2.5 py-1.5 sm:px-4 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                      >
+                        {years.map(year => (
+                          <option key={year} value={year}>{year}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Month *</label>
-                    <select
-                      value={formData.month}
-                      onChange={(e) => setFormData(prev => ({ ...prev, month: parseInt(e.target.value) }))}
-                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                    >
-                      {months.map((month, index) => (
-                        <option key={index} value={index + 1}>{month}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Year *</label>
-                    <select
-                      value={formData.year}
-                      onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
-                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                    >
-                      {years.map(year => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-green-600 border-b border-slate-200 pb-2">Earnings</h3>
-                    {Object.entries(formData.earnings).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between">
-                        <label className="text-sm text-slate-600 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
-                        <input
-                          type="number"
-                          value={value}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            earnings: { ...prev.earnings, [key]: parseFloat(e.target.value) || 0 }
-                          }))}
-                          className="w-32 px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-right focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                          min="0"
-                        />
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
+                    <div className="space-y-2 sm:space-y-4">
+                      <h3 className="text-xs sm:text-lg font-bold text-green-600 border-b border-slate-200 pb-1 sm:pb-2">Earnings</h3>
+                      {Object.entries(formData.earnings).map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between text-xs sm:text-sm">
+                          <label className="text-slate-600 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
+                          <input
+                            type="number"
+                            value={value}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              earnings: { ...prev.earnings, [key]: parseFloat(e.target.value) || 0 }
+                            }))}
+                            className="w-24 sm:w-32 px-2 py-1 sm:px-3 sm:py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-right text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                            min="0"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2 sm:space-y-4">
+                      <h3 className="text-xs sm:text-lg font-bold text-red-600 border-b border-slate-200 pb-1 sm:pb-2">Deductions</h3>
+                      {Object.entries(formData.deductions).map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between text-xs sm:text-sm">
+                          <label className="text-slate-600 capitalize">
+                            {key === 'pf' ? 'PF (Provident Fund)' :
+                             key === 'esi' ? 'ESI' :
+                             key === 'tax' ? 'Income Tax' :
+                             key === 'professionalTax' ? 'Professional Tax' :
+                             key === 'loanDeduction' ? 'Loan Deduction' :
+                             key === 'lateDeduction' ? 'Late Check-in (₹200/day)' :
+                             key === 'halfDayDeduction' ? 'Half Day (50%/day)' :
+                             key.replace(/([A-Z])/g, ' $1').trim()}
+                          </label>
+                          <input
+                            type="number"
+                            value={value}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              deductions: { ...prev.deductions, [key]: parseFloat(e.target.value) || 0 }
+                            }))}
+                            className="w-24 sm:w-32 px-2 py-1 sm:px-3 sm:py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-right text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                            min="0"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-4">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+                      <div>
+                        <p className="text-xs sm:text-sm text-slate-500">Gross Earnings</p>
+                        <p className="text-xs sm:text-xl font-bold text-green-600">INR {calculateTotals().grossEarnings.toLocaleString()}</p>
                       </div>
-                    ))}
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-red-600 border-b border-slate-200 pb-2">Deductions</h3>
-                    {Object.entries(formData.deductions).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between">
-                        <label className="text-sm text-slate-600 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
-                        <input
-                          type="number"
-                          value={value}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            deductions: { ...prev.deductions, [key]: parseFloat(e.target.value) || 0 }
-                          }))}
-                          className="w-32 px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-right focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                          min="0"
-                        />
+                      <div>
+                        <p className="text-xs sm:text-sm text-slate-500">Total Deductions</p>
+                        <p className="text-xs sm:text-xl font-bold text-red-600">INR {calculateTotals().totalDeductions.toLocaleString()}</p>
                       </div>
-                    ))}
+                      <div>
+                        <p className="text-xs sm:text-sm text-slate-500">Net Salary</p>
+                        <p className="text-xs sm:text-xl font-bold text-slate-900">INR {calculateTotals().netSalary.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Remarks</label>
+                    <textarea
+                      value={formData.remarks}
+                      onChange={(e) => setFormData(prev => ({ ...prev, remarks: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 sm:px-4 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                      rows={1.5}
+                      placeholder="Optional remarks..."
+                    />
                   </div>
                 </div>
 
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-sm text-slate-500">Gross Earnings</p>
-                      <p className="text-xl font-bold text-green-600">INR {calculateTotals().grossEarnings.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Total Deductions</p>
-                      <p className="text-xl font-bold text-red-600">INR {calculateTotals().totalDeductions.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Net Salary</p>
-                      <p className="text-xl font-bold text-slate-900">INR {calculateTotals().netSalary.toLocaleString()}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Remarks</label>
-                  <textarea
-                    value={formData.remarks}
-                    onChange={(e) => setFormData(prev => ({ ...prev, remarks: e.target.value }))}
-                    className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                    rows={2}
-                    placeholder="Optional remarks..."
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 bg-white/95 px-3.5 py-2.5 backdrop-blur sm:px-6 sm:py-3.5">
                   <button
                     type="button"
                     onClick={() => setShowGenerateModal(false)}
-                    className="px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all duration-200"
+                    className="px-3 sm:px-6 py-1.5 sm:py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs sm:text-sm hover:bg-slate-50 transition-all duration-200"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={generating}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
+                    className="px-3 sm:px-6 py-1.5 sm:py-2.5 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold rounded-lg text-xs sm:text-sm shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50"
                   >
                     {generating ? 'Generating...' : 'Generate Payslip'}
                   </button>
@@ -641,30 +680,30 @@ const AdminPayslips = () => {
         )}
 
         {showBulkModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-2.5 pt-6 pb-20 sm:items-center sm:p-4">
             <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowBulkModal(false)} />
-            <div className="relative bg-white border border-slate-200 rounded-xl shadow-xl p-6 w-full max-w-md">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-slate-900">Bulk Generate Payslips</h2>
+            <div className="relative flex max-h-[380px] sm:max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+              <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 px-3.5 py-2.5 backdrop-blur sm:px-6 sm:py-3.5">
+                <h2 className="text-base font-bold text-slate-900 sm:text-xl">Bulk Generate Payslips</h2>
                 <button
                   onClick={() => setShowBulkModal(false)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
+                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <p className="text-slate-600">
+              <div className="task-details-modal-scroll min-h-0 flex-1 space-y-2.5 overflow-y-auto px-3.5 py-3 text-xs sm:text-sm sm:space-y-4 sm:px-6 sm:py-4">
+                <p className="text-slate-600 text-xs sm:text-sm">
                   Select an employee and period range to generate multiple monthly payslips.
                 </p>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Employee</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Employee</label>
                   <select
                     value={bulkFormData.employeeId}
                     onChange={(e) => handleBulkEmployeeSelect(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                    className="w-full px-2.5 py-1.5 sm:px-4 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                   >
                     <option value="">Select Employee</option>
                     {employees.map(emp => (
@@ -675,13 +714,13 @@ const AdminPayslips = () => {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Start Month</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Start Month</label>
                     <select
                       value={bulkFormData.startMonth}
                       onChange={(e) => setBulkFormData(prev => ({ ...prev, startMonth: parseInt(e.target.value) }))}
-                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                      className="w-full px-2.5 py-1.5 sm:px-4 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                     >
                       {months.map((month, index) => (
                         <option key={index} value={index + 1}>{month}</option>
@@ -689,11 +728,11 @@ const AdminPayslips = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Start Year</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Start Year</label>
                     <select
                       value={bulkFormData.startYear}
                       onChange={(e) => setBulkFormData(prev => ({ ...prev, startYear: parseInt(e.target.value) }))}
-                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                      className="w-full px-2.5 py-1.5 sm:px-4 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                     >
                       {years.map(year => (
                         <option key={year} value={year}>{year}</option>
@@ -702,13 +741,13 @@ const AdminPayslips = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">End Month</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">End Month</label>
                     <select
                       value={bulkFormData.endMonth}
                       onChange={(e) => setBulkFormData(prev => ({ ...prev, endMonth: parseInt(e.target.value) }))}
-                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                      className="w-full px-2.5 py-1.5 sm:px-4 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                     >
                       {months.map((month, index) => (
                         <option key={index} value={index + 1}>{month}</option>
@@ -716,11 +755,11 @@ const AdminPayslips = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">End Year</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">End Year</label>
                     <select
                       value={bulkFormData.endYear}
                       onChange={(e) => setBulkFormData(prev => ({ ...prev, endYear: parseInt(e.target.value) }))}
-                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                      className="w-full px-2.5 py-1.5 sm:px-4 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                     >
                       {years.map(year => (
                         <option key={year} value={year}>{year}</option>
@@ -730,81 +769,81 @@ const AdminPayslips = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Basic Salary Amount (INR)</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Basic Salary Amount (INR)</label>
                   <input
                     type="number"
                     value={bulkFormData.basicSalary}
                     onChange={(e) => setBulkFormData(prev => ({ ...prev, basicSalary: parseFloat(e.target.value) || 0 }))}
-                    className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                    className="w-full px-2.5 py-1.5 sm:px-4 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                     min="0"
                     placeholder="Enter basic salary"
                   />
                 </div>
 
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 sm:p-4">
+                  <div className="flex items-start space-x-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-sm text-amber-700 font-medium">Note</p>
-                      <p className="text-xs text-slate-600">
+                      <p className="text-xs font-semibold text-amber-700">Note</p>
+                      <p className="text-[11px] sm:text-xs text-slate-600">
                         Existing payslips for the selected periods will be skipped unless you choose to regenerate them.
                       </p>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex justify-end gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowBulkModal(false)}
-                    className="px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all duration-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => handleBulkGenerate(false)}
-                    disabled={generating}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
-                  >
-                    {generating ? 'Generating...' : 'Generate Payslips'}
-                  </button>
-                </div>
+              <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 bg-white/95 px-3.5 py-2.5 backdrop-blur sm:px-6 sm:py-3.5">
+                <button
+                  type="button"
+                  onClick={() => setShowBulkModal(false)}
+                  className="px-3 sm:px-6 py-1.5 sm:py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs sm:text-sm hover:bg-slate-50 transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleBulkGenerate(false)}
+                  disabled={generating}
+                  className="px-3 sm:px-6 py-1.5 sm:py-2.5 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold rounded-lg text-xs sm:text-sm shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50"
+                >
+                  {generating ? 'Generating...' : 'Generate Payslips'}
+                </button>
               </div>
             </div>
           </div>
         )}
 
         {showViewModal && selectedPayslip && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-2.5 pt-6 pb-20 sm:items-center sm:p-4">
             <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
-            <div className="relative flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl lg:max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3 sm:border-b-0 sm:px-6 sm:pb-0 sm:pt-6">
-                <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Payslip Details</h2>
+            <div className="relative flex max-h-[380px] sm:max-h-[85vh] w-full max-w-3xl lg:max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+              <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 px-3.5 py-2.5 backdrop-blur sm:px-6 sm:py-3.5">
+                <h2 className="text-base font-bold text-slate-900 sm:text-xl">Payslip Details</h2>
                 <button
                   onClick={() => setShowViewModal(false)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
+                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:space-y-6 sm:px-6 sm:py-6 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                <div className="grid grid-cols-2 gap-3 text-sm sm:gap-4 sm:text-base">
+              <div className="task-details-modal-scroll min-h-0 flex-1 space-y-3 overflow-y-auto px-3.5 py-3 text-xs sm:text-sm sm:space-y-6 sm:px-6 sm:py-4">
+                <div className="grid grid-cols-2 gap-3 text-xs sm:gap-4 sm:text-base">
                   <div>
-                    <p className="text-sm text-slate-500">Employee</p>
-                    <p className="text-slate-900 font-semibold">{selectedPayslip.employeeName}</p>
-                    <p className="text-sm text-slate-500">{selectedPayslip.employeeId}</p>
+                    <p className="text-xs text-slate-500">Employee</p>
+                    <p className="text-slate-900 font-semibold text-xs sm:text-base">{selectedPayslip.employeeName}</p>
+                    <p className="text-xs text-slate-500">{selectedPayslip.employeeId}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Period</p>
-                    <p className="text-slate-900 font-semibold">{months[selectedPayslip.period.month - 1]} {selectedPayslip.period.year}</p>
+                    <p className="text-xs text-slate-500">Period</p>
+                    <p className="text-slate-900 font-semibold text-xs sm:text-base">{months[selectedPayslip.period.month - 1]} {selectedPayslip.period.year}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
-                  <div className="rounded-lg border border-green-100 bg-green-50 p-3 sm:p-4">
-                    <h3 className="mb-2 font-bold text-green-700 sm:mb-3">Earnings</h3>
-                    <div className="space-y-1.5 text-sm sm:space-y-2">
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-6">
+                  <div className="rounded-lg border border-green-100 bg-green-50 p-2.5 sm:p-4">
+                    <h3 className="mb-1.5 font-bold text-green-700 text-xs sm:text-base sm:mb-3">Earnings</h3>
+                    <div className="space-y-1 text-xs sm:space-y-2 sm:text-sm">
                       <div className="flex justify-between gap-3"><span className="text-slate-600">Basic</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.basicSalary?.toLocaleString()}</span></div>
                       <div className="flex justify-between gap-3"><span className="text-slate-600">HRA</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.hra?.toLocaleString()}</span></div>
                       <div className="flex justify-between gap-3"><span className="text-slate-600">Medical</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.medical?.toLocaleString()}</span></div>
@@ -812,66 +851,72 @@ const AdminPayslips = () => {
                       <div className="flex justify-between gap-3"><span className="text-slate-600">Bonus</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.bonus?.toLocaleString()}</span></div>
                       <div className="flex justify-between gap-3"><span className="text-slate-600">Overtime</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.overtime?.toLocaleString()}</span></div>
                       <div className="flex justify-between gap-3"><span className="text-slate-600">Other</span><span className="text-right text-slate-900">INR {selectedPayslip.earnings?.otherAllowances?.toLocaleString()}</span></div>
-                      <div className="border-t border-green-200 pt-2 mt-2">
+                      <div className="border-t border-green-200 pt-1.5 mt-1.5">
                         <div className="flex justify-between gap-3 font-bold"><span className="text-green-700">Total</span><span className="text-right text-green-700">INR {selectedPayslip.grossEarnings?.toLocaleString()}</span></div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-red-100 bg-red-50 p-3 sm:p-4">
-                    <h3 className="mb-2 font-bold text-red-700 sm:mb-3">Deductions</h3>
-                    <div className="space-y-1.5 text-sm sm:space-y-2">
+                  <div className="rounded-lg border border-red-100 bg-red-50 p-2.5 sm:p-4">
+                    <h3 className="mb-1.5 font-bold text-red-700 text-xs sm:text-base sm:mb-3">Deductions</h3>
+                    <div className="space-y-1 text-xs sm:space-y-2 sm:text-sm">
                       <div className="flex justify-between gap-3"><span className="text-slate-600">PF</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.pf?.toLocaleString()}</span></div>
                       <div className="flex justify-between gap-3"><span className="text-slate-600">ESI</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.esi?.toLocaleString()}</span></div>
                       <div className="flex justify-between gap-3"><span className="text-slate-600">Income Tax</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.tax?.toLocaleString()}</span></div>
                       <div className="flex justify-between gap-3"><span className="text-slate-600">Prof. Tax</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.professionalTax?.toLocaleString()}</span></div>
                       <div className="flex justify-between gap-3"><span className="text-slate-600">Loan</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.loanDeduction?.toLocaleString()}</span></div>
+                      {selectedPayslip.deductions?.lateDeduction > 0 && (
+                        <div className="flex justify-between gap-3"><span className="text-slate-600">Late Check-in (₹200/day)</span><span className="text-right text-red-600 font-semibold">INR {selectedPayslip.deductions?.lateDeduction?.toLocaleString()}</span></div>
+                      )}
+                      {selectedPayslip.deductions?.halfDayDeduction > 0 && (
+                        <div className="flex justify-between gap-3"><span className="text-slate-600">Half Day (50%/day)</span><span className="text-right text-red-600 font-semibold">INR {selectedPayslip.deductions?.halfDayDeduction?.toLocaleString()}</span></div>
+                      )}
                       <div className="flex justify-between gap-3"><span className="text-slate-600">Other</span><span className="text-right text-slate-900">INR {selectedPayslip.deductions?.otherDeductions?.toLocaleString()}</span></div>
-                      <div className="border-t border-red-200 pt-2 mt-2">
+                      <div className="border-t border-red-200 pt-1.5 mt-1.5">
                         <div className="flex justify-between gap-3 font-bold"><span className="text-red-700">Total</span><span className="text-right text-red-700">INR {selectedPayslip.totalDeductions?.toLocaleString()}</span></div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-center sm:p-4">
-                  <p className="text-slate-600 text-sm">Net Salary</p>
-                  <p className="text-2xl font-bold text-slate-900 sm:text-3xl">INR {selectedPayslip.netSalary?.toLocaleString()}</p>
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-2.5 text-center sm:p-4">
+                  <p className="text-slate-600 text-xs sm:text-sm">Net Salary</p>
+                  <p className="text-lg font-bold text-slate-900 sm:text-3xl">INR {selectedPayslip.netSalary?.toLocaleString()}</p>
                 </div>
 
                 {selectedPayslip.attendance && (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:p-4">
-                    <h3 className="mb-3 font-bold text-slate-900">Attendance Summary</h3>
-                    <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4 sm:gap-4">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:p-4">
+                    <h3 className="mb-2 font-bold text-slate-900 text-xs sm:text-base">Attendance Summary</h3>
+                    <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4 sm:gap-4">
                       <div>
-                        <p className="text-2xl font-bold text-slate-900">{selectedPayslip.attendance.workingDays}</p>
-                        <p className="text-xs text-slate-500">Working Days</p>
+                        <p className="text-base sm:text-2xl font-bold text-slate-900">{selectedPayslip.attendance.workingDays}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500">Working Days</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-green-600">{selectedPayslip.attendance.presentDays}</p>
-                        <p className="text-xs text-slate-500">Present</p>
+                        <p className="text-base sm:text-2xl font-bold text-green-600">{selectedPayslip.attendance.presentDays}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500">Present</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-amber-600">{selectedPayslip.attendance.leaveDays}</p>
-                        <p className="text-xs text-slate-500">Leave</p>
+                        <p className="text-base sm:text-2xl font-bold text-amber-600">{selectedPayslip.attendance.leaveDays}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500">Leave</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-red-600">{selectedPayslip.attendance.absentDays}</p>
-                        <p className="text-xs text-slate-500">Absent</p>
+                        <p className="text-base sm:text-2xl font-bold text-red-600">{selectedPayslip.attendance.absentDays}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500">Absent</p>
                       </div>
                     </div>
                   </div>
                 )}
+              </div>
 
-                <div className="flex justify-end gap-3 border-t border-slate-200 pt-3 sm:pt-4">
-                  <button
-                    onClick={() => handleDownload(selectedPayslip._id)}
-                    className="flex w-full items-center justify-center space-x-2 rounded-lg bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-4 py-2.5 font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md sm:w-auto sm:px-6 sm:py-3"
-                  >
-                    <Download className="w-5 h-5" />
-                    <span>Download PDF</span>
-                  </button>
-                </div>
+              <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-end border-t border-slate-100 bg-white/95 px-3.5 py-2.5 backdrop-blur sm:px-6 sm:py-3.5">
+                <button
+                  onClick={() => handleDownload(selectedPayslip._id)}
+                  className="flex w-full items-center justify-center space-x-2 rounded-lg bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-4 py-2 font-semibold text-white shadow-sm transition-all duration-200 sm:w-auto sm:px-6 sm:py-2.5 text-xs sm:text-sm"
+                >
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Download PDF</span>
+                </button>
               </div>
             </div>
           </div>

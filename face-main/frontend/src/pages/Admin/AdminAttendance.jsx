@@ -16,6 +16,25 @@ const AdminAttendance = () => {
   const initialSearch = location.state?.employeeFilter || location.state?.search || '';
   const today = new Date().toISOString().slice(0, 10);
 
+  const getCurrentMonthStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  };
+
+  const getMonthDateRange = (monthStr) => {
+    if (!monthStr) return { startDate: today, endDate: today };
+    const [year, month] = monthStr.split('-').map(Number);
+    const firstDay = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDayNum = new Date(year, month, 0).getDate();
+    const lastDay = `${year}-${String(month).padStart(2, '0')}-${String(lastDayNum).padStart(2, '0')}`;
+    return { startDate: firstDay, endDate: lastDay };
+  };
+
+  const currentMonthDefault = getCurrentMonthStr();
+  const initialDateRange = getMonthDateRange(currentMonthDefault);
+
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [attendanceSummary, setAttendanceSummary] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -142,7 +161,6 @@ const AdminAttendance = () => {
   };
 
   const clearFilters = () => {
-    const today = new Date().toISOString().slice(0, 10);
     setFilters({
       startDate: today,
       endDate: today,
@@ -205,28 +223,30 @@ const AdminAttendance = () => {
   };
 
   const StatEmployeePopover = ({ employees = [] }) => {
-    const visibleEmployees = employees.slice(0, 6);
-    const remainingCount = Math.max(0, employees.length - visibleEmployees.length);
-
     return (
-      <div className="pointer-events-none absolute left-3 right-3 top-[calc(100%+0.5rem)] z-50 hidden rounded-xl border border-slate-200 bg-white p-3 text-left shadow-2xl shadow-slate-900/15 group-hover:block group-focus-within:block">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Employee Details
-        </p>
-        {visibleEmployees.length === 0 ? (
+      <div className="pointer-events-none absolute left-0 right-0 sm:left-3 sm:right-3 top-[calc(100%+0.5rem)] z-50 hidden rounded-xl border border-slate-200 bg-white p-3 text-left shadow-2xl shadow-slate-900/15 group-hover:block group-focus-within:block group-hover:pointer-events-auto group-focus-within:pointer-events-auto">
+        <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Employee Details
+          </p>
+          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+            {employees.length}
+          </span>
+        </div>
+        {employees.length === 0 ? (
           <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">No employees</p>
         ) : (
-          <div className="max-h-52 space-y-1 overflow-y-auto pr-1 scrollbar-hide">
-            {visibleEmployees.map((employee) => (
-              <div key={employee.id || `${employee.employeeId}-${employee.name}`} className="rounded-lg bg-slate-50 px-3 py-2">
+          <div
+            className="max-h-56 space-y-1.5 overflow-y-auto pr-1"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}
+          >
+            {employees.map((employee, idx) => (
+              <div key={employee.id || `${employee.employeeId}-${idx}`} className="rounded-lg bg-slate-50 px-3 py-2 hover:bg-slate-100 transition-colors">
                 <p className="truncate text-xs font-semibold text-slate-900">{employee.name}</p>
                 <p className="truncate text-[11px] text-slate-500">ID: {employee.employeeId || 'N/A'}</p>
               </div>
             ))}
           </div>
-        )}
-        {remainingCount > 0 && (
-          <p className="mt-2 text-xs font-medium text-slate-500">+{remainingCount} more</p>
         )}
       </div>
     );
@@ -340,20 +360,20 @@ const AdminAttendance = () => {
               </h1>
               <p className="text-slate-500">Monitor and manage employee attendance records</p>
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2 md:mt-0 md:flex md:flex-row md:space-x-3">
+            <div className="mt-3 flex flex-row items-center gap-2 md:mt-0 md:space-x-3">
               <button
                 onClick={exportAttendanceData}
                 disabled={attendanceRecords.length === 0}
-                className="flex items-center justify-center space-x-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-sm text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 md:py-2"
+                className="flex-1 md:flex-none flex items-center justify-center space-x-1.5 rounded-lg sm:rounded-xl border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 md:py-2"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Export</span>
               </button>
               <button
                 onClick={fetchAttendanceData}
-                className="col-span-2 flex items-center justify-center space-x-2 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 sm:px-4 md:col-span-1 md:py-2"
+                className="flex-1 md:flex-none flex items-center justify-center space-x-1.5 rounded-lg sm:rounded-xl bg-blue-600 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 sm:px-4 md:py-2"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Refresh</span>
               </button>
             </div>
@@ -429,40 +449,51 @@ const AdminAttendance = () => {
         {/* Filters */}
         <div className="premium-panel rounded-2xl p-4 sm:p-5">
             <h3 className="text-base font-bold text-slate-900 mb-3">Filters & Search</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
               <div>
-                <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Select Month</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-600">Select Month</label>
+                  {selectedMonth !== currentMonthDefault && (
+                    <button
+                      type="button"
+                      onClick={() => handleMonthChange(currentMonthDefault)}
+                      className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      This Month
+                    </button>
+                  )}
+                </div>
                 <input
                   type="month"
                   value={selectedMonth}
                   onChange={(e) => handleMonthChange(e.target.value)}
-                  className="premium-input w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
+                  className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Start Date</label>
+                <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Start Date</label>
                 <input
                   type="date"
                   value={filters.startDate}
                   onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                  className="premium-input w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
+                  className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">End Date</label>
+                <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">End Date</label>
                 <input
                   type="date"
                   value={filters.endDate}
                   onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                  className="premium-input w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
+                  className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Department</label>
+                <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Department</label>
                 <select
                   value={filters.department}
                   onChange={(e) => handleFilterChange('department', e.target.value)}
-                  className="premium-input w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
+                  className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
                 >
                   <option value="">All Departments</option>
                   {departments.map(dept => (
@@ -472,12 +503,12 @@ const AdminAttendance = () => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Status</label>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Status</label>
                 <select
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className="premium-input w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
+                  className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
                 >
                   <option value="">All Status</option>
                   {ATTENDANCE_STATUS_OPTIONS.map(status => (
@@ -486,11 +517,11 @@ const AdminAttendance = () => {
                 </select>
               </div>
             </div>
-            <div className="mt-3 flex flex-col gap-3 sm:mt-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="w-full sm:max-w-sm">
-                <label className="block text-xs sm:text-sm text-slate-600 mb-1 sm:mb-2">Search Employee</label>
+            <div className="mt-2.5 sm:mt-4 grid grid-cols-3 sm:flex sm:items-end sm:justify-between gap-2 sm:gap-4">
+              <div className="col-span-2 w-full sm:max-w-sm">
+                <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Search Employee</label>
                 <div className="relative">
-                  <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-3 sm:w-4 h-3 sm:h-4 text-slate-400" />
+                  <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-slate-400" />
                   <input
                     type="text"
                     placeholder="Name or employee ID..."
@@ -500,13 +531,15 @@ const AdminAttendance = () => {
                   />
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 sm:text-sm"
-              >
-                Clear Filters
-              </button>
+              <div className="col-span-1 flex items-end">
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="w-full inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 whitespace-nowrap"
+                >
+                  Clear Filters
+                </button>
+              </div>
             </div>
           </div>
 

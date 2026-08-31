@@ -23,6 +23,8 @@ const defaultDeductions = {
   tax: 0,
   professionalTax: 0,
   loanDeduction: 0,
+  lateDeduction: 0,
+  halfDayDeduction: 0,
   otherDeductions: 0,
 };
 
@@ -118,6 +120,8 @@ const calculateTotals = (values) => {
     (deductions.tax || 0) +
     (deductions.professionalTax || 0) +
     (deductions.loanDeduction || 0) +
+    (deductions.lateDeduction || 0) +
+    (deductions.halfDayDeduction || 0) +
     (deductions.otherDeductions || 0);
 
   values.netSalary = values.grossEarnings - values.totalDeductions;

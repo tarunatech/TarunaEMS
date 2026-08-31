@@ -688,9 +688,9 @@ const AdminSalesDashboard = () => {
         )}
 
         {/* Leads Table */}
-        <div className="premium-panel rounded-2xl overflow-hidden">
-          <div className="p-3 sm:p-4 md:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <div className="overflow-hidden rounded-2xl md:premium-panel">
+          <div className="p-0 sm:p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3 px-1 sm:px-0 sm:mb-4">
               <h2 className="text-base sm:text-lg font-bold text-slate-900">All Leads & Deals</h2>
               <p className="text-slate-500 text-xs sm:text-sm">
                 Showing {leads.length} leads
@@ -811,7 +811,7 @@ const AdminSalesDashboard = () => {
             </div>
 
             {/* Mobile Cards */}
-            <div className="scrollbar-hide block sm:hidden max-h-[68dvh] space-y-3 overflow-y-auto overscroll-contain pr-1">
+            <div className="scrollbar-hide block sm:hidden max-h-[68dvh] space-y-2.5 overflow-y-auto overscroll-contain px-0.5">
               {loading ? (
                 <div className="text-center py-8 text-slate-500">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
@@ -927,82 +927,84 @@ const AdminSalesDashboard = () => {
 
       {/* Add Lead Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-md" onClick={() => setShowAddModal(false)} />
-          <div className="premium-panel relative w-full max-w-4xl max-h-[90dvh] overflow-y-auto rounded-2xl p-4 sm:p-5">
-            <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4">
+          <div className="fixed inset-0 bg-slate-955/35 backdrop-blur-md" onClick={() => setShowAddModal(false)} />
+          <div className="premium-panel relative flex max-h-[42dvh] sm:max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl p-3 sm:p-5">
+            <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:border-b-0 sm:pb-3">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Add New Lead</h3>
-                <p className="mt-1 text-sm text-slate-500">Create a lead and assign it directly to a sales employee.</p>
+                <h3 className="text-sm sm:text-lg font-bold text-slate-900">Add New Lead</h3>
+                <p className="hidden sm:block mt-0.5 text-xs sm:text-sm text-slate-500">Create a lead and assign it directly to a sales employee.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                 title="Close"
               >
-                <XCircle className="h-5 w-5" />
+                <XCircle className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddLead} className="space-y-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <AdminLeadInput label="First Name *" value={newLead.firstName} onChange={(value) => setNewLead({ ...newLead, firstName: value })} required />
-                <AdminLeadInput label="Last Name *" value={newLead.lastName} onChange={(value) => setNewLead({ ...newLead, lastName: value })} required />
-                <AdminLeadInput label="Email *" type="email" value={newLead.email} onChange={(value) => setNewLead({ ...newLead, email: value })} required />
-                <AdminLeadInput label="Phone *" value={newLead.phone} onChange={(value) => setNewLead({ ...newLead, phone: value })} required />
-                <AdminLeadInput label="Company" value={newLead.company} onChange={(value) => setNewLead({ ...newLead, company: value })} />
-                <AdminLeadInput label="Position" value={newLead.position} onChange={(value) => setNewLead({ ...newLead, position: value })} />
-                <AdminLeadSelect
-                  label="Assign To *"
-                  value={newLead.assignedTo}
-                  onChange={(value) => setNewLead({ ...newLead, assignedTo: value })}
-                  options={employees.filter(isSalesEmployee).map((emp) => ({
-                    value: emp._id,
-                    label: `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim() || emp.employeeId || 'Sales Employee'
-                  }))}
-                  placeholder="Select Sales Rep"
-                  required
-                />
-                <AdminLeadSelect
-                  label="Source"
-                  value={newLead.source}
-                  onChange={(value) => setNewLead({ ...newLead, source: value })}
-                  options={['Website', 'Social Media', 'Email Campaign', 'Cold Call', 'Referral', 'Trade Show', 'Advertisement', 'Other'].map((item) => ({ value: item, label: item }))}
-                />
-                <AdminLeadSelect
-                  label="Priority"
-                  value={newLead.priority}
-                  onChange={(value) => setNewLead({ ...newLead, priority: value })}
-                  options={['Low', 'Medium', 'High', 'Hot'].map((item) => ({ value: item, label: item }))}
-                />
-                <AdminLeadInput label="Estimated Value (Rs.)" type="number" value={newLead.estimatedValue} onChange={(value) => setNewLead({ ...newLead, estimatedValue: value })} />
-                <AdminLeadInput label="Expected Close Date" type="date" value={newLead.expectedCloseDate} onChange={(value) => setNewLead({ ...newLead, expectedCloseDate: value })} />
-                <AdminLeadInput label="Next Follow-up" type="date" value={newLead.nextFollowUpDate} onChange={(value) => setNewLead({ ...newLead, nextFollowUpDate: value })} />
+            <form onSubmit={handleAddLead} className="flex flex-1 flex-col min-h-0">
+              <div className="task-details-modal-scroll flex-1 overflow-y-auto overscroll-contain py-2 space-y-2 sm:space-y-4">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <AdminLeadInput label="First Name *" value={newLead.firstName} onChange={(value) => setNewLead({ ...newLead, firstName: value })} required />
+                  <AdminLeadInput label="Last Name *" value={newLead.lastName} onChange={(value) => setNewLead({ ...newLead, lastName: value })} required />
+                  <AdminLeadInput label="Email *" type="email" value={newLead.email} onChange={(value) => setNewLead({ ...newLead, email: value })} required />
+                  <AdminLeadInput label="Phone *" value={newLead.phone} onChange={(value) => setNewLead({ ...newLead, phone: value })} required />
+                  <AdminLeadInput label="Company" value={newLead.company} onChange={(value) => setNewLead({ ...newLead, company: value })} />
+                  <AdminLeadInput label="Position" value={newLead.position} onChange={(value) => setNewLead({ ...newLead, position: value })} />
+                  <AdminLeadSelect
+                    label="Assign To *"
+                    value={newLead.assignedTo}
+                    onChange={(value) => setNewLead({ ...newLead, assignedTo: value })}
+                    options={employees.filter(isSalesEmployee).map((emp) => ({
+                      value: emp._id,
+                      label: `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim() || emp.employeeId || 'Sales Employee'
+                    }))}
+                    placeholder="Select Sales Rep"
+                    required
+                  />
+                  <AdminLeadSelect
+                    label="Source"
+                    value={newLead.source}
+                    onChange={(value) => setNewLead({ ...newLead, source: value })}
+                    options={['Website', 'Social Media', 'Email Campaign', 'Cold Call', 'Referral', 'Trade Show', 'Advertisement', 'Other'].map((item) => ({ value: item, label: item }))}
+                  />
+                  <AdminLeadSelect
+                    label="Priority"
+                    value={newLead.priority}
+                    onChange={(value) => setNewLead({ ...newLead, priority: value })}
+                    options={['Low', 'Medium', 'High', 'Hot'].map((item) => ({ value: item, label: item }))}
+                  />
+                  <AdminLeadInput label="Est. Value (Rs.)" type="number" value={newLead.estimatedValue} onChange={(value) => setNewLead({ ...newLead, estimatedValue: value })} />
+                  <AdminLeadInput label="Exp. Close Date" type="date" value={newLead.expectedCloseDate} onChange={(value) => setNewLead({ ...newLead, expectedCloseDate: value })} />
+                  <AdminLeadInput label="Next Follow-up" type="date" value={newLead.nextFollowUpDate} onChange={(value) => setNewLead({ ...newLead, nextFollowUpDate: value })} />
+                </div>
+
+                <label className="block">
+                  <span className="mb-0.5 block text-[11px] sm:text-sm font-semibold text-slate-600">Notes</span>
+                  <textarea
+                    value={newLead.notes}
+                    onChange={(event) => setNewLead({ ...newLead, notes: event.target.value })}
+                    rows={1.5}
+                    className="premium-input w-full resize-y rounded-lg px-2.5 py-1 text-xs sm:text-sm text-slate-900"
+                    placeholder="Lead context, requirements, or first discussion notes"
+                  />
+                </label>
               </div>
 
-              <label className="block">
-                <span className="mb-1.5 block text-xs sm:text-sm text-slate-600">Notes</span>
-                <textarea
-                  value={newLead.notes}
-                  onChange={(event) => setNewLead({ ...newLead, notes: event.target.value })}
-                  rows={3}
-                  className="premium-input w-full resize-y rounded-lg px-3 py-2 text-sm text-slate-900"
-                  placeholder="Lead context, requirements, or first discussion notes"
-                />
-              </label>
-
-              <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+              <div className="sticky bottom-0 z-10 flex shrink-0 justify-end gap-2 border-t border-slate-100 bg-white/95 pt-2 backdrop-blur sm:pt-3">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-sm"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs sm:text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="premium-primary-button px-4 py-2 rounded-lg text-sm"
+                  className="premium-primary-button px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm"
                 >
                   Add Lead
                 </button>
@@ -1291,12 +1293,12 @@ const StatCard = ({ title, value, icon, color }) => {
 
 const AdminLeadInput = ({ label, value, onChange, type = 'text', ...props }) => (
   <label className="block">
-    <span className="mb-1.5 block text-xs sm:text-sm text-slate-600">{label}</span>
+    <span className="mb-0.5 sm:mb-1.5 block text-[11px] sm:text-sm font-semibold text-slate-600">{label}</span>
     <input
       type={type}
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="premium-input w-full rounded-lg px-3 py-2 text-sm text-slate-900"
+      className="premium-input w-full rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900"
       {...props}
     />
   </label>
@@ -1304,11 +1306,11 @@ const AdminLeadInput = ({ label, value, onChange, type = 'text', ...props }) => 
 
 const AdminLeadSelect = ({ label, value, onChange, options, placeholder, ...props }) => (
   <label className="block">
-    <span className="mb-1.5 block text-xs sm:text-sm text-slate-600">{label}</span>
+    <span className="mb-0.5 sm:mb-1.5 block text-[11px] sm:text-sm font-semibold text-slate-600">{label}</span>
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="premium-input w-full rounded-lg px-3 py-2 text-sm text-slate-900"
+      className="premium-input w-full rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900"
       {...props}
     >
       {placeholder && <option value="">{placeholder}</option>}

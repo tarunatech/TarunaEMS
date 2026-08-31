@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import ReactCalendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -254,119 +254,28 @@ const AdminLeaveManagement = () => {
     return null;
   };
 
-  const LeaveCalendarModal = () => {
-    const selectedDayLeaves = getLeavesForDate(selectedCalendarDate);
+  const calendarTileClassName = useCallback(({ date, view }) => {
+    if (view !== 'month') return null;
 
-    const tileClassName = ({ date, view }) => {
-      if (view !== 'month') return null;
+    const dayLeaves = getLeavesForDate(date);
+    const statusClass = getCalendarStatusClass(dayLeaves);
+    const selectedClass = isSameDate(date, selectedCalendarDate) ? 'admin-leave-calendar-selected' : '';
 
-      const dayLeaves = getLeavesForDate(date);
-      const statusClass = getCalendarStatusClass(dayLeaves);
-      const selectedClass = isSameDate(date, selectedCalendarDate) ? 'admin-leave-calendar-selected' : '';
+    return [statusClass, selectedClass].filter(Boolean).join(' ');
+  }, [leaves, selectedCalendarDate]);
 
-      return [statusClass, selectedClass].filter(Boolean).join(' ');
-    };
+  const calendarTileContent = useCallback(({ date, view }) => {
+    if (view !== 'month') return null;
 
-    const tileContent = ({ date, view }) => {
-      if (view !== 'month') return null;
-
-      const count = getLeavesForDate(date).length;
-      if (!count) return null;
-
-      return (
-        <span className="admin-leave-calendar-count">
-          {count}
-        </span>
-      );
-    };
+    const count = getLeavesForDate(date).length;
+    if (!count) return null;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowCalendarModal(false)} />
-        <div className="premium-panel relative w-full max-w-5xl overflow-hidden rounded-2xl shadow-2xl">
-          <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4 sm:p-5">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 sm:text-2xl">Leave Calendar</h2>
-              <p className="text-xs text-slate-500 sm:text-sm">View all leave requests by date and status</p>
-            </div>
-            <button
-              onClick={() => setShowCalendarModal(false)}
-              className="shrink-0 rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-              aria-label="Close leave calendar"
-            >
-              <XCircle className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div className="grid max-h-[85vh] gap-4 overflow-y-auto p-3 sm:max-h-[80vh] sm:gap-6 sm:p-5 lg:grid-cols-[1.35fr_0.9fr]">
-            <div>
-              <div className="mb-4 flex flex-wrap gap-2 text-xs sm:gap-3 sm:text-sm">
-                {[
-                  ['Approved', 'bg-emerald-500'],
-                  ['Pending', 'bg-amber-500'],
-                  ['Rejected', 'bg-red-500'],
-                  ['Cancelled', 'bg-slate-400'],
-                ].map(([label, color]) => (
-                  <div key={label} className="flex items-center gap-1.5 text-slate-600 sm:gap-2">
-                    <span className={`h-2.5 w-2.5 rounded-full sm:h-3 sm:w-3 ${color}`} />
-                    <span>{label}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="overflow-x-auto">
-                <ReactCalendar
-                  value={selectedCalendarDate}
-                  onChange={setSelectedCalendarDate}
-                  tileClassName={tileClassName}
-                  tileContent={tileContent}
-                  className="admin-leave-calendar w-full"
-                />
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
-              <div className="mb-4">
-                <p className="text-xs font-semibold text-slate-500 sm:text-sm">Selected Date</p>
-                <h3 className="text-lg font-bold text-slate-900 sm:text-xl">
-                  {selectedCalendarDate.toLocaleDateString()}
-                </h3>
-              </div>
-
-              {selectedDayLeaves.length === 0 ? (
-                <div className="rounded-xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-500 sm:p-5">
-                  No leave requests on this date
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {selectedDayLeaves.map((leave) => (
-                    <button
-                      key={leave._id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedLeave(leave);
-                        setShowModal(true);
-                      }}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:bg-blue-50 sm:p-4"
-                    >
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <p className="text-sm font-semibold text-slate-900 sm:text-base">{getEmployeeName(leave.employee)}</p>
-                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs ${getStatusColor(leave.status)}`}>
-                          {leave.status}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 sm:text-sm">{leave.leaveType} | {leave.totalDays} days</p>
-                      <p className="mt-1 line-clamp-2 text-xs text-slate-600 sm:text-sm">{leave.reason}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <span className="admin-leave-calendar-count">
+        {count}
+      </span>
     );
-  };
+  }, [leaves]);
 
   const LeaveDetailModal = () => {
     const [comments, setComments] = useState('');
@@ -374,9 +283,9 @@ const AdminLeaveManagement = () => {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
         <div className="fixed inset-0 bg-slate-900/20" onClick={() => setShowModal(false)} />
-        <div className="premium-panel relative z-10 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl">
-          <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4 sm:p-6">
-            <h2 className="text-lg font-bold text-slate-900 sm:text-2xl">Leave Application Details</h2>
+        <div className="premium-panel relative z-10 w-full max-w-2xl max-h-[72dvh] sm:max-h-[92vh] overflow-y-auto rounded-2xl">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-3.5 sm:p-6">
+            <h2 className="text-base font-bold text-slate-900 sm:text-2xl">Leave Application Details</h2>
             <button
               onClick={() => setShowModal(false)}
               className="shrink-0 text-slate-500 hover:text-slate-900"
@@ -625,82 +534,72 @@ const AdminLeaveManagement = () => {
             </div>
           ) : (
             <>
-              <div className="scrollbar-hide grid max-h-[68dvh] gap-3 overflow-y-auto overscroll-contain p-3 sm:gap-4 sm:p-4 md:hidden">
+              <div className="scrollbar-hide grid max-h-[68dvh] gap-2.5 overflow-y-auto overflow-x-hidden overscroll-contain p-2.5 sm:gap-4 sm:p-4 md:hidden w-full max-w-full">
                 {leaves.map((leave) => (
-                  <div key={leave._id} onClick={(event) => openLeaveDetails(event, leave)} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-200 cursor-pointer hover:border-blue-200 hover:bg-blue-50/40 active:bg-indigo-50/60 sm:p-4">
-                    <div className="mb-3 flex items-start justify-between gap-2">
-                      <div className="flex min-w-0 flex-1 items-center space-x-2.5 sm:space-x-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 sm:h-10 sm:w-10">
-                          <User className="h-4 w-4 text-blue-600 sm:h-5 sm:w-5" />
+                  <div key={leave._id} onClick={(event) => openLeaveDetails(event, leave)} className="rounded-xl border border-slate-200 bg-white p-2.5 transition-all duration-200 shadow-sm cursor-pointer hover:border-blue-200 hover:bg-blue-50/40 active:bg-indigo-50/60 sm:p-4 w-full overflow-hidden">
+                    <div className="mb-2 flex items-center justify-between gap-1.5 min-w-0">
+                      <div className="flex min-w-0 flex-1 items-center space-x-2">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 sm:h-10 sm:w-10">
+                          <User className="h-4 w-4 text-blue-600" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-slate-900">
+                          <p className="truncate text-xs font-semibold text-slate-900 leading-tight">
                             {leave.employee?.fullName ||
                               (leave.employee?.personalInfo?.firstName + ' ' + leave.employee?.personalInfo?.lastName) ||
                               leave.employee?.user?.name}
                           </p>
-                          <p className="flex items-center text-xs text-slate-500">
+                          <p className="flex items-center text-[11px] text-slate-500 leading-tight">
                             <span className="truncate">{leave.employee?.employeeId || leave.employee?.user?.employeeId}</span>
                           </p>
                         </div>
                       </div>
-                      <div className="ml-2 flex shrink-0 items-center space-x-1">
-                        <button
-                          onClick={() => {
-                            setSelectedLeave(leave);
-                            setShowModal(true);
-                          }}
-                          className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                          title="View Details"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
+                      <div className="ml-1 flex shrink-0 items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
                         {leave.status === 'Pending' && (
                           <>
                             <button
                               onClick={() => handleApprove(leave._id)}
-                              className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-green-50 hover:text-green-600"
+                              className="rounded-md p-0.5 text-slate-400 transition-colors hover:bg-green-50 hover:text-green-600"
                               title="Quick Approve"
                             >
-                              <CheckCircle className="h-4 w-4" />
+                              <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
                             </button>
                             <button
                               onClick={() => handleReject(leave._id, 'Application rejected')}
-                              className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                              className="rounded-md p-0.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
                               title="Quick Reject"
                             >
-                              <XCircle className="h-4 w-4" />
+                              <XCircle className="h-3.5 w-3.5 text-rose-500" />
                             </button>
                           </>
                         )}
                       </div>
                     </div>
-                    <div className="space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Leave Type</span>
-                        <span className={`inline-flex flex-shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium leading-none ${getLeaveTypeColor(leave.leaveType)}`}>
+                    <div className="space-y-1.5 rounded-xl bg-slate-50 p-2.5 text-[11px] sm:text-xs">
+                      <div className="flex items-center justify-between min-w-0">
+                        <span className="text-slate-500 shrink-0">Leave Type</span>
+                        <span className={`inline-flex flex-shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium leading-none ${getLeaveTypeColor(leave.leaveType)}`}>
                           {leave.leaveType}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-1.5 min-w-0">
                         <span className="shrink-0 text-slate-500">Duration</span>
-                        <span className="text-right font-medium text-slate-900">
+                        <span className="min-w-0 truncate text-right font-medium text-slate-900 text-[11px] sm:text-xs">
                           {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Days</span>
+                      <div className="flex items-center justify-between min-w-0">
+                        <span className="text-slate-500 shrink-0">Days</span>
                         <span className="font-medium text-slate-900">{leave.totalDays} days</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Applied</span>
+                      <div className="flex items-center justify-between min-w-0">
+                        <span className="text-slate-500 shrink-0">Applied</span>
                         <span className="font-medium text-slate-900">
                           {new Date(leave.appliedDate).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Status</span>
-                        <span className={`inline-flex flex-shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium leading-none ${getStatusColor(leave.status)}`}>
+                      <div className="flex items-center justify-between min-w-0">
+                        <span className="text-slate-500 shrink-0">Status</span>
+                        <span className={`inline-flex flex-shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium leading-none ${getStatusColor(leave.status)}`}>
                           {leave.status}
                         </span>
                       </div>
@@ -815,7 +714,92 @@ const AdminLeaveManagement = () => {
       </div>
 
       {showModal && <LeaveDetailModal />}
-      {showCalendarModal && <LeaveCalendarModal />}
+      {showCalendarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowCalendarModal(false)} />
+          <div className="premium-panel relative w-full max-w-5xl overflow-hidden rounded-2xl shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-3 sm:p-5">
+              <div>
+                <h2 className="text-base font-bold text-slate-900 sm:text-2xl">Leave Calendar</h2>
+                <p className="text-[11px] text-slate-500 sm:text-sm">View all leave requests by date and status</p>
+              </div>
+              <button
+                onClick={() => setShowCalendarModal(false)}
+                className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                aria-label="Close leave calendar"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid max-h-[68dvh] gap-3 overflow-y-auto p-2.5 sm:max-h-[80vh] sm:gap-6 sm:p-5 lg:grid-cols-[1.25fr_1fr]">
+              <div className="w-full">
+                <div className="mb-2.5 flex flex-wrap gap-2 text-[11px] sm:gap-3 sm:text-sm">
+                  {[
+                    ['Approved', 'bg-emerald-500'],
+                    ['Pending', 'bg-amber-500'],
+                    ['Rejected', 'bg-red-500'],
+                    ['Cancelled', 'bg-slate-400'],
+                  ].map(([label, color]) => (
+                    <div key={label} className="flex items-center gap-1.5 text-slate-600 sm:gap-2">
+                      <span className={`h-2 w-2 rounded-full sm:h-3 sm:w-3 ${color}`} />
+                      <span>{label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="overflow-x-auto w-full">
+                  <ReactCalendar
+                    value={selectedCalendarDate}
+                    onChange={setSelectedCalendarDate}
+                    tileClassName={calendarTileClassName}
+                    tileContent={calendarTileContent}
+                    className="admin-leave-calendar w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-5 flex flex-col h-full w-full">
+                <div className="mb-4">
+                  <p className="text-xs font-semibold text-slate-500 sm:text-sm">Selected Date</p>
+                  <h3 className="text-lg font-bold text-slate-900 sm:text-xl">
+                    {selectedCalendarDate.toLocaleDateString()}
+                  </h3>
+                </div>
+
+                {getLeavesForDate(selectedCalendarDate).length === 0 ? (
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-500 sm:p-5 flex-1 flex items-center justify-center">
+                    No leave requests on this date
+                  </div>
+                ) : (
+                  <div className="space-y-3 flex-1 overflow-y-auto">
+                    {getLeavesForDate(selectedCalendarDate).map((leave) => (
+                      <button
+                        key={leave._id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedLeave(leave);
+                          setShowModal(true);
+                        }}
+                        className="w-full rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:bg-blue-50 sm:p-4"
+                      >
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-slate-900 sm:text-base">{getEmployeeName(leave.employee)}</p>
+                          <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs ${getStatusColor(leave.status)}`}>
+                            {leave.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 sm:text-sm">{leave.leaveType} | {leave.totalDays} days</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-slate-600 sm:text-sm">{leave.reason}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };

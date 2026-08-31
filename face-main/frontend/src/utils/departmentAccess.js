@@ -22,8 +22,8 @@ const DEPARTMENT_RULES = {
   businessdevelopmentexecutive: ['dashboard', 'attendance', 'sales', 'salesPipeline', 'salesMeetings', 'tasks', 'expenses', 'leaves', 'holidays'],
   developer: [...COMMON_MODULE_KEYS, 'tasks', 'problems'],
   development: [...COMMON_MODULE_KEYS, 'tasks', 'problems'],
-  hr: [...COMMON_MODULE_KEYS, 'hrInterviews'],
-  humanresources: [...COMMON_MODULE_KEYS, 'hrInterviews'],
+  hr: [...COMMON_MODULE_KEYS, 'tasks', 'hrInterviews'],
+  humanresources: [...COMMON_MODULE_KEYS, 'tasks', 'hrInterviews'],
   designing: [...COMMON_MODULE_KEYS, 'tasks'],
   design: [...COMMON_MODULE_KEYS, 'tasks'],
 };
@@ -65,7 +65,7 @@ export const getDepartmentName = (...candidates) => {
 
 export const allowedKeysForDepartment = (department) => {
   const key = normalizeDepartment(department);
-  return DEPARTMENT_RULES[key] || [...COMMON_MODULE_KEYS];
+  return DEPARTMENT_RULES[key] || [...COMMON_MODULE_KEYS, 'tasks'];
 };
 
 export const moduleKeyFromPath = (path) => {

@@ -270,21 +270,23 @@ const ExpenseTracker = () => {
         </section>
 
         {viewing && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
-            <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={() => setViewing(null)} />
-            <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="text-lg font-bold text-slate-950 sm:text-xl">Expense Details</h3>
-                <button onClick={() => setViewing(null)} className="shrink-0 rounded-lg px-3 py-1 text-sm text-slate-500 hover:bg-slate-100">Close</button>
+          <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-2.5 pt-14 sm:p-4">
+            <div className="fixed inset-0 bg-slate-955/35 backdrop-blur-sm" onClick={() => setViewing(null)} />
+            <div className="relative flex max-h-[42dvh] sm:max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-6 shadow-xl">
+              <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:border-b-0 sm:pb-3 mb-2.5 sm:mb-4">
+                <h3 className="text-base font-bold text-slate-955 sm:text-xl">Expense Details</h3>
+                <button onClick={() => setViewing(null)} className="shrink-0 rounded-lg px-2.5 py-1 text-xs sm:text-sm text-slate-500 hover:bg-slate-100">Close</button>
               </div>
-              <div className="space-y-3 text-sm">
-                <Info label="Date" value={displayDate(viewing.date)} />
-                <Info label="Paid To" value={viewing.paidTo || '-'} />
-                <Info label="Category" value={viewing.category || '-'} />
-                <Info label="Amount" value={currency(viewing.amount)} />
-                <Info label="Payment Method" value={viewing.paymentMethod || '-'} />
+              <div className="task-details-modal-scroll flex-1 overflow-y-auto overscroll-contain space-y-2 sm:space-y-3 text-xs sm:text-sm">
+                <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm sm:grid-cols-2 sm:gap-3">
+                  <Info label="Date" value={displayDate(viewing.date)} />
+                  <Info label="Paid To" value={viewing.paidTo || '-'} />
+                  <Info label="Category" value={viewing.category || '-'} />
+                  <Info label="Amount" value={currency(viewing.amount)} />
+                  <Info label="Payment Method" value={viewing.paymentMethod || '-'} />
+                  <Info label="Reference Number" value={viewing.referenceNumber || '-'} />
+                </div>
                 <Info label="Description" value={viewing.description || '-'} />
-                <Info label="Reference Number" value={viewing.referenceNumber || '-'} />
                 <Info label="Remarks" value={viewing.remarks || '-'} />
               </div>
             </div>

@@ -22,7 +22,9 @@ import {
   ChevronDown,
   ChevronRight,
   RefreshCw,
-  FileCheck
+  FileCheck,
+  PlusCircle,
+  Minus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminDayBookReview from './AdminDayBookReview';
@@ -178,7 +180,7 @@ const AdminTaskManagement = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [newTask, setNewTask] = useState({
     title: '',
-    description: '',
+    descriptions: [''],
     assignedTo: '',
     priority: 'Medium',
     dueDate: '',
@@ -312,8 +314,9 @@ const AdminTaskManagement = () => {
         return;
       }
 
-      if (!newTask.description?.trim()) {
-        toast.error("Task description is required");
+      const filledDescriptions = (newTask.descriptions || []).filter(d => d.trim());
+      if (filledDescriptions.length === 0) {
+        toast.error("At least one task description is required");
         return;
       }
 
@@ -335,7 +338,7 @@ const AdminTaskManagement = () => {
 
       const taskPayload = {
         title: newTask.title.trim(),
-        description: newTask.description.trim(),
+        description: filledDescriptions.join('\n\n'),
         assignedTo: newTask.assignedTo,
         priority: newTask.priority || 'Medium',
         dueDate: newTask.dueDate,
@@ -346,7 +349,7 @@ const AdminTaskManagement = () => {
 
       setNewTask({
         title: '',
-        description: '',
+        descriptions: [''],
         assignedTo: '',
         priority: 'Medium',
         dueDate: '',
@@ -376,9 +379,14 @@ const AdminTaskManagement = () => {
   const handleEditTask = async (e) => {
     e.preventDefault();
     try {
+      const editDescriptions = (selectedTask.descriptions || []).filter(d => d.trim());
+      if (editDescriptions.length === 0) {
+        toast.error("At least one task description is required");
+        return;
+      }
       await updateTask(selectedTask._id, {
         title: selectedTask.title,
-        description: selectedTask.description,
+        description: editDescriptions.join('\n\n'),
         assignedTo: selectedTask.assignedTo._id || selectedTask.assignedTo,
         priority: selectedTask.priority,
         dueDate: selectedTask.dueDate,
@@ -519,6 +527,27 @@ const AdminTaskManagement = () => {
 
   return (
     <AdminLayout>
+      <style>{`
+        .task-details-modal-scroll {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .task-details-modal-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        .admin-modal-inner {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .admin-modal-inner::-webkit-scrollbar {
+          display: none;
+        }
+        @media (max-width: 639px) {
+          .premium-stat-card::before {
+            display: none !important;
+          }
+        }
+      `}</style>
       <div className="space-y-4 bg-slate-0 text-sm">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
@@ -526,22 +555,22 @@ const AdminTaskManagement = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Task Management</h1>
             <p className="text-slate-500 text-xs sm:text-sm">Assign and track tasks for your team</p>
           </div>
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 space-x-0 sm:space-x-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
                 fetchTasks();
                 fetchEmployees();
               }}
-              className="px-3 sm:px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-200 flex items-center text-sm"
+              className="px-2.5 py-1.5 border border-slate-200 bg-white text-slate-700 rounded-lg shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-200 flex items-center gap-1.5 text-xs font-medium"
             >
-              <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+              <BarChart3 className="w-3.5 h-3.5" />
               Refresh
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-3 sm:px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:bg-blue-700 transition-all duration-200 flex items-center text-sm"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:bg-blue-700 transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm"
             >
-              <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Add Task
             </button>
           </div>
@@ -552,7 +581,7 @@ const AdminTaskManagement = () => {
 
           {/* ── Total Tasks ── */}
           <div className="group relative">
-            <div className="premium-stat-card rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
+            <div className="premium-stat-card before:hidden sm:before:block rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <h3 className="text-lg sm:text-xl font-bold leading-tight text-slate-900">{activeStats.total}</h3>
@@ -592,7 +621,7 @@ const AdminTaskManagement = () => {
 
           {/* ── In Progress ── */}
           <div className="group relative">
-            <div className="premium-stat-card rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
+            <div className="premium-stat-card before:hidden sm:before:block rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <h3 className="text-lg sm:text-xl font-bold leading-tight text-blue-700">{activeStats.inProgress}</h3>
@@ -603,7 +632,7 @@ const AdminTaskManagement = () => {
                 </div>
               </div>
             </div>
-            <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 w-64 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+            <div className="pointer-events-none absolute right-0 sm:left-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
               <div className="rounded-xl border border-blue-100 bg-white shadow-xl shadow-blue-900/10 overflow-hidden">
                 <div className="flex items-center gap-2 border-b border-blue-50 bg-blue-50/70 px-3 py-2">
                   <Clock className="h-3.5 w-3.5 text-blue-600 shrink-0" />
@@ -631,7 +660,7 @@ const AdminTaskManagement = () => {
 
           {/* ── Pending Review ── */}
           <div className="group relative">
-            <div className="premium-stat-card rounded-xl border border-amber-100 bg-gradient-to-br from-white to-amber-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
+            <div className="premium-stat-card before:hidden sm:before:block rounded-xl border border-amber-100 bg-gradient-to-br from-white to-amber-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <h3 className="text-lg sm:text-xl font-bold leading-tight text-amber-700">{activeStats.review}</h3>
@@ -670,7 +699,7 @@ const AdminTaskManagement = () => {
 
           {/* ── Completed ── */}
           <div className="group relative">
-            <div className="premium-stat-card rounded-xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
+            <div className="premium-stat-card before:hidden sm:before:block rounded-xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <h3 className="text-lg sm:text-xl font-bold leading-tight text-emerald-700">{activeStats.completed}</h3>
@@ -681,7 +710,7 @@ const AdminTaskManagement = () => {
                 </div>
               </div>
             </div>
-            <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 w-64 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+            <div className="pointer-events-none absolute right-0 sm:right-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
               <div className="rounded-xl border border-emerald-100 bg-white shadow-xl shadow-emerald-900/10 overflow-hidden">
                 <div className="flex items-center gap-2 border-b border-emerald-50 bg-emerald-50/70 px-3 py-2">
                   <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
@@ -716,7 +745,7 @@ const AdminTaskManagement = () => {
 
           {/* ── Overdue ── */}
           <div className="group relative">
-            <div className="premium-stat-card rounded-xl border border-red-100 bg-gradient-to-br from-white to-red-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
+            <div className="premium-stat-card before:hidden sm:before:block rounded-xl border border-red-100 bg-gradient-to-br from-white to-red-50/60 p-3 sm:p-4 cursor-default transition-shadow hover:shadow-md">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <h3 className="text-lg sm:text-xl font-bold leading-tight text-red-700">{activeStats.overdue}</h3>
@@ -727,7 +756,7 @@ const AdminTaskManagement = () => {
                 </div>
               </div>
             </div>
-            <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 w-64 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+            <div className="pointer-events-none absolute left-0 sm:right-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
               <div className="rounded-xl border border-red-100 bg-white shadow-xl shadow-red-900/10 overflow-hidden">
                 <div className="flex items-center gap-2 border-b border-red-50 bg-red-50/70 px-3 py-2">
                   <AlertTriangle className="h-3.5 w-3.5 text-red-600 shrink-0" />
@@ -756,11 +785,11 @@ const AdminTaskManagement = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex space-x-1 p-1 bg-white border border-slate-200 rounded-xl w-fit shadow-sm">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex space-x-0.5 p-1 bg-white border border-slate-200 rounded-xl shadow-sm flex-shrink-0">
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${activeTab === 'tasks'
+              className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'tasks'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-900'
                 }`}
@@ -769,7 +798,7 @@ const AdminTaskManagement = () => {
             </button>
             <button
               onClick={() => setActiveTab('daybooks')}
-              className={`px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${activeTab === 'daybooks'
+              className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'daybooks'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-900'
                 }`}
@@ -778,7 +807,7 @@ const AdminTaskManagement = () => {
             </button>
             <button
               onClick={() => setActiveTab('performance')}
-              className={`px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${activeTab === 'performance'
+              className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'performance'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-900'
                 }`}
@@ -787,15 +816,13 @@ const AdminTaskManagement = () => {
             </button>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={fetchTasks}
-              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-200 flex items-center text-sm"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </button>
-          </div>
+          <button
+            onClick={fetchTasks}
+            className="px-2.5 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-200 flex items-center gap-1.5 text-xs font-medium flex-shrink-0"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Refresh
+          </button>
         </div>
 
         {activeTab === 'tasks' ? (
@@ -911,7 +938,9 @@ const AdminTaskManagement = () => {
                           <tr key={task._id} onClick={(event) => openTaskDetails(event, task)} className="border-b border-slate-200 hover:bg-blue-50 transition-all duration-200 cursor-pointer">
                             <td className="p-3 pl-10 max-w-xs">
                               <p className="text-slate-900 text-sm font-semibold line-clamp-1">{task.title || 'Untitled Task'}</p>
-                              <p className="mt-0.5 text-slate-500 text-xs line-clamp-2">{task.description || 'No description'}</p>
+                              <p className="mt-0.5 text-slate-500 text-xs line-clamp-1">
+                                {(() => { const parts = (task.description || '').split('\n\n').map(s => s.trim()).filter(Boolean); return parts.length > 0 ? parts[parts.length - 1] : 'No description'; })()}
+                              </p>
                             </td>
                             <td className="p-3 text-xs text-slate-700 font-semibold">
                               {task.isSelfAssigned
@@ -961,7 +990,10 @@ const AdminTaskManagement = () => {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    setSelectedTask(task);
+                                    const existingDescs = task.description
+                                      ? task.description.split('\n\n').filter(d => d.trim()).map(d => d.trim())
+                                      : [''];
+                                    setSelectedTask({ ...task, descriptions: existingDescs.length > 0 ? existingDescs : [''] });
                                     setShowEditModal(true);
                                   }}
                                   className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-amber-200"
@@ -1036,7 +1068,9 @@ const AdminTaskManagement = () => {
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <p className="text-slate-900 font-semibold text-sm line-clamp-1">{task.title || 'Untitled Task'}</p>
-                              <p className="mt-1 text-slate-500 text-xs line-clamp-2">{task.description || 'No description'}</p>
+                              <p className="mt-1 text-slate-500 text-xs line-clamp-1">
+                                {(() => { const parts = (task.description || '').split('\n\n').map(s => s.trim()).filter(Boolean); return parts.length > 0 ? parts[parts.length - 1] : 'No description'; })()}
+                              </p>
                             </div>
                             <span className={`px-3 py-1 text-xs rounded-full ${getStatusColor(task.status)}`}>
                               {task.status}
@@ -1092,7 +1126,10 @@ const AdminTaskManagement = () => {
                             </button>
                             <button
                               onClick={() => {
-                                setSelectedTask(task);
+                                const existingDescs = task.description
+                                  ? task.description.split('\n\n').filter(d => d.trim()).map(d => d.trim())
+                                  : [''];
+                                setSelectedTask({ ...task, descriptions: existingDescs.length > 0 ? existingDescs : [''] });
                                 setShowEditModal(true);
                               }}
                               className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-amber-200"
@@ -1155,7 +1192,9 @@ const AdminTaskManagement = () => {
                     <div key={task._id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
                       <div className="flex-1 min-w-0 mr-3">
                         <p className="text-slate-900 text-sm font-medium line-clamp-1">{task.title || 'Untitled Task'}</p>
-                        <p className="text-xs text-slate-500 line-clamp-1">{task.description || 'No description'}</p>
+                        <p className="text-xs text-slate-500 line-clamp-1">
+                          {(() => { const parts = (task.description || '').split('\n\n').map(s => s.trim()).filter(Boolean); return parts.length > 0 ? parts[parts.length - 1] : 'No description'; })()}
+                        </p>
                         <p className="text-xs text-slate-500">
                           {task.assignedTo?.user?.name || 'Unknown Employee'}
                         </p>
@@ -1182,132 +1221,166 @@ const AdminTaskManagement = () => {
             {/* Add Task Modal */}
             {
               showAddModal && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-0 sm:p-2 md:p-4">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-4">
                   <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-                  <div className="relative bg-white border border-slate-200 rounded-2xl p-1 sm:p-3 md:p-4 lg:p-6 w-full sm:max-w-sm md:max-w-md lg:max-w-2xl xl:max-w-4xl max-h-[88vh] overflow-auto shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
-                    <div className="flex items-center justify-between mb-4 sm:mb-6">
-                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">Create New Task</h2>
+                  <div className="admin-modal-inner relative flex max-h-[48dvh] sm:max-h-[85vh] w-full sm:max-w-sm md:max-w-md lg:max-w-2xl xl:max-w-4xl flex-col overflow-hidden rounded-2xl bg-white border border-slate-200 p-3 sm:p-5 md:p-6 shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
+                    <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:border-b-0 sm:pb-4">
+                      <h2 className="text-sm sm:text-xl md:text-2xl font-bold text-slate-900">Create New Task</h2>
                       <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-900">
-                        <X className="w-6 h-6" />
+                        <X className="w-4 h-4 sm:w-6 sm:h-6" />
                       </button>
                     </div>
-                    <form onSubmit={handleAddTask} className="space-y-6">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-2">Title *</label>
-                        <input
-                          type="text"
-                          value={newTask.title}
-                          onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                          placeholder="Short task title..."
-                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <label className="block text-sm font-medium text-slate-600">Description *</label>
-                          {taskHistory.length > 0 && (
-                            <select
-                              onChange={(e) => {
-                                if (e.target.value) {
-                                  setNewTask({ ...newTask, description: e.target.value });
-                                }
-                              }}
-                              className="text-xs bg-white border border-slate-200 rounded text-blue-700 focus:ring-2 focus:ring-blue-100 cursor-pointer"
-                            >
-                              <option value="">Reuse from history...</option>
-                              {taskHistory.map((h, i) => (
-                                <option key={i} value={h}>{h}</option>
-                              ))}
-                            </select>
-                          )}
-                        </div>
-                        <textarea
-                          value={newTask.description}
-                          onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                          rows="3"
-                          placeholder="Enter task description..."
-                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          required
-                        ></textarea>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form onSubmit={handleAddTask} className="flex flex-1 flex-col min-h-0">
+                      <div className="task-details-modal-scroll flex-1 overflow-y-auto overscroll-contain py-2 space-y-2.5 sm:space-y-6 sm:py-0">
                         <div>
-                          <label className="block text-sm font-medium text-slate-600 mb-2">Assign To *</label>
-                          {employeesLoading ? (
-                            <div className="flex items-center space-x-2 px-4 py-3 bg-white border border-slate-200 rounded-lg">
-                              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                              <span className="text-slate-500">Loading employees...</span>
-                            </div>
-                          ) : (
+                          <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Title *</label>
+                          <input
+                            type="text"
+                            value={newTask.title}
+                            onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                            placeholder="Short task title..."
+                            className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between items-center mb-1 sm:mb-2">
+                            <label className="block text-[11px] sm:text-sm font-semibold text-slate-600">Descriptions *</label>
+                            {taskHistory.length > 0 && (
+                              <select
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    setNewTask(prev => ({ ...prev, descriptions: [...prev.descriptions, e.target.value] }));
+                                  }
+                                }}
+                                className="text-[10px] sm:text-xs bg-white border border-slate-200 rounded text-blue-700 focus:ring-2 focus:ring-blue-100 cursor-pointer"
+                              >
+                                <option value="">Reuse from history...</option>
+                                {taskHistory.map((h, i) => (
+                                  <option key={i} value={h}>{h}</option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                          <div className="space-y-2 sm:space-y-3">
+                            {(newTask.descriptions || ['']).map((desc, idx) => (
+                              <div key={idx} className="relative group">
+                                <div className="flex items-start gap-1.5 sm:gap-2">
+                                  <div className="flex-shrink-0 w-4 h-4 sm:w-6 sm:h-6 mt-1.5 sm:mt-3 flex items-center justify-center rounded-full bg-blue-50 border border-blue-200 text-blue-600 text-[10px] sm:text-xs font-bold">{idx + 1}</div>
+                                  <textarea
+                                    value={desc}
+                                    onChange={(e) => {
+                                      const updated = [...(newTask.descriptions || [''])];
+                                      updated[idx] = e.target.value;
+                                      setNewTask(prev => ({ ...prev, descriptions: updated }));
+                                    }}
+                                    rows="2"
+                                    placeholder={`Description ${idx + 1}...`}
+                                    className="flex-1 px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none"
+                                  />
+                                  {(newTask.descriptions || ['']).length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = (newTask.descriptions || ['']).filter((_, i) => i !== idx);
+                                        setNewTask(prev => ({ ...prev, descriptions: updated.length ? updated : [''] }));
+                                      }}
+                                      className="flex-shrink-0 mt-1 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 border border-transparent hover:border-red-200"
+                                      title="Remove this description"
+                                    >
+                                      <Minus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => setNewTask(prev => ({ ...prev, descriptions: [...(prev.descriptions || ['']), ''] }))}
+                              className="flex items-center gap-1.5 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg transition-all duration-200 w-full justify-center"
+                            >
+                              <PlusCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              Add Description
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                          <div>
+                            <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Assign To *</label>
+                            {employeesLoading ? (
+                              <div className="flex items-center space-x-1.5 px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                                <span className="text-slate-500 text-[11px] sm:text-sm">Loading...</span>
+                              </div>
+                            ) : (
+                              <select
+                                value={newTask.assignedTo}
+                                onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
+                                className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                required
+                              >
+                                <option value="">Select Employee</option>
+                                {getAssignableEmployees().map(emp => (
+                                  <option key={emp._id} value={emp._id}>
+                                    {emp.fullName || `${emp.personalInfo?.firstName} ${emp.personalInfo?.lastName}` || emp.user?.name || 'Unknown'}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Priority *</label>
                             <select
-                              value={newTask.assignedTo}
-                              onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
-                              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                              value={newTask.priority}
+                              onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                              className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            >
+                              <option value="Low">Low</option>
+                              <option value="Medium">Medium</option>
+                              <option value="High">High</option>
+                              <option value="Critical">Critical</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                          <div>
+                            <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Due Date *</label>
+                            <input
+                              type="date"
+                              value={newTask.dueDate}
+                              onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                              className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                               required
-                            >
-                              <option value="">Select Employee</option>
-                              {getAssignableEmployees().map(emp => (
-                                <option key={emp._id} value={emp._id}>
-                                  {emp.fullName || `${emp.personalInfo?.firstName} ${emp.personalInfo?.lastName}` || emp.user?.name || 'Unknown'}
-                                  ({emp.employeeId || emp.user?.employeeId || 'N/A'})
-                                </option>
-                              ))}
-                            </select>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-600 mb-2">Priority *</label>
-                          <select
-                            value={newTask.priority}
-                            onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          >
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                            <option value="Critical">Critical</option>
-                          </select>
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Est. Hours *</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              value={newTask.estimatedHours}
+                              onChange={(e) => setNewTask({ ...newTask, estimatedHours: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                              required
+                            />
+                          </div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-600 mb-2">Due Date *</label>
-                          <input
-                            type="date"
-                            value={newTask.dueDate}
-                            onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-600 mb-2">Estimated Hours *</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.5"
-                            value={newTask.estimatedHours}
-                            onChange={(e) => setNewTask({ ...newTask, estimatedHours: parseFloat(e.target.value) || 0 })}
-                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-end space-x-4">
+                      <div className="sticky bottom-0 z-10 flex shrink-0 justify-end space-x-2 sm:space-x-4 border-t border-slate-100 bg-white/95 pt-2 backdrop-blur sm:pt-4">
                         <button
                           type="button"
                           onClick={() => setShowAddModal(false)}
-                          className="px-6 py-3 border border-slate-200 text-slate-700 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200"
+                          className="px-3 sm:px-6 py-1.5 sm:py-3 border border-slate-200 text-xs sm:text-sm text-slate-700 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
                           disabled={employeesLoading}
-                          className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-3 sm:px-6 py-1.5 sm:py-3 bg-blue-600 text-white font-semibold text-xs sm:text-sm rounded-lg shadow-sm hover:shadow-md hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Save className="w-4 h-4 mr-2 inline" />
+                          <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2 inline" />
                           Create Task
                         </button>
                       </div>
@@ -1320,117 +1393,152 @@ const AdminTaskManagement = () => {
             {/* Edit Task Modal */}
             {
               showEditModal && selectedTask && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-0 sm:p-2 md:p-4">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-4">
                   <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
-                  <div className="relative bg-white border border-slate-200 rounded-2xl p-1 sm:p-3 md:p-4 lg:p-6 w-full sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl max-h-[85vh] overflow-auto shadow-xl">
-                    <div className="flex items-center justify-between mb-4 sm:mb-6">
-                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">Edit Task</h2>
+                  <div className="admin-modal-inner relative flex max-h-[48dvh] sm:max-h-[85vh] w-full sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl flex-col overflow-hidden rounded-2xl bg-white border border-slate-200 p-3 sm:p-5 md:p-6 shadow-xl">
+                    <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:border-b-0 sm:pb-4">
+                      <h2 className="text-sm sm:text-xl md:text-2xl font-bold text-slate-900">Edit Task</h2>
                       <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-900">
-                        <X className="w-6 h-6" />
+                        <X className="w-4 h-4 sm:w-6 sm:h-6" />
                       </button>
                     </div>
-                    <form onSubmit={handleEditTask} className="space-y-6">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-2">Title *</label>
-                        <input
-                          type="text"
-                          value={selectedTask?.title || ''}
-                          onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
-                          placeholder="Short task title..."
-                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-2">Description *</label>
-                        <textarea
-                          value={selectedTask?.description || ''}
-                          onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}
-                          rows="3"
-                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          required
-                        ></textarea>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form onSubmit={handleEditTask} className="flex flex-1 flex-col min-h-0">
+                      <div className="task-details-modal-scroll flex-1 overflow-y-auto overscroll-contain py-2 space-y-2.5 sm:space-y-6 sm:py-0">
                         <div>
-                          <label className="block text-sm font-medium text-slate-600 mb-2">Assign To *</label>
-                          {employeesLoading ? (
-                            <div className="flex items-center space-x-2 px-4 py-3 bg-white border border-slate-200 rounded-lg">
-                              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                              <span className="text-slate-500">Loading employees...</span>
-                            </div>
-                          ) : (
-                            <select
-                              value={selectedTask?.assignedTo?._id || ''}
-                              onChange={(e) => {
-                                const employee = employees.find(emp => emp._id === e.target.value);
-                                setSelectedTask({ ...selectedTask, assignedTo: employee });
-                              }}
-                              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                              required
+                          <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Title *</label>
+                          <input
+                            type="text"
+                            value={selectedTask?.title || ''}
+                            onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
+                            placeholder="Short task title..."
+                            className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Descriptions *</label>
+                          <div className="space-y-2 sm:space-y-3">
+                            {(selectedTask?.descriptions || [selectedTask?.description || '']).map((desc, idx) => (
+                              <div key={idx} className="relative group">
+                                <div className="flex items-start gap-1.5 sm:gap-2">
+                                  <div className="flex-shrink-0 w-4 h-4 sm:w-6 sm:h-6 mt-1.5 sm:mt-3 flex items-center justify-center rounded-full bg-amber-50 border border-amber-200 text-amber-600 text-[10px] sm:text-xs font-bold">{idx + 1}</div>
+                                  <textarea
+                                    value={desc}
+                                    onChange={(e) => {
+                                      const updated = [...(selectedTask.descriptions || [selectedTask.description || ''])];
+                                      updated[idx] = e.target.value;
+                                      setSelectedTask(prev => ({ ...prev, descriptions: updated }));
+                                    }}
+                                    rows="2"
+                                    placeholder={`Description ${idx + 1}...`}
+                                    className="flex-1 px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none"
+                                  />
+                                  {(selectedTask?.descriptions || ['']).length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = (selectedTask.descriptions || ['']).filter((_, i) => i !== idx);
+                                        setSelectedTask(prev => ({ ...prev, descriptions: updated.length ? updated : [''] }));
+                                      }}
+                                      className="flex-shrink-0 mt-1 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 border border-transparent hover:border-red-200"
+                                      title="Remove this description"
+                                    >
+                                      <Minus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedTask(prev => ({ ...prev, descriptions: [...(prev.descriptions || [prev.description || '']), ''] }))}
+                              className="flex items-center gap-1.5 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 hover:border-amber-300 rounded-lg transition-all duration-200 w-full justify-center"
                             >
-                              <option value="">Select Employee</option>
-                              {getAssignableEmployees().map(emp => (
-                                <option key={emp._id} value={emp._id}>
-                                  {emp.fullName || `${emp.personalInfo?.firstName} ${emp.personalInfo?.lastName}` || emp.user?.name || 'Unknown'}
-                                  ({emp.employeeId || emp.user?.employeeId || 'N/A'})
-                                </option>
-                              ))}
+                              <PlusCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              Add Description
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                          <div>
+                            <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Assign To *</label>
+                            {employeesLoading ? (
+                              <div className="flex items-center space-x-1.5 px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                                <span className="text-slate-500 text-[11px] sm:text-sm">Loading...</span>
+                              </div>
+                            ) : (
+                              <select
+                                value={selectedTask?.assignedTo?._id || ''}
+                                onChange={(e) => {
+                                  const employee = employees.find(emp => emp._id === e.target.value);
+                                  setSelectedTask({ ...selectedTask, assignedTo: employee });
+                                }}
+                                className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                required
+                              >
+                                <option value="">Select Employee</option>
+                                {getAssignableEmployees().map(emp => (
+                                  <option key={emp._id} value={emp._id}>
+                                    {emp.fullName || `${emp.personalInfo?.firstName} ${emp.personalInfo?.lastName}` || emp.user?.name || 'Unknown'}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Priority *</label>
+                            <select
+                              value={selectedTask?.priority || ''}
+                              onChange={(e) => setSelectedTask({ ...selectedTask, priority: e.target.value })}
+                              className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            >
+                              <option value="Low">Low</option>
+                              <option value="Medium">Medium</option>
+                              <option value="High">High</option>
+                              <option value="Critical">Critical</option>
                             </select>
-                          )}
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-600 mb-2">Priority *</label>
-                          <select
-                            value={selectedTask?.priority || ''}
-                            onChange={(e) => setSelectedTask({ ...selectedTask, priority: e.target.value })}
-                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          >
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                            <option value="Critical">Critical</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-600 mb-2">Due Date *</label>
-                          <input
-                            type="date"
-                            value={selectedTask?.dueDate?.split('T')[0] || ''}
-                            onChange={(e) => setSelectedTask({ ...selectedTask, dueDate: e.target.value })}
-                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-600 mb-2">Estimated Hours *</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.5"
-                            value={selectedTask?.estimatedHours || ''}
-                            onChange={(e) => setSelectedTask({ ...selectedTask, estimatedHours: parseFloat(e.target.value) || 0 })}
-                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            required
-                          />
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                          <div>
+                            <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Due Date *</label>
+                            <input
+                              type="date"
+                              value={selectedTask?.dueDate?.split('T')[0] || ''}
+                              onChange={(e) => setSelectedTask({ ...selectedTask, dueDate: e.target.value })}
+                              className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Est. Hours *</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              value={selectedTask?.estimatedHours || ''}
+                              onChange={(e) => setSelectedTask({ ...selectedTask, estimatedHours: parseFloat(e.target.value) || 0 })}
+                              className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                              required
+                            />
+                          </div>
                         </div>
                       </div>
-                      <div className="flex justify-end space-x-4">
+                      <div className="sticky bottom-0 z-10 flex shrink-0 justify-end space-x-2 sm:space-x-4 border-t border-slate-100 bg-white/95 pt-2 backdrop-blur sm:pt-4">
                         <button
                           type="button"
                           onClick={() => setShowEditModal(false)}
-                          className="px-6 py-3 border border-slate-200 text-slate-700 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200"
+                          className="px-3 sm:px-6 py-1.5 sm:py-3 border border-slate-200 text-xs sm:text-sm text-slate-700 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
                           disabled={employeesLoading}
-                          className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-3 sm:px-6 py-1.5 sm:py-3 bg-blue-600 text-white font-semibold text-xs sm:text-sm rounded-lg shadow-sm hover:shadow-md hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Save className="w-4 h-4 mr-2 inline" />
+                          <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2 inline" />
                           Update Task
                         </button>
                       </div>
@@ -1444,188 +1552,181 @@ const AdminTaskManagement = () => {
             {
               showViewModal && selectedTask && (
                 <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-2 md:p-4">
-                  <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
-                  <div className="task-details-modal-scroll relative w-full rounded-t-3xl border border-slate-200 bg-white p-2.5 shadow-xl max-h-[92dvh] overflow-y-auto sm:rounded-2xl sm:p-4 md:p-4 lg:p-5 sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl sm:max-h-[85vh]">
-                    <div className="mb-3 flex items-start justify-between gap-2 sm:mb-6 sm:gap-3">
-                      <h2 className="text-[13px] font-bold tracking-tight text-slate-900 sm:text-lg md:text-xl">Task Details</h2>
-                      <div className="flex shrink-0 items-center gap-2">
+                  <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
+                  <div className="task-details-modal-scroll relative w-full rounded-t-3xl border border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.20)] max-h-[94dvh] overflow-y-auto sm:rounded-2xl sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl sm:max-h-[88vh]">
+
+                    {/* Modal Header */}
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-3.5 py-3 sm:px-6 sm:py-5">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-blue-500 mb-0.5 truncate">Task Details</p>
+                        <h2 className="text-xs sm:text-lg font-bold tracking-tight text-slate-900 truncate">{selectedTask.title || 'Untitled Task'}</h2>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-semibold ${getStatusColor(selectedTask.status)}`}>
+                          {selectedTask.status}
+                        </span>
                         <button
                           onClick={() => {
+                            const existingDescs = selectedTask?.description
+                              ? selectedTask.description.split('\n\n').filter(d => d.trim()).map(d => d.trim())
+                              : [''];
+                            setSelectedTask(prev => ({ ...prev, descriptions: existingDescs.length > 0 ? existingDescs : [''] }));
                             setShowViewModal(false);
                             setShowEditModal(true);
                           }}
-                          className="inline-flex items-center gap-1 rounded-lg border border-blue-100 bg-blue-50 px-2 py-1 text-[9px] font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm"
+                          className="inline-flex items-center gap-1 rounded-lg border border-blue-100 bg-blue-50 px-2 py-1 sm:px-3 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100"
                         >
-                          <Edit className="h-3.5 w-3.5" />
+                          <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                           Edit
                         </button>
-                        <button onClick={() => setShowViewModal(false)} className="text-slate-400 hover:text-slate-900">
-                          <X className="w-6 h-6" />
+                        <button onClick={() => setShowViewModal(false)} className="p-1 sm:p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all">
+                          <X className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                       </div>
                     </div>
+
                     {modalLoading ? (
-                      <div className="flex items-center justify-center py-12">
+                      <div className="flex items-center justify-center py-16">
                         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                       </div>
                     ) : (
-                      <div className="space-y-6">
-                        <div className="flex flex-col gap-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-4">
-                          <div className="min-w-0 flex-1">
-                            <p className="line-clamp-1 text-[12px] font-semibold text-slate-900 sm:text-base">{selectedTask.title || 'Untitled Task'}</p>
-                            <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-slate-500 sm:mt-1 sm:text-sm">{selectedTask.description || 'No description'}</p>
-                          </div>
-                          <span className={`inline-flex w-fit flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-3 sm:py-1 sm:text-sm ${getStatusColor(selectedTask.status)}`}>
-                            {selectedTask.status}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 md:gap-5">
-                          <div className="space-y-2 sm:space-y-4">
-                            <div>
-                              <label className="text-[10px] text-slate-500 sm:text-sm">Assigned To</label>
-                              <p className="text-[11px] font-medium leading-snug text-slate-900 sm:text-base">
-                                {selectedTask.assignedTo?.user?.name || selectedTask.assignedTo?.fullName || 'Unknown Employee'}
-                              </p>
-                              <p className="text-[9px] text-slate-500 sm:text-sm">
-                                {selectedTask.assignedTo?.user?.employeeId || selectedTask.assignedTo?.employeeId || 'N/A'}
-                              </p>
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-slate-500 sm:text-sm">Assigned From</label>
-                              <p className="text-[11px] font-medium leading-snug text-slate-900 sm:text-base">
-                                {selectedTask.isSelfAssigned
-                                  ? 'Self (Employee)'
-                                  : selectedTask.assignedBy?.name || 'Admin'}
-                              </p>
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-slate-500 sm:text-sm">Priority</label>
-                              <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] sm:px-2 sm:py-1 sm:text-xs ${getPriorityColor(selectedTask.priority)}`}>
-                                {selectedTask.priority}
-                              </span>
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-slate-500 sm:text-sm">Created</label>
-                              <p className="text-[11px] font-medium leading-snug text-slate-900 sm:text-base">{formatDate(selectedTask.createdAt)}</p>
-                            </div>
-                          </div>
-                          <div className="space-y-2 sm:space-y-4">
-                            <div>
-                              <label className="text-[10px] text-slate-500 sm:text-sm">Due Date</label>
-                              <p className={`text-[11px] font-medium leading-snug sm:text-base ${isOverdue(selectedTask.dueDate, selectedTask.status) ? 'text-red-600' : 'text-slate-900'}`}>
-                                {formatDate(selectedTask.dueDate)}
-                              </p>
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-slate-500 sm:text-sm">Progress</label>
-                              <div className="flex items-center gap-1.5">
-                                <div className="flex-1 rounded-full bg-slate-200 h-1.5 sm:h-2">
-                                  <div
-                                    className="bg-blue-600 h-1.5 rounded-full sm:h-2"
-                                    style={{ width: `${selectedTask.progress}%` }}
-                                  ></div>
-                                </div>
-                                <span className="w-8 text-right text-[9px] text-blue-700 sm:w-auto sm:text-sm">{selectedTask.progress}%</span>
-                              </div>
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-slate-500 sm:text-sm">Hours</label>
-                              <p className="text-[11px] font-medium leading-snug text-slate-900 sm:text-base">
-                                {Math.round(selectedTask.actualHours || 0)} / {selectedTask.estimatedHours || 0} hrs
-                              </p>
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-slate-500 sm:text-sm">Last Updated</label>
-                              <p className="text-[11px] font-medium leading-snug text-slate-900 sm:text-base">{formatDate(selectedTask.updatedAt)}</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-slate-500 sm:text-sm">Title</label>
-                          <p className="mt-0.5 rounded-lg border border-slate-200 bg-white p-2 text-[10px] font-semibold leading-snug text-slate-900 sm:mt-1 sm:p-3 sm:text-base">{selectedTask.title || 'Untitled Task'}</p>
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-slate-500 sm:text-sm">Description</label>
-                          <p className="mt-0.5 rounded-lg border border-slate-200 bg-slate-50 p-2 text-[10px] leading-snug text-slate-900 sm:mt-1 sm:p-3 sm:text-sm">{selectedTask.description}</p>
-                        </div>
-                        {selectedTask.status === 'Review' && (
-                          <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-2.5 shadow-[0_10px_30px_rgba(79,70,229,0.08)] sm:p-4">
-                            <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 sm:mb-4">
-                              <div className="min-w-0">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-purple-700 sm:text-xs">Review Decision</p>
-                                <p className="mt-0.5 max-w-[34rem] text-[9px] leading-snug text-slate-500 sm:mt-1 sm:text-xs">
-                                  Employee has submitted this task for admin review. Approve it, reject it, or request specific changes.
-                                </p>
-                              </div>
-                              <span className="whitespace-nowrap rounded-full bg-purple-100 px-2 py-0.5 text-[9px] font-semibold text-purple-700 sm:px-3 sm:py-1 sm:text-xs">
-                                Pending Review
-                              </span>
-                            </div>
+                      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(300px,1fr)]">
 
-                            <textarea
-                              value={reviewFeedback}
-                              onChange={(e) => setReviewFeedback(e.target.value)}
-                              rows={3}
-                              placeholder="Add feedback for rejection or requested changes..."
-                              className="w-full resize-none rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] text-slate-900 placeholder-slate-400 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 sm:px-3 sm:text-sm"
-                            />
+                        {/* ── LEFT COLUMN: Descriptions + Comments ── */}
+                        <div className="space-y-5 border-b border-slate-100 p-5 sm:p-6 lg:border-b-0 lg:border-r">
 
-                            <div className="mt-2.5 grid grid-cols-3 gap-1.5 sm:gap-3">
-                              <button
-                                type="button"
-                                onClick={() => handleReviewTask('approve')}
-                                disabled={!!reviewLoading}
-                                className="inline-flex min-w-0 items-center justify-center rounded-xl bg-emerald-600 px-1.5 py-2 text-[9px] font-semibold leading-none text-white shadow-sm transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3 sm:py-2.5 sm:text-sm"
-                              >
-                                {reviewLoading === 'approve' ? <Loader2 className="mr-1 h-3 w-3 animate-spin sm:mr-2 sm:h-4 sm:w-4" /> : <CheckCircle className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />}
-                                Approve
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleReviewTask('changes')}
-                                disabled={!!reviewLoading}
-                                className="inline-flex min-w-0 items-center justify-center rounded-xl bg-amber-500 px-1.5 py-2 text-[9px] font-semibold leading-none text-white shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3 sm:py-2.5 sm:text-sm"
-                              >
-                                {reviewLoading === 'changes' ? <Loader2 className="mr-1 h-3 w-3 animate-spin sm:mr-2 sm:h-4 sm:w-4" /> : <RefreshCw className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />}
-                                Changes
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleReviewTask('reject')}
-                                disabled={!!reviewLoading}
-                                className="inline-flex min-w-0 items-center justify-center rounded-xl bg-red-600 px-1.5 py-2 text-[9px] font-semibold leading-none text-white shadow-sm transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3 sm:py-2.5 sm:text-sm"
-                              >
-                                {reviewLoading === 'reject' ? <Loader2 className="mr-1 h-3 w-3 animate-spin sm:mr-2 sm:h-4 sm:w-4" /> : <AlertTriangle className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />}
-                                Reject
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        {selectedTask.comments && selectedTask.comments.length > 0 && (
+                          {/* Descriptions */}
                           <div>
-                            <label className="text-[10px] text-slate-500 sm:text-sm">Recent Comments ({selectedTask.comments.length})</label>
-                            <div className="mt-1.5 space-y-1.5 max-h-40 overflow-y-auto sm:mt-2 sm:space-y-2">
-                              {selectedTask.comments.slice(-3).map((comment) => (
-                                <div key={comment._id} className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                                  <div className="mb-0.5 flex items-center space-x-2">
-                                    <span className="text-[11px] font-medium text-slate-900">
-                                      {comment.user?.name || 'Unknown'}
-                                    </span>
-                                    <span className="text-[9px] text-slate-500">
-                                      {formatDate(comment.createdAt)}
-                                    </span>
-                                  </div>
-                                  <p className="text-[10px] leading-snug text-slate-600">{comment.text}</p>
+                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">Descriptions</p>
+                            <div className="space-y-2">
+                              {((selectedTask.description || '').split('\n\n').map(s => s.trim()).filter(Boolean).length > 0
+                                ? (selectedTask.description || '').split('\n\n').map(s => s.trim()).filter(Boolean)
+                                : ['No description']
+                              ).map((desc, idx) => (
+                                <div key={idx} className="flex gap-3 items-start rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 hover:bg-slate-100/60 transition-colors">
+                                  <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center shadow-sm">{idx + 1}</span>
+                                  <p className="text-[12.5px] leading-relaxed text-slate-800 flex-1 min-w-0 sm:text-sm">{desc}</p>
                                 </div>
                               ))}
                             </div>
                           </div>
-                        )}
+
+                          {/* Comments */}
+                          {selectedTask.comments && selectedTask.comments.length > 0 && (
+                            <div>
+                              <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                                Comments
+                                <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 py-0.5 text-[9px] font-bold text-slate-600">{selectedTask.comments.length}</span>
+                              </p>
+                              <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                                {selectedTask.comments.slice(-5).map((comment) => (
+                                  <div key={comment._id} className="rounded-xl border border-slate-200 bg-white p-3">
+                                    <div className="mb-1 flex items-center gap-2">
+                                      <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                                        <User className="w-2.5 h-2.5 text-white" />
+                                      </div>
+                                      <span className="text-[11.5px] font-semibold text-slate-900">{comment.user?.name || 'Unknown'}</span>
+                                      <span className="text-[9.5px] text-slate-400">{formatDate(comment.createdAt)}</span>
+                                    </div>
+                                    <p className="text-[11px] leading-snug text-slate-600 pl-7">{comment.text}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* ── RIGHT COLUMN: Meta + Progress + Review ── */}
+                        <div className="space-y-5 bg-slate-50/50 p-5 sm:p-6">
+
+                          {/* Meta info */}
+                          <div>
+                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">Info</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {[
+                                {
+                                  label: 'Assigned To',
+                                  primary: selectedTask.assignedTo?.user?.name || selectedTask.assignedTo?.fullName || 'Unknown',
+                                  secondary: selectedTask.assignedTo?.user?.employeeId || selectedTask.assignedTo?.employeeId
+                                },
+                                {
+                                  label: 'Assigned From',
+                                  primary: selectedTask.isSelfAssigned ? 'Self (Employee)' : selectedTask.assignedBy?.name || 'Admin'
+                                },
+                                { label: 'Due Date', primary: formatDate(selectedTask.dueDate), red: isOverdue(selectedTask.dueDate, selectedTask.status) },
+                                { label: 'Created', primary: formatDate(selectedTask.createdAt) },
+                                { label: 'Last Updated', primary: formatDate(selectedTask.updatedAt) },
+                                { label: 'Hours', primary: `${Math.round(selectedTask.actualHours || 0)} / ${selectedTask.estimatedHours || 0} hrs` },
+                              ].map(({ label, primary, secondary, red }) => (
+                                <div key={label} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+                                  <p className="text-[9.5px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">{label}</p>
+                                  <p className={`text-[12px] font-semibold leading-snug ${red ? 'text-red-600' : 'text-slate-900'}`}>{primary}</p>
+                                  {secondary && <p className="text-[9.5px] text-slate-400 mt-0.5">{secondary}</p>}
+                                </div>
+                              ))}
+                              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+                                <p className="text-[9.5px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Priority</p>
+                                <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold ${getPriorityColor(selectedTask.priority)}`}>
+                                  {selectedTask.priority}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Progress */}
+                          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Progress</p>
+                              <span className="text-sm font-bold text-blue-600">{selectedTask.progress}%</span>
+                            </div>
+                            <div className="w-full rounded-full bg-slate-200 h-2.5">
+                              <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style={{ width: selectedTask.progress + '%' }} />
+                            </div>
+                          </div>
+
+                          {/* Review Panel */}
+                          {selectedTask.status === 'Review' && (
+                            <div className="rounded-xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-2.5 sm:p-4 shadow-[0_4px_20px_rgba(79,70,229,0.08)]">
+                              <div className="mb-2 sm:mb-3 flex items-center justify-between gap-1.5">
+                                <div>
+                                  <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider sm:tracking-widest text-purple-700">Review Decision</p>
+                                  <p className="mt-0.5 text-[9px] sm:text-[10px] text-slate-500 leading-snug">Approve, request changes, or reject.</p>
+                                </div>
+                                <span className="rounded-full bg-purple-100 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[8px] sm:text-[9px] font-bold text-purple-700 whitespace-nowrap">Pending</span>
+                              </div>
+                              <textarea
+                                value={reviewFeedback}
+                                onChange={(e) => setReviewFeedback(e.target.value)}
+                                rows={2}
+                                placeholder="Feedback for rejection or changes..."
+                                className="w-full resize-none rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 sm:px-3 sm:py-2 text-[10.5px] sm:text-[11.5px] text-slate-900 placeholder-slate-400 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                              />
+                              <div className="mt-2 sm:mt-2.5 grid grid-cols-3 gap-1 sm:gap-2">
+                                <button type="button" onClick={() => handleReviewTask('approve')} disabled={!!reviewLoading}
+                                  className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-1 py-1 sm:px-2.5 sm:py-2 text-[9px] sm:text-[11px] font-bold text-white shadow-xs transition hover:bg-emerald-500 disabled:opacity-60">
+                                  {reviewLoading === 'approve' ? <Loader2 className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3 animate-spin" /> : <CheckCircle className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3" />}
+                                  Approve
+                                </button>
+                                <button type="button" onClick={() => handleReviewTask('changes')} disabled={!!reviewLoading}
+                                  className="inline-flex items-center justify-center rounded-lg bg-amber-500 px-1 py-1 sm:px-2.5 sm:py-2 text-[9px] sm:text-[11px] font-bold text-white shadow-xs transition hover:bg-amber-400 disabled:opacity-60">
+                                  {reviewLoading === 'changes' ? <Loader2 className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3 animate-spin" /> : <RefreshCw className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3" />}
+                                  Changes
+                                </button>
+                                <button type="button" onClick={() => handleReviewTask('reject')} disabled={!!reviewLoading}
+                                  className="inline-flex items-center justify-center rounded-lg bg-red-600 px-1 py-1 sm:px-2.5 sm:py-2 text-[9px] sm:text-[11px] font-bold text-white shadow-xs transition hover:bg-red-500 disabled:opacity-60">
+                                  {reviewLoading === 'reject' ? <Loader2 className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3 animate-spin" /> : <AlertTriangle className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3" />}
+                                  Reject
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
-              )}
+              )
+            }
           </div>
         ) : activeTab === 'daybooks' ? (
           <AdminDayBookReview search={searchTerm} />

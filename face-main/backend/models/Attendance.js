@@ -92,16 +92,20 @@ const applyDerivedFields = (values, { isNew = false, checkInChanged = false, che
   if (values.checkInTime && (isNew || checkInChanged)) {
     const checkInIST = new Date(values.checkInTime.getTime() + IST_OFFSET);
     const standardTimeIST = new Date(values.checkInTime.getTime() + IST_OFFSET);
-    standardTimeIST.setUTCHours(10, 0, 0, 0);
+    standardTimeIST.setUTCHours(10, 15, 0, 0);
 
     if (checkInIST > standardTimeIST) {
       values.isLate = true;
       values.lateMinutes = Math.round((checkInIST - standardTimeIST) / (1000 * 60));
-      values.status = values.lateMinutes > 240 ? 'Half Day' : 'Late';
+      if (values.status !== 'Half Day') {
+        values.status = 'Late';
+      }
     } else {
       values.isLate = false;
       values.lateMinutes = 0;
-      values.status = 'Present';
+      if (values.status !== 'Half Day') {
+        values.status = 'Present';
+      }
     }
   }
 

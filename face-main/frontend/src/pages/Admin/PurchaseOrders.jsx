@@ -356,10 +356,6 @@ const PurchaseOrders = () => {
                 <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Refresh</span>
               </button>
-              <button onClick={fetchData} className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white border border-blue-200 hover:bg-blue-50 text-blue-600 rounded-lg flex items-center gap-1.5 text-xs sm:text-sm transition-all duration-200">
-                <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>Refresh</span>
-              </button>
               <button onClick={() => { resetForm(); setShowCreateModal(true); }} className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white rounded-lg flex items-center gap-1.5 text-xs sm:text-sm shadow-sm hover:shadow-md transition-all duration-200">
                 <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>New Purchase</span>
@@ -553,15 +549,15 @@ const EditableDropdown = ({ name, value, options, onChange, placeholder, listId,
 );
 
 const PurchaseModal = ({ title, formData, clientOptions, projectOptions, serviceTypeOptions, vendorOptions, onChange, onSubmit, onClose, submitLabel, formatCurrency }) => (
-  <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
+  <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-2.5 pt-14 sm:p-4">
     <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
-    <div className="relative flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
+    <div className="relative flex max-h-[40dvh] sm:max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-5 shadow-xl">
+      <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:pb-3">
         <h3 className="text-base font-bold text-slate-900 sm:text-lg">{title}</h3>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg p-1.5 text-slate-400 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700"
+          className="rounded-lg p-1 text-slate-400 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700"
           aria-label="Close purchase modal"
         >
           <XCircle className="h-5 w-5" />
@@ -569,86 +565,86 @@ const PurchaseModal = ({ title, formData, clientOptions, projectOptions, service
       </div>
 
       <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3 sm:space-y-4 sm:py-4 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
-          <Field label="Client *">
-            <EditableDropdown
-              name="clientName"
-              value={formData.clientName}
-              options={clientOptions}
-              onChange={onChange}
-              placeholder="Select or type client"
-              listId="it-purchase-client-options"
-              required
-            />
-          </Field>
-          <Field label="Project *">
-            <EditableDropdown
-              name="project"
-              value={formData.project}
-              options={projectOptions}
-              onChange={onChange}
-              placeholder="Select or type project"
-              listId="it-purchase-project-options"
-              required
-            />
-          </Field>
-          <Field label="Service Type *">
-            <EditableDropdown
-              name="serviceType"
-              value={formData.serviceType}
-              options={serviceTypeOptions}
-              onChange={onChange}
-              placeholder="Select or type service type"
-              listId="it-purchase-service-type-options"
-              required
-            />
-          </Field>
-          <Field label="Vendor *">
-            <EditableDropdown
-              name="vendor"
-              value={formData.vendor}
-              options={vendorOptions}
-              onChange={onChange}
-              placeholder="Select or type vendor"
-              listId="it-purchase-vendor-options"
-              required
-            />
-          </Field>
-          <Field label="Service Name *">
-            <input name="serviceName" value={formData.serviceName} onChange={onChange} placeholder="example.com, OpenAI API, AWS EC2" className={modalInputClass} required />
-          </Field>
-          <Field label="Billing Cycle *">
-            <select name="billingCycle" value={formData.billingCycle} onChange={onChange} className={modalInputClass} required>
-              {BILLING_CYCLES.map(cycle => <option key={cycle} value={cycle}>{cycle}</option>)}
-            </select>
-          </Field>
-          <Field label="Purchase Date *">
-            <input type="date" name="purchaseDate" value={formData.purchaseDate} onChange={onChange} className={modalInputClass} required />
-          </Field>
-          <Field label="Renewal Date *">
-            <input type="date" name="renewalDate" value={formData.renewalDate} onChange={onChange} className={modalInputClass} required />
-          </Field>
-          <Field label="Amount *">
-            <input type="number" name="amount" value={formData.amount} onChange={onChange} min="0" step="0.01" className={modalInputClass} required />
-          </Field>
-          <Field label="Status">
-            <select name="status" value={formData.status} onChange={onChange} className={modalInputClass}>
-              {STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
-            </select>
+        <div className="task-details-modal-scroll min-h-0 flex-1 space-y-2.5 overflow-y-auto py-2.5 sm:space-y-4 sm:py-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 md:grid-cols-2 md:gap-4">
+            <Field label="Client *">
+              <EditableDropdown
+                name="clientName"
+                value={formData.clientName}
+                options={clientOptions}
+                onChange={onChange}
+                placeholder="Select or type client"
+                listId="it-purchase-client-options"
+                required
+              />
+            </Field>
+            <Field label="Project *">
+              <EditableDropdown
+                name="project"
+                value={formData.project}
+                options={projectOptions}
+                onChange={onChange}
+                placeholder="Select or type project"
+                listId="it-purchase-project-options"
+                required
+              />
+            </Field>
+            <Field label="Service Type *">
+              <EditableDropdown
+                name="serviceType"
+                value={formData.serviceType}
+                options={serviceTypeOptions}
+                onChange={onChange}
+                placeholder="Select or type service type"
+                listId="it-purchase-service-type-options"
+                required
+              />
+            </Field>
+            <Field label="Vendor *">
+              <EditableDropdown
+                name="vendor"
+                value={formData.vendor}
+                options={vendorOptions}
+                onChange={onChange}
+                placeholder="Select or type vendor"
+                listId="it-purchase-vendor-options"
+                required
+              />
+            </Field>
+            <Field label="Service Name *">
+              <input name="serviceName" value={formData.serviceName} onChange={onChange} placeholder="example.com, OpenAI API, AWS EC2" className={modalInputClass} required />
+            </Field>
+            <Field label="Billing Cycle *">
+              <select name="billingCycle" value={formData.billingCycle} onChange={onChange} className={modalInputClass} required>
+                {BILLING_CYCLES.map(cycle => <option key={cycle} value={cycle}>{cycle}</option>)}
+              </select>
+            </Field>
+            <Field label="Purchase Date *">
+              <input type="date" name="purchaseDate" value={formData.purchaseDate} onChange={onChange} className={modalInputClass} required />
+            </Field>
+            <Field label="Renewal Date *">
+              <input type="date" name="renewalDate" value={formData.renewalDate} onChange={onChange} className={modalInputClass} required />
+            </Field>
+            <Field label="Amount *">
+              <input type="number" name="amount" value={formData.amount} onChange={onChange} min="0" step="0.01" className={modalInputClass} required />
+            </Field>
+            <Field label="Status">
+              <select name="status" value={formData.status} onChange={onChange} className={modalInputClass}>
+                {STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
+              </select>
+            </Field>
+          </div>
+
+          <Field label="Notes">
+            <textarea name="notes" value={formData.notes} onChange={onChange} rows="2" className={modalInputClass} />
           </Field>
         </div>
 
-        <Field label="Notes">
-          <textarea name="notes" value={formData.notes} onChange={onChange} rows="2" className={modalInputClass} />
-        </Field>
-        </div>
-
-        <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-3">
-          <div className="mb-2 text-sm font-medium text-slate-900 sm:mb-0 sm:inline-block">Amount: {formatCurrency(formData.amount)}</div>
-          <div className="grid grid-cols-2 gap-2 sm:float-right sm:flex">
-            <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50">Cancel</button>
-            <button type="submit" className="rounded-lg bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-3 py-2 text-sm text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md">{submitLabel}</button>
+        <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between border-t border-slate-100 bg-white/95 pt-2 backdrop-blur sm:pt-3">
+          <div className="text-xs sm:text-sm font-semibold text-slate-900">Amount: {formatCurrency(formData.amount)}</div>
+          <div className="flex gap-2">
+            <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-700 hover:bg-slate-50">Cancel</button>
+            <button type="submit" className="rounded-lg bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white shadow-sm hover:shadow-md">{submitLabel}</button>
           </div>
         </div>
       </form>
@@ -657,21 +653,21 @@ const PurchaseModal = ({ title, formData, clientOptions, projectOptions, service
 );
 
 const ViewModal = ({ po, getClientName, getStatusColor, formatCurrency, formatDate, ServiceBadge: ServiceBadgeComponent, onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+  <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2.5 pt-14 sm:p-4">
     <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
-    <div className="relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3.5 sm:px-5">
+    <div className="relative flex max-h-[40dvh] sm:max-h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-5 shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
+      <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:pb-3">
         <div className="min-w-0">
-          <h3 className="truncate text-lg font-bold text-slate-900 sm:text-xl">Service Purchase Details</h3>
+          <h3 className="truncate text-base font-bold text-slate-900 sm:text-xl">Service Purchase Details</h3>
           <p className="truncate text-xs text-slate-500 sm:text-sm">{po.poNumber || 'Purchase record'}</p>
         </div>
-        <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 transition-all duration-200 hover:bg-slate-100 hover:text-slate-600">
+        <button onClick={onClose} className="rounded-lg p-1 text-slate-400 transition-all duration-200 hover:bg-slate-100 hover:text-slate-600">
           <XCircle className="w-5 h-5" />
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-        <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
-          <div className="space-y-4 text-sm">
+      <div className="task-details-modal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain py-2.5 sm:py-5">
+        <div className="grid gap-2.5 text-xs sm:text-sm lg:grid-cols-[1.08fr_0.92fr] lg:gap-4">
+          <div className="space-y-2.5 sm:space-y-4">
             <Section title="Client">
               <InfoRow label="Client" value={getClientName(po)} />
               <InfoRow label="Project" value={po.project || '—'} />
@@ -682,19 +678,19 @@ const ViewModal = ({ po, getClientName, getStatusColor, formatCurrency, formatDa
               <InfoRow label="Vendor" value={po.vendor || '—'} />
             </Section>
           </div>
-          <div className="space-y-4 text-sm">
+          <div className="space-y-2.5 sm:space-y-4">
             <Section title="Subscription">
               <InfoRow label="Billing Cycle" value={po.billingCycle || '—'} />
               <InfoRow label="Purchase Date" value={formatDate(po.purchaseDate)} />
               <InfoRow label="Renewal Date" value={formatDate(po.renewalDate)} />
-              <InfoRow label="Status" value={<span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(po.status)}`}>{po.status}</span>} />
+              <InfoRow label="Status" value={<span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${getStatusColor(po.status)}`}>{po.status}</span>} />
             </Section>
             <Section title="Financial">
               <InfoRow label="Amount" value={formatCurrency(po.amount || po.grandTotal)} />
             </Section>
             {po.notes && (
               <Section title="Notes">
-                <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700">
+                <p className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs sm:text-sm leading-relaxed text-slate-700">
                   {po.notes}
                 </p>
               </Section>
@@ -707,14 +703,14 @@ const ViewModal = ({ po, getClientName, getStatusColor, formatCurrency, formatDa
 );
 
 const Section = ({ title, children }) => (
-  <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 shadow-sm sm:p-4">
-    <p className="mb-2 text-sm font-semibold text-slate-900">{title}</p>
-    <div className="space-y-2">{children}</div>
+  <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-2.5 shadow-sm sm:p-4">
+    <p className="mb-1.5 text-xs sm:text-sm font-semibold text-slate-900">{title}</p>
+    <div className="space-y-1.5 sm:space-y-2">{children}</div>
   </div>
 );
 
 const InfoRow = ({ label, value }) => (
-  <div className="flex items-start justify-between gap-4 border-b border-slate-200/80 pb-2 last:border-b-0 last:pb-0">
+  <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 pb-1.5 last:border-b-0 last:pb-0">
     <span className="text-xs font-medium text-slate-500 sm:text-sm">{label}</span>
     <span className="max-w-[65%] text-right text-xs font-medium text-slate-900 sm:text-sm">{value}</span>
   </div>
@@ -739,7 +735,7 @@ const Field = ({ label, children, className = '' }) => (
 );
 
 const inputClass = 'w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200';
-const modalInputClass = 'w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200';
+const modalInputClass = 'w-full px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200';
 
 const Loader2AsSpinner = () => (
   <div className="animate-spin rounded-full h-6 w-6 border-2 border-slate-200 border-t-blue-600 mx-auto"></div>

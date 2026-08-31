@@ -640,6 +640,7 @@ export const interviewAPI = {
 // Payslip API calls
 export const payslipAPI = {
   getPayslips: (params = {}) => API.get('/payslips', { params }),
+  getPayslipPreview: (params = {}) => API.get('/payslips/preview', { params }),
   getPayslipById: (id) => API.get(`/payslips/${id}`),
   getEmployeePayslips: (employeeId) => API.get(`/payslips/employee/${employeeId}`),
   generatePayslip: (data) => API.post('/payslips/generate', data),

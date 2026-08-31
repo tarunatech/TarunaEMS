@@ -55,12 +55,12 @@ const EmployeeOverviewCard = ({
   onClick
 }) => {
   const tones = {
-    blue:    { gradient: 'from-blue-500 to-indigo-600',    accent: '#3b82f6', text: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100',  divider: 'bg-blue-100' },
-    amber:   { gradient: 'from-amber-400 to-orange-500',  accent: '#f59e0b', text: 'text-amber-600',  bg: 'bg-amber-50',  border: 'border-amber-100', divider: 'bg-amber-100' },
-    violet:  { gradient: 'from-violet-500 to-purple-600', accent: '#8b5cf6', text: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100',divider: 'bg-violet-100' },
-    emerald: { gradient: 'from-emerald-500 to-teal-500',  accent: '#10b981', text: 'text-emerald-600',bg: 'bg-emerald-50',border: 'border-emerald-100',divider: 'bg-emerald-100' },
-    slate:   { gradient: 'from-slate-500 to-slate-700',   accent: '#64748b', text: 'text-slate-600',  bg: 'bg-slate-50',  border: 'border-slate-200',  divider: 'bg-slate-200' },
-    rose:    { gradient: 'from-rose-500 to-pink-500',     accent: '#f43f5e', text: 'text-rose-600',   bg: 'bg-rose-50',   border: 'border-rose-100',   divider: 'bg-rose-100' }
+    blue: { gradient: 'from-blue-500 to-indigo-600', accent: '#3b82f6', text: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', divider: 'bg-blue-100' },
+    amber: { gradient: 'from-amber-400 to-orange-500', accent: '#f59e0b', text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', divider: 'bg-amber-100' },
+    violet: { gradient: 'from-violet-500 to-purple-600', accent: '#8b5cf6', text: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100', divider: 'bg-violet-100' },
+    emerald: { gradient: 'from-emerald-500 to-teal-500', accent: '#10b981', text: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', divider: 'bg-emerald-100' },
+    slate: { gradient: 'from-slate-500 to-slate-700', accent: '#64748b', text: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', divider: 'bg-slate-200' },
+    rose: { gradient: 'from-rose-500 to-pink-500', accent: '#f43f5e', text: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', divider: 'bg-rose-100' }
   };
   const t = tones[tone] || tones.blue;
 
@@ -97,9 +97,8 @@ const EmployeeOverviewCard = ({
           {breakdown.map((item, i) => (
             <div
               key={item.label}
-              className={`flex items-center justify-between px-2.5 py-2 ${
-                i % 2 === 0 ? 'bg-slate-50' : 'bg-white'
-              }`}
+              className={`flex items-center justify-between px-2.5 py-2 ${i % 2 === 0 ? 'bg-slate-50' : 'bg-white'
+                }`}
             >
               <span className="text-[10px] font-semibold text-slate-400 truncate">{item.label}</span>
               <span className="text-[11px] font-black text-slate-800 ml-1 shrink-0">{item.value}</span>
@@ -212,7 +211,7 @@ const AddEmployeeModal = ({
 
       {/* Modal content - Prevent click propagation */}
       <div
-        className="relative bg-[#F8FAFC] border border-blue-100 rounded-xl sm:rounded-2xl p-3 sm:p-5 w-full max-w-4xl max-h-[92vh] sm:max-h-[86vh] overflow-y-auto shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
+        className="relative bg-[#F8FAFC] border border-blue-100 rounded-xl sm:rounded-2xl p-3 sm:p-5 w-full max-w-4xl max-h-[80vh] sm:max-h-[86vh] overflow-y-auto shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-blue-100">
@@ -315,67 +314,40 @@ const AddEmployeeModal = ({
                 </div>
               </div>
             </div>
+
             {/* Contact Information */}
             <div className="space-y-2.5 sm:space-y-4">
               <h3 className="text-sm sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-1 sm:pb-2">Contact Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
                 <div>
                   <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Email *</label>
                   <input
                     type="email"
-                    value={newEmployee.contactInfo.personalEmail}
-                    onChange={(e) => updateEmployee('contactInfo', e.target.value, 'personalEmail')}
+                    value={newEmployee.contactInfo.personalEmail || newEmployee.contactInfo.workEmail || ''}
+                    onChange={(e) => {
+                      updateEmployee('contactInfo', e.target.value, 'personalEmail');
+                      updateEmployee('contactInfo', e.target.value, 'workEmail');
+                    }}
                     className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Phone *</label>
+                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Mobile Number *</label>
                   <input
                     type="tel"
-                    value={newEmployee.contactInfo.phone}
-                    onChange={(e) => updateEmployee('contactInfo', e.target.value, 'phone')}
+                    value={newEmployee.contactInfo.mobileNumber || newEmployee.contactInfo.phone || ''}
+                    onChange={(e) => {
+                      updateEmployee('contactInfo', e.target.value, 'mobileNumber');
+                      updateEmployee('contactInfo', e.target.value, 'phone');
+                    }}
                     className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   />
                 </div>
-                <div className="sm:col-span-2">
-                  <h4 className="text-xs sm:text-md font-semibold text-slate-900 mb-1.5 sm:mb-3">Emergency Contact</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
-                    <div>
-                      <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Name *</label>
-                      <input
-                        type="text"
-                        value={newEmployee.contactInfo.emergencyContact.name}
-                        onChange={(e) => updateEmployee('contactInfo', e.target.value, 'emergencyContact', 'name')}
-                        className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Relationship *</label>
-                      <input
-                        type="text"
-                        value={newEmployee.contactInfo.emergencyContact.relationship}
-                        onChange={(e) => updateEmployee('contactInfo', e.target.value, 'emergencyContact', 'relationship')}
-                        className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Phone *</label>
-                      <input
-                        type="tel"
-                        value={newEmployee.contactInfo.emergencyContact.phone}
-                        onChange={(e) => updateEmployee('contactInfo', e.target.value, 'emergencyContact', 'phone')}
-                        className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
+
             {/* Work Information */}
             <div className="space-y-2.5 sm:space-y-4">
               <h3 className="text-sm sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-1 sm:pb-2">Work Information</h3>
@@ -384,8 +356,11 @@ const AddEmployeeModal = ({
                   <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Position *</label>
                   <input
                     type="text"
-                    value={newEmployee.workInfo.position}
-                    onChange={(e) => updateEmployee('workInfo', e.target.value, 'position')}
+                    value={newEmployee.workInfo.position || newEmployee.workInfo.designation || ''}
+                    onChange={(e) => {
+                      updateEmployee('workInfo', e.target.value, 'position');
+                      updateEmployee('workInfo', e.target.value, 'designation');
+                    }}
                     className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
                   />
@@ -408,15 +383,17 @@ const AddEmployeeModal = ({
                   <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Basic Salary *</label>
                   <input
                     type="number"
-                    value={newEmployee.salaryInfo.basicSalary}
+                    min="0"
+                    step="1"
+                    value={newEmployee.salaryInfo?.basicSalary ?? 0}
                     onChange={(e) => updateEmployee('salaryInfo', parseFloat(e.target.value) || 0, 'basicSalary')}
                     className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     required
-                    min="0"
                   />
                 </div>
               </div>
             </div>
+
             {/* Bank Information */}
             <div className="space-y-2.5 sm:space-y-4">
               <h3 className="text-sm sm:text-lg font-bold text-slate-900 border-b border-slate-200 pb-1 sm:pb-2">Bank Information</h3>
@@ -425,7 +402,7 @@ const AddEmployeeModal = ({
                   <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Account Holder Name</label>
                   <input
                     type="text"
-                    value={newEmployee.bankInfo.accountHolderName}
+                    value={newEmployee.bankInfo.accountHolderName || ''}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value, 'accountHolderName')}
                     className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   />
@@ -434,7 +411,7 @@ const AddEmployeeModal = ({
                   <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Account Number</label>
                   <input
                     type="text"
-                    value={newEmployee.bankInfo.accountNumber}
+                    value={newEmployee.bankInfo.accountNumber || ''}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value, 'accountNumber')}
                     className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   />
@@ -443,7 +420,7 @@ const AddEmployeeModal = ({
                   <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Bank Name</label>
                   <input
                     type="text"
-                    value={newEmployee.bankInfo.bankName}
+                    value={newEmployee.bankInfo.bankName || ''}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value, 'bankName')}
                     className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   />
@@ -452,7 +429,7 @@ const AddEmployeeModal = ({
                   <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Branch Name</label>
                   <input
                     type="text"
-                    value={newEmployee.bankInfo.branchName}
+                    value={newEmployee.bankInfo.branchName || ''}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value, 'branchName')}
                     className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   />
@@ -461,7 +438,7 @@ const AddEmployeeModal = ({
                   <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">IFSC Code</label>
                   <input
                     type="text"
-                    value={newEmployee.bankInfo.ifscCode}
+                    value={newEmployee.bankInfo.ifscCode || ''}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value.toUpperCase(), 'ifscCode')}
                     className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   />
@@ -469,7 +446,7 @@ const AddEmployeeModal = ({
                 <div>
                   <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-2">Account Type</label>
                   <select
-                    value={newEmployee.bankInfo.accountType}
+                    value={newEmployee.bankInfo.accountType || 'Savings'}
                     onChange={(e) => updateEmployee('bankInfo', e.target.value, 'accountType')}
                     className="w-full px-3 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg sm:rounded-xl text-slate-900 text-xs sm:text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
@@ -479,14 +456,14 @@ const AddEmployeeModal = ({
                 </div>
               </div>
             </div>
-            <div className="sticky bottom-0 -mx-3 -mb-3 p-3 sm:p-0 sm:static sm:mx-0 sm:mb-0 bg-white/95 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none border-t border-slate-200 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-6 z-20">
+            <div className="sticky bottom-0 -mx-3 -mb-3 p-2.5 sm:p-0 sm:static sm:mx-0 sm:mb-0 bg-white/95 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none border-t border-slate-200 flex flex-row items-center justify-between sm:justify-end gap-1.5 sm:gap-3 pt-2.5 sm:pt-6 z-20">
               <button
                 type="button"
                 onClick={() => {
                   resetForm();
                   onClose();
                 }}
-                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border border-slate-300 text-slate-700 text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl bg-white hover:bg-slate-50 transition-colors"
+                className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 border border-slate-300 text-slate-700 text-[11px] sm:text-sm font-medium rounded-lg sm:rounded-xl bg-white hover:bg-slate-50 transition-colors text-center whitespace-nowrap"
               >
                 Cancel
               </button>
@@ -496,15 +473,17 @@ const AddEmployeeModal = ({
                   // Create employee without face registration
                   await handleCreateEmployee();
                 }}
-                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border border-slate-300 text-slate-700 text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl bg-white hover:bg-slate-50 transition-colors"
+                className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 border border-slate-300 text-slate-700 text-[11px] sm:text-sm font-medium rounded-lg sm:rounded-xl bg-white hover:bg-slate-50 transition-colors text-center whitespace-nowrap"
               >
-                Skip Face & Create
+                <span className="sm:hidden">Skip Face</span>
+                <span className="hidden sm:inline">Skip Face & Create</span>
               </button>
               <button
                 type="submit"
-                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white font-semibold text-xs sm:text-sm rounded-lg sm:rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-sm"
+                className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white font-semibold text-[11px] sm:text-sm rounded-lg sm:rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-sm text-center whitespace-nowrap"
               >
-                Next: Face Registration
+                <span className="sm:hidden">Next: Face</span>
+                <span className="hidden sm:inline">Next: Face Registration</span>
               </button>
             </div>
           </form>
@@ -641,11 +620,11 @@ const AddEmployeeModal = ({
                 )}
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200">
+            <div className="flex flex-row items-center justify-between sm:justify-end gap-1.5 sm:gap-3 pt-3 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setCurrentStep(1)}
-                className="px-4 sm:px-6 py-2.5 sm:py-3 border border-slate-200 text-slate-600 text-sm rounded-xl hover:bg-white hover:text-slate-900 transition-colors"
+                className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 border border-slate-200 text-slate-600 text-[11px] sm:text-sm rounded-xl hover:bg-white hover:text-slate-900 transition-colors text-center whitespace-nowrap"
               >
                 Back
               </button>
@@ -656,18 +635,20 @@ const AddEmployeeModal = ({
                   setCapturedFaceData(null);
                   handleCreateEmployee();
                 }}
-                className="px-4 sm:px-6 py-2.5 sm:py-3 border border-blue-200 text-blue-700 text-sm rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors"
+                className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 border border-blue-200 text-blue-700 text-[11px] sm:text-sm rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors text-center whitespace-nowrap"
               >
-                <span>Skip Face & Create</span>
+                <span className="sm:hidden">Skip Face</span>
+                <span className="hidden sm:inline">Skip Face & Create</span>
               </button>
               <button
                 type="button"
                 onClick={handleCreateEmployee}
                 disabled={!capturedFaceData}
-                className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white font-semibold text-sm rounded-xl shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all duration-300 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                className="flex-1 sm:flex-none px-2 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white font-semibold text-[11px] sm:text-sm rounded-xl shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center space-x-1 sm:space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 text-center whitespace-nowrap"
               >
                 <Save className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span>Create with Face Data</span>
+                <span className="sm:hidden">Create</span>
+                <span className="hidden sm:inline">Create with Face Data</span>
               </button>
             </div>
           </div>
@@ -1435,15 +1416,15 @@ const EmployeeManagement = () => {
         const s = statusOf(r);
         const displayStatus = s === 'present' || s === 'checked-in' || s === 'checked out' || s === 'checked-out' ? 'Checked In'
           : s === 'absent' ? 'Absent'
-          : s.includes('late') ? 'Checked In Late'
-          : s.includes('half') ? 'Half Day'
-          : s.includes('work') ? 'Work From Home'
-          : 'Attendance Logged';
+            : s.includes('late') ? 'Checked In Late'
+              : s.includes('half') ? 'Half Day'
+                : s.includes('work') ? 'Work From Home'
+                  : 'Attendance Logged';
         const color = displayStatus === 'Checked In' ? 'blue'
           : displayStatus === 'Absent' ? 'rose'
-          : displayStatus === 'Checked In Late' ? 'amber'
-          : displayStatus === 'Half Day' ? 'violet'
-          : 'slate';
+            : displayStatus === 'Checked In Late' ? 'amber'
+              : displayStatus === 'Half Day' ? 'violet'
+                : 'slate';
         pushActivity('attendance', 'calendar', color, displayStatus, r.notes || '', r.date || r.checkIn || r.createdAt);
       });
       // Tasks
@@ -1451,12 +1432,12 @@ const EmployeeManagement = () => {
         const s = statusOf(t);
         const label = ['completed', 'done'].includes(s) ? 'Task Completed'
           : s === 'in-progress' || s === 'inprogress' ? 'Task In Progress'
-          : s === 'overdue' ? 'Task Overdue'
-          : 'Task Assigned';
+            : s === 'overdue' ? 'Task Overdue'
+              : 'Task Assigned';
         const color = ['completed', 'done'].includes(s) ? 'emerald'
           : s === 'overdue' ? 'rose'
-          : s.includes('progress') ? 'violet'
-          : 'blue';
+            : s.includes('progress') ? 'violet'
+              : 'blue';
         pushActivity('task', 'clipboard', color, label, t.title || t.description || 'Task', t.updatedAt || t.createdAt);
       });
       // Leaves
@@ -1464,7 +1445,7 @@ const EmployeeManagement = () => {
         const s = statusOf(l);
         const label = s === 'approved' ? 'Leave Approved'
           : s === 'rejected' ? 'Leave Rejected'
-          : 'Leave Requested';
+            : 'Leave Requested';
         const color = s === 'approved' ? 'emerald' : s === 'rejected' ? 'rose' : 'amber';
         const detail = [l.leaveType || l.type, l.reason || l.leaveReason].filter(Boolean).join(' · ');
         pushActivity('leave', 'users', color, label, detail, l.updatedAt || l.createdAt || l.appliedDate);
@@ -1474,7 +1455,7 @@ const EmployeeManagement = () => {
         const s = statusOf(ld);
         const label = s === 'won' ? 'Lead Won'
           : s === 'lost' ? 'Lead Lost'
-          : 'Lead Updated';
+            : 'Lead Updated';
         const color = s === 'won' ? 'emerald' : s === 'lost' ? 'rose' : 'blue';
         const detail = leadNameOf(ld) + (ld.company ? ` · ${ld.company}` : '');
         pushActivity('lead', 'trending', color, label, detail, ld.updatedAt || ld.createdAt);
@@ -1484,7 +1465,7 @@ const EmployeeManagement = () => {
         const s = statusOf(m);
         const label = ['completed', 'done'].includes(s) ? 'Meeting Completed'
           : new Date(m.scheduledDate) >= new Date() ? 'Meeting Scheduled'
-          : 'Meeting Held';
+            : 'Meeting Held';
         const color = ['completed', 'done'].includes(s) ? 'emerald' : 'slate';
         const detail = [m.leadName, m.type || m.title, formatShortDate(m.scheduledDate)].filter(Boolean).join(' · ');
         pushActivity('meeting', 'bar', color, label, detail, m.scheduledDate || m.createdAt);
@@ -2015,22 +1996,22 @@ const EmployeeManagement = () => {
 
       {/* Modal content */}
       <div className="employee-details-view relative w-full max-w-3xl lg:max-w-6xl max-h-[74vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
-        <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-blue-100 bg-[#F8FAFC]/95 px-4 py-3 backdrop-blur sm:px-5">
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900">Employee Details</h2>
-          <div className="flex items-center gap-2">
+        <div className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-blue-100 bg-[#F8FAFC]/95 px-3 py-2.5 backdrop-blur sm:px-5 sm:py-3">
+          <h2 className="text-sm sm:text-xl font-bold text-slate-900 truncate min-w-0">Employee Details</h2>
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => {
                 setShowViewModal(false);
                 setShowEditModal(true);
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800"
+              className="inline-flex items-center gap-1 rounded-lg border border-blue-100 bg-blue-50 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800 whitespace-nowrap"
             >
-              <Edit className="h-3.5 w-3.5" />
+              <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               Edit
             </button>
             <button
               onClick={() => setShowViewModal(false)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900"
+              className="rounded-lg border border-slate-200 bg-white px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900 whitespace-nowrap"
             >
               Close
             </button>
@@ -2064,9 +2045,8 @@ const EmployeeManagement = () => {
                     )}
                   </div>
                   {/* Status dot */}
-                  <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white shadow ${
-                    (selectedEmployee.status === 'Active' || !selectedEmployee.status) ? 'bg-emerald-500' : 'bg-slate-400'
-                  }`} />
+                  <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white shadow ${(selectedEmployee.status === 'Active' || !selectedEmployee.status) ? 'bg-emerald-500' : 'bg-slate-400'
+                    }`} />
                 </div>
 
                 {/* Main info */}
@@ -2081,11 +2061,10 @@ const EmployeeManagement = () => {
                         Face ID
                       </span>
                     )}
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
-                      (selectedEmployee.status === 'Active' || !selectedEmployee.status)
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${(selectedEmployee.status === 'Active' || !selectedEmployee.status)
                         ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                         : 'bg-slate-100 border-slate-200 text-slate-600'
-                    }`}>
+                      }`}>
                       {selectedEmployee.status || 'Active'}
                     </span>
                   </div>
@@ -2325,12 +2304,12 @@ const EmployeeManagement = () => {
                 )}
                 {recentActivities.map((activity, idx) => {
                   const colorMap = {
-                    blue:    { dot: 'bg-blue-500',    badge: 'bg-blue-50 text-blue-700 ring-blue-100' },
-                    amber:   { dot: 'bg-amber-500',   badge: 'bg-amber-50 text-amber-700 ring-amber-100' },
-                    violet:  { dot: 'bg-violet-500',  badge: 'bg-violet-50 text-violet-700 ring-violet-100' },
+                    blue: { dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 ring-blue-100' },
+                    amber: { dot: 'bg-amber-500', badge: 'bg-amber-50 text-amber-700 ring-amber-100' },
+                    violet: { dot: 'bg-violet-500', badge: 'bg-violet-50 text-violet-700 ring-violet-100' },
                     emerald: { dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 ring-emerald-100' },
-                    slate:   { dot: 'bg-slate-400',   badge: 'bg-slate-50 text-slate-600 ring-slate-200' },
-                    rose:    { dot: 'bg-rose-500',    badge: 'bg-rose-50 text-rose-700 ring-rose-100' }
+                    slate: { dot: 'bg-slate-400', badge: 'bg-slate-50 text-slate-600 ring-slate-200' },
+                    rose: { dot: 'bg-rose-500', badge: 'bg-rose-50 text-rose-700 ring-rose-100' }
                   };
                   const c = colorMap[activity.color] || colorMap.slate;
                   const relTime = (() => {
@@ -2420,128 +2399,128 @@ const EmployeeManagement = () => {
 
             {showFullEmployeeDetails && (
               <>
-            {/* Personal Information */}
-            <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-              <h3 className="text-sm font-bold text-slate-900">Personal Information</h3>
-              <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <label>First Name</label>
-                  <p>{selectedEmployee.personalInfo?.firstName || 'N/A'}</p>
-                </div>
-                <div>
-                  <label>Last Name</label>
-                  <p>{selectedEmployee.personalInfo?.lastName || 'N/A'}</p>
-                </div>
-                <div>
-                  <label>Date of Birth</label>
-                  <p>
-                    {selectedEmployee.personalInfo?.dateOfBirth ? new Date(selectedEmployee.personalInfo.dateOfBirth).toLocaleDateString() : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <label>Gender</label>
-                  <p>{selectedEmployee.personalInfo?.gender || 'N/A'}</p>
-                </div>
-                <div>
-                  <label>Blood Group</label>
-                  <p>{selectedEmployee.personalInfo?.bloodGroup || 'N/A'}</p>
-                </div>
-              </div>
-            </section>
-
-            {/* Contact Information */}
-            <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-              <h3 className="text-sm font-bold text-slate-900">Contact Information</h3>
-              <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-                <div>
-                  <label>Email</label>
-                  <p>{selectedEmployee.contactInfo?.personalEmail || selectedEmployee.user?.email || 'N/A'}</p>
-                </div>
-                <div>
-                  <label>Phone</label>
-                  <p>{selectedEmployee.contactInfo?.phone || 'N/A'}</p>
-                </div>
-                <div className="sm:col-span-2">
-                  <h4 className="mb-2 text-xs font-semibold uppercase text-slate-500">Emergency Contact</h4>
-                  <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-3">
+                {/* Personal Information */}
+                <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                  <h3 className="text-sm font-bold text-slate-900">Personal Information</h3>
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
                     <div>
-                      <label>Name</label>
-                      <p>{selectedEmployee.contactInfo?.emergencyContact?.name || 'N/A'}</p>
+                      <label>First Name</label>
+                      <p>{selectedEmployee.personalInfo?.firstName || 'N/A'}</p>
                     </div>
                     <div>
-                      <label>Relationship</label>
-                      <p>{selectedEmployee.contactInfo?.emergencyContact?.relationship || 'N/A'}</p>
+                      <label>Last Name</label>
+                      <p>{selectedEmployee.personalInfo?.lastName || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label>Date of Birth</label>
+                      <p>
+                        {selectedEmployee.personalInfo?.dateOfBirth ? new Date(selectedEmployee.personalInfo.dateOfBirth).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <label>Gender</label>
+                      <p>{selectedEmployee.personalInfo?.gender || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label>Blood Group</label>
+                      <p>{selectedEmployee.personalInfo?.bloodGroup || 'N/A'}</p>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Contact Information */}
+                <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                  <h3 className="text-sm font-bold text-slate-900">Contact Information</h3>
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                    <div>
+                      <label>Email</label>
+                      <p>{selectedEmployee.contactInfo?.personalEmail || selectedEmployee.user?.email || 'N/A'}</p>
                     </div>
                     <div>
                       <label>Phone</label>
-                      <p>{selectedEmployee.contactInfo?.emergencyContact?.phone || 'N/A'}</p>
+                      <p>{selectedEmployee.contactInfo?.phone || 'N/A'}</p>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <h4 className="mb-2 text-xs font-semibold uppercase text-slate-500">Emergency Contact</h4>
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-3">
+                        <div>
+                          <label>Name</label>
+                          <p>{selectedEmployee.contactInfo?.emergencyContact?.name || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label>Relationship</label>
+                          <p>{selectedEmployee.contactInfo?.emergencyContact?.relationship || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label>Phone</label>
+                          <p>{selectedEmployee.contactInfo?.emergencyContact?.phone || 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Work Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Work Information</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-500 mb-2">Position</label>
+                      <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.workInfo?.position || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-500 mb-2">Department</label>
+                      <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">
+                        {getDepartmentName(selectedEmployee.workInfo?.department, 'N/A')}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-500 mb-2">Basic Salary</label>
+                      <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">
+                        {selectedEmployee.salaryInfo?.basicSalary ? `₹${selectedEmployee.salaryInfo.basicSalary}` : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-500 mb-2">Joining Date</label>
+                      <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">
+                        {selectedEmployee.workInfo?.joiningDate ? new Date(selectedEmployee.workInfo.joiningDate).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-500 mb-2">Employment Type</label>
+                      <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.workInfo?.employmentType || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-500 mb-2">Work Location</label>
+                      <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.workInfo?.workLocation || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
-              </div>
-            </section>
 
-            {/* Work Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Work Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Position</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.workInfo?.position || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Department</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">
-                    {getDepartmentName(selectedEmployee.workInfo?.department, 'N/A')}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Basic Salary</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">
-                    {selectedEmployee.salaryInfo?.basicSalary ? `₹${selectedEmployee.salaryInfo.basicSalary}` : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Joining Date</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">
-                    {selectedEmployee.workInfo?.joiningDate ? new Date(selectedEmployee.workInfo.joiningDate).toLocaleDateString() : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Employment Type</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.workInfo?.employmentType || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-500 mb-2">Work Location</label>
-                  <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.workInfo?.workLocation || 'N/A'}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Bank Information */}
-            {selectedEmployee.bankInfo && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Bank Information</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-500 mb-2">Account Holder Name</label>
-                    <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.bankInfo?.accountHolderName || 'N/A'}</p>
+                {/* Bank Information */}
+                {selectedEmployee.bankInfo && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2">Bank Information</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-500 mb-2">Account Holder Name</label>
+                        <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.bankInfo?.accountHolderName || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-500 mb-2">Account Number</label>
+                        <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.bankInfo?.accountNumber || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-500 mb-2">Bank Name</label>
+                        <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.bankInfo?.bankName || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-500 mb-2">IFSC Code</label>
+                        <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.bankInfo?.ifscCode || 'N/A'}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-500 mb-2">Account Number</label>
-                    <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.bankInfo?.accountNumber || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-500 mb-2">Bank Name</label>
-                    <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.bankInfo?.bankName || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-500 mb-2">IFSC Code</label>
-                    <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.bankInfo?.ifscCode || 'N/A'}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+                )}
               </>
             )}
           </div>
@@ -2664,89 +2643,84 @@ const EmployeeManagement = () => {
         {/* Employee Table/Cards */}
         <div className="premium-panel rounded-2xl overflow-hidden">
           {/* Mobile Cards */}
-          <div className="md:hidden max-h-[68dvh] overflow-y-auto overscroll-contain p-3">
-            <div className="grid gap-3">
-            {filteredEmployees.map((employee) => (
-              <div key={employee._id} onClick={(event) => openEmployeeView(event, employee)} className="bg-white border border-slate-200 rounded-xl p-3 transition-all duration-200 shadow-sm cursor-pointer hover:border-blue-200 hover:bg-blue-50/40 active:bg-indigo-50/60">
-                <div className="mb-3 flex items-start justify-between gap-2">
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-200 bg-blue-50">
-                      {employee.user?.profileImage ? (
-                        <img
-                          src={getFullImageUrl(employee.user.profileImage)}
-                          alt={employee.fullName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User className="w-5 h-5 text-slate-400" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-slate-900 font-medium text-sm truncate">{employee.fullName}</p>
-                      <p className="flex min-w-0 items-center text-xs text-slate-500">
-                        <Mail className="mr-1 h-3 w-3 flex-shrink-0" />
-                        <span className="truncate">{employee.user?.email || employee.contactInfo?.personalEmail}</span>
-                      </p>
-                      <p className="text-slate-500 text-xs">ID: {employee.employeeId || employee.user?.employeeId}</p>
-                    </div>
-                  </div>
-                  <div className="ml-1 flex flex-shrink-0 items-center gap-1">
-                    <button
-                      onClick={() => {
-                        setSelectedEmployee(employee);
-                        setShowViewModal(true);
-                      }}
-                      className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                      title="View Details"
-                      aria-label={`View ${employee.fullName}`}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedEmployee(employee);
-                        setShowEditModal(true);
-                      }}
-                      className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                      title="Edit"
-                      aria-label={`Edit ${employee.fullName}`}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteEmployee(employee._id)}
-                      className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
-                      title="Delete"
-                      aria-label={`Delete ${employee.fullName}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="flex-shrink-0 text-xs text-slate-500">Position</span>
-                    <span className="min-w-0 text-right text-sm font-medium text-slate-900">{employee.workInfo?.position || 'N/A'}</span>
-                  </div>
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="flex-shrink-0 text-xs text-slate-500">Department</span>
-                    <span className="min-w-0 text-right text-sm text-slate-900">
-                      {getDepartmentName(employee.workInfo?.department)}
-                    </span>
-                  </div>
+          <div className="md:hidden max-h-[68dvh] overflow-y-auto overflow-x-hidden overscroll-contain p-2 sm:p-3 w-full max-w-full">
+            <div className="grid gap-2 sm:gap-2.5">
+              {filteredEmployees.map((employee) => {
+                const name = employee.fullName || `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`.trim() || employee.user?.name || 'Employee';
+                const email = employee.user?.email || employee.contactInfo?.personalEmail || employee.contactInfo?.workEmail || 'No Email';
+                const empId = employee.employeeId || employee.user?.employeeId || 'N/A';
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-500 text-xs">Status</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${employee.status === 'Active' || !employee.status
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
-                      }`}>
-                      {employee.status || 'Active'}
-                    </span>
+                return (
+                  <div key={employee._id} onClick={(event) => openEmployeeView(event, employee)} className="bg-white border border-slate-200 rounded-xl p-2.5 sm:p-3 transition-all duration-200 shadow-xs cursor-pointer hover:border-blue-200 hover:bg-blue-50/40 active:bg-indigo-50/60 w-full overflow-hidden">
+                    <div className="mb-2 flex items-center justify-between gap-1.5 min-w-0">
+                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-200 bg-blue-50">
+                          {employee.user?.profileImage ? (
+                            <img
+                              src={getFullImageUrl(employee.user.profileImage)}
+                              alt={name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-4 h-4 text-slate-400" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-slate-900 font-semibold text-xs sm:text-sm truncate leading-tight">{name}</p>
+                          <p className="flex min-w-0 items-center text-[11px] text-slate-500 leading-tight">
+                            <Mail className="mr-1 h-3 w-3 flex-shrink-0 text-slate-400" />
+                            <span className="truncate">{email}</span>
+                          </p>
+                          <p className="text-slate-400 text-[10px] leading-tight">ID: {empId}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-shrink-0 items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => {
+                            setSelectedEmployee(employee);
+                            setShowEditModal(true);
+                          }}
+                          className="rounded-md p-0.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                          title="Edit"
+                          aria-label={`Edit ${name}`}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEmployee(employee._id)}
+                          className="rounded-md p-0.5 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Delete"
+                          aria-label={`Delete ${name}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 pt-1.5 border-t border-slate-100">
+                      <div className="flex items-center justify-between gap-2 min-w-0">
+                        <span className="flex-shrink-0 text-[11px] text-slate-400 font-medium">Position</span>
+                        <span className="min-w-0 truncate text-right text-xs font-medium text-slate-800">{employee.workInfo?.position || employee.workInfo?.designation || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 min-w-0">
+                        <span className="flex-shrink-0 text-[11px] text-slate-400 font-medium">Department</span>
+                        <span className="min-w-0 truncate text-right text-xs text-slate-700">
+                          {getDepartmentName(employee.workInfo?.department)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-0.5">
+                        <span className="text-slate-400 text-[11px] font-medium">Status</span>
+                        <span className={`text-[10px] px-2 py-0.5 font-medium rounded-full ${employee.status === 'Active' || !employee.status
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                          }`}>
+                          {employee.status || 'Active'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
             </div>
           </div>
 
@@ -2765,81 +2739,87 @@ const EmployeeManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEmployees.map((employee) => (
-                    <tr key={employee._id} onClick={(event) => openEmployeeView(event, employee)} className="premium-table-row border-b border-slate-100 cursor-pointer">
-                      <td className="p-4 md:p-6">
-                        <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 flex-shrink-0">
-                            {employee.user?.profileImage ? (
-                              <img
-                                className="h-10 w-10 rounded-full object-cover border border-slate-200"
-                                src={getFullImageUrl(employee.user.profileImage)}
-                                alt={employee.fullName}
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">
-                                <User className="h-5 w-5 text-blue-600" />
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-slate-900 font-medium text-sm">{employee.fullName}</p>
-                            <p className="text-slate-500 text-xs flex items-center">
-                              <Mail className="w-3 h-3 mr-1" />
-                              {employee.user?.email || employee.contactInfo?.personalEmail}
-                            </p>
-                            <p className="text-slate-500 text-xs">ID: {employee.employeeId || employee.user?.employeeId}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4 md:p-6 text-slate-900 text-sm">{employee.workInfo?.position}</td>
-                      <td className="p-4 md:p-6">
-                        <span className="px-2.5 py-1.5 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-                          {getDepartmentName(employee.workInfo?.department)}
-                        </span>
-                      </td>
+                  {filteredEmployees.map((employee) => {
+                    const name = employee.fullName || `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`.trim() || employee.user?.name || 'Employee';
+                    const email = employee.user?.email || employee.contactInfo?.personalEmail || employee.contactInfo?.workEmail || 'N/A';
+                    const empId = employee.employeeId || employee.user?.employeeId || 'N/A';
 
-                      <td className="p-4 md:p-6">
-                        <span className={`px-2.5 py-1.5 text-xs rounded-full ${employee.status === 'Active' || !employee.status
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-red-100 text-red-700'
-                          }`}>
-                          {employee.status || 'Active'}
-                        </span>
-                      </td>
-                      <td className="p-4 md:p-6">
-                        <div className="flex items-center space-x-1.5">
-                          <button
-                            onClick={() => {
-                              setSelectedEmployee(employee);
-                              setShowViewModal(true);
-                            }}
-                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedEmployee(employee);
-                              setShowEditModal(true);
-                            }}
-                            className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                            title="Edit"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteEmployee(employee._id)}
-                            className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                    return (
+                      <tr key={employee._id} onClick={(event) => openEmployeeView(event, employee)} className="premium-table-row border-b border-slate-100 cursor-pointer">
+                        <td className="p-4 md:p-6">
+                          <div className="flex items-center space-x-3">
+                            <div className="h-10 w-10 flex-shrink-0">
+                              {employee.user?.profileImage ? (
+                                <img
+                                  className="h-10 w-10 rounded-full object-cover border border-slate-200"
+                                  src={getFullImageUrl(employee.user.profileImage)}
+                                  alt={name}
+                                />
+                              ) : (
+                                <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">
+                                  <User className="h-5 w-5 text-blue-600" />
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-slate-900 font-medium text-sm">{name}</p>
+                              <p className="text-slate-500 text-xs flex items-center">
+                                <Mail className="w-3 h-3 mr-1" />
+                                {email}
+                              </p>
+                              <p className="text-slate-500 text-xs">ID: {empId}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4 md:p-6 text-slate-900 text-sm">{employee.workInfo?.position || employee.workInfo?.designation || 'N/A'}</td>
+                        <td className="p-4 md:p-6">
+                          <span className="px-2.5 py-1.5 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                            {getDepartmentName(employee.workInfo?.department)}
+                          </span>
+                        </td>
+
+                        <td className="p-4 md:p-6">
+                          <span className={`px-2.5 py-1.5 text-xs rounded-full ${employee.status === 'Active' || !employee.status
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                            }`}>
+                            {employee.status || 'Active'}
+                          </span>
+                        </td>
+                        <td className="p-4 md:p-6">
+                          <div className="flex items-center space-x-1.5">
+                            <button
+                              onClick={() => {
+                                setSelectedEmployee(employee);
+                                setShowViewModal(true);
+                              }}
+                              className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedEmployee(employee);
+                                setShowEditModal(true);
+                              }}
+                              className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                              title="Edit"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEmployee(employee._id)}
+                              className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

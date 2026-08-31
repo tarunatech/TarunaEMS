@@ -1835,65 +1835,65 @@ const EmployeeDashboard = () => {
 
         {/* Payslip Modal */}
         {showPayslipModal && employeeData && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 md:p-6">
+          <div className="fixed inset-0 z-[99999] flex items-start sm:items-center justify-center p-2.5 pt-12 pb-14 sm:p-4">
             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[99998]" onClick={() => setShowPayslipModal(false)} />
-            <div className="relative z-[99999] bg-white border border-slate-200/80 rounded-2xl w-full max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-slate-900/20 animate-enter" style={{ animationDuration: '0.2s' }}>
+            <div className="relative z-[99999] flex max-h-[calc(100dvh-100px)] sm:max-h-[85vh] w-full max-w-3xl lg:max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl animate-enter" style={{ animationDuration: '0.2s' }}>
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 shadow-2xs">
-                    <FileText className="w-4 h-4" strokeWidth={1.75} />
+              <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50/95 px-3.5 py-2.5 backdrop-blur sm:px-6 sm:py-3.5">
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 shadow-2xs shrink-0">
+                    <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={1.75} />
                   </div>
                   <div>
-                    <h2 className="text-[15px] font-bold text-slate-900 tracking-tight leading-none">
+                    <h2 className="text-xs sm:text-[15px] font-bold text-slate-900 tracking-tight leading-none">
                       Salary Slip — {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
                     </h2>
-                    <p className="text-[11px] font-medium text-slate-500 mt-0.5">Official Monthly Compensation Breakdown</p>
+                    <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 mt-0.5">Official Monthly Compensation Breakdown</p>
                   </div>
                 </div>
-                <button onClick={() => setShowPayslipModal(false)} className="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-slate-700 hover:shadow-xs border border-transparent hover:border-slate-200 transition-all duration-150">
+                <button onClick={() => setShowPayslipModal(false)} className="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-slate-700 border border-transparent hover:border-slate-200 transition-all duration-150">
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="p-4 space-y-3.5">
+              <div className="task-details-modal-scroll min-h-0 flex-1 space-y-3 overflow-y-auto px-3.5 py-3 sm:space-y-4 sm:px-6 sm:py-4">
                 {payslipLoading ? (
                   <div className="flex items-center justify-center py-10">
                     <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
                   </div>
                 ) : !currentPayslip ? (
-                  <div className="text-center py-10">
-                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <div className="text-center py-8">
+                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-2">
                       <FileText className="w-5 h-5 text-slate-400" strokeWidth={1.5} />
                     </div>
-                    <p className="text-slate-800 text-[14px] font-semibold">No payslip generated for current month</p>
-                    <p className="text-slate-400 text-[12px] mt-0.5">Please contact HR for more information</p>
+                    <p className="text-slate-800 text-xs sm:text-[14px] font-semibold">No payslip generated for current month</p>
+                    <p className="text-slate-400 text-[11px] sm:text-[12px] mt-0.5">Please contact HR for more information</p>
                   </div>
                 ) : (
                   <>
                     {/* Top Row: Employee Info & Attendance Summary */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
                       {/* Employee Info Card */}
-                      <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-3 space-y-1.5">
-                        <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-slate-600 mb-1">Employee Details</h3>
-                        <div className="grid grid-cols-2 gap-2 text-[12px]">
+                      <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-2.5 sm:p-3 space-y-1.5">
+                        <h3 className="text-[11px] sm:text-[11.5px] font-bold uppercase tracking-wider text-slate-600 mb-1">Employee Details</h3>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
-                            <span className="text-slate-400 font-medium block text-[10.5px]">Employee Name</span>
+                            <span className="text-slate-400 font-medium block text-[10px] sm:text-[10.5px]">Employee Name</span>
                             <span className="text-slate-900 font-semibold truncate block">{currentPayslip.employeeName || 'N/A'}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400 font-medium block text-[10.5px]">Employee ID</span>
+                            <span className="text-slate-400 font-medium block text-[10px] sm:text-[10.5px]">Employee ID</span>
                             <span className="text-slate-900 font-semibold">{currentPayslip.employeeId || 'N/A'}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400 font-medium block text-[10.5px]">Pay Period</span>
+                            <span className="text-slate-400 font-medium block text-[10px] sm:text-[10.5px]">Pay Period</span>
                             <span className="text-slate-900 font-semibold">
                               {new Date(currentPayslip.period.year, currentPayslip.period.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
                             </span>
                           </div>
                           <div>
-                            <span className="text-slate-400 font-medium block text-[10.5px]">Status</span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 capitalize">
+                            <span className="text-slate-400 font-medium block text-[10px] sm:text-[10.5px]">Status</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-[10.5px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 capitalize">
                               {currentPayslip.status || 'Generated'}
                             </span>
                           </div>
@@ -1902,24 +1902,24 @@ const EmployeeDashboard = () => {
 
                       {/* Attendance Summary */}
                       {currentPayslip.attendance ? (
-                        <div className="bg-indigo-50/40 border border-indigo-100 rounded-xl p-3">
-                          <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-indigo-700 mb-1.5">Attendance Summary</h3>
-                          <div className="grid grid-cols-4 gap-1.5 text-center">
-                            <div className="bg-white p-1.5 rounded-lg border border-indigo-100/80 shadow-2xs">
-                              <span className="text-[16px] font-bold text-slate-900 block leading-tight">{currentPayslip.attendance.workingDays || 0}</span>
-                              <span className="text-[10px] font-medium text-slate-500">Working</span>
+                        <div className="bg-indigo-50/40 border border-indigo-100 rounded-xl p-2.5 sm:p-3">
+                          <h3 className="text-[11px] sm:text-[11.5px] font-bold uppercase tracking-wider text-indigo-700 mb-1.5">Attendance Summary</h3>
+                          <div className="grid grid-cols-4 gap-1 sm:gap-1.5 text-center">
+                            <div className="bg-white p-1 sm:p-1.5 rounded-lg border border-indigo-100/80 shadow-2xs">
+                              <span className="text-xs sm:text-[16px] font-bold text-slate-900 block leading-tight">{currentPayslip.attendance.workingDays || 0}</span>
+                              <span className="text-[9px] sm:text-[10px] font-medium text-slate-500">Working</span>
                             </div>
-                            <div className="bg-white p-1.5 rounded-lg border border-emerald-100 shadow-2xs">
-                              <span className="text-[16px] font-bold text-emerald-600 block leading-tight">{currentPayslip.attendance.presentDays || 0}</span>
-                              <span className="text-[10px] font-medium text-slate-500">Present</span>
+                            <div className="bg-white p-1 sm:p-1.5 rounded-lg border border-emerald-100 shadow-2xs">
+                              <span className="text-xs sm:text-[16px] font-bold text-emerald-600 block leading-tight">{currentPayslip.attendance.presentDays || 0}</span>
+                              <span className="text-[9px] sm:text-[10px] font-medium text-slate-500">Present</span>
                             </div>
-                            <div className="bg-white p-1.5 rounded-lg border border-amber-100 shadow-2xs">
-                              <span className="text-[16px] font-bold text-amber-600 block leading-tight">{currentPayslip.attendance.leaveDays || 0}</span>
-                              <span className="text-[10px] font-medium text-slate-500">Leave</span>
+                            <div className="bg-white p-1 sm:p-1.5 rounded-lg border border-amber-100 shadow-2xs">
+                              <span className="text-xs sm:text-[16px] font-bold text-amber-600 block leading-tight">{currentPayslip.attendance.leaveDays || 0}</span>
+                              <span className="text-[9px] sm:text-[10px] font-medium text-slate-500">Leave</span>
                             </div>
-                            <div className="bg-white p-1.5 rounded-lg border border-rose-100 shadow-2xs">
-                              <span className="text-[16px] font-bold text-rose-600 block leading-tight">{currentPayslip.attendance.absentDays || 0}</span>
-                              <span className="text-[10px] font-medium text-slate-500">Absent</span>
+                            <div className="bg-white p-1 sm:p-1.5 rounded-lg border border-rose-100 shadow-2xs">
+                              <span className="text-xs sm:text-[16px] font-bold text-rose-600 block leading-tight">{currentPayslip.attendance.absentDays || 0}</span>
+                              <span className="text-[9px] sm:text-[10px] font-medium text-slate-500">Absent</span>
                             </div>
                           </div>
                         </div>
@@ -1931,15 +1931,15 @@ const EmployeeDashboard = () => {
                     </div>
 
                     {/* Middle Row: Earnings & Deductions Side-by-Side */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
                       {/* Earnings Column */}
-                      <div className="bg-emerald-50/40 border border-emerald-200/60 rounded-xl p-3.5 flex flex-col justify-between">
+                      <div className="bg-emerald-50/40 border border-emerald-200/60 rounded-xl p-2.5 sm:p-3.5 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center justify-between mb-2 border-b border-emerald-200/60 pb-1.5">
-                            <h3 className="text-[13px] font-bold text-emerald-800">Earnings</h3>
-                            <span className="text-[10.5px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">Allowances</span>
+                          <div className="flex items-center justify-between mb-1.5 border-b border-emerald-200/60 pb-1">
+                            <h3 className="text-xs sm:text-[13px] font-bold text-emerald-800">Earnings</h3>
+                            <span className="text-[10px] sm:text-[10.5px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md">Allowances</span>
                           </div>
-                          <div className="space-y-1.5 text-[12px]">
+                          <div className="space-y-1 text-xs sm:text-[12px]">
                             <div className="flex justify-between">
                               <span className="text-slate-600">Basic Salary</span>
                               <span className="font-semibold text-slate-900">₹{(currentPayslip.earnings?.basicSalary || 0).toLocaleString()}</span>
@@ -1974,20 +1974,20 @@ const EmployeeDashboard = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="flex justify-between border-t border-emerald-200/80 pt-2 mt-2 font-bold text-[13px]">
+                        <div className="flex justify-between border-t border-emerald-200/80 pt-1.5 mt-1.5 font-bold text-xs sm:text-[13px]">
                           <span className="text-emerald-800">Gross Earnings</span>
                           <span className="text-emerald-800">₹{(currentPayslip.grossEarnings || 0).toLocaleString()}</span>
                         </div>
                       </div>
 
                       {/* Deductions Column */}
-                      <div className="bg-rose-50/40 border border-rose-200/60 rounded-xl p-3.5 flex flex-col justify-between">
+                      <div className="bg-rose-50/40 border border-rose-200/60 rounded-xl p-2.5 sm:p-3.5 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center justify-between mb-2 border-b border-rose-200/60 pb-1.5">
-                            <h3 className="text-[13px] font-bold text-rose-800">Deductions</h3>
-                            <span className="text-[10.5px] font-semibold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md">Taxes & PF</span>
+                          <div className="flex items-center justify-between mb-1.5 border-b border-rose-200/60 pb-1">
+                            <h3 className="text-xs sm:text-[13px] font-bold text-rose-800">Deductions</h3>
+                            <span className="text-[10px] sm:text-[10.5px] font-semibold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded-md">Taxes & PF</span>
                           </div>
-                          <div className="space-y-1.5 text-[12px]">
+                          <div className="space-y-1 text-xs sm:text-[12px]">
                             <div className="flex justify-between">
                               <span className="text-slate-600">Provident Fund (PF)</span>
                               <span className="font-semibold text-slate-900">₹{(currentPayslip.deductions?.pf || 0).toLocaleString()}</span>
@@ -2012,13 +2012,25 @@ const EmployeeDashboard = () => {
                                 <span className="font-semibold text-slate-900">₹{(currentPayslip.deductions?.loanDeduction || 0).toLocaleString()}</span>
                               </div>
                             )}
+                            {(currentPayslip.deductions?.lateDeduction || 0) > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-rose-700 font-medium">Late Check-in (₹200/day)</span>
+                                <span className="font-bold text-rose-700">₹{(currentPayslip.deductions?.lateDeduction || 0).toLocaleString()}</span>
+                              </div>
+                            )}
+                            {(currentPayslip.deductions?.halfDayDeduction || 0) > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-rose-700 font-medium">Half Day Deduction</span>
+                                <span className="font-bold text-rose-700">₹{(currentPayslip.deductions?.halfDayDeduction || 0).toLocaleString()}</span>
+                              </div>
+                            )}
                             <div className="flex justify-between">
                               <span className="text-slate-600">Other Deductions</span>
                               <span className="font-semibold text-slate-900">₹{(currentPayslip.deductions?.otherDeductions || 0).toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex justify-between border-t border-rose-200/80 pt-2 mt-2 font-bold text-[13px]">
+                        <div className="flex justify-between border-t border-rose-200/80 pt-1.5 mt-1.5 font-bold text-xs sm:text-[13px]">
                           <span className="text-rose-800">Total Deductions</span>
                           <span className="text-rose-800">₹{(currentPayslip.totalDeductions || 0).toLocaleString()}</span>
                         </div>
@@ -2026,23 +2038,23 @@ const EmployeeDashboard = () => {
                     </div>
 
                     {/* Bottom Row: Net Salary Callout & Bank Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
-                      <div className="md:col-span-2 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-xl p-3.5 shadow-md flex items-center justify-between">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3 items-center">
+                      <div className="md:col-span-2 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-xl p-3 sm:p-3.5 shadow-md flex items-center justify-between">
                         <div>
-                          <p className="text-[10.5px] font-bold uppercase tracking-widest text-indigo-300">Take-Home Pay</p>
-                          <p className="text-[12.5px] text-slate-300 font-medium mt-0.5">Net Salary Credited</p>
+                          <p className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-widest text-indigo-300">Take-Home Pay</p>
+                          <p className="text-xs sm:text-[12.5px] text-slate-300 font-medium mt-0.5">Net Salary Credited</p>
                         </div>
                         <div className="text-right">
-                          <span className="text-[22px] sm:text-[25px] font-extrabold tracking-tight text-white leading-none">
+                          <span className="text-lg sm:text-[25px] font-extrabold tracking-tight text-white leading-none">
                             ₹{(currentPayslip.netSalary || 0).toLocaleString()}
                           </span>
                         </div>
                       </div>
 
                       {/* Bank Details */}
-                      {currentPayslip.bankInfo ? (
-                        <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 space-y-0.5 text-[11px]">
-                          <p className="font-bold text-slate-800 text-[11.5px] mb-0.5">Bank Account</p>
+                      {currentPayslip.bankInfo && (
+                        <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 space-y-0.5 text-xs">
+                          <p className="font-bold text-slate-800 text-[11px] sm:text-[11.5px] mb-0.5">Bank Account</p>
                           <div className="flex justify-between text-slate-600">
                             <span>Bank:</span>
                             <span className="font-medium text-slate-900 truncate max-w-[110px]">{currentPayslip.bankInfo.bankName || 'N/A'}</span>
@@ -2056,40 +2068,36 @@ const EmployeeDashboard = () => {
                             <span className="font-medium text-slate-900">{currentPayslip.bankInfo.ifscCode || 'N/A'}</span>
                           </div>
                         </div>
-                      ) : (
-                        <div className="flex justify-center md:justify-end">
-                          <button
-                            onClick={handleDownloadPayslip}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-[13px] font-semibold rounded-xl hover:from-indigo-500 hover:to-indigo-600 transition-all duration-150 shadow-md hover:shadow-indigo-500/25"
-                          >
-                            <Download className="w-4 h-4" strokeWidth={2} />
-                            Download PDF
-                          </button>
-                        </div>
                       )}
                     </div>
 
-                    {/* Remarks & Download Row if Bank Info exists */}
-                    {currentPayslip.bankInfo && (
-                      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-100 pt-2">
-                        <div className="min-w-0">
-                          {currentPayslip.remarks && (
-                            <p className="text-[11.5px] text-slate-500 truncate">
-                              <span className="font-semibold text-slate-700">Remarks: </span>
-                              {currentPayslip.remarks}
-                            </p>
-                          )}
-                        </div>
-                        <button
-                          onClick={handleDownloadPayslip}
-                          className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-[13px] font-semibold rounded-xl hover:from-indigo-500 hover:to-indigo-600 transition-all duration-150 shadow-md hover:shadow-indigo-500/25 shrink-0"
-                        >
-                          <Download className="w-4 h-4" strokeWidth={2} />
-                          Download Payslip PDF
-                        </button>
+                    {currentPayslip.remarks && (
+                      <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-2.5 text-xs">
+                        <span className="font-semibold text-slate-700">Remarks: </span>
+                        <span className="text-slate-600">{currentPayslip.remarks}</span>
                       </div>
                     )}
                   </>
+                )}
+              </div>
+
+              {/* Sticky Action Footer */}
+              <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between gap-2 border-t border-slate-100 bg-white/95 px-3.5 py-2.5 backdrop-blur sm:px-6 sm:py-3.5">
+                <button
+                  type="button"
+                  onClick={() => setShowPayslipModal(false)}
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white border border-slate-200/80 text-slate-600 rounded-xl hover:bg-slate-50 transition-all duration-150 text-xs sm:text-sm font-semibold shadow-2xs"
+                >
+                  Close
+                </button>
+                {currentPayslip && (
+                  <button
+                    onClick={handleDownloadPayslip}
+                    className="flex items-center gap-1.5 px-4 py-1.5 sm:px-5 sm:py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-xs sm:text-[13px] font-semibold rounded-xl hover:from-indigo-500 hover:to-indigo-600 transition-all duration-150 shadow-md hover:shadow-indigo-500/25"
+                  >
+                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+                    Download PDF
+                  </button>
                 )}
               </div>
             </div>

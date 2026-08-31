@@ -400,16 +400,41 @@ button:not(:disabled):active {
     padding: 0.75rem !important;
   }
 
+  .admin-leave-calendar {
+    padding: 0.5rem !important;
+  }
+
+  .admin-leave-calendar .react-calendar__navigation {
+    margin-bottom: 0.25rem !important;
+    height: 32px !important;
+  }
+
+  .admin-leave-calendar .react-calendar__navigation button {
+    font-size: 0.75rem !important;
+    padding: 0.2rem !important;
+    min-width: 28px !important;
+    height: 28px !important;
+  }
+
   .admin-leave-calendar .react-calendar__viewContainer,
   .employee-leave-calendar.react-calendar .react-calendar__viewContainer {
-    padding: 0.5rem !important;
+    padding: 0.25rem !important;
   }
 
   .admin-leave-calendar .react-calendar__tile,
   .employee-leave-calendar.react-calendar .react-calendar__tile {
-    min-height: 38px !important;
-    padding: 0.35rem 0.25rem !important;
-    border-radius: 9px !important;
+    min-height: 32px !important;
+    padding: 0.15rem 0.1rem !important;
+    border-radius: 6px !important;
+    font-size: 0.75rem !important;
+  }
+
+  .admin-leave-calendar-count {
+    min-width: 14px !important;
+    height: 14px !important;
+    font-size: 9px !important;
+    right: 2px !important;
+    bottom: 2px !important;
   }
 
   .task-details-modal-scroll {
@@ -420,6 +445,15 @@ button:not(:disabled):active {
   .task-details-modal-scroll::-webkit-scrollbar {
     width: 0;
     height: 0;
+  }
+
+  .premium-stat-card:hover {
+    transform: none !important;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07) !important;
+  }
+
+  .premium-stat-card:hover::before {
+    transform: none !important;
   }
 }
 
@@ -776,13 +810,23 @@ button:not(:disabled):active {
   color: rgba(255, 100, 100, 0.8);
 }
 
+.admin-leave-calendar.react-calendar,
 .admin-leave-calendar {
-  width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
   background: #ffffff;
   color: #0f172a;
   padding: 16px;
+}
+
+.admin-leave-calendar .react-calendar__viewContainer,
+.admin-leave-calendar .react-calendar__month-view,
+.admin-leave-calendar .react-calendar__month-view > div,
+.admin-leave-calendar .react-calendar__month-view > div > div {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .admin-leave-calendar .react-calendar__navigation {

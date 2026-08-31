@@ -1027,7 +1027,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
   };
 
   const content = (
-    <div className={`${embedded ? 'w-full' : `pipeline-modal-scroll max-h-[92vh] w-full ${isAdmin ? 'max-w-7xl' : 'max-w-5xl'} overflow-y-auto`} employee-sales-pipeline-modal rounded-xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6`}>
+    <div className={`${embedded ? 'w-full' : `flex flex-col max-h-[50vh] sm:max-h-[90vh] w-full ${isAdmin ? 'max-w-7xl' : 'max-w-5xl'} overflow-hidden`} employee-sales-pipeline-modal rounded-2xl border border-slate-200 bg-white p-3 sm:p-6 shadow-xl`}>
       <style>{`
           @keyframes pipelineStageIn {
             from { opacity: 0; transform: translateY(10px) scale(0.99); }
@@ -1044,13 +1044,13 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
             display: none;
           }
         `}</style>
-      <div className="mb-5 flex items-start justify-between gap-3">
+      <div className="sticky top-0 z-10 flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 bg-white/95 pb-2.5 backdrop-blur sm:border-b-0 sm:pb-5 mb-3 sm:mb-5">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Sales Pipeline</h2>
-          <p className="text-sm text-slate-500">{lead.firstName} {lead.lastName} • {lead.company || 'No company'}</p>
+          <h2 className="text-base sm:text-xl font-bold text-slate-900 leading-tight">Sales Pipeline</h2>
+          <p className="text-xs sm:text-sm text-slate-500">{lead.firstName} {lead.lastName} • {lead.company || 'No company'}</p>
         </div>
         {onClose && (
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
             <XCircle className="h-5 w-5" />
           </button>
         )}
@@ -1062,14 +1062,14 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
           Loading pipeline...
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="task-details-modal-scroll flex-1 overflow-y-auto overscroll-contain space-y-3 sm:space-y-5 pr-0.5">
           <StageStepper currentStage={pipeline?.currentStage} activeStage={activeStage} onSelect={setActiveStage} />
 
           <div key={activeStage} className="pipeline-stage-panel rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm sm:p-5">
             {activeStage === 'client_details' && (
               <section>
                 <StageHeading title="Client Details" subtitle="Core lead information and qualification notes" />
-                <div className="grid gap-3 text-sm sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm sm:grid-cols-3">
                   <Info label="Name" value={`${lead.firstName} ${lead.lastName}`} />
                   <Info label="Email" value={lead.email} />
                   <Info label="Phone" value={lead.phone} />
@@ -1077,7 +1077,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                   <Info label="Estimated Value" value={lead.estimatedValue ? `₹${lead.estimatedValue.toLocaleString()}` : '-'} />
                   <Info label="Lead Status" value={lead.status} />
                 </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3">
                   <Input label="Decision Maker" value={forms.clientDetails.decisionMaker} onChange={v => updateForm('clientDetails', 'decisionMaker', v)} />
                   <Input label="Budget Range" value={forms.clientDetails.budgetRange} onChange={v => updateForm('clientDetails', 'budgetRange', v)} />
                   <Input label="Timeline" value={forms.clientDetails.timeline} onChange={v => updateForm('clientDetails', 'timeline', v)} />
@@ -1360,7 +1360,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-center bg-slate-900/30 p-3 backdrop-blur-sm ${isAdmin ? 'justify-center lg:justify-end lg:pr-10' : 'justify-center'}`}
+      className={`fixed inset-0 z-[9999] flex items-start sm:items-center p-3 pt-12 sm:p-4 bg-slate-900/30 backdrop-blur-sm ${isAdmin ? 'justify-center lg:justify-end lg:pr-10' : 'justify-center'}`}
       onClick={onClose}
     >
       <div className={`w-full ${isAdmin ? 'max-w-7xl lg:ml-auto' : 'max-w-5xl'}`} onClick={(event) => event.stopPropagation()}>
@@ -1375,8 +1375,8 @@ const labelForStage = (stage) => stages.find(([value]) => value === stage)?.[1] 
 const StageStepper = ({ currentStage, activeStage, onSelect }) => {
   const currentIndex = stages.findIndex(([value]) => value === currentStage);
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-2 shadow-inner">
-      <div className="flex gap-2 overflow-x-auto pb-1">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-1.5 sm:p-2 shadow-inner">
+      <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1">
         {stages.map(([value, label], index) => {
           const isActive = activeStage === value;
           const isReached = currentIndex >= 0 && index <= currentIndex;
@@ -1385,14 +1385,14 @@ const StageStepper = ({ currentStage, activeStage, onSelect }) => {
               key={value}
               type="button"
               onClick={() => onSelect(value)}
-              className={`group relative min-h-11 min-w-[152px] flex-1 rounded-xl border px-3 py-2 text-left text-[11px] font-semibold transition-all duration-300 ${isActive
+              className={`group relative min-h-9 sm:min-h-11 min-w-[120px] sm:min-w-[152px] flex-1 rounded-xl border px-2.5 sm:px-3 py-1.5 sm:py-2 text-left text-[10px] sm:text-[11px] font-semibold transition-all duration-300 ${isActive
                 ? 'border-indigo-300 bg-white text-indigo-700 shadow-md shadow-indigo-900/10 ring-2 ring-indigo-100'
                 : isReached
                   ? 'border-blue-100 bg-blue-50/70 text-blue-700 hover:border-blue-200 hover:bg-white'
                   : 'border-slate-200 bg-white/70 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700'
                 }`}
             >
-              <span className={`mb-1 block h-1 w-7 rounded-full transition-all duration-300 ${isActive ? 'bg-indigo-500' : isReached ? 'bg-blue-400' : 'bg-slate-200'}`} />
+              <span className={`mb-1 block h-1 w-6 sm:w-7 rounded-full transition-all duration-300 ${isActive ? 'bg-indigo-500' : isReached ? 'bg-blue-400' : 'bg-slate-200'}`} />
               <span className="block truncate whitespace-nowrap leading-snug">{label}</span>
             </button>
           );
@@ -1442,15 +1442,15 @@ const Info = ({ label, value }) => {
 
 const Input = ({ label, value, onChange, type = 'text', disabled = false }) => (
   <label className="block">
-    <span className="mb-1 block text-xs font-medium text-slate-500">{label}</span>
-    <input type={type} value={value || ''} onChange={(e) => onChange?.(e.target.value)} disabled={disabled} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-50 disabled:text-slate-600" />
+    <span className="mb-0.5 sm:mb-1 block text-xs font-semibold text-slate-600">{label}</span>
+    <input type={type} value={value || ''} onChange={(e) => onChange?.(e.target.value)} disabled={disabled} className="w-full rounded-lg border border-slate-300 bg-white px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-50 disabled:text-slate-600" />
   </label>
 );
 
 const Textarea = ({ label, value, onChange }) => (
   <label className="block">
-    <span className="mb-1 block text-xs font-medium text-slate-500">{label}</span>
-    <textarea value={value || ''} onChange={(e) => onChange(e.target.value)} rows="3" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+    <span className="mb-0.5 sm:mb-1 block text-xs font-semibold text-slate-600">{label}</span>
+    <textarea value={value || ''} onChange={(e) => onChange(e.target.value)} rows="2" className="w-full rounded-lg border border-slate-300 bg-white px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
   </label>
 );
 
