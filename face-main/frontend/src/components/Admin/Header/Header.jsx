@@ -129,7 +129,7 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
             count: n.count || 1,
             unread: readIds.has(id) ? false : (n.unread ?? true)
           };
-          }).filter(n => !dismissedIds.has(n.id))
+          }).filter(n => !dismissedIds.has(n.id) && !readIds.has(n.id) && n.unread !== false)
         );
       } else {
         setNotifications([]);
@@ -176,23 +176,22 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
     }
   };
 
-  // Mark notification as read
+  // Mark notification as read (disappears from list)
   const handleNotificationRead = async (notificationId) => {
     const id = String(notificationId);
     const readIds = readNotificationSet('read');
     readIds.add(id);
     writeNotificationSet('read', readIds);
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, unread: false } : n)
-    );
+    setNotifications(prev => prev.filter(n => n.id !== id));
     dashboardAPI.markNotificationAsRead(id).catch(() => {});
   };
 
+  // Mark all notifications as read (all disappear from list)
   const handleMarkAllNotificationsRead = async () => {
     const readIds = readNotificationSet('read');
     notifications.forEach(notification => readIds.add(String(notification.id)));
     writeNotificationSet('read', readIds);
-    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+    setNotifications([]);
     dashboardAPI.markAllNotificationsAsRead().catch(() => {});
     toast.success('All notifications marked as read');
   };

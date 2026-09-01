@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api, { employeeAPI, departmentAPI, attendanceAPI, leadAPI } from '../../utils/api';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import { faceAPI, cameraHelper } from '../../utils/faceAPI';
@@ -1496,12 +1496,68 @@ const EmployeeManagement = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showViewModal, selectedEmployee?._id]);
 
+  useEffect(() => {
+    const returnEmpId = location.state?.returnToEmployeeId || location.state?.openEmployeeId || sessionStorage.getItem('returnToEmployeeId');
+    if (returnEmpId && employees.length > 0) {
+      const empToRestore = employees.find(e =>
+        String(e._id) === String(returnEmpId) ||
+        String(e.id) === String(returnEmpId) ||
+        String(e.employeeId) === String(returnEmpId) ||
+        String(e.user?._id) === String(returnEmpId)
+      );
+      if (empToRestore) {
+        setSelectedEmployee(empToRestore);
+        setShowFullEmployeeDetails(false);
+        setShowViewModal(true);
+        sessionStorage.removeItem('returnToEmployeeId');
+      }
+    }
+  }, [employees, location.state]);
+
+  const handleCloseViewModal = () => {
+    setShowViewModal(false);
+    sessionStorage.removeItem('returnToEmployeeId');
+  };
+
   const goToEmployeeDetailPage = (path) => {
     const firstName = selectedEmployee?.personalInfo?.firstName || '';
     const lastName = selectedEmployee?.personalInfo?.lastName || '';
     const fullName = `${firstName} ${lastName}`.trim() || selectedEmployee?.user?.name || '';
+    const empId = String(selectedEmployee?._id || selectedEmployee?.id || selectedEmployee?.employeeId || selectedEmployee?.user?._id || '');
+
+    if (empId) {
+      sessionStorage.setItem('returnToEmployeeId', empId);
+    }
     setShowViewModal(false);
-    navigate(path, { state: { employeeFilter: fullName } });
+
+    if (path === '/admin/attendance') {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const firstDay = `${year}-${month}-01`;
+      const lastDayNum = new Date(year, d.getMonth() + 1, 0).getDate();
+      const lastDay = `${year}-${month}-${String(lastDayNum).padStart(2, '0')}`;
+
+      navigate(path, {
+        state: {
+          employeeFilter: fullName,
+          fromSnapshot: true,
+          returnToEmployeeId: empId,
+          startDate: firstDay,
+          endDate: lastDay,
+          selectedMonth: `${year}-${month}`
+        }
+      });
+      return;
+    }
+
+    navigate(path, {
+      state: {
+        employeeFilter: fullName,
+        fromSnapshot: true,
+        returnToEmployeeId: empId
+      }
+    });
   };
 
   const handleToggleFullEmployeeDetails = () => {
@@ -1992,7 +2048,7 @@ const EmployeeManagement = () => {
         }
       `}</style>
       {/* Enhanced backdrop with blur */}
-      <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
+      <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={handleCloseViewModal} />
 
       {/* Modal content */}
       <div className="employee-details-view relative w-full max-w-3xl lg:max-w-6xl max-h-[74vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
@@ -2001,7 +2057,7 @@ const EmployeeManagement = () => {
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => {
-                setShowViewModal(false);
+                handleCloseViewModal();
                 setShowEditModal(true);
               }}
               className="inline-flex items-center gap-1 rounded-lg border border-blue-100 bg-blue-50 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800 whitespace-nowrap"
@@ -2010,7 +2066,7 @@ const EmployeeManagement = () => {
               Edit
             </button>
             <button
-              onClick={() => setShowViewModal(false)}
+              onClick={handleCloseViewModal}
               className="rounded-lg border border-slate-200 bg-white px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900 whitespace-nowrap"
             >
               Close

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import { 
   Users, Calendar, Clock, MapPin, Search, Download,
   Edit3, Trash2, CheckCircle, XCircle, AlertCircle, Timer,
-  TrendingUp, Building2, User, MoreVertical, RefreshCw, Eye
+  TrendingUp, Building2, User, MoreVertical, RefreshCw, Eye, ArrowLeft
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { attendanceAPI, departmentAPI } from '../../utils/api';
@@ -13,6 +13,7 @@ const ATTENDANCE_STATUS_OPTIONS = ['Present', 'Late', 'Half Day', 'Absent', 'Wor
 
 const AdminAttendance = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const initialSearch = location.state?.employeeFilter || location.state?.search || '';
   const today = new Date().toISOString().slice(0, 10);
 
@@ -35,15 +36,20 @@ const AdminAttendance = () => {
   const currentMonthDefault = getCurrentMonthStr();
   const initialDateRange = getMonthDateRange(currentMonthDefault);
 
+  const isFromSnapshot = Boolean(location.state?.fromSnapshot);
+  const initialStartDate = location.state?.startDate || (isFromSnapshot ? initialDateRange.startDate : today);
+  const initialEndDate = location.state?.endDate || (isFromSnapshot ? initialDateRange.endDate : today);
+  const initialMonth = location.state?.selectedMonth || (isFromSnapshot ? currentMonthDefault : '');
+
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [attendanceSummary, setAttendanceSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [selectedDate] = useState(today);
-  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth);
   const [filters, setFilters] = useState({
-    startDate: today,
-    endDate: today,
+    startDate: initialStartDate,
+    endDate: initialEndDate,
     department: '',
     status: '',
     search: initialSearch
@@ -75,13 +81,19 @@ const AdminAttendance = () => {
   useEffect(() => {
     const navSearch = location.state?.employeeFilter || location.state?.search || '';
     if (navSearch) {
+      const fromSnap = Boolean(location.state?.fromSnapshot);
+      const defaultRange = getMonthDateRange(getCurrentMonthStr());
+      const navStartDate = location.state?.startDate || (fromSnap ? defaultRange.startDate : today);
+      const navEndDate = location.state?.endDate || (fromSnap ? defaultRange.endDate : today);
+      const navMonth = location.state?.selectedMonth || (fromSnap ? getCurrentMonthStr() : '');
+
       setFilters(prev => ({
         ...prev,
         search: navSearch,
-        startDate: today,
-        endDate: today
+        startDate: navStartDate,
+        endDate: navEndDate
       }));
-      setSelectedMonth('');
+      setSelectedMonth(navMonth);
     }
   }, [location.state]);
 
@@ -353,6 +365,16 @@ const AdminAttendance = () => {
         <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="glass-morphism neon-border rounded-2xl p-6">
+          {location.state?.fromSnapshot && (
+            <button
+              type="button"
+              onClick={() => navigate('/admin/employees', { state: { returnToEmployeeId: location.state?.returnToEmployeeId } })}
+              className="mb-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+            >
+              <ArrowLeft className="h-4 w-4 text-blue-600" />
+              Back to Employee Details
+            </button>
+          )}
           <div className="flex flex-col md:flex-row md:items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-slate-900 mb-2">

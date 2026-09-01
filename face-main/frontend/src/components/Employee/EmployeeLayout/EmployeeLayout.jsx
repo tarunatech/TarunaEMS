@@ -186,7 +186,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
               unread: readIds.has(id) ? false : (notification.unread ?? true)
             };
           })
-          .filter(notification => !dismissedIds.has(notification.id));
+          .filter(notification => !dismissedIds.has(notification.id) && !readIds.has(notification.id) && notification.unread !== false);
 
         setNotifications(nextNotifications);
       } else {
@@ -284,9 +284,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     const readIds = readNotificationSet('read');
     readIds.add(id);
     writeNotificationSet('read', readIds);
-    setNotifications(prev => prev.map(n =>
-      n.id === id ? { ...n, unread: false } : n
-    ));
+    setNotifications(prev => prev.filter(n => n.id !== id));
     dashboardAPI.markNotificationAsRead(id).catch(() => {});
   };
 
@@ -294,7 +292,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     const readIds = readNotificationSet('read');
     notifications.forEach(notification => readIds.add(String(notification.id)));
     writeNotificationSet('read', readIds);
-    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+    setNotifications([]);
     dashboardAPI.markAllNotificationsAsRead().catch(() => {});
     toast.success('All notifications marked as read');
   };

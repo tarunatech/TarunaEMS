@@ -145,14 +145,14 @@ const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead,
                 )}
               </div>
               <div className="flex flex-shrink-0 items-center gap-1">
-                {unreadCount > 0 && (
+                {notifications.length > 0 && (
                   <button
                     onClick={handleMarkAllRead}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 sm:h-auto sm:w-auto sm:gap-1 sm:px-2 sm:py-1.5 sm:text-xs"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 sm:h-auto sm:w-auto sm:gap-1 sm:px-2 sm:py-1.5 sm:text-xs font-medium"
                     title="Mark all as read"
                     aria-label="Mark all notifications as read"
                   >
-                    <CheckCheck className="h-3.5 w-3.5" />
+                    <CheckCheck className="h-3.5 w-3.5 text-blue-600" />
                     <span className="hidden min-[390px]:inline">Mark all read</span>
                   </button>
                 )}
@@ -226,11 +226,11 @@ const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead,
                             event.stopPropagation();
                             onDismiss(notification.id);
                           }}
-                          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-slate-300 transition-colors hover:bg-white hover:text-slate-700"
+                          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-200/70 hover:text-slate-700"
                           title="Remove notification"
                           aria-label="Remove notification"
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <X className="h-4 w-4" />
                         </button>
                       )}
                     </div>
