@@ -336,11 +336,12 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
 
         const selectedTask = activeTasks.find(t => t._id === taskId);
         const currentDescription = dayBook.slots[index].description;
+        const taskText = selectedTask ? (selectedTask.title || selectedTask.description || '') : '';
 
         updateSlot(index, {
             workType: 'Task',
             taskRef: taskId,
-            description: selectedTask && !currentDescription ? selectedTask.description : currentDescription
+            description: selectedTask && !currentDescription ? taskText : currentDescription
         });
     };
 
@@ -348,7 +349,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
         const taskId = slot.taskRef?._id || slot.taskRef;
         if (taskId) {
             const selectedTask = activeTasks.find(t => t._id === taskId) || slot.taskRef;
-            const taskText = selectedTask?.description || selectedTask?.title || 'Selected active task';
+            const taskText = selectedTask?.title || selectedTask?.description || 'Selected active task';
             return `Active Task: ${taskText}`;
         }
 
@@ -376,12 +377,15 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                 className={`${compact ? 'px-2 py-1.5 text-xs' : 'px-3 py-2 text-sm'} w-full rounded-lg border border-slate-300 bg-white text-slate-900 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50`}
             >
                 <optgroup label="Active Tasks">
-                    {activeTasks.length ? activeTasks.map(task => (
-                        <option key={task._id} value={task._id}>
-                            {(task.description || task.title || 'Untitled task').substring(0, compact ? 34 : 48)}
-                            {(task.description || task.title || '').length > (compact ? 34 : 48) ? '...' : ''}
-                        </option>
-                    )) : (
+                    {activeTasks.length ? activeTasks.map(task => {
+                        const labelText = task.title || task.description || 'Untitled task';
+                        return (
+                            <option key={task._id} value={task._id}>
+                                {labelText.substring(0, compact ? 34 : 48)}
+                                {labelText.length > (compact ? 34 : 48) ? '...' : ''}
+                            </option>
+                        );
+                    }) : (
                         <option value="" disabled>No active tasks</option>
                     )}
                 </optgroup>

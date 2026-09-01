@@ -22,8 +22,8 @@ const generatePayslipPDF = async (payslip, employee) => {
 
     doc.fontSize(20).font('Helvetica-Bold').text('PAYSLIP', { align: 'center' });
     doc.moveDown(0.5);
-    doc.fontSize(12).font('Helvetica').text('CompanyName Pvt Ltd', { align: 'center' });
-    doc.fontSize(10).text('123 Business Park, Tech City', { align: 'center' });
+    doc.fontSize(12).font('Helvetica').text('Taruna Technology', { align: 'center' });
+    doc.fontSize(10).text('709,710, Broadway Empire, Nilamber circle, Vasna Bhayli Main Rd, Bhayli, Vadodara, Gujarat 391410', { align: 'center' });
     doc.moveDown();
 
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
@@ -52,11 +52,11 @@ const generatePayslipPDF = async (payslip, employee) => {
     doc.moveDown();
 
     const startY = doc.y;
-    
+
     doc.fontSize(11).font('Helvetica-Bold').text('EARNINGS', 50);
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica');
-    
+
     const earnings = [
       ['Basic Salary', payslip.earnings.basicSalary],
       ['HRA', payslip.earnings.hra],
@@ -206,7 +206,7 @@ export const generatePayslip = async (req, res) => {
 
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
-    
+
     const attendanceRecords = await Attendance.find({
       $or: [
         { employee: employeeId },
@@ -216,10 +216,10 @@ export const generatePayslip = async (req, res) => {
     });
 
     const workingDays = endDate.getDate();
-    const presentDays = attendanceRecords.filter(a => 
+    const presentDays = attendanceRecords.filter(a =>
       ['present', 'Present', 'late', 'Late'].includes(a.status)
     ).length;
-    const leaveDays = attendanceRecords.filter(a => 
+    const leaveDays = attendanceRecords.filter(a =>
       ['leave', 'Leave', 'approved_leave'].includes(a.status)
     ).length;
     const absentDays = workingDays - presentDays - leaveDays;
@@ -316,7 +316,7 @@ export const getPayslips = async (req, res) => {
     const { month, year, employeeId, status, page = 1, limit = 20 } = req.query;
 
     const query = {};
-    
+
     if (month) query['period.month'] = parseInt(month);
     if (year) query['period.year'] = parseInt(year);
     if (employeeId) query.employee = employeeId;
@@ -461,7 +461,7 @@ export const downloadPayslip = async (req, res) => {
     }
 
     const filePath = path.join(process.cwd(), 'temp', 'payslips', payslip.pdfPath);
-    
+
     if (!fs.existsSync(filePath)) {
       const pdfFileName = await generatePayslipPDF(payslip, payslip.employee);
       payslip.pdfPath = pdfFileName;
@@ -636,7 +636,7 @@ export const generateBulkPayslips = async (req, res) => {
         if (existing) {
           if (regenerate === true) {
             console.log(`Regenerating payslip for employee ${employee.employeeId} for ${month}/${year}`);
-            
+
             if (existing.pdfPath) {
               const oldPdfPath = path.join(process.cwd(), 'temp', 'payslips', existing.pdfPath);
               if (fs.existsSync(oldPdfPath)) {

@@ -34,7 +34,7 @@ const welcomeHeroPresets = {
 
 const getWelcomeHero = (date) => {
   const hour = date.getHours();
-  const period = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : hour < 21 ? 'evening' : 'night';
+  const period = hour < 12 ? 'morning' : hour < 16 ? 'afternoon' : hour < 19 ? 'evening' : 'night';
   const preset = welcomeHeroPresets[period];
   const dayStart = new Date(date.getFullYear(), 0, 0);
   const dayOfYear = Math.floor((date - dayStart) / 86400000);
@@ -1295,17 +1295,17 @@ const EmployeeDashboard = () => {
             key={welcomeHero.video}
             src={welcomeHero.video}
             aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover opacity-80"
+            className="absolute inset-0 h-full w-full object-cover opacity-90"
             autoPlay
             muted
             loop
             playsInline
             preload="metadata"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0C0F17]/92 via-[#0C0F17]/62 to-[#0C0F17]/50" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0C0F17]/40 via-[#0C0F17]/16 to-[#0C0F17]/80" />
-          <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#0C0F17]/55 via-[#0C0F17]/22 to-transparent" />
-          <div className="absolute left-0 right-0 bottom-0 h-16 bg-gradient-to-t from-[#0C0F17]/60 via-[#0C0F17]/16 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0C0F17]/70 via-[#0C0F17]/40 to-[#0C0F17]/25" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0C0F17]/30 via-transparent to-[#0C0F17]/50" />
+          <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#0C0F17]/35 via-[#0C0F17]/10 to-transparent" />
+          <div className="absolute left-0 right-0 bottom-0 h-16 bg-gradient-to-t from-[#0C0F17]/40 via-transparent to-transparent" />
           <div className="welcome-wave absolute -left-24 bottom-4 h-28 w-[125%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.14),transparent_62%)] blur-sm" />
           <div className="welcome-wave-slow absolute -left-32 bottom-12 h-36 w-[135%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(129,140,248,0.10),transparent_66%)] blur-md" />
           <div className="welcome-shimmer absolute -top-8 bottom-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent blur-xl" />

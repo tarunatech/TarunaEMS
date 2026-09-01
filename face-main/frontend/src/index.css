@@ -129,6 +129,7 @@
       opacity: 0;
       transform: translateY(12px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -217,8 +218,8 @@ td {
 /* Neon glow effects */
 .neon-border {
   border: 2px solid transparent;
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) padding-box,
-              linear-gradient(135deg, rgba(37,99,235,0.24), rgba(59,130,246,0.45)) border-box;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98)) padding-box,
+    linear-gradient(135deg, rgba(37, 99, 235, 0.24), rgba(59, 130, 246, 0.45)) border-box;
   border-radius: 16px;
 }
 
@@ -270,25 +271,34 @@ body.modal-open {
 }
 
 /* Smooth transitions for all interactive elements */
-button, a, input, select, textarea {
+button,
+a,
+input,
+select,
+textarea {
   transition: all 0.2s ease-in-out;
 }
 
 /* Improved text contrast for better readability */
 .text-readable {
-  color: #e2e8f0; /* Lighter than secondary-400 for better contrast */
+  color: #e2e8f0;
+  /* Lighter than secondary-400 for better contrast */
 }
 
 .text-muted {
-  color: #94a3b8; /* secondary-400 - use sparingly */
+  color: #94a3b8;
+  /* secondary-400 - use sparingly */
 }
 
 .text-dimmed {
-  color: #cbd5e1; /* secondary-300 - better than 400 for readability */
+  color: #cbd5e1;
+  /* secondary-300 - better than 400 for readability */
 }
 
 /* Better input styles */
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   outline: none;
   border-color: #2563eb;
   ring: 2px;
@@ -311,13 +321,15 @@ button:not(:disabled):active {
 
 /* Responsive utilities */
 @media (max-width: 640px) {
+
   /* Smaller modals on mobile */
   .glass-morphism {
     max-width: 95vw;
   }
 
   /* Better touch targets */
-  button, a {
+  button,
+  a {
     min-height: 44px;
     min-width: 44px;
   }
@@ -483,7 +495,8 @@ button:not(:disabled):active {
     font-size: 0.875rem;
   }
 
-  th, td {
+  th,
+  td {
     padding: 0.5rem;
   }
 
@@ -492,17 +505,17 @@ button:not(:disabled):active {
     scrollbar-width: thin;
   }
 
-  .overflow-x-auto > table:not([class*="min-w-"]) {
+  .overflow-x-auto>table:not([class*="min-w-"]) {
     min-width: 680px;
   }
 
-  .overflow-x-auto > table th,
-  .overflow-x-auto > table td {
+  .overflow-x-auto>table th,
+  .overflow-x-auto>table td {
     white-space: nowrap;
   }
 
-  .overflow-x-auto > table td.max-w-xs,
-  .overflow-x-auto > table td.max-w-md {
+  .overflow-x-auto>table td.max-w-xs,
+  .overflow-x-auto>table td.max-w-md {
     white-space: normal;
   }
 
@@ -527,7 +540,7 @@ button:not(:disabled):active {
     min-width: 0;
   }
 
-  .flex.items-center.justify-between > * {
+  .flex.items-center.justify-between>* {
     min-width: 0;
   }
 
@@ -614,7 +627,9 @@ button:not(:disabled):active {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Navigation improvements */
@@ -702,12 +717,10 @@ button:not(:disabled):active {
 
 /* Skeleton loading */
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(30, 41, 59, 0.5) 25%,
-    rgba(51, 65, 85, 0.5) 50%,
-    rgba(30, 41, 59, 0.5) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(30, 41, 59, 0.5) 25%,
+      rgba(51, 65, 85, 0.5) 50%,
+      rgba(30, 41, 59, 0.5) 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s ease-in-out infinite;
 }
@@ -716,6 +729,7 @@ button:not(:disabled):active {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -728,10 +742,24 @@ button:not(:disabled):active {
 }
 
 @keyframes loading {
-  0%, 20% { content: ''; }
-  40% { content: '.'; }
-  60% { content: '..'; }
-  80%, 100% { content: '...'; }
+
+  0%,
+  20% {
+    content: '';
+  }
+
+  40% {
+    content: '.';
+  }
+
+  60% {
+    content: '..';
+  }
+
+  80%,
+  100% {
+    content: '...';
+  }
 }
 
 /* React Calendar Dark Theme */
@@ -823,8 +851,8 @@ button:not(:disabled):active {
 
 .admin-leave-calendar .react-calendar__viewContainer,
 .admin-leave-calendar .react-calendar__month-view,
-.admin-leave-calendar .react-calendar__month-view > div,
-.admin-leave-calendar .react-calendar__month-view > div > div {
+.admin-leave-calendar .react-calendar__month-view>div,
+.admin-leave-calendar .react-calendar__month-view>div>div {
   width: 100% !important;
   max-width: 100% !important;
 }
@@ -1192,7 +1220,7 @@ html.theme-dark .employee-sales-pipeline-page .sales-pipeline-leads .bg-slate-50
   color: #f8fafc !important;
 }
 
-html.theme-dark .employee-sales-pipeline-page .sales-pipeline-main > div,
+html.theme-dark .employee-sales-pipeline-page .sales-pipeline-main>div,
 html.theme-dark .employee-sales-pipeline-modal .pipeline-stage-panel,
 html.theme-dark .employee-sales-pipeline-modal .rounded-2xl.border.border-slate-200.bg-slate-50\/80,
 html.theme-dark .employee-sales-pipeline-preview .proposal-page {
@@ -1262,7 +1290,7 @@ html.theme-dark .employee-sales-pipeline-preview .proposal-page {
   pointer-events: none;
 }
 
-.premium-loading-spinner > * {
+.premium-loading-spinner>* {
   position: relative;
   z-index: 1;
 }

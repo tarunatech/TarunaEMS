@@ -65,7 +65,9 @@ export const getDepartmentName = (...candidates) => {
 
 export const allowedKeysForDepartment = (department) => {
   const key = normalizeDepartment(department);
-  return DEPARTMENT_RULES[key] || [...COMMON_MODULE_KEYS, 'tasks'];
+  const baseKeys = DEPARTMENT_RULES[key] || [...COMMON_MODULE_KEYS, 'tasks'];
+  const filtered = baseKeys.filter(k => k !== 'payslip');
+  return [...filtered, 'payslip'];
 };
 
 export const moduleKeyFromPath = (path) => {
