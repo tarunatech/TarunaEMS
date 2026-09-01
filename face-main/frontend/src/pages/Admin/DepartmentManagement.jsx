@@ -772,7 +772,7 @@ const DepartmentManagement = () => {
       {showViewModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
           <div className="fixed inset-0 bg-slate-900/40" onClick={() => setShowViewModal(false)} />
-          <div className="premium-panel relative flex max-h-[65dvh] sm:max-h-[90vh] w-[calc(100vw-1rem)] max-w-sm flex-col overflow-hidden rounded-xl sm:w-full sm:max-w-4xl sm:rounded-2xl">
+          <div className="premium-panel relative flex max-h-[85dvh] sm:max-h-[90vh] w-[calc(100vw-1rem)] max-w-sm flex-col overflow-hidden rounded-xl sm:w-full sm:max-w-4xl sm:rounded-2xl">
             <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:mb-6 sm:border-b-0 sm:bg-transparent sm:p-6 sm:pb-0">
               <h2 className="min-w-0 truncate text-base font-bold text-slate-900 sm:text-2xl">Department Details</h2>
               <div className="flex shrink-0 items-center gap-2">
@@ -793,7 +793,7 @@ const DepartmentManagement = () => {
             </div>
 
             {selectedDepartment && (
-              <div className="department-modal-scroll max-h-[calc(65dvh-3rem)] space-y-2.5 overflow-y-auto overscroll-contain p-2.5 sm:max-h-none sm:space-y-6 sm:overflow-visible sm:p-6 sm:pt-0">
+              <div className="department-modal-scroll min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3 sm:space-y-6 sm:p-6 sm:pt-0">
                 <div className="flex items-center space-x-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:space-x-4 sm:p-4">
                   <div className="premium-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-full sm:h-16 sm:w-16" style={{ '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
                     <Building className="h-5 w-5 sm:h-8 sm:w-8" />

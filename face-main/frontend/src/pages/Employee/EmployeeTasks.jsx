@@ -1343,23 +1343,23 @@ const EmployeeTasks = () => {
 
       {/* Add Task Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-2 pt-16 pb-14 sm:p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-          <div className="employee-tasks-modal relative flex max-h-[50dvh] sm:max-h-[82vh] w-full max-w-2xl sm:max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl animate-enter">
+          <div className="employee-tasks-modal relative flex max-h-[85dvh] sm:max-h-[82vh] w-full max-w-2xl sm:max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl animate-enter">
             {/* Modal Header */}
-            <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50/95 px-3 py-2.5 backdrop-blur sm:px-6 sm:py-3.5">
-              <div className="flex items-center gap-2.5 sm:gap-3">
-                <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shadow-2xs shrink-0">
-                  <Plus strokeWidth={2} className="h-4 w-4 sm:h-5 sm:w-5" />
+            <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50/95 px-3 py-2 backdrop-blur sm:px-6 sm:py-3.5">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shadow-2xs shrink-0">
+                  <Plus strokeWidth={2} className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-slate-900 sm:text-[17px] tracking-tight">Assign Task</h2>
-                  <p className="text-[11px] sm:text-[12px] font-medium text-slate-500">Create & assign a task to any team member</p>
+                  <h2 className="text-xs sm:text-[17px] font-bold text-slate-900 tracking-tight leading-tight">Assign Task</h2>
+                  <p className="text-[10px] sm:text-[12px] font-medium text-slate-500">Create & assign a task to any team member</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="rounded-xl p-1.5 text-slate-400 hover:bg-white hover:text-slate-700 border border-transparent hover:border-slate-200 transition-all duration-150"
+                className="rounded-xl p-1 text-slate-400 hover:bg-white hover:text-slate-700 border border-transparent hover:border-slate-200 transition-all duration-150"
                 title="Close"
               >
                 <X strokeWidth={1.75} className="h-4 w-4" />
@@ -1368,7 +1368,7 @@ const EmployeeTasks = () => {
 
             {/* Modal Body / Form */}
             <form onSubmit={handleAddTask} className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div className="task-details-modal-scroll min-h-0 flex-1 space-y-2.5 overflow-y-auto px-2.5 py-2.5 pb-14 sm:space-y-4 sm:px-6 sm:py-4">
+              <div className="task-details-modal-scroll min-h-0 flex-1 space-y-2 sm:space-y-4 overflow-y-auto px-3 py-2.5 sm:px-6 sm:py-4">
                 {/* Title */}
                 <div>
                   <label className="block text-xs sm:text-[13px] font-semibold text-slate-700 mb-1">
@@ -1386,10 +1386,20 @@ const EmployeeTasks = () => {
 
                 {/* Description */}
                 <div>
-                  <label className="block text-xs sm:text-[13px] font-semibold text-slate-700 mb-1">
-                    Descriptions <span className="text-red-500">*</span>
-                  </label>
-                  <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs sm:text-[13px] font-semibold text-slate-700">
+                      Descriptions <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setNewTask(prev => ({ ...prev, descriptions: [...(prev.descriptions || ['']), ''] }))}
+                      className="inline-flex items-center gap-0.5 px-1 py-0 text-[9px] leading-tight sm:px-2.5 sm:py-1 sm:text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-md sm:rounded-lg transition-all duration-200 shadow-2xs"
+                    >
+                      <Plus className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
+                      <span>Add Description</span>
+                    </button>
+                  </div>
+                  <div className="space-y-1.5 sm:space-y-2">
                     {(newTask.descriptions || ['']).map((desc, idx) => (
                       <div key={idx} className="relative group">
                         <div className="flex items-start gap-1 sm:gap-2">
@@ -1401,9 +1411,9 @@ const EmployeeTasks = () => {
                               updated[idx] = e.target.value;
                               setNewTask(prev => ({ ...prev, descriptions: updated }));
                             }}
-                            rows="2.5"
+                            rows="2"
                             placeholder={`Description ${idx + 1}...`}
-                            className="flex-1 min-h-[64px] sm:min-h-[76px] px-2.5 py-2 sm:px-4 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-xs sm:text-[13px] font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-150 shadow-2xs resize-none"
+                            className="flex-1 min-h-[48px] sm:min-h-[76px] px-2.5 py-1.5 sm:px-4 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-xs sm:text-[13px] font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-150 shadow-2xs resize-none"
                           />
                           {(newTask.descriptions || ['']).length > 1 && (
                             <button
@@ -1421,19 +1431,11 @@ const EmployeeTasks = () => {
                         </div>
                       </div>
                     ))}
-                    <button
-                      type="button"
-                      onClick={() => setNewTask(prev => ({ ...prev, descriptions: [...(prev.descriptions || ['']), ''] }))}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] sm:text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-all duration-200 shadow-2xs"
-                    >
-                      <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      Add Description
-                    </button>
                   </div>
                 </div>
 
                 {/* Grid 1: Due Date & Assign To */}
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
                   <div>
                     <label className="block text-xs sm:text-[13px] font-semibold text-slate-700 mb-1">
                       Due Date <span className="text-red-500">*</span>
@@ -1448,21 +1450,22 @@ const EmployeeTasks = () => {
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center justify-between gap-1 mb-1">
                       <label className="block text-xs sm:text-[13px] font-semibold text-slate-700">
                         Assign To <span className="text-red-500">*</span>
                       </label>
                       {selfEmployee && (
-                        <div className="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200/80">
+                        <div className="inline-flex shrink-0 rounded-md bg-slate-100 p-[1px] border border-slate-200/80 items-center">
                           <button
                             type="button"
                             onClick={() => setNewTask(prev => ({ ...prev, assignedTo: selfEmployee._id }))}
-                            className={`px-2.5 py-0.5 text-[10.5px] font-semibold rounded-md transition-all duration-150 ${newTask.assignedTo === selfEmployee._id
+                            className={`px-1.5 py-[1px] text-[9px] leading-tight sm:px-2.5 sm:py-0.5 sm:text-[10.5px] font-semibold rounded-[3px] sm:rounded-[4px] whitespace-nowrap transition-all duration-150 ${newTask.assignedTo === selfEmployee._id
                               ? 'bg-indigo-600 text-white shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
                               }`}
                           >
-                            Myself (Self)
+                            <span className="hidden sm:inline">Myself (Self)</span>
+                            <span className="sm:hidden">Myself</span>
                           </button>
                           <button
                             type="button"
@@ -1470,7 +1473,7 @@ const EmployeeTasks = () => {
                               const other = getAssignableEmployees().find(e => e._id !== selfEmployee._id);
                               setNewTask(prev => ({ ...prev, assignedTo: other ? other._id : '' }));
                             }}
-                            className={`px-2.5 py-0.5 text-[10.5px] font-semibold rounded-md transition-all duration-150 ${newTask.assignedTo !== selfEmployee._id
+                            className={`px-1.5 py-[1px] text-[9px] leading-tight sm:px-2.5 sm:py-0.5 sm:text-[10.5px] font-semibold rounded-[3px] sm:rounded-[4px] whitespace-nowrap transition-all duration-150 ${newTask.assignedTo !== selfEmployee._id
                               ? 'bg-indigo-600 text-white shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
                               }`}
@@ -1540,7 +1543,7 @@ const EmployeeTasks = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 bg-white/95 px-4 py-2.5 backdrop-blur sm:px-6 sm:py-3.5">
+              <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 bg-white/95 px-3 py-2 backdrop-blur sm:px-6 sm:py-3.5">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
