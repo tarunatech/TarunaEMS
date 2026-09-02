@@ -92,7 +92,7 @@ const applyDerivedFields = (values, { isNew = false, checkInChanged = false, che
   if (values.checkInTime && (isNew || checkInChanged)) {
     const checkInIST = new Date(values.checkInTime.getTime() + IST_OFFSET);
     const standardTimeIST = new Date(values.checkInTime.getTime() + IST_OFFSET);
-    standardTimeIST.setUTCHours(10, 10, 0, 0);
+    standardTimeIST.setUTCHours(10, 15, 0, 0);
 
     if (checkInIST > standardTimeIST) {
       values.isLate = true;
