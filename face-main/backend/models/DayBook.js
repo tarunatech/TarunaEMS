@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, isNull, lt, lte } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lt, lte, notInArray } from 'drizzle-orm';
 import db from '../db/index.js';
 import { dayBooks } from '../db/schema/dayBook.js';
 import { employees } from '../db/schema/employee.js';
@@ -55,6 +55,7 @@ const normalizeSlots = (slots = []) => {
       slotType,
       workType: slot.workType,
       taskRef: slot.taskRef || null,
+      taskTitle: slot.taskTitle ? String(slot.taskTitle).trim() : null,
       description: slot.description === undefined || slot.description === null ? '' : String(slot.description).trim(),
     };
   });
@@ -93,6 +94,8 @@ const buildWhere = (query = {}) => {
         if (op === '$gte') conditions.push(gte(column, normalizeDate(operand)));
         else if (op === '$lte') conditions.push(lte(column, normalizeDate(operand)));
         else if (op === '$lt') conditions.push(lt(column, normalizeDate(operand)));
+        else if (op === '$in' && Array.isArray(operand)) conditions.push(inArray(column, operand));
+        else if (op === '$nin' && Array.isArray(operand)) conditions.push(notInArray(column, operand));
         else unsupported(`operator "${op}" on field "${field}"`);
       }
       continue;

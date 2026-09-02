@@ -281,9 +281,9 @@ const AdminLeaveManagement = () => {
     const [comments, setComments] = useState('');
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-        <div className="fixed inset-0 bg-slate-900/20" onClick={() => setShowModal(false)} />
-        <div className="premium-panel relative z-10 w-full max-w-2xl max-h-[72dvh] sm:max-h-[92vh] overflow-y-auto rounded-2xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 lg:left-64">
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+        <div className="premium-panel relative z-10 w-full sm:max-w-xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl max-h-[72dvh] sm:max-h-[92vh] overflow-y-auto rounded-2xl bg-white border border-slate-200 shadow-2xl">
           <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-3.5 sm:p-6">
             <h2 className="text-base font-bold text-slate-900 sm:text-2xl">Leave Application Details</h2>
             <button
@@ -310,32 +310,32 @@ const AdminLeaveManagement = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 sm:p-0 sm:border-0 sm:bg-transparent">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
                 <div>
-                  <label className="text-[11px] sm:text-sm font-medium text-slate-500">Leave Type</label>
-                  <p className="text-xs sm:text-base font-semibold text-slate-900 capitalize">{selectedLeave.leaveType}</p>
+                  <label className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Leave Type</label>
+                  <p className="text-xs sm:text-base font-bold text-slate-900 capitalize mt-0.5">{selectedLeave.leaveType}</p>
                 </div>
                 <div>
-                  <label className="text-[11px] sm:text-sm font-medium text-slate-500">Duration</label>
-                  <p className="text-xs sm:text-base font-semibold text-slate-900">
+                  <label className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Duration</label>
+                  <p className="text-xs sm:text-base font-bold text-slate-900 mt-0.5">
                     {selectedLeave.isHalfDay ? `0.5 day (${selectedLeave.halfDaySession})` : `${selectedLeave.totalDays} days`}
                   </p>
                 </div>
                 <div>
-                  <label className="text-[11px] sm:text-sm font-medium text-slate-500">Start Date</label>
-                  <p className="text-xs sm:text-base font-semibold text-slate-900">{new Date(selectedLeave.startDate).toLocaleDateString()}</p>
+                  <label className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Start Date</label>
+                  <p className="text-xs sm:text-base font-bold text-slate-900 mt-0.5">{new Date(selectedLeave.startDate).toLocaleDateString()}</p>
                 </div>
                 <div>
-                  <label className="text-[11px] sm:text-sm font-medium text-slate-500">End Date</label>
-                  <p className="text-xs sm:text-base font-semibold text-slate-900">{new Date(selectedLeave.endDate).toLocaleDateString()}</p>
+                  <label className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">End Date</label>
+                  <p className="text-xs sm:text-base font-bold text-slate-900 mt-0.5">{new Date(selectedLeave.endDate).toLocaleDateString()}</p>
                 </div>
                 <div>
-                  <label className="text-[11px] sm:text-sm font-medium text-slate-500">Applied Date</label>
-                  <p className="text-xs sm:text-base font-semibold text-slate-900">{new Date(selectedLeave.appliedDate).toLocaleDateString()}</p>
+                  <label className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Applied Date</label>
+                  <p className="text-xs sm:text-base font-bold text-slate-900 mt-0.5">{new Date(selectedLeave.appliedDate).toLocaleDateString()}</p>
                 </div>
                 <div>
-                  <label className="block text-[11px] sm:text-sm font-medium text-slate-500 mb-0.5">Status</label>
-                  <span className={`inline-block px-2 py-0.5 text-[11px] sm:text-xs font-semibold rounded-full ${getStatusColor(selectedLeave.status)}`}>
+                  <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Status</label>
+                  <span className={`inline-block px-2.5 py-0.5 text-[11px] sm:text-xs font-bold rounded-full ${getStatusColor(selectedLeave.status)}`}>
                     {selectedLeave.status}
                   </span>
                 </div>

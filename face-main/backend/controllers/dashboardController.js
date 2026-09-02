@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import Leave from '../models/Leave.js';
 import Task from '../models/Task.js';
 import Attendance from '../models/Attendance.js';
+import DayBook from '../models/DayBook.js';
 import Holiday from '../models/Holiday.js';
 import Payslip from '../models/Payslip.js';
 import Department from '../models/Department.js';
@@ -573,14 +574,13 @@ export const getUpcomingEvents = async (req, res) => {
       }
     }
 
-    upcomingEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+    upcomingEvents.sort((a, b) => new Date(a.date) - new Date(a.date));
 
     res.json({
       success: true,
       employee: employeeName,
       events: upcomingEvents.slice(0, 6)
     });
-
   } catch (error) {
     console.error('Get upcoming events error:', error);
     res.status(500).json({
@@ -608,7 +608,6 @@ export const getDashboardSummary = async (req, res) => {
     });
   }
 };
-// Add these endpoints to your existing controllers/dashboardController.js
 
 // @desc    Get user-specific notifications
 // @route   GET /api/dashboard/notifications
@@ -616,10 +615,8 @@ export const getDashboardSummary = async (req, res) => {
 export const getUserNotifications = async (req, res) => {
   try {
     const notifications = [];
-    
+
     if (req.user.role === 'admin') {
-      // Admin notifications - recent system activities
-      
       // Recent employee additions (last 7 days)
       const recentEmployees = await Employee.find({
         createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
@@ -662,7 +659,7 @@ export const getUserNotifications = async (req, res) => {
         });
       });
 
-      // Pending approvals
+      // Pending leave approvals
       const pendingLeaves = await Leave.countDocuments({ status: 'Pending' });
       if (pendingLeaves > 0) {
         notifications.push({
@@ -675,50 +672,27 @@ export const getUserNotifications = async (req, res) => {
         });
       }
 
-      // Low attendance alerts
-      const today = new Date();
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      
-      // This would require an Attendance model - simplified for now
-      const lowAttendanceEmployees = await Employee.aggregate([
-        {
-          $lookup: {
-            from: 'attendances',
-            localField: '_id',
-            foreignField: 'employee',
-            as: 'attendanceRecords'
-          }
-        },
-        {
-          $addFields: {
-            monthlyAttendance: {
-              $size: {
-                $filter: {
-                  input: '$attendanceRecords',
-                  cond: {
-                    $and: [
-                      { $gte: ['$$this.date', startOfMonth] },
-                      { $eq: ['$$this.status', 'Present'] }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        },
-        { $match: { monthlyAttendance: { $lt: 15 } } }, // Less than 15 days present
-        { $limit: 5 }
-      ]);
+      // Submitted EOD reports (DayBooks) for Admin Review & Direct Action
+      const recentDayBooks = await DayBook.find({
+        status: 'Submitted'
+      })
+        .populate('employee', 'personalInfo.firstName personalInfo.lastName fullName user employeeId')
+        .sort({ updatedAt: -1, date: -1 })
+        .limit(10);
 
-      lowAttendanceEmployees.forEach(emp => {
-        const empName = emp.personalInfo ? `${emp.personalInfo.firstName} ${emp.personalInfo.lastName}`.trim() : 'Employee';
+      recentDayBooks.forEach(db => {
+        const empName = db.employee?.fullName || `${db.employee?.personalInfo?.firstName || ''} ${db.employee?.personalInfo?.lastName || ''}`.trim() || 'Employee';
+        const formattedDate = new Date(db.date).toLocaleDateString();
+
         notifications.push({
-          id: `low-attendance-${emp._id}`,
-          message: `${empName} has low attendance this month (${emp.monthlyAttendance} days)`,
+          id: `eod-${db._id}`,
+          message: `${empName} submitted EOD report for ${formattedDate}`,
           user: empName,
-          time: new Date().toISOString(),
-          type: 'error',
-          category: 'attendance',
+          time: db.updatedAt || db.createdAt || db.date,
+          type: 'action_required',
+          category: 'eod',
+          dayBookId: String(db._id),
+          dayBookStatus: db.status,
           unread: true
         });
       });

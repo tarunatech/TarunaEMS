@@ -399,15 +399,34 @@ const EmployeeAttendance = () => {
   };
 
   const getRecordWorkingTime = (record) => {
-    if (record.workingHours) return record.workingHours;
-    if (record.totalWorkingTime) return record.totalWorkingTime;
-    if (record.workingMinutes || record.totalWorkingMinutes) {
-      return formatWorkingTime(record.workingMinutes || record.totalWorkingMinutes);
+    if (!record) return '0h 0m';
+    if (typeof record.workingHours === 'string' && (record.workingHours.includes('h') || record.workingHours.includes('m'))) {
+      return record.workingHours;
     }
+    let minutes = null;
+    if (typeof record.workingHours === 'number') {
+      minutes = record.workingHours;
+    } else if (typeof record.workingHours === 'string' && !isNaN(parseInt(record.workingHours, 10))) {
+      minutes = parseInt(record.workingHours, 10);
+    } else if (typeof record.totalWorkingTime === 'number') {
+      minutes = record.totalWorkingTime;
+    } else if (typeof record.totalWorkingTime === 'string' && !isNaN(parseInt(record.totalWorkingTime, 10))) {
+      minutes = parseInt(record.totalWorkingTime, 10);
+    } else if (record.workingMinutes !== undefined && record.workingMinutes !== null) {
+      minutes = Number(record.workingMinutes);
+    } else if (record.totalWorkingMinutes !== undefined && record.totalWorkingMinutes !== null) {
+      minutes = Number(record.totalWorkingMinutes);
+    }
+
+    if (minutes !== null && !isNaN(minutes)) {
+      return formatWorkingTime(minutes);
+    }
+
     if (record.checkInTime && record.checkOutTime) {
       const diffMinutes = Math.max(0, Math.floor((new Date(record.checkOutTime) - new Date(record.checkInTime)) / 60000));
       return formatWorkingTime(diffMinutes);
     }
+
     return '0h 0m';
   };
 
@@ -576,7 +595,9 @@ const EmployeeAttendance = () => {
                 <div className="attendance-soft-row p-2.5 sm:p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">
                   <p className="text-slate-500 text-[11px] sm:text-[12px]">Working Time</p>
                   <p className="text-indigo-600 text-sm sm:text-base font-semibold">
-                    {hasCheckedIn && !hasCheckedOut ? formatWorkingTime(realTimeWorkingTime) : (workingTime ? workingTime.total : '00:00')}
+                    {hasCheckedIn && !hasCheckedOut
+                      ? formatWorkingTime(realTimeWorkingTime)
+                      : (todayAttendance ? getRecordWorkingTime(todayAttendance) : '0h 0m')}
                   </p>
                 </div>
                 <div className="attendance-soft-row p-2.5 sm:p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-center">

@@ -22,7 +22,8 @@ import {
   ClipboardList,
   RefreshCcw,
   Edit3,
-  Minus
+  Minus,
+  History
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -34,6 +35,7 @@ import { employeeAPI } from '../../utils/api';
 import DayBookEntry from './DayBookEntry';
 import MyPerformanceCard from '../../components/Employee/MyPerformanceCard';
 import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
+import EmployeeEODHistoryModal from '../../components/Employee/EmployeeEODHistoryModal';
 
 const TASK_TIMER_STORAGE_KEY = 'employeeTaskTimers';
 
@@ -75,6 +77,7 @@ const EmployeeTasks = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDayBookModal, setShowDayBookModal] = useState(false);
   const [showPerformanceModal, setShowPerformanceModal] = useState(false);
+  const [showEODHistoryModal, setShowEODHistoryModal] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -557,6 +560,14 @@ const EmployeeTasks = () => {
               >
                 <BarChart3 strokeWidth={1.75} className="w-[18px] h-[18px] mr-2" />
                 My Performance
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowEODHistoryModal(true)}
+                className="px-4 py-2 bg-white border border-slate-200/80 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 transition-colors duration-150 flex items-center text-[13px]"
+              >
+                <History strokeWidth={1.75} className="w-[18px] h-[18px] mr-2 text-slate-500" />
+                EOD History
               </button>
             </div>
           </div>
@@ -1301,9 +1312,9 @@ const EmployeeTasks = () => {
 
       {/* Day Book Modal */}
       {showDayBookModal && (
-        <div className="fixed bottom-0 left-0 right-0 top-14 z-[9999] flex items-start justify-center overflow-y-auto p-2 sm:items-center sm:p-3 lg:inset-y-0 lg:left-64">
+        <div className="fixed bottom-0 left-0 right-0 top-14 z-[9999] flex items-start justify-center overflow-y-auto p-2 sm:items-start sm:p-3 sm:pt-4 md:pt-6 lg:left-64 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm" onClick={() => setShowDayBookModal(false)} />
-          <div className="employee-tasks-modal relative h-full w-full max-w-5xl overflow-y-auto rounded-2xl border border-slate-200/80 bg-slate-50 shadow-[0_18px_44px_rgba(15,23,42,0.18)] animate-enter sm:h-auto sm:max-h-[84vh]">
+          <div className="employee-tasks-modal relative h-full w-full max-w-6xl overflow-y-auto rounded-2xl border border-slate-200/80 bg-slate-50 shadow-[0_18px_44px_rgba(15,23,42,0.18)] animate-enter sm:h-auto sm:max-h-[85vh] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <button
               onClick={() => setShowDayBookModal(false)}
               className="absolute right-3 top-3 z-20 p-2 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition-colors duration-150"
@@ -1562,6 +1573,12 @@ const EmployeeTasks = () => {
           </div>
         </div>
       )}
+
+      {/* EOD History Modal */}
+      <EmployeeEODHistoryModal
+        isOpen={showEODHistoryModal}
+        onClose={() => setShowEODHistoryModal(false)}
+      />
     </EmployeeLayout>
   );
 };

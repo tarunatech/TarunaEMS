@@ -1027,7 +1027,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
   };
 
   const content = (
-    <div className={`${embedded ? 'w-full' : `flex flex-col max-h-[50vh] sm:max-h-[90vh] w-full ${isAdmin ? 'max-w-7xl' : 'max-w-5xl'} overflow-hidden`} employee-sales-pipeline-modal rounded-2xl border border-slate-200 bg-white p-3 sm:p-6 shadow-xl`}>
+    <div className={`${embedded ? 'w-full h-full flex flex-col' : `flex flex-col max-h-[85dvh] sm:max-h-[90vh] w-full ${isAdmin ? 'max-w-7xl' : 'max-w-5xl'} overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-6 shadow-xl`} employee-sales-pipeline-modal`}>
       <style>{`
           @keyframes pipelineStageIn {
             from { opacity: 0; transform: translateY(10px) scale(0.99); }
@@ -1044,7 +1044,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
             display: none;
           }
         `}</style>
-      <div className="sticky top-0 z-10 flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 bg-white/95 pb-2.5 backdrop-blur sm:border-b-0 sm:pb-5 mb-3 sm:mb-5">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 pb-2.5 sm:border-b-0 sm:pb-5 mb-3 sm:mb-5">
         <div>
           <h2 className="text-base sm:text-xl font-bold text-slate-900 leading-tight">Sales Pipeline</h2>
           <p className="text-xs sm:text-sm text-slate-500">{lead.firstName} {lead.lastName} • {lead.company || 'No company'}</p>
@@ -1062,7 +1062,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
           Loading pipeline...
         </div>
       ) : (
-        <div className="task-details-modal-scroll flex-1 overflow-y-auto overscroll-contain space-y-3 sm:space-y-5 pr-0.5">
+        <div className={`pipeline-modal-scroll flex-1 ${embedded ? 'min-h-0' : 'overflow-y-auto overscroll-contain'} space-y-3 sm:space-y-5 pr-0.5`}>
           <StageStepper currentStage={pipeline?.currentStage} activeStage={activeStage} onSelect={setActiveStage} />
 
           <div key={activeStage} className="pipeline-stage-panel rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm sm:p-5">

@@ -120,15 +120,17 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
           (response.data.data || []).map((n, index) => {
             const id = String(n.id || `notification-${index}`);
             return {
-            id,
-            message: n.message,
-            user: n.user,
-            time: n.time,
-            type: n.type || 'info',
-            category: n.category || 'general',
-            count: n.count || 1,
-            unread: readIds.has(id) ? false : (n.unread ?? true)
-          };
+              id,
+              message: n.message,
+              user: n.user,
+              time: n.time,
+              type: n.type || 'info',
+              category: n.category || 'general',
+              dayBookId: n.dayBookId,
+              dayBookStatus: n.dayBookStatus,
+              count: n.count || 1,
+              unread: readIds.has(id) ? false : (n.unread ?? true)
+            };
           }).filter(n => !dismissedIds.has(n.id) && !readIds.has(n.id) && n.unread !== false)
         );
       } else {

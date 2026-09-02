@@ -5,7 +5,7 @@ import { users } from '../db/schema/user.js';
 
 const TYPES = new Set(['info', 'success', 'warning', 'error']);
 const CATEGORIES = new Set(['attendance', 'leave', 'task', 'employee', 'system']);
-const RELATED_MODELS = new Set(['Attendance', 'Leave', 'Task', 'Employee']);
+const RELATED_MODELS = new Set(['Attendance', 'Leave', 'Task', 'Employee', 'DayBook']);
 const PRIORITIES = new Set(['low', 'medium', 'high', 'urgent']);
 
 const WRITABLE_FIELDS = [

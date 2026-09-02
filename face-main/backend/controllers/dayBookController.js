@@ -1,6 +1,8 @@
 import DayBook from '../models/DayBook.js';
 import Task from '../models/Task.js';
 import Employee from '../models/Employee.js';
+import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 // import { sendDayBookReportEmail } from '../utils/email.js';
 
 // @desc    Get or create day book for today
@@ -68,24 +70,42 @@ export const submitDayBook = async (req, res) => {
             { new: true, runValidators: true }
         ).populate('slots.taskRef');
 
-        // Only send email if status is 'Submitted'
-        // if (dayBook && dayBook.status === 'Submitted') {
-        //     try {
-        //         // Fetch all active tasks for this employee to include in report
-        //         const activeTasks = await Task.find({
-        //             assignedTo: employee._id,
-        //             status: { $nin: ['Completed', 'Cancelled'] }
-        //         });
 
-        //         // Get details of employee for email
-        //         const employeeDetails = await Employee.findById(employee._id);
+        // Send notification to admins when EOD report is submitted
+        if (dayBook && (dayBook.status === 'Submitted' || status === 'Submitted')) {
+            try {
+                const adminUsers = await User.find({ role: 'admin', isActive: true });
+                if (adminUsers.length > 0) {
+                    const employeeDetails = await Employee.findById(employee._id).populate('user');
+                    const employeeName = employeeDetails
+                        ? (employeeDetails.fullName || `${employeeDetails.personalInfo?.firstName || ''} ${employeeDetails.personalInfo?.lastName || ''}`.trim() || employeeDetails.user?.name || 'Employee')
+                        : 'Employee';
+                    const formattedDate = new Date(dayBook.date).toLocaleDateString();
 
-        //         await sendDayBookReportEmail(dayBook, employeeDetails, activeTasks);
-        //     } catch (emailError) {
-        //         console.error('Error sending day book report email:', emailError);
-        //         // We don't want to fail the request if email fails
-        //     }
-        // }
+                    await Notification.createNotification({
+                        title: 'EOD Report Submitted',
+                        message: `${employeeName} submitted an EOD report for ${formattedDate}`,
+                        type: 'info',
+                        category: 'attendance',
+                        targetUsers: adminUsers.map(admin => admin._id),
+                        sender: req.user.id,
+                        priority: 'high',
+                        relatedEntity: {
+                            model: 'DayBook',
+                            id: dayBook._id
+                        },
+                        metadata: {
+                            dayBookId: dayBook._id,
+                            employeeName,
+                            date: formattedDate,
+                            actionRequired: true
+                        }
+                    });
+                }
+            } catch (notiError) {
+                console.error('Error creating EOD submission notification:', notiError);
+            }
+        }
 
         res.json({ success: true, dayBook });
     } catch (error) {
@@ -101,8 +121,17 @@ export const getDayBooks = async (req, res) => {
         const { status, employeeId, date } = req.query;
         let query = {};
 
+        if (req.user && req.user.role !== 'admin') {
+            const employee = await Employee.findOne({ user: req.user.id });
+            if (!employee) {
+                return res.status(404).json({ success: false, message: 'Employee record not found' });
+            }
+            query.employee = employee._id;
+        } else if (employeeId) {
+            query.employee = employeeId;
+        }
+
         if (status) query.status = status;
-        if (employeeId) query.employee = employeeId;
         if (date) {
             const d = new Date(date);
             d.setHours(0, 0, 0, 0);
@@ -148,6 +177,30 @@ export const updateDayBookStatus = async (req, res) => {
                     }
                 }
             }
+        }
+
+        // Notify employee about EOD status update
+        try {
+            if (dayBook && dayBook.employee) {
+                const empDoc = await Employee.findById(dayBook.employee);
+                if (empDoc && empDoc.user) {
+                    await Notification.createNotification({
+                        title: `EOD Report ${status}`,
+                        message: `Your EOD report for ${new Date(dayBook.date).toLocaleDateString()} was ${status.toLowerCase()}${adminComment ? `: "${adminComment}"` : '.'}`,
+                        type: status === 'Approved' ? 'success' : 'warning',
+                        category: 'attendance',
+                        targetUsers: [empDoc.user],
+                        sender: req.user.id,
+                        priority: 'medium',
+                        relatedEntity: {
+                            model: 'DayBook',
+                            id: dayBook._id
+                        }
+                    });
+                }
+            }
+        } catch (nErr) {
+            console.error('Error notifying employee of EOD status:', nErr);
         }
 
         // Send email report to admin email

@@ -131,7 +131,7 @@ const SalesPipelinePage = () => {
             </aside>
 
             {/* Pipeline detail */}
-            <main className="sales-pipeline-main min-h-0 overflow-y-auto rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <main className="sales-pipeline-main pipeline-modal-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-3 sm:p-6">
               {selectedLead ? (
                 <SalesPipelineModal
                   lead={selectedLead}

@@ -1,9 +1,117 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, RefreshCw, CheckCheck, Clock, User, Settings, AlertTriangle, Calendar, FileText, CheckCircle, X, MessageCircle, Briefcase, GitBranch, ClipboardList } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, RefreshCw, CheckCheck, Clock, User, Settings, AlertTriangle, Calendar, FileText, CheckCircle, X, MessageCircle, Briefcase, GitBranch, ClipboardList, Loader2 } from "lucide-react";
+import { taskService } from "../../../services/taskService";
+import toast from "react-hot-toast";
+
+const formatNotificationIST = (timeInput) => {
+  if (!timeInput) return '';
+
+  const date = new Date(timeInput);
+  if (isNaN(date.getTime())) {
+    return String(timeInput);
+  }
+
+  const now = new Date();
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+  const istTimeStr = date.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata'
+  });
+
+  const istDateStr = date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'Asia/Kolkata'
+  });
+
+  const todayIST = now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+  const dateIST = date.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+  if (diffInMinutes >= 0 && diffInMinutes < 1) {
+    return `Just now (${istTimeStr} IST)`;
+  }
+
+  if (diffInMinutes >= 1 && diffInMinutes < 60) {
+    return `${diffInMinutes}m ago (${istTimeStr} IST)`;
+  }
+
+  if (dateIST === todayIST) {
+    return `Today at ${istTimeStr} IST`;
+  }
+
+  return `${istDateStr} at ${istTimeStr} IST`;
+};
+
+const getNotificationTargetRoute = (notification) => {
+  const userRole = (localStorage.getItem('userRole') || sessionStorage.getItem('userRole') || 'admin').toLowerCase();
+  const isAdmin = userRole === 'admin';
+  const cat = (notification.category || '').toLowerCase();
+  const id = String(notification.id || '').toLowerCase();
+
+  // EOD Reports
+  if (cat === 'eod' || notification.dayBookId || id.startsWith('eod-')) {
+    return isAdmin ? '/admin/tasks' : '/employee/tasks';
+  }
+
+  // Attendance
+  if (cat === 'attendance' || id.includes('attendance')) {
+    return isAdmin ? '/admin/attendance' : '/employee/attendance';
+  }
+
+  // Leaves
+  if (cat === 'leave' || cat === 'leaves' || id.includes('leave')) {
+    return isAdmin ? '/admin/leaves' : '/employee/leaves';
+  }
+
+  // Tasks
+  if (cat === 'task' || cat === 'tasks' || id.includes('task')) {
+    return isAdmin ? '/admin/tasks' : '/employee/tasks';
+  }
+
+  // Employees / Staff
+  if (cat === 'employee' || id.includes('employee')) {
+    return isAdmin ? '/admin/employees' : '/employee/profile';
+  }
+
+  // Sales / Leads / Pipeline
+  if (cat === 'lead' || cat === 'pipeline' || cat === 'sales' || id.includes('lead') || id.includes('pipeline')) {
+    return isAdmin ? '/admin/sales' : '/employee/sales-pipeline';
+  }
+
+  // Interviews / HR
+  if (cat === 'interview' || cat === 'hr' || id.includes('interview')) {
+    return isAdmin ? '/admin/interviews' : '/employee/hr-interviews';
+  }
+
+  // Holidays
+  if (cat === 'holiday' || id.includes('holiday')) {
+    return isAdmin ? '/admin/holidays' : '/employee/holidays';
+  }
+
+  // Payslips
+  if (cat === 'payslip' || id.includes('payslip')) {
+    return isAdmin ? '/admin/payslips' : '/employee/profile';
+  }
+
+  // Profile
+  if (cat === 'profile' || id.includes('profile')) {
+    return isAdmin ? '/admin/profile' : '/employee/profile';
+  }
+
+  // Default fallback
+  return isAdmin ? '/admin/dashboard' : '/employee/dashboard';
+};
 
 const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead, onRefresh, onMarkAllRead, onDismiss }) => {
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null);
+  const [eodStatusState, setEodStatusState] = useState({});
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -79,6 +187,8 @@ const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead,
         return <MessageCircle {...iconProps} className="w-4 h-4 text-sky-600 flex-shrink-0" />;
       case 'task':
         return <Settings {...iconProps} className="w-4 h-4 text-green-600 flex-shrink-0" />;
+      case 'eod':
+        return <FileText {...iconProps} className="w-4 h-4 text-purple-600 flex-shrink-0" />;
       case 'tasks':
         return type === 'error' 
           ? <AlertTriangle {...iconProps} className="w-4 h-4 text-red-600 flex-shrink-0" />
@@ -185,8 +295,13 @@ const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead,
                   <div
                     key={notification.id}
                     onClick={() => {
-                      if (notification.unread) {
+                      if (notification.unread && onNotificationRead) {
                         onNotificationRead(notification.id);
+                      }
+                      setDropdownOpen(false);
+                      const targetRoute = getNotificationTargetRoute(notification);
+                      if (targetRoute) {
+                        navigate(targetRoute);
                       }
                     }}
                     className={`cursor-pointer border-b border-slate-200 p-3 transition-all duration-200 last:border-b-0 hover:bg-blue-50 sm:p-4 ${
@@ -208,7 +323,7 @@ const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead,
                         )}
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-slate-400">
-                            {notification.time}
+                            {formatNotificationIST(notification.time)}
                           </span>
                           {notification.category === 'chat' && notification.count > 1 ? (
                             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-semibold text-white">
@@ -218,6 +333,81 @@ const NotificationBell = ({ unreadCount, notifications = [], onNotificationRead,
                             <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
                           )}
                         </div>
+
+                        {/* EOD Quick Action Buttons */}
+                        {(notification.category === 'eod' || notification.dayBookId || (typeof notification.id === 'string' && notification.id.startsWith('eod-'))) && (
+                          <div className="mt-2.5 flex items-center gap-2 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                            {eodStatusState[notification.id] || (notification.dayBookStatus && notification.dayBookStatus !== 'Submitted' && notification.dayBookStatus !== 'Pending') ? (
+                              <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md ${
+                                (eodStatusState[notification.id] || notification.dayBookStatus) === 'Approved'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  : 'bg-red-100 text-red-800 border border-red-200'
+                              }`}>
+                                {(eodStatusState[notification.id] || notification.dayBookStatus) === 'Approved' ? <CheckCircle className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                                {eodStatusState[notification.id] || notification.dayBookStatus}
+                              </span>
+                            ) : (
+                              <>
+                                 <button
+                                  type="button"
+                                  disabled={actionLoading === notification.id}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const dbId = notification.dayBookId || (typeof notification.id === 'string' && notification.id.startsWith('eod-') ? notification.id.replace('eod-', '') : null);
+                                    if (!dbId) return;
+                                    setActionLoading(notification.id);
+                                    try {
+                                      const res = await taskService.updateDayBookStatus(dbId, { status: 'Approved' });
+                                      if (res && res.success) {
+                                        toast.success('EOD Report approved!');
+                                        setEodStatusState(prev => ({ ...prev, [notification.id]: 'Approved' }));
+                                        if (onRefresh) onRefresh();
+                                      } else {
+                                        throw new Error(res?.message || 'Failed to approve');
+                                      }
+                                    } catch (err) {
+                                      toast.error('Failed to approve EOD report');
+                                    } finally {
+                                      setActionLoading(null);
+                                    }
+                                  }}
+                                  className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-semibold rounded-lg shadow-2xs transition-all duration-150 disabled:opacity-50"
+                                >
+                                  {actionLoading === notification.id ? <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" /> : <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+                                  Approve
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={actionLoading === notification.id}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const dbId = notification.dayBookId || (typeof notification.id === 'string' && notification.id.startsWith('eod-') ? notification.id.replace('eod-', '') : null);
+                                    if (!dbId) return;
+                                    setActionLoading(notification.id);
+                                    try {
+                                      const res = await taskService.updateDayBookStatus(dbId, { status: 'Rejected' });
+                                      if (res && res.success) {
+                                        toast.success('EOD Report rejected!');
+                                        setEodStatusState(prev => ({ ...prev, [notification.id]: 'Rejected' }));
+                                        if (onRefresh) onRefresh();
+                                      } else {
+                                        throw new Error(res?.message || 'Failed to reject');
+                                      }
+                                    } catch (err) {
+                                      toast.error('Failed to reject EOD report');
+                                    } finally {
+                                      setActionLoading(null);
+                                    }
+                                  }}
+                                  className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-[11px] sm:text-xs font-semibold rounded-lg shadow-2xs transition-all duration-150 disabled:opacity-50"
+                                >
+                                  {actionLoading === notification.id ? <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" /> : <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                       {onDismiss && (
                         <button

@@ -1,22 +1,36 @@
 // utils/notificationUtils.js
 
 export const notificationUtils = {
-  // Format notification time for display
+  // Format notification time for display in Indian Standard Time (IST)
   formatTime: (timestamp) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return String(timestamp);
+
     const now = new Date();
-    const time = new Date(timestamp);
-    const diffInMinutes = Math.floor((now - time) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-    
-    return time.toLocaleDateString();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+    const istTimeStr = date.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Kolkata'
+    });
+
+    const istDateStr = date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'Asia/Kolkata'
+    });
+
+    const todayIST = now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+    const dateIST = date.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+    if (diffInMinutes >= 0 && diffInMinutes < 1) return `Just now (${istTimeStr} IST)`;
+    if (diffInMinutes >= 1 && diffInMinutes < 60) return `${diffInMinutes}m ago (${istTimeStr} IST)`;
+    if (dateIST === todayIST) return `Today at ${istTimeStr} IST`;
+
+    return `${istDateStr} at ${istTimeStr} IST`;
   },
 
   // Get notification priority based on type and category

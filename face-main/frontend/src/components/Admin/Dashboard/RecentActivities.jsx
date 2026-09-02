@@ -21,16 +21,31 @@ const RecentActivities = ({ activities = [], loading = false }) => {
     try {
       const time = new Date(timeString);
       if (isNaN(time.getTime())) return 'Unknown time';
+
       const now = new Date();
-      const diffInMinutes = Math.floor((now - time) / (1000 * 60));
-      
-      if (diffInMinutes < 1) return 'Just now';
-      if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
-      
-      const diffInHours = Math.floor(diffInMinutes / 60);
-      if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-      
-      return time.toLocaleDateString();
+      const diffInMinutes = Math.floor((now.getTime() - time.getTime()) / (1000 * 60));
+
+      const istTimeStr = time.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Kolkata'
+      });
+
+      const istDateStr = time.toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        timeZone: 'Asia/Kolkata'
+      });
+
+      const todayIST = now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+      const dateIST = time.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+      if (diffInMinutes >= 0 && diffInMinutes < 1) return `Just now (${istTimeStr} IST)`;
+      if (diffInMinutes >= 1 && diffInMinutes < 60) return `${diffInMinutes}m ago (${istTimeStr} IST)`;
+      if (dateIST === todayIST) return `Today at ${istTimeStr} IST`;
+
+      return `${istDateStr} at ${istTimeStr} IST`;
     } catch {
       return 'Unknown time';
     }

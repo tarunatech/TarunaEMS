@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp, DollarSign, Target, Award, Activity,
@@ -9,6 +9,7 @@ import {
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
 import { leadAPI, salesPipelineAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
+import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 
 const SalesPage = () => {
   // State
@@ -23,6 +24,12 @@ const SalesPage = () => {
   const [selectedLead, setSelectedLead] = useState(null);
   const [editingMeeting, setEditingMeeting] = useState(null);
   const navigate = useNavigate();
+  const [filters, setFilters] = useState({
+    status: 'all',
+    priority: 'all',
+    search: ''
+  });
+  const pendingScrollLeadRef = useRef(null);
   const [newLead, setNewLead] = useState({
     firstName: '',
     lastName: '',
@@ -82,6 +89,73 @@ const SalesPage = () => {
   useEffect(() => {
     fetchLeads();
   }, []);
+
+  const getLeadSearchValue = (lead) =>
+    [lead?.firstName, lead?.lastName].filter(Boolean).join(' ') || lead?.email || lead?.company || '';
+
+  const scrollToLead = (lead, attempt = 0) => {
+    if (!lead?._id) return;
+    window.setTimeout(() => {
+      const candidates = Array.from(document.querySelectorAll(`[data-lead-id="${lead._id}"]`));
+      const target = candidates.find((element) => element.offsetParent !== null) || candidates[0];
+      if (!target && attempt < 12) {
+        scrollToLead(lead, attempt + 1);
+        return;
+      }
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target?.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-2', 'rounded-xl');
+      window.setTimeout(() => {
+        target?.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-2', 'rounded-xl');
+        if (pendingScrollLeadRef.current?._id === lead._id) {
+          pendingScrollLeadRef.current = null;
+        }
+      }, 1600);
+    }, 180);
+  };
+
+  const handleLeadSuggestionSelect = (lead) => {
+    pendingScrollLeadRef.current = lead;
+    setFilters((prev) => ({
+      ...prev,
+      status: 'all',
+      priority: 'all',
+      search: getLeadSearchValue(lead)
+    }));
+    scrollToLead(lead);
+  };
+
+  const filteredLeads = useMemo(() => {
+    return leads.filter((lead) => {
+      const matchesStatus =
+        filters.status === 'all' ||
+        (lead.status || '').toLowerCase() === filters.status.toLowerCase();
+
+      const matchesPriority =
+        filters.priority === 'all' ||
+        (lead.priority || '').toLowerCase() === filters.priority.toLowerCase();
+
+      const searchLower = (filters.search || '').trim().toLowerCase();
+      const leadName = `${lead.firstName || ''} ${lead.lastName || ''}`.toLowerCase();
+      const email = (lead.email || '').toLowerCase();
+      const company = (lead.company || '').toLowerCase();
+      const phone = (lead.phone || '').toLowerCase();
+
+      const matchesSearch =
+        !searchLower ||
+        leadName.includes(searchLower) ||
+        email.includes(searchLower) ||
+        company.includes(searchLower) ||
+        phone.includes(searchLower);
+
+      return matchesStatus && matchesPriority && matchesSearch;
+    });
+  }, [leads, filters]);
+
+  useEffect(() => {
+    if (pendingScrollLeadRef.current) {
+      scrollToLead(pendingScrollLeadRef.current);
+    }
+  }, [filteredLeads]);
 
   // Stats & Stage Value Helper
   const getLeadStageValue = (lead) => {
@@ -412,9 +486,62 @@ const SalesPage = () => {
 
         {/* Leads Table */}
         <div className="employee-sales-panel animate-enter bg-white border border-slate-200 shadow-sm rounded-2xl p-3 sm:p-4 md:p-6" style={{ animationDelay: '80ms' }}>
-          <div className="flex justify-between items-center mb-3 sm:mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-4">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">My Leads & Opportunities</h2>
-            <span className="text-slate-500 text-xs sm:text-sm">{leads.length} leads</span>
+            <span className="text-slate-500 text-xs sm:text-sm font-medium">
+              {filteredLeads.length} of {leads.length} leads
+            </span>
+          </div>
+
+          {/* Filters & Search Bar */}
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50/80 border border-slate-200/80 rounded-xl p-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Search Leads</label>
+              <SearchWithSuggestions
+                value={filters.search}
+                onChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
+                onSelect={handleLeadSuggestionSelect}
+                items={leads}
+                getSuggestionValue={getLeadSearchValue}
+                getSuggestionTitle={(lead) => getLeadSearchValue(lead)}
+                getSuggestionSubtitle={(lead) => [lead.email, lead.company].filter(Boolean).join(' • ')}
+                placeholder="Lead name, email, company..."
+                inputClassName="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 text-xs sm:text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-150 shadow-2xs"
+                maxSuggestions={8}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Status Filter</label>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 text-xs sm:text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-150 shadow-2xs"
+              >
+                <option value="all">All Statuses</option>
+                <option value="New">New</option>
+                <option value="Contacted">Contacted</option>
+                <option value="Qualified">Qualified</option>
+                <option value="Proposal">Proposal</option>
+                <option value="Negotiation">Negotiation</option>
+                <option value="Won">Won</option>
+                <option value="Lost">Lost</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Priority Filter</label>
+              <select
+                value={filters.priority}
+                onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
+                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 text-xs sm:text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-150 shadow-2xs"
+              >
+                <option value="all">All Priorities</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
           </div>
 
           {loading ? (
@@ -428,6 +555,21 @@ const SalesPage = () => {
                 <Activity className="w-7 h-7 text-slate-400" />
               </div>
               <p className="text-slate-500 font-medium">No leads assigned to you yet</p>
+            </div>
+          ) : filteredLeads.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center">
+                <Activity className="w-7 h-7 text-slate-400" />
+              </div>
+              <p className="text-slate-700 font-semibold text-sm">No matching leads found</p>
+              <p className="text-slate-500 text-xs mt-1">Try adjusting your search query or filter options</p>
+              <button
+                type="button"
+                onClick={() => setFilters({ status: 'all', priority: 'all', search: '' })}
+                className="mt-3 px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold rounded-lg hover:bg-indigo-100 transition-colors"
+              >
+                Clear Filters
+              </button>
             </div>
           ) : (
             <>
@@ -445,9 +587,10 @@ const SalesPage = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {leads.map(lead => (
+                    {filteredLeads.map(lead => (
                       <tr
                         key={lead._id}
+                        data-lead-id={lead._id}
                         onClick={() => openLead(lead)}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
@@ -536,10 +679,10 @@ const SalesPage = () => {
                                 event.stopPropagation();
                                 navigate(`/employee/sales-pipeline?leadId=${lead._id}`);
                               }}
-                              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                              title="View Pipeline"
+                              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-lg transition-all duration-150 shadow-2xs whitespace-nowrap ml-1"
                             >
                               <GitBranch className="w-3.5 h-3.5" />
+                              <span>View Pipeline</span>
                             </button>
                           </div>
                         </td>
@@ -551,9 +694,10 @@ const SalesPage = () => {
 
               {/* Mobile Cards */}
               <div className="block sm:hidden space-y-4">
-                {leads.map(lead => (
+                {filteredLeads.map(lead => (
                   <div
                     key={lead._id}
+                    data-lead-id={lead._id}
                     onClick={() => openLead(lead)}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' || event.key === ' ') {
@@ -617,10 +761,10 @@ const SalesPage = () => {
                             event.stopPropagation();
                             navigate(`/employee/sales-pipeline?leadId=${lead._id}`);
                           }}
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                          title="View Pipeline"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-lg transition-all duration-150 shadow-2xs whitespace-nowrap ml-1"
                         >
-                          <GitBranch className="w-4 h-4" />
+                          <GitBranch className="w-3.5 h-3.5" />
+                          <span>View Pipeline</span>
                         </button>
                       </div>
                     </div>

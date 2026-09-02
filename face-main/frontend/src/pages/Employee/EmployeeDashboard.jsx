@@ -652,6 +652,45 @@ const EmployeeDashboard = () => {
     }
   }, [showBotModal, employeeData]);
 
+  const handleNoticeClick = (notice) => {
+    if (!notice) return;
+
+    if (notice.path) {
+      navigate(notice.path);
+      return;
+    }
+    if (notice.link) {
+      navigate(notice.link);
+      return;
+    }
+
+    const typeStr = `${notice.type || ''} ${notice.category || ''} ${notice.title || ''}`.toLowerCase();
+
+    if (typeStr.includes('holiday')) {
+      navigate('/employee/holidays');
+    } else if (typeStr.includes('leave')) {
+      navigate('/employee/leaves');
+    } else if (typeStr.includes('task')) {
+      navigate('/employee/tasks');
+    } else if (typeStr.includes('meeting')) {
+      navigate('/employee/sales-meetings');
+    } else if (typeStr.includes('sale') || typeStr.includes('lead')) {
+      navigate('/employee/sales');
+    } else if (typeStr.includes('interview')) {
+      navigate('/employee/hr-interviews');
+    } else if (typeStr.includes('expense')) {
+      navigate('/employee/expenses');
+    } else if (typeStr.includes('problem')) {
+      navigate('/employee/problems');
+    } else if (typeStr.includes('attendance')) {
+      navigate('/employee/attendance');
+    } else if (typeStr.includes('payslip') || typeStr.includes('salary')) {
+      handleViewPayslip();
+    } else {
+      navigate('/employee/tasks');
+    }
+  };
+
   const handleViewPayslip = async () => {
     try {
       setPayslipLoading(true);
@@ -1468,12 +1507,6 @@ const EmployeeDashboard = () => {
                 <span className="text-slate-900 text-[13px] font-medium">{displayDepartment}</span>
               </div>
               <div className="dashboard-soft-row flex justify-between items-center px-3.5 py-2.5 bg-slate-50 rounded-lg transition-colors duration-150 hover:bg-slate-100">
-                <span className="text-slate-500 text-[13px]">Join date</span>
-                <span className="text-slate-900 text-[13px] font-medium">
-                  {employeeData?.workInfo?.joiningDate ? new Date(employeeData.workInfo.joiningDate).toLocaleDateString() : 'N/A'}
-                </span>
-              </div>
-              <div className="dashboard-soft-row flex justify-between items-center px-3.5 py-2.5 bg-slate-50 rounded-lg transition-colors duration-150 hover:bg-slate-100">
                 <span className="text-slate-500 text-[13px]">Email</span>
                 <span className="text-slate-900 text-[13px] font-medium">{employeeData?.contactInfo?.personalEmail || employeeData?.user?.email || 'N/A'}</span>
               </div>
@@ -1509,12 +1542,18 @@ const EmployeeDashboard = () => {
                   <p className="mt-1 text-[12px] text-slate-400">Holidays, leaves, tasks, sales updates, and HR interview status will appear here.</p>
                 </div>
               ) : (
-                recentNotices.map((notice) => (
-                  <div key={notice.id} className="dashboard-sub-card p-3.5 border border-slate-200/70 bg-slate-50/60 rounded-lg transition-colors duration-150 hover:bg-slate-100/70">
+                recentNotices.map((notice, idx) => (
+                  <div
+                    key={notice.id || notice._id || idx}
+                    onClick={() => handleNoticeClick(notice)}
+                    className="dashboard-sub-card p-3.5 border border-slate-200/70 bg-slate-50/60 rounded-lg transition-all duration-150 hover:bg-indigo-50/50 hover:border-indigo-200/80 cursor-pointer group"
+                  >
                     <div className="mb-1.5 flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h4 className="truncate text-slate-900 text-[13px] font-medium">{notice.title || 'Notice'}</h4>
-                        <span className="mt-1 inline-flex rounded-full bg-white px-2 py-0.5 text-[10.5px] font-medium capitalize text-slate-500 ring-1 ring-slate-200">
+                        <h4 className="truncate text-slate-900 text-[13px] font-medium group-hover:text-indigo-700 transition-colors duration-150">
+                          {notice.title || 'Notice'}
+                        </h4>
+                        <span className="mt-1 inline-flex rounded-full bg-white px-2 py-0.5 text-[10.5px] font-medium capitalize text-slate-500 ring-1 ring-slate-200 group-hover:border-indigo-200">
                           {notice.type || 'notice'}
                         </span>
                       </div>
@@ -1522,8 +1561,13 @@ const EmployeeDashboard = () => {
                         {notice.priority || 'Medium'}
                       </span>
                     </div>
-                    <p className="text-slate-500 text-[12.5px] mb-1.5 leading-relaxed">{notice.message || 'No additional details available.'}</p>
-                    <p className="text-[11px] text-slate-400">{notice.date ? new Date(notice.date).toLocaleDateString() : 'N/A'}</p>
+                    <p className="text-slate-500 text-[12.5px] mb-1.5 leading-relaxed">{notice.message || notice.description || 'No additional details available.'}</p>
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                      <span>{notice.date ? new Date(notice.date).toLocaleDateString() : 'N/A'}</span>
+                      <span className="text-indigo-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-0.5 text-[10.5px]">
+                        View details →
+                      </span>
+                    </div>
                   </div>
                 ))
               )}

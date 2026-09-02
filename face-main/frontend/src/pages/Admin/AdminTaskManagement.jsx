@@ -181,11 +181,12 @@ const AdminTaskManagement = () => {
   const [newTask, setNewTask] = useState({
     title: '',
     descriptions: [''],
-    assignedTo: '',
+    assignedTo: [],
     priority: 'Medium',
     dueDate: '',
     estimatedHours: 0
   });
+  const [taskAssignSearch, setTaskAssignSearch] = useState('');
   const [taskHistory, setTaskHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks'); // 'tasks', 'daybooks', or 'performance'
@@ -282,8 +283,11 @@ const AdminTaskManagement = () => {
   };
 
   useEffect(() => {
-    if (showAddModal && newTask.assignedTo) {
-      fetchTaskHistory(newTask.assignedTo);
+    if (showAddModal) {
+      const selectedEmpIds = Array.isArray(newTask.assignedTo) ? newTask.assignedTo : (newTask.assignedTo ? [newTask.assignedTo] : []);
+      if (selectedEmpIds.length > 0) {
+        fetchTaskHistory(selectedEmpIds[0]);
+      }
     }
   }, [showAddModal, newTask.assignedTo]);
 
@@ -320,8 +324,12 @@ const AdminTaskManagement = () => {
         return;
       }
 
-      if (!newTask.assignedTo) {
-        toast.error("Please assign the task to an employee");
+      const selectedEmpIds = Array.isArray(newTask.assignedTo)
+        ? newTask.assignedTo.filter(Boolean)
+        : (newTask.assignedTo ? [newTask.assignedTo] : []);
+
+      if (selectedEmpIds.length === 0) {
+        toast.error("Please assign the task to at least one employee");
         return;
       }
 
@@ -330,38 +338,40 @@ const AdminTaskManagement = () => {
         return;
       }
 
-      const selectedEmployee = employees.find(emp => emp._id === newTask.assignedTo);
-      if (!selectedEmployee) {
-        toast.error("Selected employee not found. Please refresh and try again.");
-        return;
+      setModalLoading(true);
+
+      let createdCount = 0;
+      for (const empId of selectedEmpIds) {
+        const taskPayload = {
+          title: newTask.title.trim(),
+          description: filledDescriptions.join('\n\n'),
+          assignedTo: empId,
+          priority: newTask.priority || 'Medium',
+          dueDate: newTask.dueDate,
+          estimatedHours: parseInt(newTask.estimatedHours) || 0
+        };
+
+        await createTask(taskPayload);
+        createdCount++;
       }
 
-      const taskPayload = {
-        title: newTask.title.trim(),
-        description: filledDescriptions.join('\n\n'),
-        assignedTo: newTask.assignedTo,
-        priority: newTask.priority || 'Medium',
-        dueDate: newTask.dueDate,
-        estimatedHours: parseInt(newTask.estimatedHours) || 0
-      };
+      if (createdCount > 1) {
+        toast.success(`Tasks assigned successfully to ${createdCount} employees!`);
+      }
 
-      await createTask(taskPayload);
-
+      setShowAddModal(false);
       setNewTask({
         title: '',
         descriptions: [''],
-        assignedTo: '',
+        assignedTo: [],
         priority: 'Medium',
         dueDate: '',
         estimatedHours: 0
       });
-      setShowAddModal(false);
-
+      setTaskAssignSearch('');
       await fetchTasks();
-
     } catch (error) {
       console.error('AdminTask: Create task error:', error);
-
       if (error.response?.data?.errors) {
         const validationErrors = error.response.data.errors;
         validationErrors.forEach(err => {
@@ -369,9 +379,11 @@ const AdminTaskManagement = () => {
         });
       } else if (error.response?.data?.message) {
         toast.error(error.response.data.message);
-      } else {
-        toast.error(error.message || 'Failed to create task');
+      } else if (error.message) {
+        toast.error(error.message);
       }
+    } finally {
+      setModalLoading(false);
     }
   };
 
@@ -785,31 +797,31 @@ const AdminTaskManagement = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex space-x-0.5 p-1 bg-white border border-slate-200 rounded-xl shadow-sm flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
+          <div className="grid grid-cols-3 p-1.5 bg-white border border-slate-200 rounded-xl shadow-sm flex-1 max-w-3xl">
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'tasks'
+              className={`py-2 px-3 sm:px-6 rounded-lg text-xs sm:text-sm font-semibold transition-all text-center truncate ${activeTab === 'tasks'
                 ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-900'
+                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                 }`}
             >
               Tasks
             </button>
             <button
               onClick={() => setActiveTab('daybooks')}
-              className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'daybooks'
+              className={`py-2 px-3 sm:px-6 rounded-lg text-xs sm:text-sm font-semibold transition-all text-center truncate ${activeTab === 'daybooks'
                 ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-900'
+                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                 }`}
             >
               Day Books (EOD)
             </button>
             <button
               onClick={() => setActiveTab('performance')}
-              className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'performance'
+              className={`py-2 px-3 sm:px-6 rounded-lg text-xs sm:text-sm font-semibold transition-all text-center truncate ${activeTab === 'performance'
                 ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-900'
+                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                 }`}
             >
               Performance
@@ -818,7 +830,7 @@ const AdminTaskManagement = () => {
 
           <button
             onClick={fetchTasks}
-            className="px-2.5 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-200 flex items-center gap-1.5 text-xs font-medium flex-shrink-0"
+            className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl shadow-sm hover:shadow hover:bg-slate-50 transition-all duration-200 flex items-center justify-center gap-1.5 text-xs font-medium shrink-0 self-end sm:self-auto"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Refresh
@@ -839,35 +851,37 @@ const AdminTaskManagement = () => {
                 placeholder="Search tasks..."
                 inputClassName="premium-input !py-2 !text-sm border-slate-200 focus:border-blue-500 focus:ring-blue-100"
               />
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                >
-                  <option value="">All Status</option>
-                  <option value="Not Started">Not Started</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Review">Review</option>
-                  <option value="Completed">Completed</option>
-                  <option value="On Hold">On Hold</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
-              </div>
-              <div className="relative">
-                <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <select
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                >
-                  <option value="">All Priority</option>
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Critical">Critical</option>
-                </select>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 md:contents">
+                <div className="relative">
+                  <Filter className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 pointer-events-none" />
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full pl-8 sm:pl-9 pr-2 sm:pr-4 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 truncate"
+                  >
+                    <option value="">All Status</option>
+                    <option value="Not Started">Not Started</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Review">Review</option>
+                    <option value="Completed">Completed</option>
+                    <option value="On Hold">On Hold</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div className="relative">
+                  <Flag className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 pointer-events-none" />
+                  <select
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
+                    className="w-full pl-8 sm:pl-9 pr-2 sm:pr-4 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 truncate"
+                  >
+                    <option value="">All Priority</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                  </select>
+                </div>
               </div>
               <button
                 onClick={() => {
@@ -1221,9 +1235,9 @@ const AdminTaskManagement = () => {
             {/* Add Task Modal */}
             {
               showAddModal && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-4">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-4 lg:left-64">
                   <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-                  <div className="admin-modal-inner relative flex max-h-[48dvh] sm:max-h-[85vh] w-full sm:max-w-sm md:max-w-md lg:max-w-2xl xl:max-w-4xl flex-col overflow-hidden rounded-2xl bg-white border border-slate-200 p-3 sm:p-5 md:p-6 shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
+                  <div className="admin-modal-inner relative flex max-h-[48dvh] sm:max-h-[85vh] lg:max-h-[90vh] w-full sm:max-w-md md:max-w-xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl bg-white border border-slate-200 p-3 sm:p-5 md:p-6 lg:p-7 shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
                     <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:border-b-0 sm:pb-4">
                       <h2 className="text-sm sm:text-xl md:text-2xl font-bold text-slate-900">Create New Task</h2>
                       <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-900">
@@ -1305,29 +1319,140 @@ const AdminTaskManagement = () => {
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                          <div>
-                            <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Assign To *</label>
-                            {employeesLoading ? (
-                              <div className="flex items-center space-x-1.5 px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm">
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
-                                <span className="text-slate-500 text-[11px] sm:text-sm">Loading...</span>
+                        {/* Multi-Select Assign To Section */}
+                        {(() => {
+                          const selectedEmpIds = Array.isArray(newTask.assignedTo)
+                            ? newTask.assignedTo
+                            : (newTask.assignedTo ? [newTask.assignedTo] : []);
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <label className="block text-[11px] sm:text-sm font-semibold text-slate-600">
+                                  Assign To * {selectedEmpIds.length > 0 && <span className="text-blue-600 font-bold">({selectedEmpIds.length} Selected)</span>}
+                                </label>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const allIds = getAssignableEmployees().map(emp => emp._id);
+                                      setNewTask(prev => ({ ...prev, assignedTo: allIds }));
+                                    }}
+                                    className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold hover:underline"
+                                  >
+                                    Select All
+                                  </button>
+                                  <span className="text-slate-300">|</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setNewTask(prev => ({ ...prev, assignedTo: [] }))}
+                                    className="text-[11px] text-slate-500 hover:text-slate-700 font-medium"
+                                  >
+                                    Clear
+                                  </button>
+                                </div>
                               </div>
-                            ) : (
-                              <select
-                                value={newTask.assignedTo}
-                                onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
-                                className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                                required
-                              >
-                                <option value="">Select Employee</option>
-                                {getAssignableEmployees().map(emp => (
-                                  <option key={emp._id} value={emp._id}>
-                                    {emp.fullName || `${emp.personalInfo?.firstName} ${emp.personalInfo?.lastName}` || emp.user?.name || 'Unknown'}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-                          </div>
+
+                              <div className="relative">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                <input
+                                  type="text"
+                                  placeholder="Search employees to assign..."
+                                  value={taskAssignSearch}
+                                  onChange={(e) => setTaskAssignSearch(e.target.value)}
+                                  className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+                                />
+                              </div>
+
+                              {selectedEmpIds.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 bg-blue-50/60 border border-blue-200/80 rounded-lg">
+                                  {selectedEmpIds.map(id => {
+                                    const emp = employees.find(e => e._id === id);
+                                    const name = emp ? (emp.fullName || `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim() || emp.user?.name || 'Employee') : 'Employee';
+                                    return (
+                                      <span key={id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white shadow-2xs">
+                                        {name}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setNewTask(prev => ({
+                                              ...prev,
+                                              assignedTo: (Array.isArray(prev.assignedTo) ? prev.assignedTo : []).filter(item => item !== id)
+                                            }));
+                                          }}
+                                          className="hover:bg-blue-700 rounded-full p-0.5"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              <div className="max-h-48 sm:max-h-56 overflow-y-auto border border-slate-200/90 rounded-xl p-2 bg-slate-50/50">
+                                {employeesLoading ? (
+                                  <div className="flex items-center space-x-2 p-3">
+                                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                                    <span className="text-slate-500 text-xs">Loading employees...</span>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2">
+                                    {getAssignableEmployees()
+                                      .filter(emp => {
+                                        if (!taskAssignSearch.trim()) return true;
+                                        const name = (emp.fullName || `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}` || emp.user?.name || '').toLowerCase();
+                                        const empCode = (emp.employeeId || emp.user?.employeeId || '').toLowerCase();
+                                        return name.includes(taskAssignSearch.toLowerCase()) || empCode.includes(taskAssignSearch.toLowerCase());
+                                      })
+                                      .map(emp => {
+                                        const isChecked = selectedEmpIds.includes(emp._id);
+                                        const name = emp.fullName || `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim() || emp.user?.name || 'Unknown';
+                                        const empCode = emp.employeeId || emp.user?.employeeId || '';
+                                        const dept = emp.department?.name || emp.department || '';
+
+                                        return (
+                                          <label
+                                            key={emp._id}
+                                            className={`flex items-center justify-between p-2 rounded-lg border transition-all duration-150 cursor-pointer ${
+                                              isChecked
+                                                ? 'bg-blue-50/90 border-blue-300 shadow-2xs font-semibold'
+                                                : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                                            }`}
+                                          >
+                                            <div className="flex items-center space-x-2 min-w-0">
+                                              <input
+                                                type="checkbox"
+                                                checked={isChecked}
+                                                onChange={() => {
+                                                  setNewTask(prev => {
+                                                    const current = Array.isArray(prev.assignedTo) ? prev.assignedTo : (prev.assignedTo ? [prev.assignedTo] : []);
+                                                    const next = current.includes(emp._id)
+                                                      ? current.filter(id => id !== emp._id)
+                                                      : [...current, emp._id];
+                                                    return { ...prev, assignedTo: next };
+                                                  });
+                                                }}
+                                                className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer shrink-0"
+                                              />
+                                              <div className="min-w-0 flex-1">
+                                                <p className="text-xs text-slate-900 truncate font-medium">{name}</p>
+                                                {empCode && <p className="text-[10px] text-slate-500 font-normal truncate">{empCode}</p>}
+                                              </div>
+                                            </div>
+                                            {dept && (
+                                              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-normal shrink-0 ml-1">
+                                                {dept}
+                                              </span>
+                                            )}
+                                          </label>
+                                        );
+                                      })}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
                           <div>
                             <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Priority *</label>
                             <select
@@ -1349,7 +1474,9 @@ const AdminTaskManagement = () => {
                               type="date"
                               value={newTask.dueDate}
                               onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                              className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                              onClick={(e) => e.currentTarget.showPicker?.()}
+                              onFocus={(e) => e.currentTarget.showPicker?.()}
+                              className="w-full cursor-pointer px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                               required
                             />
                           </div>
@@ -1393,7 +1520,7 @@ const AdminTaskManagement = () => {
             {/* Edit Task Modal */}
             {
               showEditModal && selectedTask && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-4">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-4 lg:left-64">
                   <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
                   <div className="admin-modal-inner relative flex max-h-[48dvh] sm:max-h-[85vh] w-full sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl flex-col overflow-hidden rounded-2xl bg-white border border-slate-200 p-3 sm:p-5 md:p-6 shadow-xl">
                     <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:border-b-0 sm:pb-4">
@@ -1507,7 +1634,9 @@ const AdminTaskManagement = () => {
                               type="date"
                               value={selectedTask?.dueDate?.split('T')[0] || ''}
                               onChange={(e) => setSelectedTask({ ...selectedTask, dueDate: e.target.value })}
-                              className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                              onClick={(e) => e.currentTarget.showPicker?.()}
+                              onFocus={(e) => e.currentTarget.showPicker?.()}
+                              className="w-full cursor-pointer px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                               required
                             />
                           </div>
@@ -1551,7 +1680,7 @@ const AdminTaskManagement = () => {
             {/* View Task Modal */}
             {
               showViewModal && selectedTask && (
-                <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-2 md:p-4">
+                <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-2 md:p-4 lg:left-64">
                   <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
                   <div className="task-details-modal-scroll relative w-full rounded-t-3xl border border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.20)] max-h-[94dvh] overflow-y-auto sm:rounded-2xl sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl sm:max-h-[88vh]">
 

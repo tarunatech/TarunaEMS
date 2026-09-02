@@ -75,17 +75,17 @@ const getGroqClient = () => {
 };
 
 const getEmployeeId = (user) => {
-  return user.employeeId?.employeeId || 
-         user.employeeId?._id || 
-         user.employeeId || 
-         user._id.toString() || 
-         'unknown';
+  return user.employeeId?.employeeId ||
+    user.employeeId?._id ||
+    user.employeeId ||
+    user._id.toString() ||
+    'unknown';
 };
 
 const generateSalarySlipPDF = async (user, month = 'current', year = new Date().getFullYear()) => {
   const PDFDocument = (await import('pdfkit')).default;
   const empId = getEmployeeId(user);
-  const fileName = `salary_slip_${empId}_${month}_${year}_${uuidv4().slice(0,8)}.pdf`;
+  const fileName = `salary_slip_${empId}_${month}_${year}_${uuidv4().slice(0, 8)}.pdf`;
   const tempDir = path.join(process.cwd(), 'temp');
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
   const filePath = path.join(tempDir, fileName);
@@ -116,7 +116,7 @@ const generateSalarySlipPDF = async (user, month = 'current', year = new Date().
 const generateAppraisalLetterPDF = async (user) => {
   const PDFDocument = (await import('pdfkit')).default;
   const empId = getEmployeeId(user);
-  const fileName = `appraisal_letter_${empId}_${uuidv4().slice(0,8)}.pdf`;
+  const fileName = `appraisal_letter_${empId}_${uuidv4().slice(0, 8)}.pdf`;
   const tempDir = path.join(process.cwd(), 'temp');
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
   const filePath = path.join(tempDir, fileName);
@@ -181,7 +181,7 @@ const getAllEmployeesContext = async () => {
     contextParts.push('');
 
     contextParts.push(`=== EMPLOYEE DETAILS ===`);
-    
+
     for (const emp of employees) {
       const attendance = await Attendance.find({
         $or: [
@@ -191,7 +191,7 @@ const getAllEmployeesContext = async () => {
         date: { $gte: startOfMonth, $lte: endOfMonth }
       }).lean();
 
-      const presentDays = attendance.filter(a => 
+      const presentDays = attendance.filter(a =>
         ['present', 'Present', 'late', 'Late'].includes(a.status)
       ).length;
 
@@ -206,7 +206,7 @@ const getAllEmployeesContext = async () => {
       const approvedLeaves = leaves.filter(l => l.status === 'approved').length;
 
       const deptName = emp.workInfo?.department?.name || 'Unassigned';
-      
+
       contextParts.push(`---`);
       contextParts.push(`Employee ID: ${emp.employeeId}`);
       contextParts.push(`Name: ${emp.personalInfo?.firstName} ${emp.personalInfo?.lastName}`);
@@ -223,7 +223,7 @@ const getAllEmployeesContext = async () => {
       contextParts.push(`Attendance This Month: ${presentDays} days present`);
       contextParts.push(`Pending Leave Requests: ${pendingLeaves}`);
       contextParts.push(`Total Approved Leaves: ${approvedLeaves}`);
-      
+
       if (emp.personalInfo?.gender) {
         contextParts.push(`Gender: ${emp.personalInfo.gender}`);
       }
@@ -254,7 +254,7 @@ const getDetailedEmployeeContext = async (userId) => {
       .lean();
 
     let contextParts = [];
-    
+
     if (employee) {
       contextParts.push(`=== YOUR EMPLOYEE PROFILE ===`);
       contextParts.push(`Employee ID: ${employee.employeeId}`);
@@ -268,7 +268,7 @@ const getDetailedEmployeeContext = async (userId) => {
       contextParts.push(`Joining Date: ${employee.workInfo?.joiningDate ? new Date(employee.workInfo.joiningDate).toLocaleDateString() : 'N/A'}`);
       contextParts.push(`Status: ${employee.status}`);
       contextParts.push('');
-      
+
       contextParts.push(`=== SALARY INFORMATION ===`);
       contextParts.push(`Basic Salary: ₹${employee.salaryInfo?.basicSalary?.toLocaleString() || 'N/A'}`);
       contextParts.push(`HRA: ₹${employee.salaryInfo?.allowances?.hra?.toLocaleString() || '0'}`);
@@ -290,7 +290,7 @@ const getDetailedEmployeeContext = async (userId) => {
 
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const endOfMonth = new Date();
-    
+
     const attendance = await Attendance.find({
       $or: [
         { employee: employee?._id },
@@ -298,15 +298,15 @@ const getDetailedEmployeeContext = async (userId) => {
       ],
       date: { $gte: startOfMonth, $lte: endOfMonth }
     }).lean();
-    
+
     if (attendance.length > 0) {
-      const present = attendance.filter(a => 
+      const present = attendance.filter(a =>
         ['present', 'Present', 'late', 'Late'].includes(a.status)
       ).length;
-      const late = attendance.filter(a => 
+      const late = attendance.filter(a =>
         ['late', 'Late'].includes(a.status)
       ).length;
-      const absent = attendance.filter(a => 
+      const absent = attendance.filter(a =>
         ['absent', 'Absent'].includes(a.status)
       ).length;
 
@@ -318,13 +318,13 @@ const getDetailedEmployeeContext = async (userId) => {
       contextParts.push('');
     }
 
-    const leaves = await Leave.find({ 
+    const leaves = await Leave.find({
       $or: [
         { employee: employee?._id },
         { user: userId }
       ]
     }).sort({ createdAt: -1 }).limit(5).lean();
-    
+
     if (leaves.length > 0) {
       contextParts.push(`=== RECENT LEAVE REQUESTS ===`);
       leaves.forEach(leave => {
@@ -343,13 +343,13 @@ const getDetailedEmployeeContext = async (userId) => {
 export const processBotMessage = async (text, userId, isAdmin = false) => {
   try {
     console.log('Bot processing message:', text, 'for user:', userId, 'isAdmin:', isAdmin);
-    
+
     const user = await User.findById(userId);
     if (!user) {
       console.error('User not found:', userId);
-      return { 
-        response: 'Sorry, I cannot find your profile. Please contact HR support.', 
-        intent: 'error' 
+      return {
+        response: 'Sorry, I cannot find your profile. Please contact HR support.',
+        intent: 'error'
       };
     }
 
@@ -374,9 +374,9 @@ export const processBotMessage = async (text, userId, isAdmin = false) => {
         return { response: dbResponse, intent: 'employee_db_response' };
       }
     }
-    
+
     let response = '';
-    
+
     const groq = getGroqClient();
     if (!groq) {
       console.log('Groq client not available, using fallback');
@@ -407,7 +407,7 @@ export const processBotMessage = async (text, userId, isAdmin = false) => {
         });
 
         response = chatCompletion.choices[0]?.message?.content || 'Sorry, I could not generate a response. Please try again.';
-        
+
         if (response.includes('[GENERATE_SALARY_SLIP]')) {
           try {
             const fileName = await generateSalarySlipPDF(user);
@@ -417,7 +417,7 @@ export const processBotMessage = async (text, userId, isAdmin = false) => {
             response = response.replace('[GENERATE_SALARY_SLIP]', '\n\n❌ Failed to generate salary slip. Please try again later.');
           }
         }
-        
+
         if (response.includes('[GENERATE_APPRAISAL_LETTER]')) {
           try {
             const fileName = await generateAppraisalLetterPDF(user);
@@ -444,27 +444,27 @@ export const processBotMessage = async (text, userId, isAdmin = false) => {
 
   } catch (error) {
     console.error('Bot processing error:', error);
-    return { 
-      response: 'Sorry, I encountered an unexpected error. Please try again or contact HR support.', 
-      intent: 'error' 
+    return {
+      response: 'Sorry, I encountered an unexpected error. Please try again or contact HR support.',
+      intent: 'error'
     };
   }
 };
 
 const getFallbackResponse = (text, user, contextData, isAdmin = false) => {
   const lowerText = text.toLowerCase();
-  
+
   if (lowerText.includes('hello') || lowerText.includes('hi') || lowerText.includes('hey')) {
     if (isAdmin) {
       return `Hello Admin! 👋 I'm your HR Admin Assistant with access to all employee data.\n\nYou can ask me about:\n• **Employee information** (e.g., "What is John's salary?")\n• **Department statistics** (e.g., "How many employees in Engineering?")\n• **Attendance reports** (e.g., "Show attendance for EMP001")\n• **Leave requests** (e.g., "Who is on leave today?")\n• **Salary & payroll** information\n\nHow can I help you today?`;
     }
     return `Hello! 👋 I'm your HR Assistant. How can I help you today?\n\nYou can ask me about:\n• **Your attendance** and **leave balance**\n• **HR policies** (leave, salary, working hours)\n• **Generate documents** (salary slip, appraisal letter)\n• **Your profile** and **salary information**`;
   }
-  
+
   if (lowerText.includes('leave') && (lowerText.includes('policy') || lowerText.includes('policies'))) {
     return 'Our leave policy allows **21 annual leaves**, **10 sick leaves**, and **5 casual leaves** per year. Unused leaves can be carried forward up to a maximum of 15 days.';
   }
-  
+
   if (lowerText.includes('leave') && (lowerText.includes('balance') || lowerText.includes('remaining'))) {
     const match = contextData.match(/Remaining Leaves?: (\d+)/i);
     if (match) {
@@ -472,7 +472,7 @@ const getFallbackResponse = (text, user, contextData, isAdmin = false) => {
     }
     return 'I cannot access leave records right now. Please check your dashboard or contact HR.';
   }
-  
+
   if (lowerText.includes('attendance')) {
     const match = contextData.match(/Present: (\d+) days/i);
     if (match) {
@@ -480,15 +480,15 @@ const getFallbackResponse = (text, user, contextData, isAdmin = false) => {
     }
     return 'No attendance records found for this month.';
   }
-  
+
   if (lowerText.includes('salary') && lowerText.includes('slip')) {
     return 'I can generate your salary slip! Please wait while I prepare it... [GENERATE_SALARY_SLIP]';
   }
-  
+
   if (lowerText.includes('appraisal') && lowerText.includes('letter')) {
     return 'I can generate your appraisal letter! Please wait... [GENERATE_APPRAISAL_LETTER]';
   }
-  
+
   if (lowerText.includes('salary') || lowerText.includes('pay')) {
     const match = contextData.match(/Basic Salary: ₹([\d,]+)/);
     if (match) {
@@ -496,11 +496,11 @@ const getFallbackResponse = (text, user, contextData, isAdmin = false) => {
     }
     return 'Salaries are credited on the **1st of every month** to your registered bank account. If the 1st is a holiday, it will be credited on the next working day.';
   }
-  
+
   if (lowerText.includes('working hours') || lowerText.includes('work hours')) {
-    return 'Standard working hours are **9:00 AM to 6:00 PM**, Monday to Friday. Flexible hours can be arranged with manager approval.';
+    return 'Standard working hours are **10:00 AM to 7:00 PM**, Monday to Friday. Flexible hours can be arranged with manager approval.';
   }
-  
+
   if (isAdmin) {
     if (lowerText.includes('employee') || lowerText.includes('total') || lowerText.includes('count')) {
       const match = contextData.match(/Total Active Employees: (\d+)/);
@@ -510,7 +510,7 @@ const getFallbackResponse = (text, user, contextData, isAdmin = false) => {
     }
     return 'As Admin HR Assistant, I can help you with:\n• **Employee details** - Ask about any employee by name or ID\n• **Department statistics** - Team sizes, distribution\n• **Attendance reports** - Individual or team attendance\n• **Leave management** - Pending requests, balances\n• **Salary information** - Compensation details\n\nPlease ask a specific question!';
   }
-  
+
   return 'I can help with HR-related questions about:\n• **Leave policies** and your balance\n• **Your attendance** records\n• **Your salary** information\n• **Working hours** and policies\n• **Document generation** (salary slip, appraisal letter)\n\nPlease ask me about any of these topics!';
 };
 
