@@ -47,20 +47,27 @@ export const useDashboardData = () => {
     error: null
   });
 
-  const createDefaultStats = useCallback((data = {}, leadStats = {}, taskStats = {}, upcomingMeetings = [], recentActivities = [], overdueTasks = [], overdueFollowUps = []) => {
+  const createDefaultStats = useCallback((data = {}, leadStats = {}, taskStats = {}, upcomingMeetings = [], recentActivities = [], overdueTasks = [], overdueFollowUps = [], allLeads = [], allTasks = []) => {
     const employeeNames = recentActivities
       .filter((activity) => activity.category === 'employee')
       .slice(0, 3)
       .map((activity) => activity.user || activity.description || activity.action)
       .filter(Boolean);
-    const leadNames = overdueFollowUps
+
+    // Display overdue follow-ups or fallback to recent leads
+    const displayLeads = (overdueFollowUps && overdueFollowUps.length > 0) ? overdueFollowUps : (allLeads || []);
+    const leadNames = displayLeads
       .slice(0, 3)
       .map((lead) => formatLeadName(lead))
       .filter(Boolean);
-    const taskNames = overdueTasks
+
+    // Display overdue tasks or fallback to all tasks
+    const displayTasks = (overdueTasks && overdueTasks.length > 0) ? overdueTasks : (allTasks || []);
+    const taskNames = displayTasks
       .slice(0, 3)
       .map((task) => task?.title || task?.description || 'Task')
       .filter(Boolean);
+
     const meetingNames = upcomingMeetings
       .slice(0, 3)
       .map((meeting) => meeting?.leadName || meeting?.title || 'Lead')
@@ -78,14 +85,14 @@ export const useDashboardData = () => {
       },
       {
         title: 'Leads',
-        value: (leadStats.statusStats || []).reduce((sum, item) => sum + (item.count || 0), 0),
+        value: (leadStats.statusStats || []).reduce((sum, item) => sum + (item.count || 0), 0) || displayLeads.length,
         icon: Target,
         change: `${leadStats.todayFollowUps || 0} today`,
         changeType: leadStats.overdueFollowUps > 0 ? 'negative' : 'neutral',
         detail: leadNames.length ? leadNames.join(' • ') : 'Leads waiting on follow-up',
         path: '/admin/sales',
         newCount: findStatusCount(leadStats.statusStats || [], 'New'),
-        hoverItems: overdueFollowUps.slice(0, 10).map((lead) => ({
+        hoverItems: displayLeads.slice(0, 10).map((lead) => ({
           primary: formatLeadName(lead),
           secondary: lead.company || lead.source || 'Direct Inquiry',
           status: lead.status || 'New'
@@ -99,7 +106,7 @@ export const useDashboardData = () => {
         changeType: taskStats.overdue > 0 ? 'negative' : 'positive',
         detail: taskNames.length ? taskNames.join(' • ') : 'Tasks needing attention',
         path: '/admin/tasks',
-        hoverItems: overdueTasks.slice(0, 10).map((task) => ({
+        hoverItems: displayTasks.slice(0, 10).map((task) => ({
           primary: task?.title || task?.description || 'Task',
           secondary: formatEmployeeName(task?.assignedTo),
           status: task?.status || 'In Progress'
@@ -213,7 +220,7 @@ export const useDashboardData = () => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      const [statsResponse, activitiesResponse, eventsResponse, taskStatsResponse, leadStatsResponse, pendingApprovalsResponse, overdueFollowUpsResponse, overdueTasksResponse, allTasksResponse, pendingLeavesResponse] = await Promise.all([
+      const [statsResponse, activitiesResponse, eventsResponse, taskStatsResponse, leadStatsResponse, pendingApprovalsResponse, overdueFollowUpsResponse, overdueTasksResponse, allTasksResponse, pendingLeavesResponse, allLeadsResponse] = await Promise.all([
         dashboardAPI.getAdminStats(),
         dashboardAPI.getRecentActivities(),
         dashboardAPI.getUpcomingEvents(),
@@ -223,7 +230,8 @@ export const useDashboardData = () => {
         leadAPI.getOverdueFollowUps().catch(() => ({ data: { success: false, data: [] } })),
         API.get('/tasks', { params: { overdue: 'true', limit: 15 } }).catch(() => ({ data: { success: false, tasks: [] } })),
         API.get('/tasks', { params: { limit: 50 } }).catch(() => ({ data: { success: false, tasks: [] } })),
-        API.get('/leaves', { params: { status: 'Pending', limit: 10 } }).catch(() => ({ data: { success: false, leaves: [] } }))
+        API.get('/leaves', { params: { status: 'Pending', limit: 10 } }).catch(() => ({ data: { success: false, leaves: [] } })),
+        leadAPI.getLeads({ limit: 15 }).catch(() => ({ data: { success: false, data: [] } }))
       ]);
 
       const dashboardStats = statsResponse.data.success ? statsResponse.data : {};
@@ -234,6 +242,8 @@ export const useDashboardData = () => {
       const overdueTasks = overdueTasksResponse.data.success ? overdueTasksResponse.data.tasks || [] : [];
       const allTasks = allTasksResponse.data.success ? (allTasksResponse.data.tasks || allTasksResponse.data.data || []) : [];
       const pendingLeaves = pendingLeavesResponse.data.success ? pendingLeavesResponse.data.leaves || [] : [];
+      const allLeads = allLeadsResponse?.data?.success ? (allLeadsResponse.data.data || allLeadsResponse.data.leads || []) : [];
+
       const upcomingMeetings = (eventsResponse.data.success ? eventsResponse.data.events || [] : [])
         .filter((event) => event.type === 'meeting' || String(event.title || '').toLowerCase().includes('meeting'))
         .map((event) => ({
@@ -252,7 +262,7 @@ export const useDashboardData = () => {
         ...prev,
         loading: false,
         error: null,
-        stats: createDefaultStats(dashboardStats, leadStats, taskStats, upcomingMeetingStats, activitiesResponse.data.success ? activitiesResponse.data.activities || [] : [], overdueTasks, overdueFollowUps),
+        stats: createDefaultStats(dashboardStats, leadStats, taskStats, upcomingMeetingStats, activitiesResponse.data.success ? activitiesResponse.data.activities || [] : [], overdueTasks, overdueFollowUps, allLeads, allTasks),
         attentionItems: createAttentionItems(dashboardStats, leadStats, taskStats, pendingApprovals, overdueFollowUps, overdueTasks, pendingLeaves),
         taskHealth: createTaskHealth(taskStats, overdueTasks, allTasks),
         recentActivities: activitiesResponse.data.success ? activitiesResponse.data.activities || [] : [],

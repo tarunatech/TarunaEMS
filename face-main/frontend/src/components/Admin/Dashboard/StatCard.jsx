@@ -95,7 +95,7 @@ const StatCard = ({ stat, index = 0 }) => {
   const cardTitle = String(stat?.title || '').toLowerCase();
   const isHoverSupportedCard = cardTitle === 'tasks' || cardTitle === 'meetings' || cardTitle === 'leads';
   const hoverItemsList = stat?.hoverItems || [];
-  const hasHoverPanel = isHoverSupportedCard;
+  const hasHoverPanel = isHoverSupportedCard && hoverItemsList.length > 0;
   const hoverPanelLabel = cardTitle === 'tasks' ? 'Active Tasks' : cardTitle === 'leads' ? 'Overdue Follow-ups' : "Today's Meetings";
   const HoverItemIcon = cardTitle === 'tasks' ? User : cardTitle === 'leads' ? TrendingUp : CalendarClock;
 
