@@ -91,9 +91,11 @@ const StatCard = ({ stat, index = 0 }) => {
   ];
   const accent = themeAccentColors[themeIndex];
 
-  // Hover panel — Tasks, Meetings and Leads
+  // Hover detail panel — Tasks, Meetings and Leads
   const cardTitle = String(stat?.title || '').toLowerCase();
-  const hasHoverPanel = (cardTitle === 'tasks' || cardTitle === 'meetings' || cardTitle === 'leads') && stat?.hoverItems?.length > 0;
+  const isHoverSupportedCard = cardTitle === 'tasks' || cardTitle === 'meetings' || cardTitle === 'leads';
+  const hoverItemsList = stat?.hoverItems || [];
+  const hasHoverPanel = isHoverSupportedCard;
   const hoverPanelLabel = cardTitle === 'tasks' ? 'Active Tasks' : cardTitle === 'leads' ? 'Overdue Follow-ups' : "Today's Meetings";
   const HoverItemIcon = cardTitle === 'tasks' ? User : cardTitle === 'leads' ? TrendingUp : CalendarClock;
 
@@ -142,7 +144,7 @@ const StatCard = ({ stat, index = 0 }) => {
         </div>
       )}
 
-      {/* ── Hover Detail Panel ── Tasks & Meetings only */}
+      {/* ── Hover Detail Panel ── Tasks, Meetings and Leads */}
       {hasHoverPanel && (
         <div
           className={`
@@ -162,38 +164,46 @@ const StatCard = ({ stat, index = 0 }) => {
             </span>
           </div>
 
-          {/* Items */}
-          <ul
-            className={`space-y-1.5 ${
-              cardTitle === 'tasks' || cardTitle === 'leads'
-                ? 'flex-1 min-h-0 overflow-y-auto pr-0.5 stat-task-scroll'
-                : ''
-            }`}
-          >
-            {(cardTitle === 'tasks' || cardTitle === 'leads' ? stat.hoverItems : stat.hoverItems.slice(0, 3)).map((item, i) => (
-              <li
-                key={i}
-                className={`flex items-start gap-2 border-b last:border-b-0 pb-1.5 last:pb-0 ${theme.itemBorder}`}
-              >
-                <span className={`mt-[4px] h-1.5 w-1.5 shrink-0 rounded-full ${theme.dotColor}`} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] sm:text-[11px] font-semibold text-white leading-snug truncate">
-                    {item.primary}
-                  </p>
-                  {item.secondary && (
-                    <p className="text-[9px] sm:text-[10px] text-white/65 leading-snug truncate mt-0.5">
-                      {item.secondary}
+          {/* Items or Empty Fallback */}
+          {hoverItemsList.length > 0 ? (
+            <ul
+              className={`space-y-1.5 ${
+                cardTitle === 'tasks' || cardTitle === 'leads'
+                  ? 'flex-1 min-h-0 overflow-y-auto pr-0.5 stat-task-scroll'
+                  : ''
+              }`}
+            >
+              {(cardTitle === 'tasks' || cardTitle === 'leads' ? hoverItemsList : hoverItemsList.slice(0, 3)).map((item, i) => (
+                <li
+                  key={i}
+                  className={`flex items-start gap-2 border-b last:border-b-0 pb-1.5 last:pb-0 ${theme.itemBorder}`}
+                >
+                  <span className={`mt-[4px] h-1.5 w-1.5 shrink-0 rounded-full ${theme.dotColor}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-white leading-snug truncate">
+                      {item.primary}
                     </p>
+                    {item.secondary && (
+                      <p className="text-[9px] sm:text-[10px] text-white/65 leading-snug truncate mt-0.5">
+                        {item.secondary}
+                      </p>
+                    )}
+                  </div>
+                  {item.status && (
+                    <span className={`shrink-0 self-center text-[8px] sm:text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${theme.pillBg} text-white/90 leading-none whitespace-nowrap`}>
+                      {item.status}
+                    </span>
                   )}
-                </div>
-                {item.status && (
-                  <span className={`shrink-0 self-center text-[8px] sm:text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${theme.pillBg} text-white/90 leading-none whitespace-nowrap`}>
-                    {item.status}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex-1 flex items-center justify-center py-2">
+              <p className="text-[10px] sm:text-[11px] font-medium text-white/80 italic text-center">
+                {cardTitle === 'tasks' ? 'No active tasks' : cardTitle === 'leads' ? 'No overdue follow-ups' : 'No meetings today'}
+              </p>
+            </div>
+          )}
           {/* Thin scrollbar for task list */}
           <style>{`
             .stat-task-scroll::-webkit-scrollbar { width: 3px; }
