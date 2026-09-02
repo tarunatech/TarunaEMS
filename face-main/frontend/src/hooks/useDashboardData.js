@@ -11,9 +11,22 @@ const getArrayCount = (payload) => {
   return Number(payload?.count || payload?.total || 0);
 };
 
+const safeArray = (val) => {
+  if (Array.isArray(val)) return val;
+  if (Array.isArray(val?.data)) return val.data;
+  if (Array.isArray(val?.leads)) return val.leads;
+  if (Array.isArray(val?.tasks)) return val.tasks;
+  if (Array.isArray(val?.events)) return val.events;
+  if (Array.isArray(val?.data?.leads)) return val.data.leads;
+  if (Array.isArray(val?.data?.tasks)) return val.data.tasks;
+  if (Array.isArray(val?.data?.data)) return val.data.data;
+  return [];
+};
+
 const findStatusCount = (statusDistribution = [], status) => {
   const target = String(status).toLowerCase();
-  const item = statusDistribution.find(entry => String(entry._id || entry.status || '').toLowerCase() === target);
+  const safeList = safeArray(statusDistribution);
+  const item = safeList.find(entry => String(entry._id || entry.status || '').toLowerCase() === target);
   return item?.count || 0;
 };
 
@@ -47,23 +60,32 @@ export const useDashboardData = () => {
     error: null
   });
 
-  const createDefaultStats = useCallback((data = {}, leadStats = {}, taskStats = {}, upcomingMeetings = [], recentActivities = [], overdueTasks = [], overdueFollowUps = [], allLeads = [], allTasks = []) => {
+  const createDefaultStats = useCallback((data = {}, leadStats = {}, taskStats = {}, upcomingMeetingsInput = [], recentActivitiesInput = [], overdueTasksInput = [], overdueFollowUpsInput = [], allLeadsInput = [], allTasksInput = []) => {
+    const recentActivities = safeArray(recentActivitiesInput);
+    const overdueFollowUps = safeArray(overdueFollowUpsInput);
+    const overdueTasks = safeArray(overdueTasksInput);
+    const upcomingMeetings = safeArray(upcomingMeetingsInput);
+    const allLeads = safeArray(allLeadsInput);
+    const allTasks = safeArray(allTasksInput);
+
     const employeeNames = recentActivities
-      .filter((activity) => activity.category === 'employee')
+      .filter((activity) => activity && (activity.category === 'employee' || activity.user))
       .slice(0, 3)
       .map((activity) => activity.user || activity.description || activity.action)
       .filter(Boolean);
 
     // Display overdue follow-ups or fallback to recent leads
-    const displayLeads = (overdueFollowUps && overdueFollowUps.length > 0) ? overdueFollowUps : (allLeads || []);
-    const leadNames = displayLeads
+    const displayLeads = overdueFollowUps.length > 0 ? overdueFollowUps : allLeads;
+    const safeDisplayLeads = safeArray(displayLeads);
+    const leadNames = safeDisplayLeads
       .slice(0, 3)
       .map((lead) => formatLeadName(lead))
       .filter(Boolean);
 
     // Display overdue tasks or fallback to all tasks
-    const displayTasks = (overdueTasks && overdueTasks.length > 0) ? overdueTasks : (allTasks || []);
-    const taskNames = displayTasks
+    const displayTasks = overdueTasks.length > 0 ? overdueTasks : allTasks;
+    const safeDisplayTasks = safeArray(displayTasks);
+    const taskNames = safeDisplayTasks
       .slice(0, 3)
       .map((task) => task?.title || task?.description || 'Task')
       .filter(Boolean);
@@ -85,17 +107,17 @@ export const useDashboardData = () => {
       },
       {
         title: 'Leads',
-        value: (leadStats.statusStats || []).reduce((sum, item) => sum + (item.count || 0), 0) || displayLeads.length,
+        value: (safeArray(leadStats.statusStats) || []).reduce((sum, item) => sum + (item?.count || 0), 0) || safeDisplayLeads.length,
         icon: Target,
         change: `${leadStats.todayFollowUps || 0} today`,
         changeType: leadStats.overdueFollowUps > 0 ? 'negative' : 'neutral',
         detail: leadNames.length ? leadNames.join(' • ') : 'Leads waiting on follow-up',
         path: '/admin/sales',
-        newCount: findStatusCount(leadStats.statusStats || [], 'New'),
-        hoverItems: displayLeads.slice(0, 10).map((lead) => ({
+        newCount: findStatusCount(leadStats.statusStats, 'New'),
+        hoverItems: safeDisplayLeads.slice(0, 10).map((lead) => ({
           primary: formatLeadName(lead),
-          secondary: lead.company || lead.source || 'Direct Inquiry',
-          status: lead.status || 'New'
+          secondary: lead?.company || lead?.source || 'Direct Inquiry',
+          status: lead?.status || 'New'
         }))
       },
       {
@@ -106,7 +128,7 @@ export const useDashboardData = () => {
         changeType: taskStats.overdue > 0 ? 'negative' : 'positive',
         detail: taskNames.length ? taskNames.join(' • ') : 'Tasks needing attention',
         path: '/admin/tasks',
-        hoverItems: displayTasks.slice(0, 10).map((task) => ({
+        hoverItems: safeDisplayTasks.slice(0, 10).map((task) => ({
           primary: task?.title || task?.description || 'Task',
           secondary: formatEmployeeName(task?.assignedTo),
           status: task?.status || 'In Progress'
@@ -133,19 +155,23 @@ export const useDashboardData = () => {
     ];
   }, []);
 
-  const createAttentionItems = useCallback((data = {}, leadStats = {}, taskStats = {}, pendingApprovals = [], overdueFollowUps = [], overdueTasks = [], pendingLeaves = []) => {
-    const leadFollowUpNames = (overdueFollowUps || []).slice(0, 3).map(item => formatLeadName(item));
-    const overdueTaskDetail = (overdueTasks || []).slice(0, 2).map(item => {
+  const createAttentionItems = useCallback((data = {}, leadStats = {}, taskStats = {}, pendingApprovalsInput = [], overdueFollowUpsInput = [], overdueTasksInput = [], pendingLeavesInput = []) => {
+    const overdueFollowUps = safeArray(overdueFollowUpsInput);
+    const overdueTasks = safeArray(overdueTasksInput);
+    const pendingLeaves = safeArray(pendingLeavesInput);
+
+    const leadFollowUpNames = overdueFollowUps.slice(0, 3).map(item => formatLeadName(item));
+    const overdueTaskDetail = overdueTasks.slice(0, 2).map(item => {
       const taskTitle = item?.title || 'Task';
       const employee = formatEmployeeName(item?.assignedTo);
       return `${taskTitle} — ${employee}`;
     });
-    const pendingLeaveDetail = (pendingLeaves || []).slice(0, 2).map(item => {
+    const pendingLeaveDetail = pendingLeaves.slice(0, 2).map(item => {
       const employee = formatEmployeeName(item?.employee);
       const leaveType = item?.leaveType || 'Leave';
       return `${employee} • ${leaveType}`;
     });
-    const taskReviewDetail = (overdueTasks || [])
+    const taskReviewDetail = overdueTasks
       .filter(item => item?.status === 'Review' || item?.progress === 100)
       .slice(0, 2)
       .map(item => `${item?.title || 'Task'} • ${formatEmployeeName(item?.assignedTo)}`);
@@ -186,14 +212,17 @@ export const useDashboardData = () => {
   ];
   }, []);
 
-  const createTaskHealth = useCallback((taskStats = {}, overdueTasks = [], allTasks = []) => {
-    const statusDistribution = taskStats.statusDistribution || [];
+  const createTaskHealth = useCallback((taskStats = {}, overdueTasksInput = [], allTasksInput = []) => {
+    const overdueTasks = safeArray(overdueTasksInput);
+    const allTasks = safeArray(allTasksInput);
+
+    const statusDistribution = safeArray(taskStats.statusDistribution);
     const completed = taskStats.completed || findStatusCount(statusDistribution, 'Completed');
     const inProgress = taskStats.inProgress || findStatusCount(statusDistribution, 'In Progress');
     const notStarted = findStatusCount(statusDistribution, 'Not Started');
     const review = findStatusCount(statusDistribution, 'Review');
 
-    const mapTaskTitles = (taskList) => taskList.map(t => ({
+    const mapTaskTitles = (taskList) => safeArray(taskList).map(t => ({
       title: t?.title || t?.description || 'Untitled Task',
       assignee: formatEmployeeName(t?.assignedTo)
     }));
@@ -208,7 +237,7 @@ export const useDashboardData = () => {
     const overdueTasksMapped = mapTaskTitles(overdueList.length > 0 ? overdueList : overdueTasks);
 
     return [
-      { label: 'Completed', value: completed, tone: 'emerald', tasks: [] },
+      { label: 'Completed', value: completed, tone: 'emerald', tasks: completedTasks },
       { label: 'In Progress', value: inProgress, tone: 'blue', tasks: inProgressTasks },
       { label: 'Not Started', value: notStarted, tone: 'slate', tasks: notStartedTasks },
       { label: 'Review', value: review, tone: 'violet', tasks: reviewTasks },
@@ -234,18 +263,19 @@ export const useDashboardData = () => {
         leadAPI.getLeads({ limit: 15 }).catch(() => ({ data: { success: false, data: [] } }))
       ]);
 
-      const dashboardStats = statsResponse.data.success ? statsResponse.data : {};
-      const taskStats = taskStatsResponse.data.success ? taskStatsResponse.data.stats || {} : {};
-      const leadStats = leadStatsResponse.data.success ? leadStatsResponse.data.data || {} : {};
-      const pendingApprovals = pendingApprovalsResponse.data.success ? pendingApprovalsResponse.data.data || [] : [];
-      const overdueFollowUps = overdueFollowUpsResponse.data.success ? overdueFollowUpsResponse.data.data || [] : [];
-      const overdueTasks = overdueTasksResponse.data.success ? overdueTasksResponse.data.tasks || [] : [];
-      const allTasks = allTasksResponse.data.success ? (allTasksResponse.data.tasks || allTasksResponse.data.data || []) : [];
-      const pendingLeaves = pendingLeavesResponse.data.success ? pendingLeavesResponse.data.leaves || [] : [];
-      const allLeads = allLeadsResponse?.data?.success ? (allLeadsResponse.data.data || allLeadsResponse.data.leads || []) : [];
+      const dashboardStats = statsResponse.data?.success ? statsResponse.data : {};
+      const taskStats = taskStatsResponse.data?.success ? taskStatsResponse.data.stats || {} : {};
+      const leadStats = leadStatsResponse.data?.success ? leadStatsResponse.data.data || {} : {};
+      const pendingApprovals = safeArray(pendingApprovalsResponse.data?.data || pendingApprovalsResponse.data);
+      const overdueFollowUps = safeArray(overdueFollowUpsResponse.data?.data || overdueFollowUpsResponse.data?.leads || overdueFollowUpsResponse.data);
+      const overdueTasks = safeArray(overdueTasksResponse.data?.tasks || overdueTasksResponse.data?.data || overdueTasksResponse.data);
+      const allTasks = safeArray(allTasksResponse.data?.tasks || allTasksResponse.data?.data || allTasksResponse.data);
+      const pendingLeaves = safeArray(pendingLeavesResponse.data?.leaves || pendingLeavesResponse.data?.data || pendingLeavesResponse.data);
+      const allLeads = safeArray(allLeadsResponse.data?.data || allLeadsResponse.data?.leads || allLeadsResponse.data);
 
-      const upcomingMeetings = (eventsResponse.data.success ? eventsResponse.data.events || [] : [])
-        .filter((event) => event.type === 'meeting' || String(event.title || '').toLowerCase().includes('meeting'))
+      const rawEvents = safeArray(eventsResponse.data?.events || eventsResponse.data?.data || eventsResponse.data);
+      const upcomingMeetings = rawEvents
+        .filter((event) => event && (event.type === 'meeting' || String(event.title || '').toLowerCase().includes('meeting')))
         .map((event) => ({
           ...event,
           leadName: String(event.title || '')
@@ -258,15 +288,17 @@ export const useDashboardData = () => {
         ? [todayMeeting, ...upcomingMeetings.filter((event) => event !== todayMeeting)]
         : upcomingMeetings;
 
+      const activities = safeArray(activitiesResponse.data?.activities || activitiesResponse.data?.data || activitiesResponse.data);
+
       setState(prev => ({
         ...prev,
         loading: false,
         error: null,
-        stats: createDefaultStats(dashboardStats, leadStats, taskStats, upcomingMeetingStats, activitiesResponse.data.success ? activitiesResponse.data.activities || [] : [], overdueTasks, overdueFollowUps, allLeads, allTasks),
+        stats: createDefaultStats(dashboardStats, leadStats, taskStats, upcomingMeetingStats, activities, overdueTasks, overdueFollowUps, allLeads, allTasks),
         attentionItems: createAttentionItems(dashboardStats, leadStats, taskStats, pendingApprovals, overdueFollowUps, overdueTasks, pendingLeaves),
         taskHealth: createTaskHealth(taskStats, overdueTasks, allTasks),
-        recentActivities: activitiesResponse.data.success ? activitiesResponse.data.activities || [] : [],
-        upcomingEvents: eventsResponse.data.success ? eventsResponse.data.events || [] : []
+        recentActivities: activities,
+        upcomingEvents: rawEvents
       }));
 
     } catch (error) {

@@ -94,7 +94,7 @@ const StatCard = ({ stat, index = 0 }) => {
   // Hover detail panel — Tasks, Meetings and Leads
   const cardTitle = String(stat?.title || '').toLowerCase();
   const isHoverSupportedCard = cardTitle === 'tasks' || cardTitle === 'meetings' || cardTitle === 'leads';
-  const hoverItemsList = stat?.hoverItems || [];
+  const hoverItemsList = Array.isArray(stat?.hoverItems) ? stat.hoverItems : [];
   const hasHoverPanel = isHoverSupportedCard && hoverItemsList.length > 0;
   const hoverPanelLabel = cardTitle === 'tasks' ? 'Active Tasks' : cardTitle === 'leads' ? 'Overdue Follow-ups' : "Today's Meetings";
   const HoverItemIcon = cardTitle === 'tasks' ? User : cardTitle === 'leads' ? TrendingUp : CalendarClock;
