@@ -2046,6 +2046,12 @@ const EmployeeManagement = () => {
           line-height: 1rem !important;
           font-weight: 500 !important;
         }
+        html.theme-dark .employee-details-view label + p {
+          color: #f8fafc !important;
+        }
+        html.theme-dark .employee-details-view label {
+          color: #94a3b8 !important;
+        }
       `}</style>
       {/* Enhanced backdrop with blur */}
       <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={handleCloseViewModal} />
@@ -2646,7 +2652,7 @@ const EmployeeManagement = () => {
         </div>
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-4">
-          <div className="relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
+          <div className="dashboard-stat-card relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
             <div className="absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-44 sm:h-44 rounded-full bg-purple-100/80 pointer-events-none transition-transform duration-500 group-hover:scale-105" />
             <div className="relative z-10 min-w-0 pr-1.5 sm:pr-2">
               <h3 className="text-base sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-none mb-0.5 sm:mb-1.5 tracking-tight truncate">{employees.length}</h3>
@@ -2657,7 +2663,7 @@ const EmployeeManagement = () => {
             </div>
           </div>
 
-          <div className="relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
+          <div className="dashboard-stat-card relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
             <div className="absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-44 sm:h-44 rounded-full bg-emerald-100/80 pointer-events-none transition-transform duration-500 group-hover:scale-105" />
             <div className="relative z-10 min-w-0 pr-1.5 sm:pr-2">
               <h3 className="text-base sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-none mb-0.5 sm:mb-1.5 tracking-tight truncate">
@@ -2670,7 +2676,7 @@ const EmployeeManagement = () => {
             </div>
           </div>
 
-          <div className="relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
+          <div className="dashboard-stat-card relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
             <div className="absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-44 sm:h-44 rounded-full bg-orange-100/80 pointer-events-none transition-transform duration-500 group-hover:scale-105" />
             <div className="relative z-10 min-w-0 pr-1.5 sm:pr-2">
               <h3 className="text-base sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-none mb-0.5 sm:mb-1.5 tracking-tight truncate">
@@ -2683,7 +2689,7 @@ const EmployeeManagement = () => {
             </div>
           </div>
 
-          <div className="relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
+          <div className="dashboard-stat-card relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs flex items-center justify-between group">
             <div className="absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-44 sm:h-44 rounded-full bg-pink-100/80 pointer-events-none transition-transform duration-500 group-hover:scale-105" />
             <div className="relative z-10 min-w-0 pr-1.5 sm:pr-2">
               <h3 className="text-base sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-none mb-0.5 sm:mb-1.5 tracking-tight truncate">

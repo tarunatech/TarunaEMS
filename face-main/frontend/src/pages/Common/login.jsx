@@ -84,6 +84,12 @@ const Login = () => {
           }
         });
 
+        // Store full user object persistently for useAuth hook
+        if (response.data?.user) {
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+          sessionStorage.setItem('user', JSON.stringify(response.data.user));
+        }
+
         console.log("User Department stored:", localStorage.getItem('userDepartment'));
         console.log("Token stored:", sessionStorage.getItem("token"));
         console.log("Token in sessionStorage:", sessionStorage.getItem("token"));
@@ -136,17 +142,30 @@ const Login = () => {
         setLoginError(message);
         toast.error(message);
       }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
+  // Auto-login if valid user session exists in localStorage
   React.useEffect(() => {
-    const token = sessionStorage.getItem('token');
-    if (!token) {
-      sessionStorage.clear();
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const userRole = localStorage.getItem('userRole') || sessionStorage.getItem('userRole');
+    const userDepartment = localStorage.getItem('userDepartment') || sessionStorage.getItem('userDepartment');
+
+    if (token && userRole) {
+      if (userRole === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (userRole === 'employee') {
+        const dept = userDepartment ? userDepartment.toLowerCase() : '';
+        if (dept === 'sales' || dept === 'sales department') {
+          navigate('/employee/leads', { replace: true });
+        } else {
+          navigate('/employee/dashboard', { replace: true });
+        }
+      }
     }
-  }, []);
+  }, [navigate]);
 
   const getInputIcon = () => {
     if (!formData.email) return <Mail className="w-5 h-5 text-gray-400" />;
@@ -317,7 +336,7 @@ const Login = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-11 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-slate-900 placeholder-gray-400 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200"
+                  className="w-full pl-11 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-slate-900 placeholder-gray-400 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-colors duration-200"
                   placeholder={
                     isEmployeeId(formData.email)
                       ? "Enter your Employee ID"
@@ -329,15 +348,17 @@ const Login = () => {
                   disabled={loading}
                   autoComplete="current-password"
                 />
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={loading ? -1 : 0}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 hover:text-slate-700 transition-colors"
-                  disabled={loading}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-slate-600 cursor-pointer select-none"
+                  style={{ lineHeight: 0, userSelect: 'none' }}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+                  {showPassword ? <EyeOff className="w-5 h-5 block pointer-events-none" /> : <Eye className="w-5 h-5 block pointer-events-none" />}
+                </div>
               </div>
               {loginError && (
                 <p className="flex items-center gap-1.5 text-sm font-medium text-red-600">

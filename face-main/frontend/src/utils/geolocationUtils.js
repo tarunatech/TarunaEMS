@@ -174,6 +174,26 @@ export const geolocationUtils = {
     return distance <= radiusInMeters;
   },
 
+  // Check if location is within office radius
+  isWithinOfficeRadius: (userLat, userLon) => {
+    const OFFICE_LOCATION = {
+      latitude: 22.298873262930066,
+      longitude: 73.13129619568713,
+      radius: 200 // meters - Office location radius
+    };
+    const distance = geolocationUtils.calculateDistance(
+      userLat,
+      userLon,
+      OFFICE_LOCATION.latitude,
+      OFFICE_LOCATION.longitude
+    );
+    return {
+      isWithin: distance <= OFFICE_LOCATION.radius,
+      distance: Math.round(distance),
+      maxDistance: OFFICE_LOCATION.radius
+    };
+  },
+
   // Get location accuracy description
   getAccuracyDescription: (accuracy) => {
     if (accuracy <= 5) return 'Very High';

@@ -156,7 +156,7 @@ const SalesMeetings = () => {
 
   return (
     <EmployeeLayout>
-      <div className="space-y-4 sm:space-y-6">
+      <div className="employee-sales-meetings-page space-y-4 sm:space-y-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>

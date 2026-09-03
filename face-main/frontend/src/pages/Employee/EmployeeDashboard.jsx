@@ -70,7 +70,7 @@ const generateRoleStats = (employee = {}, realStats = null, tasksList = [], rawM
   const posStr = cleanStr(employee.workInfo?.designation || employee.position || employee.designation || employee.user?.position || employee.user?.designation);
   const userRole = cleanStr(employee.role || employee.user?.role);
   const empName = cleanStr(employee.name || employee.fullName || employee.user?.name);
-  
+
   const roleStr = `${deptStr} ${posStr} ${userRole} ${empName}`.toLowerCase();
   const now = new Date();
 
@@ -135,10 +135,10 @@ const generateRoleStats = (employee = {}, realStats = null, tasksList = [], rawM
         const leadName = m.fullName || m.leadName || '';
         const companyName = m.company || m.clientName || '';
         const clientLabel = leadName ? (companyName ? `${leadName} (${companyName})` : leadName) : companyName;
-        
+
         const title = meetingObj.title || m.title || (clientLabel ? `Meeting w/ ${clientLabel}` : 'Lead Meeting');
         const scheduledTime = formatTimeStr(meetingObj.scheduledDate || m.date, meetingObj.startTime || m.time);
-        
+
         combinedMeetings.push({
           title,
           clientLabel,
@@ -174,8 +174,8 @@ const generateRoleStats = (employee = {}, realStats = null, tasksList = [], rawM
       const cat = (t.category || '').toLowerCase();
       const type = (t.type || '').toLowerCase();
       if (title.includes('meeting') || cat.includes('meeting') || type.includes('meeting') ||
-          title.includes('sales') || cat.includes('sales') || type.includes('sales') ||
-          title.includes('client') || title.includes('demo')) {
+        title.includes('sales') || cat.includes('sales') || type.includes('sales') ||
+        title.includes('client') || title.includes('demo')) {
         const scheduledTime = formatTimeStr(t.dueDate || t.createdAt, null);
         combinedMeetings.push({
           title: t.title || 'Client Meeting',
@@ -212,7 +212,7 @@ const generateRoleStats = (employee = {}, realStats = null, tasksList = [], rawM
   });
 
   const isSales = roleStr.includes('sales') || roleStr.includes('market') || roleStr.includes('business') || roleStr.includes('bd') || roleStr.includes('bde') || roleStr.includes('bdm') || roleStr.includes('lead') || roleStr.includes('client') || roleStr.includes('account') || uniqueMeetings.length > 0;
-  
+
   const isHR = roleStr.includes('hr') || roleStr.includes('recruit') || roleStr.includes('hiring') || roleStr.includes('human') || roleStr.includes('people') || interviewTasks.length > 0;
 
   const isDev = roleStr.includes('dev') || roleStr.includes('software') || roleStr.includes('tech') || roleStr.includes('engineer') || roleStr.includes('code') || roleStr.includes('programmer') || roleStr.includes('web') || roleStr.includes('frontend') || roleStr.includes('backend') || roleStr.includes('fullstack') || roleStr.includes('qa') || roleStr.includes('test') || problemTasks.length > 0;
@@ -327,7 +327,7 @@ const EmployeeDashboard = () => {
   const isUserScrolledUp = useRef(false);
   const typingTimeoutRef = useRef(null);
   const welcomeHero = useMemo(() => getWelcomeHero(currentTime), [currentTime]);
- const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState({
     name: '',
     email: '',
     phone: '',
@@ -596,6 +596,99 @@ const EmployeeDashboard = () => {
     } catch (error) {
       console.error('Location error:', error);
     }
+  };
+
+  const handleDashboardCheckInWithoutFace = async () => {
+    try {
+      setAttendanceLoading(true);
+      let currentLoc = location;
+      if (!currentLoc) {
+        toast.loading('Getting location...', { id: 'dashboard-attendance' });
+        try {
+          const position = await geolocationUtils.getCurrentPosition();
+          const addressData = await geolocationUtils.getAddressFromCoords(position.latitude, position.longitude);
+          const addressString = typeof addressData === 'object' ? addressData.address : addressData;
+          currentLoc = { ...position, address: addressString };
+          setLocation(currentLoc);
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!currentLoc) {
+        toast.error('Location is required for check-in. Please enable location services.', { id: 'dashboard-attendance' });
+        return;
+      }
+
+      const locationCheck = typeof geolocationUtils?.isWithinOfficeRadius === 'function'
+        ? geolocationUtils.isWithinOfficeRadius(currentLoc.latitude, currentLoc.longitude)
+        : { isWithin: true, distance: 0 };
+
+      if (locationCheck && !locationCheck.isWithin) {
+        toast.error(`You are not within office premises. Distance: ${locationCheck.distance}m`, { id: 'dashboard-attendance' });
+        return;
+      }
+
+      toast.loading('Marking check-in...', { id: 'dashboard-attendance' });
+      const response = await attendanceAPI.checkIn({
+        location: currentLoc,
+        deviceInfo: geolocationUtils.getDeviceInfo(),
+        notes: 'Check-in via Dashboard without face verification'
+      });
+
+      if (response.data?.success) {
+        toast.success('Check-in marked successfully!', { id: 'dashboard-attendance' });
+        setTodayAttendance(response.data.data);
+        setHasCheckedIn(true);
+        setLastUpdated(new Date());
+      }
+    } catch (error) {
+      console.error('Dashboard check-in error:', error);
+      toast.error(error.response?.data?.message || 'Failed to mark check-in', { id: 'dashboard-attendance' });
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
+
+  const handleDashboardCheckOut = async () => {
+    try {
+      setAttendanceLoading(true);
+      let currentLoc = location;
+      if (!currentLoc) {
+        try {
+          const position = await geolocationUtils.getCurrentPosition();
+          const addressData = await geolocationUtils.getAddressFromCoords(position.latitude, position.longitude);
+          const addressString = typeof addressData === 'object' ? addressData.address : addressData;
+          currentLoc = { ...position, address: addressString };
+          setLocation(currentLoc);
+        } catch {
+          // ignore
+        }
+      }
+
+      toast.loading('Marking check-out...', { id: 'dashboard-attendance' });
+      const response = await attendanceAPI.checkOut({
+        location: currentLoc || {},
+        deviceInfo: geolocationUtils.getDeviceInfo(),
+        notes: 'Check-out via Dashboard'
+      });
+
+      if (response.data?.success) {
+        toast.success('Check-out marked successfully!', { id: 'dashboard-attendance' });
+        setTodayAttendance(response.data.data);
+        setHasCheckedOut(true);
+        setLastUpdated(new Date());
+      }
+    } catch (error) {
+      console.error('Dashboard check-out error:', error);
+      toast.error(error.response?.data?.message || 'Failed to check out', { id: 'dashboard-attendance' });
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
+
+  const handleDashboardCheckInWithFace = () => {
+    navigate('/employee/attendance');
   };
 
   const setDefaultStats = (employee = {}) => {
@@ -1431,59 +1524,102 @@ const EmployeeDashboard = () => {
 
         {/* Attendance Section */}
         <div
-          className="dashboard-panel bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 animate-enter transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]"
+          className="dashboard-panel bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-5 sm:p-6 animate-enter transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]"
           style={{ animationDelay: '140ms' }}
         >
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-[15px] font-semibold text-slate-900">Today's attendance</h2>
-            <Clock className="w-4 h-4 text-slate-400" strokeWidth={1.75} />
-          </div>
-          <div className="flex flex-col md:flex-row md:items-center justify-between">
-            <div className="flex items-center space-x-3 mb-4 md:mb-0">
-              <div className={`w-2.5 h-2.5 rounded-full ${hasCheckedIn ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+          <div className="flex items-center justify-between mb-4 sm:mb-5">
+            <div className="flex items-center space-x-2">
+              <div className="h-8 w-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                <Clock className="w-4 h-4" strokeWidth={1.75} />
+              </div>
               <div>
-                <p className="text-slate-900 text-[13.5px] font-medium">
-                  Status: <span className={hasCheckedIn ? 'text-emerald-600' : 'text-red-600'}>
+                <h2 className="text-[15px] font-semibold text-slate-900 leading-tight">Today's attendance</h2>
+                <p className="text-[11.5px] text-slate-500">Mark your daily check-in or check-out directly</p>
+              </div>
+            </div>
+            {location && (
+              <span className="hidden sm:inline-flex items-center text-[11.5px] text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
+                <MapPin className="w-3 h-3 mr-1" strokeWidth={1.75} /> Location ready
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
+            <div className="flex items-center space-x-3">
+              <div className={`w-3 h-3 rounded-full shrink-0 ${hasCheckedIn ? (hasCheckedOut ? 'bg-emerald-500' : 'bg-indigo-500 animate-pulse') : 'bg-red-500'}`}></div>
+              <div>
+                <p className="text-slate-900 text-[13.5px] font-semibold">
+                  Status: <span className={hasCheckedIn ? (hasCheckedOut ? 'text-emerald-600' : 'text-indigo-600') : 'text-red-600'}>
                     {hasCheckedIn ? (hasCheckedOut ? 'Completed for today' : 'Checked in') : 'Not marked'}
                   </span>
                 </p>
-                {todayAttendance && (
+                {todayAttendance ? (
                   <div className="text-[12.5px] text-slate-500 space-y-0.5 mt-1">
-                    {todayAttendance.checkInTime && <p>Check-in: {new Date(todayAttendance.checkInTime).toLocaleTimeString()}</p>}
+                    {todayAttendance.checkInTime && <p>Check-in: <span className="font-medium text-slate-700">{new Date(todayAttendance.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></p>}
                     {hasCheckedIn && !hasCheckedOut && realTimeWorkingTime > 0 && (
-                      <p className="text-emerald-600">Working time: {Math.floor(realTimeWorkingTime / 60)}h {realTimeWorkingTime % 60}m</p>
+                      <p className="text-emerald-600 font-medium">Working time: {Math.floor(realTimeWorkingTime / 60)}h {realTimeWorkingTime % 60}m</p>
                     )}
-                    {todayAttendance.checkOutTime && <p>Check-out: {new Date(todayAttendance.checkOutTime).toLocaleTimeString()}</p>}
+                    {todayAttendance.checkOutTime && <p>Check-out: <span className="font-medium text-slate-700">{new Date(todayAttendance.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></p>}
                   </div>
+                ) : (
+                  <p className="text-[12px] text-slate-400 mt-0.5">Ready for today's entry</p>
                 )}
                 {location && (
-                  <p className="text-[11.5px] text-slate-400 flex items-center mt-1">
-                    <MapPin className="w-3 h-3 mr-1" strokeWidth={1.75} /> Location ready
+                  <p className="sm:hidden text-[11.5px] text-slate-400 flex items-center mt-1">
+                    <MapPin className="w-3 h-3 mr-1 text-emerald-500" strokeWidth={1.75} /> Location ready
                   </p>
                 )}
               </div>
             </div>
-            {!hasCheckedIn && (
-              <div className="flex flex-col space-y-1.5">
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              {!hasCheckedIn ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleDashboardCheckInWithFace}
+                    disabled={attendanceLoading}
+                    className="px-4 py-2.5 bg-indigo-600 text-white text-[13px] font-semibold rounded-xl hover:bg-indigo-500 transition-all duration-150 flex items-center justify-center gap-2 shadow-2xs disabled:opacity-60"
+                  >
+                    <Video strokeWidth={1.75} className="w-4 h-4 flex-shrink-0" />
+                    <span>Verify & Check In</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDashboardCheckInWithoutFace}
+                    disabled={attendanceLoading}
+                    className="px-4 py-2.5 bg-white border border-slate-200/80 text-slate-700 text-[13px] font-semibold rounded-xl hover:bg-slate-50 transition-all duration-150 flex items-center justify-center gap-2 shadow-2xs disabled:opacity-60"
+                  >
+                    {attendanceLoading ? (
+                      <Loader2 strokeWidth={1.75} className="w-4 h-4 animate-spin text-indigo-600" />
+                    ) : (
+                      <Clock strokeWidth={1.75} className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                    )}
+                    <span>{attendanceLoading ? 'Processing...' : 'Check In Without Face'}</span>
+                  </button>
+                </>
+              ) : !hasCheckedOut ? (
                 <button
-                  onClick={markAttendance}
-                  className="px-5 py-2.5 bg-indigo-600 text-white text-[13.5px] font-medium rounded-lg hover:bg-indigo-500 transition-colors duration-150 flex items-center justify-center"
+                  type="button"
+                  onClick={handleDashboardCheckOut}
+                  disabled={attendanceLoading}
+                  className="px-5 py-2.5 bg-red-500 text-white text-[13px] font-semibold rounded-xl hover:bg-red-600 transition-all duration-150 flex items-center justify-center gap-2 shadow-2xs disabled:opacity-60"
                 >
-                  <Camera className="w-4 h-4 mr-2" strokeWidth={1.75} /> Mark attendance with face verification
+                  {attendanceLoading ? (
+                    <Loader2 strokeWidth={1.75} className="w-4 h-4 animate-spin text-white" />
+                  ) : (
+                    <X strokeWidth={1.75} className="w-4 h-4 flex-shrink-0" />
+                  )}
+                  <span>{attendanceLoading ? 'Checking out...' : 'Check Out'}</span>
                 </button>
-                <p className="text-[11.5px] text-slate-400 text-center">
-                  Face verification (optional)
-                </p>
-              </div>
-            )}
-            {hasCheckedIn && !hasCheckedOut && (
-              <button
-                onClick={() => window.location.href = '/employee/attendance'}
-                className="px-5 py-2.5 bg-red-500 text-white text-[13.5px] font-medium rounded-lg hover:bg-red-600 transition-colors duration-150"
-              >
-                <Clock className="w-4 h-4 mr-2 inline" strokeWidth={1.75} /> Check out
-              </button>
-            )}
+              ) : (
+                <div className="px-4 py-2 bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-[12.5px] font-semibold rounded-xl flex items-center justify-center gap-2">
+                  <CheckCircle strokeWidth={1.75} className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>Attendance Completed</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1518,7 +1654,7 @@ const EmployeeDashboard = () => {
           </div>
 
           <div
-            className="dashboard-panel bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 animate-enter transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]"
+            className="dashboard-panel latest-updates-panel bg-white border border-slate-200/80 rounded-xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 animate-enter transition-shadow duration-150 hover:shadow-[0_4px_14px_rgba(15,23,42,0.06)]"
             style={{ animationDelay: '220ms' }}
           >
             <div className="flex items-center justify-between mb-5">

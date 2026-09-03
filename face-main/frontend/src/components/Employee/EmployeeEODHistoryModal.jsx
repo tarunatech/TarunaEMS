@@ -213,7 +213,7 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-[96%] max-w-[1450px] max-h-[72vh] flex flex-col overflow-hidden animate-enter"
+        className="eod-history-modal bg-white rounded-2xl shadow-2xl border border-slate-200 w-[96%] max-w-[1450px] max-h-[72vh] flex flex-col overflow-hidden animate-enter"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

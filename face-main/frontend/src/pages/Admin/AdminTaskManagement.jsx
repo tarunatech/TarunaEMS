@@ -1682,7 +1682,7 @@ const AdminTaskManagement = () => {
               showViewModal && selectedTask && (
                 <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-2 md:p-4 lg:left-64">
                   <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
-                  <div className="task-details-modal-scroll relative w-full rounded-t-3xl border border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.20)] max-h-[94dvh] overflow-y-auto sm:rounded-2xl sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl sm:max-h-[88vh]">
+                  <div className="task-details-modal task-details-modal-scroll relative w-full rounded-t-3xl border border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.20)] max-h-[94dvh] overflow-y-auto sm:rounded-2xl sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl sm:max-h-[88vh]">
 
                     {/* Modal Header */}
                     <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-3.5 py-3 sm:px-6 sm:py-5">

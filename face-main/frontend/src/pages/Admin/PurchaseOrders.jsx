@@ -653,7 +653,6 @@ const PurchaseOrders = () => {
                   ) : purchaseOrders.length === 0 ? (
                     <tr><td colSpan="9" className="py-16 text-center text-slate-500">No service purchases found</td></tr>
                   ) : purchaseOrders.map(po => {
-                    const renewalBadge = getRenewalBadge(po);
                     return (
                       <tr key={po._id} onClick={(event) => openPODetails(event, po)} className="hover:bg-blue-50 transition-all duration-200 cursor-pointer">
                         <td className="p-2 sm:p-3 text-slate-900 font-medium text-xs sm:text-sm">{po.poNumber || '—'}</td>
@@ -661,12 +660,7 @@ const PurchaseOrders = () => {
                         <td className="p-2 sm:p-3 text-slate-700 text-xs sm:text-sm">{po.project || '—'}</td>
                         <td className="p-2 sm:p-3"><ServiceBadge type={po.serviceType} /></td>
                         <td className="p-2 sm:p-3 text-slate-700 text-xs sm:text-sm">{po.vendor || '—'}</td>
-                        <td className="p-2 sm:p-3 text-slate-500 text-xs sm:text-sm">
-                          <div className="flex flex-col gap-1">
-                            <span>{formatDate(po.renewalDate)}</span>
-                            {renewalBadge && <span className={`w-fit px-2 py-0.5 rounded-full text-[10px] ${renewalBadge.color}`}>{renewalBadge.label}</span>}
-                          </div>
-                        </td>
+                        <td className="p-2 sm:p-3 text-slate-500 text-xs sm:text-sm">{formatDate(po.renewalDate)}</td>
                         <td className="p-2 sm:p-3 text-blue-600 font-medium text-xs sm:text-sm">{formatCurrency(po.amount || po.grandTotal)}</td>
                         <td className="p-2 sm:p-3"><span className={`px-1.5 py-0.5 text-[10px] rounded-full ${getStatusColor(po.status)}`}>{po.status}</span></td>
                         <td className="p-2 sm:p-3"><ActionButtons po={po} onView={openViewModal} onEdit={openEditModal} onDelete={handleDeletePO} onGenerateInvoice={handleGenerateInvoicePDF} /></td>
@@ -780,7 +774,7 @@ const EditableDropdown = ({ name, value, options, onChange, placeholder, listId,
 const PurchaseModal = ({ title, formData, clientOptions, projectOptions, serviceTypeOptions, vendorOptions, onChange, onSubmit, onClose, submitLabel, formatCurrency }) => (
   <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-2.5 pt-14 sm:p-4">
     <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
-    <div className="relative flex max-h-[40dvh] sm:max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-5 shadow-xl">
+    <div className="purchase-order-modal relative flex max-h-[40dvh] sm:max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-5 shadow-xl">
       <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:pb-3">
         <h3 className="text-base font-bold text-slate-900 sm:text-lg">{title}</h3>
         <button
@@ -884,7 +878,7 @@ const PurchaseModal = ({ title, formData, clientOptions, projectOptions, service
 const ViewModal = ({ po, getClientName, getStatusColor, formatCurrency, formatDate, ServiceBadge: ServiceBadgeComponent, onGenerateInvoice, onClose }) => (
   <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2.5 pt-14 sm:p-4">
     <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
-    <div className="relative flex max-h-[40dvh] sm:max-h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-5 shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
+    <div className="purchase-order-details-modal relative flex max-h-[40dvh] sm:max-h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-5 shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
       <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:pb-3">
         <div className="min-w-0">
           <h3 className="truncate text-base font-bold text-slate-900 sm:text-xl">Service Purchase Details</h3>

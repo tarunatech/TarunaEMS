@@ -582,7 +582,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
     };
 
     return (
-        <div className={`${embedded ? 'p-2 sm:p-5 space-y-2 sm:space-y-4' : 'p-4 sm:p-6 lg:p-8 space-y-8'} max-w-6xl mx-auto bg-slate-50`}>
+        <div className={`day-book-entry-page ${embedded ? 'p-2 sm:p-5 space-y-2 sm:space-y-4' : 'p-4 sm:p-6 lg:p-8 space-y-8'} max-w-6xl mx-auto bg-slate-50`}>
             <style>{`
                 @keyframes fadeSlideUp {
                     from { opacity: 0; transform: translateY(10px); }

@@ -434,7 +434,7 @@ export const verifyVideoFace = async (req, res) => {
     const OFFICE_LOCATION = {
       latitude: 22.298873262930066,
       longitude: 73.13129619568713,
-      radius: 100 // meters - Strict office location enforcement
+      radius: 200 // meters - Office location radius
     };
 
     const distance = calculateGeoDistance(
@@ -750,7 +750,7 @@ export const verifyFaceAttendance = async (req, res) => {
     const OFFICE_LOCATION = {
       latitude: 22.298873262930066,
       longitude: 73.13129619568713,
-      radius: 100 // meters - Strict office location enforcement
+      radius: 200 // meters - Office location radius
     };
 
     const distance = calculateGeoDistance(
@@ -1138,7 +1138,7 @@ export const verifyLiveVideo = async (req, res) => {
     const OFFICE_LOCATION = {
       latitude: 22.29867,
       longitude: 73.13130,
-      radius: 100 // meters - Strict office location enforcement
+      radius: 200 // meters - Office location radius
     };
 
     const distance = calculateGeoDistance(

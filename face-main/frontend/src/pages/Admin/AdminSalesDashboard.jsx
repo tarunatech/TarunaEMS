@@ -458,7 +458,7 @@ const AdminSalesDashboard = () => {
 
   return (
     <AdminLayout>
-      <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-4 sm:space-y-6">
+      <div className="admin-page-shell admin-sales-dashboard w-full min-h-[calc(100vh-7rem)] space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -608,7 +608,7 @@ const AdminSalesDashboard = () => {
 
         {/* Funnel Chart */}
         {!filters.search && funnelData.length > 0 && (
-          <div className="premium-panel !overflow-visible rounded-xl sm:rounded-2xl p-3 sm:p-4">
+          <div className="premium-panel sales-funnel-panel !overflow-visible rounded-xl sm:rounded-2xl p-3 sm:p-4">
             <div className="mb-2.5 sm:mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm sm:text-lg font-bold text-slate-900">Sales Funnel</h3>
@@ -688,7 +688,7 @@ const AdminSalesDashboard = () => {
         )}
 
         {/* Leads Table */}
-        <div className="overflow-hidden rounded-2xl md:premium-panel">
+        <div className="overflow-hidden rounded-2xl md:premium-panel admin-leads-table-panel">
           <div className="p-0 sm:p-4 md:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3 px-1 sm:px-0 sm:mb-4">
               <h2 className="text-base sm:text-lg font-bold text-slate-900">All Leads & Deals</h2>

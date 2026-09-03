@@ -1131,6 +1131,14 @@ html.theme-dark .bg-slate-50\/90 {
   background-color: rgba(30, 41, 59, 0.92) !important;
 }
 
+html.theme-dark table,
+html.theme-dark tbody,
+html.theme-dark tbody tr,
+html.theme-dark .premium-table-row {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
 html.theme-dark tbody tr,
 html.theme-dark .border-b {
   border-color: rgba(148, 163, 184, 0.16) !important;
@@ -1276,6 +1284,1036 @@ html.theme-dark .employee-sales-pipeline-preview .proposal-page {
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28) !important;
 }
 
+/* Employee Details View Dark Theme Styling */
+html.theme-dark .employee-details-view {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55) !important;
+}
+
+html.theme-dark .employee-details-view .sticky {
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .employee-details-view h2,
+html.theme-dark .employee-details-view h3,
+html.theme-dark .employee-details-view h4 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-details-view label {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .employee-details-view p {
+  color: #f8fafc;
+}
+
+/* Outer section containers & card panels */
+html.theme-dark .employee-details-view section,
+html.theme-dark .employee-details-view .bg-white,
+html.theme-dark .employee-details-view .bg-white\/70 {
+  background-color: #1e293b !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .employee-details-view .bg-slate-50,
+html.theme-dark .employee-details-view .bg-slate-50\/60,
+html.theme-dark .employee-details-view .bg-slate-100 {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+}
+
+/* Hero background glow blobs */
+html.theme-dark .employee-details-view .bg-blue-100\/60 {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+}
+html.theme-dark .employee-details-view .bg-indigo-100\/50 {
+  background-color: rgba(99, 102, 241, 0.12) !important;
+}
+
+/* Profile Avatar Frame */
+html.theme-dark .employee-details-view .border-blue-100.bg-gradient-to-br {
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  background-image: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)) !important;
+}
+
+/* Header Buttons & Edit Profile Hero Button */
+html.theme-dark .employee-details-view button.bg-blue-50,
+html.theme-dark .employee-details-view button.border-blue-200 {
+  background-color: rgba(37, 99, 235, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  color: #60a5fa !important;
+}
+html.theme-dark .employee-details-view button.bg-blue-50:hover,
+html.theme-dark .employee-details-view button.border-blue-200:hover {
+  background-color: rgba(37, 99, 235, 0.32) !important;
+  color: #93c5fd !important;
+}
+
+html.theme-dark .employee-details-view button.bg-white {
+  background-color: rgba(30, 41, 59, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  color: #e2e8f0 !important;
+}
+html.theme-dark .employee-details-view button.bg-white:hover {
+  background-color: rgba(51, 65, 85, 0.95) !important;
+  color: #ffffff !important;
+}
+
+/* Badges & Chips in Hero Section */
+html.theme-dark .employee-details-view .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.16) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #34d399 !important;
+}
+html.theme-dark .employee-details-view .bg-emerald-50 span,
+html.theme-dark .employee-details-view .bg-emerald-50 svg {
+  color: #34d399 !important;
+}
+
+html.theme-dark .employee-details-view .bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.16) !important;
+  border-color: rgba(59, 130, 246, 0.25) !important;
+  color: #93c5fd !important;
+}
+html.theme-dark .employee-details-view .bg-blue-50 span,
+html.theme-dark .employee-details-view .bg-blue-50 svg {
+  color: #93c5fd !important;
+}
+
+html.theme-dark .employee-details-view .bg-indigo-50 {
+  background-color: rgba(79, 70, 229, 0.16) !important;
+  border-color: rgba(99, 102, 241, 0.25) !important;
+  color: #c7d2fe !important;
+}
+html.theme-dark .employee-details-view .bg-indigo-50 span,
+html.theme-dark .employee-details-view .bg-indigo-50 svg {
+  color: #c7d2fe !important;
+}
+
+html.theme-dark .employee-details-view .bg-violet-50 {
+  background-color: rgba(139, 92, 246, 0.16) !important;
+  border-color: rgba(167, 139, 250, 0.25) !important;
+  color: #ddd6fe !important;
+}
+html.theme-dark .employee-details-view .bg-violet-50 span,
+html.theme-dark .employee-details-view .bg-violet-50 svg {
+  color: #ddd6fe !important;
+}
+
+html.theme-dark .employee-details-view .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.16) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+  color: #fde68a !important;
+}
+html.theme-dark .employee-details-view .bg-amber-50 span,
+html.theme-dark .employee-details-view .bg-amber-50 svg {
+  color: #fde68a !important;
+}
+
+html.theme-dark .employee-details-view .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.16) !important;
+  border-color: rgba(244, 63, 94, 0.25) !important;
+  color: #fecdd3 !important;
+}
+html.theme-dark .employee-details-view .bg-rose-50 span,
+html.theme-dark .employee-details-view .bg-rose-50 svg {
+  color: #fecdd3 !important;
+}
+
+/* Stat Card Tones & Accent colors */
+html.theme-dark .employee-details-view .text-blue-600 {
+  color: #60a5fa !important;
+}
+html.theme-dark .employee-details-view .text-amber-600 {
+  color: #fbbf24 !important;
+}
+html.theme-dark .employee-details-view .text-violet-600 {
+  color: #c084fc !important;
+}
+html.theme-dark .employee-details-view .text-emerald-600 {
+  color: #34d399 !important;
+}
+html.theme-dark .employee-details-view .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+html.theme-dark .employee-details-view .text-rose-600 {
+  color: #fb7185 !important;
+}
+
+/* Stat card borders */
+html.theme-dark .employee-details-view .border-blue-100 {
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+html.theme-dark .employee-details-view .border-amber-100 {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+html.theme-dark .employee-details-view .border-violet-100 {
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+html.theme-dark .employee-details-view .border-emerald-100 {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+html.theme-dark .employee-details-view .border-slate-200 {
+  border-color: rgba(148, 163, 184, 0.22) !important;
+}
+html.theme-dark .employee-details-view .border-rose-100 {
+  border-color: rgba(244, 63, 94, 0.3) !important;
+}
+
+/* Breakdown Grid inside Stat Cards */
+html.theme-dark .employee-details-view .grid.border-slate-100 {
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+html.theme-dark .employee-details-view .grid .bg-slate-50 {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+}
+html.theme-dark .employee-details-view .grid .bg-white {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+}
+html.theme-dark .employee-details-view .grid .text-slate-800 {
+  color: #f8fafc !important;
+}
+html.theme-dark .employee-details-view .grid .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Progress bar track */
+html.theme-dark .employee-details-view .bg-slate-100 {
+  background-color: rgba(51, 65, 85, 0.6) !important;
+}
+
+/* Recent Activity Section Header & Lists */
+html.theme-dark .employee-details-view .bg-gradient-to-r.from-slate-50.to-white {
+  background-image: linear-gradient(to right, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+html.theme-dark .employee-details-view .divide-slate-50 > * + * {
+  border-color: rgba(148, 163, 184, 0.1) !important;
+}
+html.theme-dark .employee-details-view .ring-white {
+  --tw-ring-color: #0f172a !important;
+}
+html.theme-dark .employee-details-view .text-slate-300 {
+  color: #94a3b8 !important;
+}
+html.theme-dark .employee-details-view .hover\:bg-slate-50\/60:hover,
+html.theme-dark .employee-details-view .hover\:bg-slate-50:hover {
+  background-color: rgba(37, 99, 235, 0.14) !important;
+}
+
+/* Formatted Input Display Boxes in Work/Bank Info */
+html.theme-dark .employee-details-view p.bg-white {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-details-view div[style*="scrollbarColor"] {
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent !important;
+}
+
+/* Employee Edit Modal Dark Theme Styling */
+html.theme-dark .employee-edit-modal {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55) !important;
+}
+
+html.theme-dark .employee-edit-modal .sticky {
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .employee-edit-modal h2,
+html.theme-dark .employee-edit-modal h3,
+html.theme-dark .employee-edit-modal h4 {
+  color: #f8fafc !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .employee-edit-modal label {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .employee-edit-modal input,
+html.theme-dark .employee-edit-modal select,
+html.theme-dark .employee-edit-modal textarea {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-edit-modal input:focus,
+html.theme-dark .employee-edit-modal select:focus,
+html.theme-dark .employee-edit-modal textarea:focus {
+  border-color: rgba(96, 165, 250, 0.6) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+}
+
+html.theme-dark .employee-edit-modal option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-edit-modal button.bg-white {
+  background-color: rgba(30, 41, 59, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  color: #e2e8f0 !important;
+}
+
+html.theme-dark .employee-edit-modal button.bg-white:hover {
+  background-color: rgba(51, 65, 85, 0.95) !important;
+  color: #ffffff !important;
+}
+
+/* Department Management Dark Theme Rules */
+html.theme-dark .department-management-page {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .department-management-page table,
+html.theme-dark .department-management-page table tbody,
+html.theme-dark .department-management-page table tbody tr,
+html.theme-dark .department-management-page .premium-table-row {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .department-management-page table thead {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .department-management-page table th {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .department-management-page table tbody tr {
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+html.theme-dark .department-management-page table tbody tr:hover,
+html.theme-dark .department-management-page .premium-table-row:hover {
+  background-color: rgba(37, 99, 235, 0.14) !important;
+}
+
+html.theme-dark .department-management-page table td {
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .department-management-page table td .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .department-management-page table td .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .department-management-page table td button {
+  color: #94a3b8 !important;
+}
+
+/* Building Icon Badge in Table & Mobile Cards */
+html.theme-dark .department-management-page .bg-blue-100,
+html.theme-dark .department-management-page .bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+html.theme-dark .department-management-page .text-blue-600 {
+  color: #60a5fa !important;
+}
+
+/* Status Badges */
+html.theme-dark .department-management-page .bg-green-100 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+html.theme-dark .department-management-page .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+html.theme-dark .department-management-page .bg-yellow-100 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Table Action Buttons Hover */
+html.theme-dark .department-management-page button.hover\:bg-blue-50:hover {
+  background-color: rgba(37, 99, 235, 0.2) !important;
+  color: #60a5fa !important;
+}
+
+html.theme-dark .department-management-page button.hover\:bg-red-50:hover {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+}
+
+/* Mobile Department List Cards */
+html.theme-dark .department-management-page .border-slate-200.bg-white {
+  background-color: #1e293b !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .department-management-page .border-slate-200.bg-white:hover {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+}
+
+html.theme-dark .department-management-page .bg-slate-50 {
+  background-color: rgba(15, 23, 42, 0.75) !important;
+}
+
+html.theme-dark .department-management-page .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .department-management-page .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .department-management-page .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+/* Task Details Modal Dark Theme Rules */
+html.theme-dark .task-details-modal,
+html.theme-dark .employee-tasks-modal {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Modal Header Bar */
+html.theme-dark .task-details-modal .bg-gradient-to-r.from-slate-50.to-white,
+html.theme-dark .employee-tasks-modal .bg-white\/95 {
+  background-image: linear-gradient(to right, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95)) !important;
+  background-color: rgba(15, 23, 42, 0.98) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .task-details-modal h2,
+html.theme-dark .employee-tasks-modal h2 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .task-details-modal .text-blue-500 {
+  color: #60a5fa !important;
+}
+
+/* Edit & Close buttons in header */
+html.theme-dark .task-details-modal button.bg-blue-50,
+html.theme-dark .employee-tasks-modal button.bg-indigo-50 {
+  background-color: rgba(37, 99, 235, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  color: #60a5fa !important;
+}
+
+html.theme-dark .task-details-modal button.hover\:bg-slate-100:hover,
+html.theme-dark .employee-tasks-modal button.hover\:bg-slate-100:hover {
+  background-color: rgba(51, 65, 85, 0.8) !important;
+  color: #ffffff !important;
+}
+
+/* Left Column: Descriptions & Comments */
+html.theme-dark .task-details-modal .border-slate-100,
+html.theme-dark .employee-tasks-modal .border-slate-100 {
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+html.theme-dark .task-details-modal .bg-slate-50\/80,
+html.theme-dark .employee-tasks-modal .bg-indigo-50\/40 {
+  background-color: rgba(30, 41, 59, 0.7) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .task-details-modal .text-slate-800,
+html.theme-dark .employee-tasks-modal .text-slate-700 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .task-details-modal .text-slate-400,
+html.theme-dark .employee-tasks-modal .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Comment cards */
+html.theme-dark .task-details-modal .bg-white.p-3 {
+  background-color: rgba(30, 41, 59, 0.75) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .task-details-modal .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .task-details-modal .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+/* Right Column: Info & Progress Side Panel */
+html.theme-dark .task-details-modal .bg-slate-50\/50 {
+  background-color: rgba(15, 23, 42, 0.6) !important;
+}
+
+html.theme-dark .task-details-modal .bg-white.px-3.py-2\.5,
+html.theme-dark .task-details-modal .bg-white.px-4.py-3 {
+  background-color: #1e293b !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* Progress track */
+html.theme-dark .task-details-modal .bg-slate-200,
+html.theme-dark .employee-tasks-modal .bg-slate-200 {
+  background-color: rgba(51, 65, 85, 0.7) !important;
+}
+
+html.theme-dark .task-details-modal .text-blue-600,
+html.theme-dark .employee-tasks-modal .text-blue-600 {
+  color: #60a5fa !important;
+}
+
+/* Review Panel in Task Details */
+html.theme-dark .task-details-modal .from-purple-50.via-white.to-indigo-50 {
+  background-image: linear-gradient(135deg, rgba(88, 28, 135, 0.35), rgba(15, 23, 42, 0.95)) !important;
+  border-color: rgba(168, 85, 247, 0.3) !important;
+}
+
+html.theme-dark .task-details-modal .text-purple-700 {
+  color: #c084fc !important;
+}
+
+html.theme-dark .task-details-modal textarea {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  color: #f8fafc !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+
+/* Admin Day Book Review & Employee EOD Details Dark Theme Rules */
+html.theme-dark .admin-daybook-review {
+  background-color: transparent !important;
+  color: #f8fafc !important;
+}
+
+/* Employee Banner Header Card */
+html.theme-dark .admin-daybook-review .bg-gradient-to-r.from-slate-100.via-blue-100\/80.to-indigo-100\/90 {
+  background-image: linear-gradient(to right, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.95)) !important;
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+}
+
+html.theme-dark .admin-daybook-review .bg-gradient-to-r h2 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .admin-daybook-review .bg-gradient-to-r p {
+  color: #94a3b8 !important;
+}
+
+/* Banner buttons & badges */
+html.theme-dark .admin-daybook-review .bg-gradient-to-r button.bg-white,
+html.theme-dark .admin-daybook-review .bg-gradient-to-r span.bg-white {
+  background-color: rgba(30, 41, 59, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  color: #e2e8f0 !important;
+}
+
+html.theme-dark .admin-daybook-review .bg-gradient-to-r button.bg-white:hover {
+  background-color: rgba(51, 65, 85, 0.95) !important;
+  color: #ffffff !important;
+}
+
+html.theme-dark .admin-daybook-review .bg-blue-600\/15 {
+  background-color: rgba(37, 99, 235, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  color: #60a5fa !important;
+}
+
+/* Filter Bar & Cards Container */
+html.theme-dark .admin-daybook-review .bg-white {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .admin-daybook-review .bg-slate-50 {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .admin-daybook-review input,
+html.theme-dark .admin-daybook-review select {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  color: #f8fafc !important;
+}
+
+/* EOD Item Cards */
+html.theme-dark .admin-daybook-review .group.bg-white {
+  background-color: #1e293b !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .admin-daybook-review .group.bg-white:hover {
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  background-color: rgba(30, 41, 59, 0.95) !important;
+}
+
+/* Date Box inside EOD Item Card */
+html.theme-dark .admin-daybook-review .w-14.h-14.bg-indigo-50\/80 {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .admin-daybook-review .w-14.h-14.bg-indigo-50\/80 span.text-indigo-500 {
+  color: #60a5fa !important;
+}
+
+html.theme-dark .admin-daybook-review .w-14.h-14.bg-indigo-50\/80 span.text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Task Title Text in Cards */
+html.theme-dark .admin-daybook-review .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .admin-daybook-review .text-slate-500,
+html.theme-dark .admin-daybook-review .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Status Badges on Cards */
+html.theme-dark .admin-daybook-review .bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  color: #93c5fd !important;
+}
+
+html.theme-dark .admin-daybook-review .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  color: #fde68a !important;
+}
+
+html.theme-dark .admin-daybook-review .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #a7f3d0 !important;
+}
+
+html.theme-dark .admin-daybook-review .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+  border-color: rgba(244, 63, 94, 0.3) !important;
+  color: #fecdd3 !important;
+}
+
+/* Pagination Bar */
+html.theme-dark .admin-daybook-review button.bg-white {
+  background-color: rgba(30, 41, 59, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  color: #e2e8f0 !important;
+}
+
+html.theme-dark .admin-daybook-review button.bg-white:hover {
+  background-color: rgba(51, 65, 85, 0.95) !important;
+  color: #ffffff !important;
+}
+
+html.theme-dark .admin-daybook-review .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+
+/* Admin Create/Edit Task Modal & Assign To Section Dark Theme Rules */
+html.theme-dark .admin-modal-inner {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.theme-dark .admin-modal-inner .sticky {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .admin-modal-inner h2 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .admin-modal-inner label {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .admin-modal-inner input[type="text"],
+html.theme-dark .admin-modal-inner input[type="number"],
+html.theme-dark .admin-modal-inner input[type="date"],
+html.theme-dark .admin-modal-inner select,
+html.theme-dark .admin-modal-inner textarea {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .admin-modal-inner option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+/* Assign To Section Outer Container & Chips */
+html.theme-dark .admin-modal-inner .bg-slate-50\/50 {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+}
+
+html.theme-dark .admin-modal-inner .bg-blue-50\/60 {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+}
+
+/* Unchecked Employee Item in Assign To Grid */
+html.theme-dark .admin-modal-inner label.bg-white {
+  background-color: #1e293b !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .admin-modal-inner label.bg-white:hover {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+}
+
+/* Checked Employee Item in Assign To Grid */
+html.theme-dark .admin-modal-inner label.bg-blue-50\/90 {
+  background-color: rgba(37, 99, 235, 0.22) !important;
+  border-color: rgba(59, 130, 246, 0.45) !important;
+}
+
+html.theme-dark .admin-modal-inner label .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .admin-modal-inner label .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .admin-modal-inner label .bg-slate-100 {
+  background-color: rgba(51, 65, 85, 0.7) !important;
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .admin-modal-inner button.text-blue-600 {
+  color: #60a5fa !important;
+}
+
+html.theme-dark .admin-modal-inner button.bg-white {
+  background-color: rgba(30, 41, 59, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  color: #e2e8f0 !important;
+}
+
+html.theme-dark .admin-modal-inner button.bg-white:hover {
+  background-color: rgba(51, 65, 85, 0.95) !important;
+  color: #ffffff !important;
+}
+
+/* Admin Sales Dashboard & Leads List Dark Theme Rules */
+html.theme-dark .admin-sales-dashboard {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .admin-leads-table-panel,
+html.theme-dark .admin-sales-dashboard .premium-panel {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.theme-dark .admin-leads-table-panel h2,
+html.theme-dark .admin-sales-dashboard h1,
+html.theme-dark .admin-sales-dashboard h2,
+html.theme-dark .admin-sales-dashboard h3 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .admin-leads-table-panel p,
+html.theme-dark .admin-sales-dashboard p {
+  color: #94a3b8;
+}
+
+/* Leads Table in Dark Theme */
+html.theme-dark .admin-leads-table-panel table {
+  background-color: #0f172a !important;
+}
+
+html.theme-dark .admin-leads-table-panel table thead {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .admin-leads-table-panel table th {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .admin-leads-table-panel table tbody tr {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+html.theme-dark .admin-leads-table-panel table tbody tr:hover {
+  background-color: rgba(37, 99, 235, 0.12) !important;
+}
+
+html.theme-dark .admin-leads-table-panel table td {
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .admin-leads-table-panel table td .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .admin-leads-table-panel table td .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Value Column Text Color */
+html.theme-dark .admin-sales-dashboard .text-blue-700,
+html.theme-dark .admin-leads-table-panel .text-blue-700 {
+  color: #60a5fa !important;
+}
+
+/* Lead Avatar Badge */
+html.theme-dark .admin-leads-table-panel .bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+html.theme-dark .admin-leads-table-panel .text-blue-600 {
+  color: #60a5fa !important;
+}
+
+/* Action Buttons & View Pipeline Button */
+html.theme-dark .admin-leads-table-panel button.bg-blue-50,
+html.theme-dark .admin-sales-dashboard button.bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  color: #60a5fa !important;
+}
+
+html.theme-dark .admin-leads-table-panel button.bg-blue-50:hover,
+html.theme-dark .admin-sales-dashboard button.bg-blue-50:hover {
+  background-color: rgba(37, 99, 235, 0.32) !important;
+  color: #93c5fd !important;
+}
+
+html.theme-dark .admin-leads-table-panel button.text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Sales Pipeline Modal & Stage Stepper Dark Theme Rules */
+html.theme-dark .employee-sales-pipeline-modal {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal h2,
+html.theme-dark .employee-sales-pipeline-modal h3,
+html.theme-dark .employee-sales-pipeline-modal h4 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal p {
+  color: #94a3b8;
+}
+
+/* Stage Stepper Outer Box */
+html.theme-dark .employee-sales-pipeline-modal .bg-slate-50\/80 {
+  background-color: rgba(15, 23, 42, 0.75) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* Active Step Button & Title (e.g. Quotation Details) */
+html.theme-dark .employee-sales-pipeline-modal button.border-indigo-300 {
+  background-color: rgba(99, 102, 241, 0.22) !important;
+  border-color: rgba(129, 140, 248, 0.55) !important;
+  color: #a5b4fc !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+  --tw-ring-color: transparent !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal button.border-indigo-300 span {
+  color: #a5b4fc !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal button.border-indigo-300 span.bg-indigo-500 {
+  background-color: #818cf8 !important;
+}
+
+/* Reached Step Button & Title (e.g. Client Details, Admin Approval, Proposal) */
+html.theme-dark .employee-sales-pipeline-modal button.border-blue-100 {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  border-color: rgba(59, 130, 246, 0.38) !important;
+  color: #60a5fa !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal button.border-blue-100 span {
+  color: #60a5fa !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal button.border-blue-100 span.bg-blue-400 {
+  background-color: #60a5fa !important;
+}
+
+/* Unreached Step Button & Title (e.g. Sent to Client, Negotiation, Won / Closed) */
+html.theme-dark .employee-sales-pipeline-modal button.border-slate-200 {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal button.border-slate-200 span {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal button.border-slate-200 span.bg-slate-200 {
+  background-color: rgba(71, 85, 105, 0.8) !important;
+}
+
+/* Stage Content Panels & Inner Cards - Seamlessly synced with outer modal background */
+html.theme-dark .employee-sales-pipeline-modal .pipeline-stage-panel {
+  background-color: #0f172a !important;
+  background-image: none !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  color: #f8fafc !important;
+  box-shadow: none !important;
+}
+
+/* Stepper Track Outer Box */
+html.theme-dark .employee-sales-pipeline-modal .rounded-2xl.border.border-slate-200,
+html.theme-dark .employee-sales-pipeline-modal .bg-slate-50\/80 {
+  background-color: rgba(15, 23, 42, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+/* ALL Inputs, Selects, and Textareas inside Sales Pipeline Modal */
+html.theme-dark .employee-sales-pipeline-modal input,
+html.theme-dark .employee-sales-pipeline-modal select,
+html.theme-dark .employee-sales-pipeline-modal textarea {
+  background-color: rgba(30, 41, 59, 0.4) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal input:focus,
+html.theme-dark .employee-sales-pipeline-modal select:focus,
+html.theme-dark .employee-sales-pipeline-modal textarea:focus {
+  border-color: rgba(129, 140, 248, 0.5) !important;
+  --tw-ring-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal label span {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal .bg-white {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal .border-slate-200,
+html.theme-dark .employee-sales-pipeline-modal .border-slate-300 {
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+/* Payslip Details View Modal Dark Theme Rules */
+html.theme-dark .payslip-details-modal {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.theme-dark .payslip-details-modal .sticky {
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .payslip-details-modal h2 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .payslip-details-modal p.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Earnings Box */
+html.theme-dark .payslip-details-modal .bg-green-50 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.28) !important;
+}
+
+html.theme-dark .payslip-details-modal .text-green-700 {
+  color: #34d399 !important;
+}
+
+html.theme-dark .payslip-details-modal .border-green-200 {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+/* Deductions Box */
+html.theme-dark .payslip-details-modal .bg-red-50 {
+  background-color: rgba(244, 63, 94, 0.12) !important;
+  border-color: rgba(244, 63, 94, 0.28) !important;
+}
+
+html.theme-dark .payslip-details-modal .text-red-700,
+html.theme-dark .payslip-details-modal .text-red-600 {
+  color: #f87171 !important;
+}
+
+html.theme-dark .payslip-details-modal .border-red-200 {
+  border-color: rgba(244, 63, 94, 0.3) !important;
+}
+
+/* Common Item Text inside Earnings & Deductions */
+html.theme-dark .payslip-details-modal span.text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .payslip-details-modal span.text-slate-900,
+html.theme-dark .payslip-details-modal p.text-slate-900 {
+  color: #f8fafc !important;
+}
+
+/* Net Salary Box */
+html.theme-dark .payslip-details-modal .bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.16) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Attendance Summary Box */
+html.theme-dark .payslip-details-modal .bg-slate-50 {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
 .premium-loading-spinner {
   position: relative;
   overflow: hidden;
@@ -1370,20 +2408,24 @@ html.theme-dark .premium-loading-spinner-message {
 
 html.theme-dark .dashboard-panel {
   background: linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(17, 24, 39, 0.92)) !important;
-  border-color: rgba(148, 163, 184, 0.20) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32) !important;
 }
 
 html.theme-dark .dashboard-stat-card {
   background: linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(17, 24, 39, 0.92)) !important;
-  border-color: rgba(148, 163, 184, 0.22) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
   box-shadow: 0 16px 38px rgba(0, 0, 0, 0.30) !important;
+}
+
+html.theme-dark .dashboard-stat-card span.border {
+  border-color: rgba(148, 163, 184, 0.22) !important;
 }
 
 html.theme-dark .dashboard-stat-card:hover,
 html.theme-dark .dashboard-panel:hover {
   border-color: rgba(129, 140, 248, 0.42) !important;
-  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(96, 165, 250, 0.08) !important;
+  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.38) !important;
 }
 
 html.theme-dark .dashboard-card-wash {
@@ -1439,6 +2481,14 @@ html.theme-dark .bg-slate-50\/80 {
   border-color: rgba(148, 163, 184, 0.16) !important;
 }
 
+html.theme-dark .dashboard-panel .h-1.bg-gradient-to-r {
+  background-image: linear-gradient(to right, rgba(99, 102, 241, 0.5), rgba(59, 130, 246, 0.5), rgba(16, 185, 129, 0.5)) !important;
+}
+
+html.theme-dark .dashboard-panel button.group {
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+
 html.theme-dark .dashboard-panel button.group:hover {
   background-color: rgba(30, 41, 59, 0.9) !important;
   border-color: rgba(129, 140, 248, 0.35) !important;
@@ -1463,15 +2513,799 @@ html.theme-dark .dashboard-panel button .text-slate-600 {
   color: #94a3b8 !important;
 }
 
-html.theme-dark .dashboard-panel button .ring-slate-200\/70 {
-  --tw-ring-color: rgba(148, 163, 184, 0.22) !important;
+html.theme-dark .dashboard-panel .ring-slate-200\/70,
+html.theme-dark .dashboard-panel .ring-1 {
+  --tw-ring-color: transparent !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
 }
 
-html.theme-dark .employee-task-card .bg-indigo-100,
-html.theme-dark .employee-tasks-modal .bg-indigo-100 {
-  background: rgba(99, 102, 241, 0.18) !important;
+html.theme-dark .lead-overview-panel {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .lead-overview-panel .bg-slate-50\/80 {
+  background-color: rgba(15, 23, 42, 0.7) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+html.theme-dark .lead-overview-panel .bg-white {
+  background-color: #1e293b !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+/* Employee Management Status Display Pill Dark Theme Rules */
+html.theme-dark span.bg-green-100.text-green-700,
+html.theme-dark .premium-panel span.bg-green-100,
+html.theme-dark table span.bg-green-100 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #a7f3d0 !important;
+  border: 1px solid rgba(52, 211, 153, 0.3) !important;
+}
+
+html.theme-dark span.bg-red-100.text-red-700,
+html.theme-dark .premium-panel span.bg-red-100,
+html.theme-dark table span.bg-red-100 {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+  color: #fecdd3 !important;
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+}
+
+/* Sales Funnel Chart Dark Theme Rules */
+html.theme-dark .sales-funnel-panel {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.theme-dark .sales-funnel-panel h3 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .sales-funnel-panel .bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  color: #60a5fa !important;
+}
+
+/* Progress Track Background */
+html.theme-dark .sales-funnel-panel .bg-slate-200\/80 {
+  background-color: rgba(51, 65, 85, 0.7) !important;
+}
+
+/* Row Labels & Numbers */
+html.theme-dark .sales-funnel-panel .text-slate-700,
+html.theme-dark .sales-funnel-panel .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .sales-funnel-panel .text-blue-600 {
+  color: #60a5fa !important;
+}
+
+html.theme-dark .sales-funnel-panel .bg-slate-50\/70 {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+/* Purchase Order Details View Modal Dark Theme Rules */
+html.theme-dark .purchase-order-details-modal {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.theme-dark .purchase-order-details-modal .sticky {
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .purchase-order-details-modal h3,
+html.theme-dark .purchase-order-details-modal h2 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .purchase-order-details-modal p.text-slate-500,
+html.theme-dark .purchase-order-details-modal span.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Purchase Invoice Banner Card */
+html.theme-dark .purchase-order-details-modal .bg-gradient-to-r {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  background-image: linear-gradient(to right, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .purchase-order-details-modal .bg-gradient-to-r p.text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .purchase-order-details-modal .bg-gradient-to-r p.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Section Cards & Rows */
+html.theme-dark .purchase-order-details-modal .bg-slate-50\/70,
+html.theme-dark .purchase-order-details-modal .bg-slate-50 {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .purchase-order-details-modal .border-slate-100 {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .purchase-order-details-modal .border-slate-200\/80 {
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+html.theme-dark .purchase-order-details-modal p.text-slate-900,
+html.theme-dark .purchase-order-details-modal span.text-slate-900 {
+  color: #f8fafc !important;
+}
+
+/* Badges inside Purchase Order Details Modal */
+html.theme-dark .purchase-order-details-modal span.bg-emerald-50,
+html.theme-dark .purchase-order-details-modal span.bg-green-50,
+html.theme-dark .purchase-order-details-modal span.bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.3) !important;
+}
+
+html.theme-dark .purchase-order-details-modal span.bg-purple-50,
+html.theme-dark .purchase-order-details-modal span.bg-indigo-50 {
+  background-color: rgba(147, 51, 234, 0.18) !important;
+  color: #c084fc !important;
+  border: 1px solid rgba(192, 132, 252, 0.3) !important;
+}
+
+/* Hide Scrollbar Display for Modals while preserving scrolling functionality */
+.task-details-modal-scroll {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.task-details-modal-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Purchase Order Create/Edit Modal Dark Theme Rules */
+html.theme-dark .purchase-order-modal {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.theme-dark .purchase-order-modal .sticky {
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html.theme-dark .purchase-order-modal h3,
+html.theme-dark .purchase-order-modal h2 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .purchase-order-modal label {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .purchase-order-modal input,
+html.theme-dark .purchase-order-modal select,
+html.theme-dark .purchase-order-modal textarea {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .purchase-order-modal .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .purchase-order-modal button.border-slate-200 {
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  color: #f8fafc !important;
+}
+
+/* Dashboard Stat Cards Dark Theme Rules & Icon Box / Subtext Fixes */
+html.theme-dark .dashboard-stat-card {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.theme-dark .dashboard-stat-card:hover {
+  border-color: rgba(129, 140, 248, 0.35) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.theme-dark .dashboard-stat-card h3 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .dashboard-stat-card p.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Subtext at bottom of Stat Cards ("2 late, 0 half days", "30 total allocated", "3 Total • 3 overdue", "No upcoming meetings") */
+html.theme-dark .dashboard-stat-card p.text-indigo-600,
+html.theme-dark .dashboard-stat-card p.text-blue-600 {
+  color: #818cf8 !important;
+}
+
+/* Stat Card Icon Boxes */
+html.theme-dark .dashboard-stat-card .bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.18) !important;
+  border-color: rgba(129, 140, 248, 0.28) !important;
+  color: #a5b4fc !important;
+  --tw-ring-color: rgba(129, 140, 248, 0.3) !important;
+}
+
+html.theme-dark .dashboard-stat-card .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(52, 211, 153, 0.28) !important;
+  color: #a7f3d0 !important;
+  --tw-ring-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+html.theme-dark .dashboard-stat-card .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(251, 191, 36, 0.28) !important;
+  color: #fde68a !important;
+  --tw-ring-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+html.theme-dark .dashboard-stat-card .bg-rose-50,
+html.theme-dark .dashboard-stat-card .bg-red-50 {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+  border-color: rgba(244, 63, 94, 0.28) !important;
+  color: #fecdd3 !important;
+  --tw-ring-color: rgba(244, 63, 94, 0.3) !important;
+}
+
+html.theme-dark .dashboard-stat-card .text-indigo-500 {
+  color: #a5b4fc !important;
+}
+
+html.theme-dark .dashboard-stat-card .text-emerald-500 {
+  color: #a7f3d0 !important;
+}
+
+html.theme-dark .dashboard-stat-card .text-amber-500 {
+  color: #fde68a !important;
+}
+
+html.theme-dark .dashboard-stat-card .text-rose-500,
+html.theme-dark .dashboard-stat-card .text-red-500 {
+  color: #fecdd3 !important;
+}
+
+/* Employee Dashboard Latest Updates Section Dark Theme Rules */
+html.theme-dark .latest-updates-panel {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .latest-updates-panel h2 {
+  color: #f8fafc !important;
+}
+
+/* Sub-cards inside Latest Updates */
+html.theme-dark .latest-updates-panel .dashboard-sub-card {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .latest-updates-panel .dashboard-sub-card:hover {
+  background-color: rgba(37, 99, 235, 0.16) !important;
+  border-color: rgba(129, 140, 248, 0.38) !important;
+}
+
+/* Notice Titles & Message Text */
+html.theme-dark .latest-updates-panel h4 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .latest-updates-panel p {
+  color: #94a3b8 !important;
+}
+
+/* Type Pill ("Leave", "Lead", "Notice") */
+html.theme-dark .latest-updates-panel span.bg-white {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  color: #94a3b8 !important;
+  box-shadow: none !important;
+}
+
+/* Priority Badges ("Medium", "High", "Low") */
+html.theme-dark .latest-updates-panel span.bg-amber-100,
+html.theme-dark .latest-updates-panel span.bg-amber-50,
+html.theme-dark .latest-updates-panel span.bg-orange-50,
+html.theme-dark .latest-updates-panel span.bg-yellow-100 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  color: #fde68a !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+}
+
+html.theme-dark .latest-updates-panel span.bg-red-100,
+html.theme-dark .latest-updates-panel span.bg-rose-50,
+html.theme-dark .latest-updates-panel span.bg-red-50 {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+  color: #fecdd3 !important;
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+}
+
+html.theme-dark .latest-updates-panel span.bg-emerald-50,
+html.theme-dark .latest-updates-panel span.bg-green-100,
+html.theme-dark .latest-updates-panel span.bg-green-50 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #a7f3d0 !important;
+  border: 1px solid rgba(52, 211, 153, 0.3) !important;
+}
+
+/* "View details ->" Link */
+html.theme-dark .latest-updates-panel .text-indigo-600,
+html.theme-dark .latest-updates-panel .text-blue-600 {
+  color: #818cf8 !important;
+}
+
+/* Employee Attendance Page Dark Theme Rules & White Outline Fixes */
+html.theme-dark .employee-attendance-page {
+  background-color: transparent !important;
+}
+
+html.theme-dark .employee-attendance-page .attendance-soft-panel {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-attendance-page .attendance-soft-row {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-attendance-page .attendance-note-panel {
+  background-color: rgba(99, 102, 241, 0.14) !important;
+  border-color: rgba(129, 140, 248, 0.28) !important;
+}
+
+html.theme-dark .employee-attendance-page h1,
+html.theme-dark .employee-attendance-page h2,
+html.theme-dark .employee-attendance-page h3,
+html.theme-dark .employee-attendance-page p.text-slate-900,
+html.theme-dark .employee-attendance-page td p.text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-attendance-page p.text-slate-500,
+html.theme-dark .employee-attendance-page p.text-slate-400,
+html.theme-dark .employee-attendance-page span.text-slate-500,
+html.theme-dark .employee-attendance-page th {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .employee-attendance-page .border-slate-200,
+html.theme-dark .employee-attendance-page .border-slate-200\/80,
+html.theme-dark .employee-attendance-page .border-slate-100 {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+/* Secondary Button "Check In Without Face" */
+html.theme-dark .employee-attendance-page button.bg-white {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-attendance-page button.bg-white:hover {
+  background-color: rgba(51, 65, 85, 0.9) !important;
+}
+
+/* Month Input */
+html.theme-dark .employee-attendance-page input[type="month"] {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #f8fafc !important;
+}
+
+/* Table Container & Rows */
+html.theme-dark .employee-attendance-page table thead {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .employee-attendance-page table tbody,
+html.theme-dark .employee-attendance-page table tbody tr {
+  background-color: transparent !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+html.theme-dark .employee-attendance-page table tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+}
+
+/* Employee Sales Page - Upcoming Schedule & Status / Priority Pills Dark Theme Rules */
+html.theme-dark .upcoming-schedule-panel {
+  background-color: #0f172a !important;
+  background-image: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95)) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.theme-dark .upcoming-schedule-panel h2 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .upcoming-schedule-panel p.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .upcoming-schedule-panel p.text-slate-700 {
+  color: #f8fafc !important;
+}
+
+/* Empty State / Inner Meeting Box inside Upcoming Schedule */
+html.theme-dark .upcoming-schedule-panel .border-dashed,
+html.theme-dark .upcoming-schedule-panel .bg-white\/60,
+html.theme-dark .upcoming-schedule-panel .bg-white\/75,
+html.theme-dark .upcoming-schedule-panel .bg-white\/70,
+html.theme-dark .upcoming-schedule-panel .bg-white\/80 {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .upcoming-schedule-panel .border-dashed p {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .upcoming-schedule-panel .border-dashed p.text-slate-700 {
+  color: #f8fafc !important;
+}
+
+/* Employee Sales Page Status & Priority Pills Dark Mode Overrides */
+html.theme-dark .employee-sales-page .bg-amber-100,
+html.theme-dark .employee-sales-page .bg-amber-50,
+html.theme-dark .employee-sales-page .bg-yellow-100 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  color: #fde68a !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+}
+
+html.theme-dark .employee-sales-page .bg-red-100,
+html.theme-dark .employee-sales-page .bg-rose-50,
+html.theme-dark .employee-sales-page .bg-red-50 {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+  color: #fecdd3 !important;
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+}
+
+html.theme-dark .employee-sales-page .bg-emerald-50,
+html.theme-dark .employee-sales-page .bg-green-100,
+html.theme-dark .employee-sales-page .bg-green-50 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #a7f3d0 !important;
+  border: 1px solid rgba(52, 211, 153, 0.3) !important;
+}
+
+html.theme-dark .employee-sales-page .bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(147, 197, 253, 0.3) !important;
+}
+
+html.theme-dark .employee-sales-page .bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.18) !important;
   color: #c7d2fe !important;
-  border: 1px solid rgba(129, 140, 248, 0.28) !important;
+  border: 1px solid rgba(129, 140, 248, 0.3) !important;
+}
+
+html.theme-dark .employee-sales-page .bg-purple-50 {
+  background-color: rgba(147, 51, 234, 0.18) !important;
+  color: #c084fc !important;
+  border: 1px solid rgba(192, 132, 252, 0.3) !important;
+}
+
+/* Employee Sales Meetings Page Dark Theme & Outline Fixes */
+html.theme-dark .employee-sales-meetings-page {
+  background-color: transparent !important;
+}
+
+html.theme-dark .employee-sales-meetings-page .bg-white {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-sales-meetings-page h1,
+html.theme-dark .employee-sales-meetings-page h2,
+html.theme-dark .employee-sales-meetings-page h3,
+html.theme-dark .employee-sales-meetings-page p.text-slate-950,
+html.theme-dark .employee-sales-meetings-page p.text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-sales-meetings-page p.text-slate-500,
+html.theme-dark .employee-sales-meetings-page p.text-slate-600,
+html.theme-dark .employee-sales-meetings-page span.text-slate-500,
+html.theme-dark .employee-sales-meetings-page span.text-slate-600,
+html.theme-dark .employee-sales-meetings-page span.text-slate-700 {
+  color: #94a3b8 !important;
+}
+
+/* Meeting Group Main Card Container (Collapsed & Expanded) */
+html.theme-dark .employee-sales-meetings-page .border-slate-200,
+html.theme-dark .employee-sales-meetings-page .border-indigo-200,
+html.theme-dark .employee-sales-meetings-page .border-slate-100 {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+/* Ring outline when expanded */
+html.theme-dark .employee-sales-meetings-page .ring-4.ring-indigo-50 {
+  --tw-ring-color: rgba(99, 102, 241, 0.18) !important;
+  border-color: rgba(129, 140, 248, 0.38) !important;
+}
+
+/* Expanded Section Panel Container */
+html.theme-dark .employee-sales-meetings-page .bg-slate-50\/70 {
+  background-color: rgba(15, 23, 42, 0.7) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+/* Expanded Meeting List Wrapper & Inner Rows */
+html.theme-dark .employee-sales-meetings-page .bg-white\/70 {
+  background-color: rgba(15, 23, 42, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+/* Meeting Row Item Card */
+html.theme-dark .employee-sales-meetings-page .rounded-xl.border.border-slate-200.bg-white {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .employee-sales-meetings-page .rounded-xl.border.border-slate-200.bg-white:hover {
+  background-color: rgba(37, 99, 235, 0.14) !important;
+  border-color: rgba(129, 140, 248, 0.35) !important;
+}
+
+/* Meeting Icon Badge */
+html.theme-dark .employee-sales-meetings-page .bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.18) !important;
+  border-color: rgba(129, 140, 248, 0.28) !important;
+  color: #a5b4fc !important;
+}
+
+/* Duration & Type Badges */
+html.theme-dark .employee-sales-meetings-page .bg-slate-100 {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .employee-sales-meetings-page .bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  color: #93c5fd !important;
+}
+
+/* Employee Tasks Page Dark Theme, White Outline & Row Hover Fixes */
+html.theme-dark .employee-tasks-page {
+  background-color: transparent !important;
+}
+
+html.theme-dark .employee-tasks-page .employee-tasks-panel {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.theme-dark .employee-tasks-page h1,
+html.theme-dark .employee-tasks-page h2,
+html.theme-dark .employee-tasks-page h3,
+html.theme-dark .employee-tasks-page p.text-slate-900,
+html.theme-dark .employee-tasks-page span.text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-tasks-page p.text-slate-500,
+html.theme-dark .employee-tasks-page span.text-slate-500,
+html.theme-dark .employee-tasks-page label span {
+  color: #94a3b8 !important;
+}
+
+/* Header & Filter Buttons */
+html.theme-dark .employee-tasks-page button.bg-white {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-tasks-page button.bg-white:hover {
+  background-color: rgba(51, 65, 85, 0.9) !important;
+}
+
+/* Filter Bar Dropdowns & Inputs */
+html.theme-dark .employee-tasks-page input,
+html.theme-dark .employee-tasks-page select {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-tasks-page select option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+/* Table Header */
+html.theme-dark .employee-tasks-page .bg-slate-50\/80 {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #94a3b8 !important;
+}
+
+/* Task List Rows & Dark Theme Hover State */
+html.theme-dark .employee-tasks-page .employee-task-row {
+  background-color: transparent !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-tasks-page .employee-task-row:hover {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+}
+
+html.theme-dark .employee-tasks-page .divide-y > * + * {
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+/* Assigned by Badge */
+html.theme-dark .employee-tasks-page .bg-slate-100 {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .employee-tasks-page .bg-slate-100 span.text-slate-800 {
+  color: #f8fafc !important;
+}
+
+/* Employee Tasks Page & Modal Status & Priority Badges Overrides */
+html.theme-dark .employee-tasks-page .bg-amber-100,
+html.theme-dark .employee-tasks-page .bg-amber-50,
+html.theme-dark .employee-tasks-modal .bg-amber-100,
+html.theme-dark .employee-tasks-modal .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  color: #fde68a !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+}
+
+html.theme-dark .employee-tasks-page .bg-emerald-100,
+html.theme-dark .employee-tasks-page .bg-emerald-50,
+html.theme-dark .employee-tasks-modal .bg-emerald-100,
+html.theme-dark .employee-tasks-modal .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #a7f3d0 !important;
+  border: 1px solid rgba(52, 211, 153, 0.3) !important;
+}
+
+html.theme-dark .employee-tasks-page .bg-indigo-100,
+html.theme-dark .employee-tasks-page .bg-indigo-50,
+html.theme-dark .employee-tasks-modal .bg-indigo-100,
+html.theme-dark .employee-tasks-modal .bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.18) !important;
+  color: #c7d2fe !important;
+  border: 1px solid rgba(129, 140, 248, 0.3) !important;
+}
+
+html.theme-dark .employee-tasks-page .bg-red-100,
+html.theme-dark .employee-tasks-page .bg-red-50,
+html.theme-dark .employee-tasks-modal .bg-red-100,
+html.theme-dark .employee-tasks-modal .bg-red-50 {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+  color: #fecdd3 !important;
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+}
+
+/* Task Details & Edit Task Modal Dark Theme Rules */
+html.theme-dark .employee-tasks-modal {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.theme-dark .employee-tasks-modal .sticky.top-0,
+html.theme-dark .employee-tasks-modal .sticky.bottom-0 {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-tasks-modal h2,
+html.theme-dark .employee-tasks-modal h3,
+html.theme-dark .employee-tasks-modal h4 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-tasks-modal p.text-slate-900,
+html.theme-dark .employee-tasks-modal span.text-slate-900,
+html.theme-dark .employee-tasks-modal span.text-slate-800,
+html.theme-dark .employee-tasks-modal p.text-slate-700 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-tasks-modal p.text-slate-500,
+html.theme-dark .employee-tasks-modal p.text-slate-400,
+html.theme-dark .employee-tasks-modal span.text-slate-500,
+html.theme-dark .employee-tasks-modal span.text-slate-400,
+html.theme-dark .employee-tasks-modal label span {
+  color: #94a3b8 !important;
+}
+
+/* Modal Inner Cards & Containers */
+html.theme-dark .employee-tasks-modal .rounded-xl.border.border-slate-200,
+html.theme-dark .employee-tasks-modal .bg-gradient-to-br.from-slate-50.to-white,
+html.theme-dark .employee-tasks-modal .bg-slate-50,
+html.theme-dark .employee-tasks-modal .bg-slate-50\/60 {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  background-image: none !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+}
+
+/* Description Item Box inside Task Details */
+html.theme-dark .employee-tasks-modal .bg-indigo-50\/40 {
+  background-color: rgba(99, 102, 241, 0.14) !important;
+  border-color: rgba(129, 140, 248, 0.28) !important;
+  color: #f8fafc !important;
+}
+
+/* Time tracking & action boxes inside Task Details */
+html.theme-dark .employee-tasks-modal .bg-white {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+}
+
+/* Inputs, Textareas, Selects inside Modals */
+html.theme-dark .employee-tasks-modal input[type="text"],
+html.theme-dark .employee-tasks-modal input[type="number"],
+html.theme-dark .employee-tasks-modal input[type="date"],
+html.theme-dark .employee-tasks-modal select,
+html.theme-dark .employee-tasks-modal textarea {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+}
+
+/* Edit Task Warning Banner */
+html.theme-dark .employee-tasks-modal .bg-amber-50\/80,
+html.theme-dark .employee-tasks-modal .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.16) !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
+  color: #fde68a !important;
+}
+
+html.theme-dark .employee-tasks-modal .bg-amber-50\/80 strong,
+html.theme-dark .employee-tasks-modal .bg-amber-50 strong {
+  color: #fde68a !important;
 }
 
 html.theme-dark .employee-task-card .bg-emerald-100,
@@ -1515,6 +3349,143 @@ html.theme-dark .employee-tasks-modal .text-indigo-700 {
 html.theme-dark .employee-task-card .text-emerald-700,
 html.theme-dark .employee-tasks-modal .text-emerald-700 {
   color: #a7f3d0 !important;
+}
+
+/* My EOD Report History Modal Dark Theme Rules */
+html.theme-dark .eod-history-modal {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.theme-dark .eod-history-modal .border-b {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .eod-history-modal .bg-slate-50\/60,
+html.theme-dark .eod-history-modal .bg-slate-50 {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .eod-history-modal .bg-white {
+  background-color: #0f172a !important;
+}
+
+html.theme-dark .eod-history-modal h2,
+html.theme-dark .eod-history-modal h3,
+html.theme-dark .eod-history-modal h4,
+html.theme-dark .eod-history-modal p.text-slate-900,
+html.theme-dark .eod-history-modal span.text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .eod-history-modal p.text-slate-500,
+html.theme-dark .eod-history-modal span.text-slate-500,
+html.theme-dark .eod-history-modal label {
+  color: #94a3b8 !important;
+}
+
+/* EOD History Filter Inputs */
+html.theme-dark .eod-history-modal input[type="date"],
+html.theme-dark .eod-history-modal select {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+}
+
+/* EOD History List Items */
+html.theme-dark .eod-history-modal .rounded-xl.border.border-slate-200,
+html.theme-dark .eod-history-modal .rounded-xl.border.border-slate-200\/80 {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .eod-history-modal .rounded-xl.border.border-slate-200:hover {
+  background-color: rgba(37, 99, 235, 0.14) !important;
+  border-color: rgba(129, 140, 248, 0.35) !important;
+}
+
+/* Daily Slot Report (EOD) Page Dark Theme Rules */
+html.theme-dark .day-book-entry-page {
+  background-color: transparent !important;
+}
+
+html.theme-dark .day-book-entry-page h1,
+html.theme-dark .day-book-entry-page h2,
+html.theme-dark .day-book-entry-page h3,
+html.theme-dark .day-book-entry-page p.text-slate-900,
+html.theme-dark .day-book-entry-page span.text-slate-900,
+html.theme-dark .day-book-entry-page span.text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .day-book-entry-page p.text-slate-500,
+html.theme-dark .day-book-entry-page p.text-slate-600,
+html.theme-dark .day-book-entry-page span.text-slate-500,
+html.theme-dark .day-book-entry-page label {
+  color: #94a3b8 !important;
+}
+
+/* Header Back Button & Status Pills */
+html.theme-dark .day-book-entry-page button.bg-white {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #f8fafc !important;
+}
+
+/* Top Info Banner ("Fill each slot and link tasks where needed") */
+html.theme-dark .day-book-entry-page .bg-blue-50\/50,
+html.theme-dark .day-book-entry-page .border-blue-200\/80 {
+  background-color: rgba(37, 99, 235, 0.14) !important;
+  border-color: rgba(147, 197, 253, 0.28) !important;
+}
+
+html.theme-dark .day-book-entry-page .bg-blue-50\/50 p {
+  color: #f8fafc !important;
+}
+
+/* Main Slots Outer Card Box */
+html.theme-dark .day-book-entry-page .space-y-3.rounded-2xl.border.border-slate-200.bg-white {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+/* Individual Slot Card */
+html.theme-dark .day-book-entry-page .rounded-xl.border.border-slate-200,
+html.theme-dark .day-book-entry-page .rounded-xl.border.border-slate-200\/80 {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+}
+
+/* Break Time Slot Bar */
+html.theme-dark .day-book-entry-page section.bg-slate-100\/50,
+html.theme-dark .day-book-entry-page .bg-slate-100 {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+}
+
+/* Inputs, Time Inputs, Textareas, Selects in DayBookEntry */
+html.theme-dark .day-book-entry-page input,
+html.theme-dark .day-book-entry-page select,
+html.theme-dark .day-book-entry-page textarea {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .day-book-entry-page textarea.bg-emerald-50\/20 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(52, 211, 153, 0.28) !important;
+}
+
+html.theme-dark .day-book-entry-page textarea.bg-amber-50\/20 {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(251, 191, 36, 0.28) !important;
 }
 
 html.theme-dark .admin-leave-calendar {

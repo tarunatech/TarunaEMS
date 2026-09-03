@@ -358,7 +358,7 @@ const AdminDayBookReview = ({ search = '' }) => {
     }
 
     return (
-        <div className="space-y-6 bg-slate-100">
+        <div className="admin-daybook-review space-y-6 bg-slate-100">
             {/* VIEW 1: INITIAL EMPLOYEE LIST VIEW */}
             {!selectedEmployee ? (
                 <div className="space-y-4">

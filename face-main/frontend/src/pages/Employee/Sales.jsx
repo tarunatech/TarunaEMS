@@ -416,7 +416,7 @@ const SalesPage = () => {
             </div>
           </div>
 
-          <div className="employee-sales-panel animate-enter overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-white via-indigo-50/60 to-blue-50 shadow-sm shadow-indigo-900/5 p-4 md:p-6">
+          <div className="employee-sales-panel upcoming-schedule-panel animate-enter overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-white via-indigo-50/60 to-blue-50 shadow-sm shadow-indigo-900/5 p-4 md:p-6">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Next Meeting</p>

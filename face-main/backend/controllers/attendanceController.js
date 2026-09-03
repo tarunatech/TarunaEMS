@@ -7,18 +7,13 @@ import Notification from '../models/Notification.js';
 export const OFFICE_LOCATION = {
   latitude: 22.298873262930066,
   longitude: 73.13129619568713,
-  radius: 100 // meters - Strict office location enforcement
-}
+  radius: 200 // meters - Office location radius
+};
 
-// Shared face similarity threshold (cosine similarity).
-// This is aligned with the Python face_service default and can be overridden
-// via the FACE_SIMILARITY_THRESHOLD environment variable to keep behavior
 // consistent across services.
 const FACE_SIMILARITY_THRESHOLD = parseFloat(process.env.FACE_SIMILARITY_THRESHOLD || '0.6');
 
 const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-
-
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371e3; // meters
   const toRad = (deg) => (deg * Math.PI) / 180;

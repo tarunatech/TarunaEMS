@@ -253,7 +253,7 @@ const DepartmentManagement = () => {
 
   return (
     <AdminLayout>
-      <div className="admin-page-shell w-full max-w-full overflow-x-hidden space-y-4 sm:space-y-6 text-slate-900">
+      <div className="admin-page-shell department-management-page w-full max-w-full overflow-x-hidden space-y-4 sm:space-y-6 text-slate-900">
         <div className="flex flex-col justify-between gap-3 sm:gap-4 md:flex-row md:items-center">
           <div>
             <h1 className="premium-page-title text-xl font-bold sm:text-2xl">Department Management</h1>

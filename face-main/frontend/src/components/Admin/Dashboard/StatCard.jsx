@@ -110,7 +110,7 @@ const StatCard = ({ stat, index = 0 }) => {
           handleClick();
         }
       }}
-      className={`relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-between group ${stat?.path ? 'cursor-pointer' : ''} focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
+      className={`dashboard-stat-card relative overflow-hidden bg-white border border-slate-100/90 rounded-xl sm:rounded-[22px] p-2.5 sm:p-4.5 lg:p-5 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-between group ${stat?.path ? 'cursor-pointer' : ''} focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
     >
       {/* Smooth Side Circle Background Arc */}
       <div className={`absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-44 sm:h-44 rounded-full ${theme.circleBg} pointer-events-none transition-transform duration-500 group-hover:scale-105`} />
