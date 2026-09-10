@@ -366,7 +366,8 @@ export const updateTask = async (req, res) => {
         'progress',
         'actualHours',
         'comments',
-        'subtasks'
+        'subtasks',
+        'achievedSoFar'
       ];
       const updates = {};
 

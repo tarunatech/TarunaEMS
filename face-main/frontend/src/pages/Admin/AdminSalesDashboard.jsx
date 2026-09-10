@@ -251,15 +251,10 @@ const AdminSalesDashboard = () => {
     if (pipeline.currentStage === 'proposal' || pipeline.proposal?.status === 'generated' || pipeline.proposal?.status === 'finalized') {
       return 'Proposal';
     }
-    if (pipeline.approval?.status === 'approved') {
-      return 'Qualified';
-    }
     if (
       pipeline.currentStage === 'quotation' ||
-      pipeline.currentStage === 'admin_approval' ||
       pipeline.quotation?.quotationNumber ||
-      pipeline.quotation?.amount ||
-      ['pending', 'rejected', 'revision_requested'].includes(pipeline.approval?.status)
+      pipeline.quotation?.amount
     ) {
       return 'Contacted';
     }

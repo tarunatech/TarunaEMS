@@ -358,6 +358,26 @@ const EmployeeDashboard = () => {
     showChatModalRef.current = showChatModal;
   }, [showChatModal]);
 
+  useEffect(() => {
+    try {
+      const searchStr = location?.search || (typeof window !== 'undefined' ? window.location.search : '');
+      if (!searchStr) return;
+      const params = new URLSearchParams(searchStr);
+      const openChat = params.get('openChat');
+      if (openChat === 'team') {
+        setShowGroupChatModal(false);
+        setShowBotModal(false);
+        setShowChatModal(true);
+      } else if (openChat === 'group') {
+        setShowChatModal(false);
+        setShowBotModal(false);
+        setShowGroupChatModal(true);
+      }
+    } catch (e) {
+      // Ignore location search errors gracefully
+    }
+  }, [location]);
+
   const getPeerId = useCallback((peer) => String(peer?._id || peer?.user?._id || ''), []);
 
   const getUnreadStorageKey = useCallback(() => {
@@ -906,7 +926,7 @@ const EmployeeDashboard = () => {
     // Connect socket on dashboard load for real-time presence and messaging
     // Socket stays connected for the entire session (not just when modals are open)
     if (employeeData && !socketRef.current) {
-      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin.replace(/:\d+$/, ':5000');
       console.log('Connecting to socket:', SOCKET_URL);
       const socket = io(`${SOCKET_URL}/employee`, {
         auth: { token: localStorage.getItem('token') },

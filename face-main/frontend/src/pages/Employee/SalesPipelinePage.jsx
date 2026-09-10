@@ -61,7 +61,7 @@ const SalesPipelinePage = () => {
         <div className="flex flex-shrink-0 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-[17px] font-semibold text-slate-900 tracking-tight">Sales Pipeline</h1>
-            <p className="text-[13px] text-slate-500">Track client, quotation, approval, negotiation, and closure stages.</p>
+            <p className="text-[13px] text-slate-500">Track client, quotation, proposal, negotiation, and closure stages.</p>
           </div>
           {!loading && leads.length > 0 && (
             <span className="text-[12px] font-medium text-slate-400">

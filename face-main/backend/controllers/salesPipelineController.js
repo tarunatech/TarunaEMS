@@ -5,7 +5,7 @@ import { buildProposalDefaults, generateProposalContent, generateProposalSection
 import { generateProposalPdf } from '../services/proposalPdfService.js';
 import { extractProposalFromPdf as extractFromPdf } from '../services/proposalPdfExtractService.js';
 
-const STAGE_ORDER = ['client_details', 'quotation', 'admin_approval', 'proposal', 'sent_to_client', 'negotiation', 'won_closed'];
+const STAGE_ORDER = ['client_details', 'quotation', 'proposal', 'sent_to_client', 'negotiation', 'won_closed'];
 const EMPLOYEE_EDITABLE_SECTIONS = ['clientDetails', 'quotation', 'proposal', 'sentToClient', 'negotiation', 'outcome'];
 
 const populatePipeline = (query) => query
@@ -48,6 +48,9 @@ const getOrCreatePipeline = async (lead, userId) => {
         comments: 'Pipeline created on first access'
       }]
     });
+  } else if (pipeline.currentStage === 'admin_approval') {
+    pipeline.currentStage = 'proposal';
+    await pipeline.save();
   }
   return pipeline;
 };
@@ -68,18 +71,6 @@ const appendStageHistory = (pipeline, toStage, userId, comments, action = 'stage
 const assertStageTransition = (pipeline, toStage) => {
   if (!STAGE_ORDER.includes(toStage)) {
     const error = new Error('Invalid pipeline stage');
-    error.statusCode = 400;
-    throw error;
-  }
-
-  if (toStage === 'sent_to_client' && pipeline.approval?.status !== 'approved') {
-    const error = new Error('Quotation must be approved by admin before it can be sent to client.');
-    error.statusCode = 400;
-    throw error;
-  }
-
-  if (toStage === 'proposal' && pipeline.currentStage !== 'proposal' && pipeline.approval?.status !== 'approved') {
-    const error = new Error('Admin approval must be approved before proposal can be prepared.');
     error.statusCode = 400;
     throw error;
   }

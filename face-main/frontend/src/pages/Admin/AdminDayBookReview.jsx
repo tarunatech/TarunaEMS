@@ -144,15 +144,51 @@ const getStatusBadgeClasses = (status) => {
     }
 };
 
-const AdminDayBookReview = ({ search = '' }) => {
+const isSameEmployee = (empA, empB) => {
+    if (!empA || !empB) return false;
+
+    const idsA = new Set([
+        empA._id, empA.id, empA.employeeId, empA.user?._id, empA.user?.id, empA.user?.employeeId
+    ].filter(Boolean).map(val => String(val).trim().toLowerCase()));
+
+    const idsB = [
+        empB._id, empB.id, empB.employeeId, empB.user?._id, empB.user?.id, empB.user?.employeeId
+    ].filter(Boolean).map(val => String(val).trim().toLowerCase());
+
+    if (idsB.some(id => idsA.has(id))) return true;
+
+    const nameA = (empA.fullName || `${empA.personalInfo?.firstName || ''} ${empA.personalInfo?.lastName || ''}`).trim().toLowerCase();
+    const nameB = (empB.fullName || `${empB.personalInfo?.firstName || ''} ${empB.personalInfo?.lastName || ''}`).trim().toLowerCase();
+
+    if (nameA && nameB && (nameA === nameB || nameA.includes(nameB) || nameB.includes(nameA))) {
+        return true;
+    }
+
+    return false;
+};
+
+const getDisplayEmployeeId = (emp, fallbackCode = '') => {
+    if (!emp) return fallbackCode || 'EMP';
+    const code = emp.employeeId || emp.user?.employeeId;
+    if (code && typeof code === 'string' && !code.includes('-') && code.length <= 15) {
+        return code;
+    }
+    if (fallbackCode && typeof fallbackCode === 'string' && !fallbackCode.includes('-') && fallbackCode.length <= 15) {
+        return fallbackCode;
+    }
+    return 'EMP';
+};
+
+const AdminDayBookReview = ({ search = '', initialEmployeeId = null, employeeCode = null, directToEmployeeEOD = false }) => {
     const [dayBooks, setDayBooks] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Selected Employee state (null = list of employees view)
     const [selectedEmployee, setSelectedEmployee] = useState(null);
+    const hasAutoSelectedRef = React.useRef(false);
 
     // Filter states
-    const [searchTerm, setSearchTerm] = useState(search);
+    const [searchTerm, setSearchTerm] = useState(directToEmployeeEOD ? '' : search);
     const [dateFilter, setDateFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -165,10 +201,10 @@ const AdminDayBookReview = ({ search = '' }) => {
     const [actionLoading, setActionLoading] = useState('');
 
     useEffect(() => {
-        if (search) {
-            setSearchTerm(search);
+        if (!directToEmployeeEOD && !selectedEmployee) {
+            setSearchTerm(search || '');
         }
-    }, [search]);
+    }, [search, directToEmployeeEOD, selectedEmployee]);
 
     const fetchDayBooks = async () => {
         try {
@@ -213,28 +249,82 @@ const AdminDayBookReview = ({ search = '' }) => {
         return Array.from(map.values());
     }, [dayBooks]);
 
+    useEffect(() => {
+        if (directToEmployeeEOD && !hasAutoSelectedRef.current) {
+            const queryTarget = {
+                _id: initialEmployeeId,
+                id: initialEmployeeId,
+                employeeId: employeeCode || initialEmployeeId,
+                fullName: search
+            };
+
+            let targetEmp = null;
+
+            if (employeeGroups.length > 0) {
+                const group = employeeGroups.find((g) => g.employee && isSameEmployee(g.employee, queryTarget));
+                if (group?.employee) {
+                    targetEmp = group.employee;
+                }
+            }
+
+            if (!targetEmp && dayBooks.length > 0) {
+                const matchedDb = dayBooks.find((db) => db.employee && isSameEmployee(db.employee, queryTarget));
+                if (matchedDb?.employee) {
+                    targetEmp = matchedDb.employee;
+                }
+            }
+
+            if (!targetEmp && (search || initialEmployeeId)) {
+                const parts = (search || 'Employee').split(' ');
+                targetEmp = {
+                    _id: initialEmployeeId || 'temp',
+                    employeeId: (employeeCode && !employeeCode.includes('-')) ? employeeCode : '',
+                    personalInfo: {
+                        firstName: parts[0] || 'Employee',
+                        lastName: parts.slice(1).join(' ') || ''
+                    }
+                };
+            }
+
+            if (targetEmp) {
+                hasAutoSelectedRef.current = true;
+                setSelectedEmployee(targetEmp);
+                setSearchTerm('');
+            }
+        }
+    }, [dayBooks, employeeGroups, directToEmployeeEOD, initialEmployeeId, search, employeeCode]);
+
     // Filter employee groups for the initial Employee List view
     const filteredEmployeeGroups = useMemo(() => {
         const term = (searchTerm || '').trim().toLowerCase();
-        if (!term) return employeeGroups;
         return employeeGroups.filter((g) => {
             const emp = g.employee;
             const firstName = emp.personalInfo?.firstName?.toLowerCase() || '';
             const lastName = emp.personalInfo?.lastName?.toLowerCase() || '';
             const fullName = `${firstName} ${lastName}`.trim();
             const empCode = (emp.employeeId || '').toLowerCase();
-            return fullName.includes(term) || empCode.includes(term);
+            const matchesSearch = !term || fullName.includes(term) || empCode.includes(term);
+
+            if (!matchesSearch) return false;
+
+            if (dateFilter) {
+                const hasMatchingDate = g.dayBooks.some(
+                    (db) => getLocalDateString(db.date) === dateFilter
+                );
+                if (!hasMatchingDate) return false;
+            }
+
+            return true;
         });
-    }, [employeeGroups, searchTerm]);
+    }, [employeeGroups, searchTerm, dateFilter]);
 
     // Filter daybooks for the Selected Employee EOD History view
     const selectedEmployeeDayBooks = useMemo(() => {
         if (!selectedEmployee) return [];
-        const empKey = selectedEmployee._id || selectedEmployee.employeeId;
 
         const empBooks = dayBooks.filter((db) => {
-            const dbEmpKey = db.employee?._id || db.employee?.employeeId;
-            return dbEmpKey === empKey;
+            if (!db.employee) return false;
+            return isSameEmployee(selectedEmployee, db.employee);
         });
 
         const term = (searchTerm || '').trim().toLowerCase();
@@ -362,25 +452,59 @@ const AdminDayBookReview = ({ search = '' }) => {
             {/* VIEW 1: INITIAL EMPLOYEE LIST VIEW */}
             {!selectedEmployee ? (
                 <div className="space-y-4">
-                    {/* Search Bar for Employee List */}
-                    <div className="flex items-center justify-between gap-4 p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-                        <div className="relative flex-1 max-w-md flex items-center">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 z-10 pointer-events-none" />
-                            <input
-                                type="text"
-                                placeholder="Search employee name or ID..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-9 pr-9 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 placeholder-slate-400"
-                            />
-                            {searchTerm && (
+                    {/* Search & Date Filter Bar for Employee List */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+                            {/* Search Filter */}
+                            <div className="relative flex-1 max-w-md flex items-center">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 z-10 pointer-events-none" />
+                                <input
+                                    type="text"
+                                    placeholder="Search employee name or ID..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 placeholder-slate-400"
+                                />
+                                {searchTerm && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Date Filter */}
+                            <div className="relative w-full sm:w-48 flex items-center">
+                                <input
+                                    type="date"
+                                    value={dateFilter}
+                                    onChange={(e) => setDateFilter(e.target.value)}
+                                    className="w-full pl-3 pr-8 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-slate-900 cursor-pointer"
+                                />
+                                {dateFilter && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setDateFilter('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                    >
+                                        <X className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {(searchTerm || dateFilter) && (
                                 <button
                                     type="button"
-                                    onClick={() => setSearchTerm('')}
-                                    style={{ position: 'absolute', right: '0.625rem', top: '50%', transform: 'translateY(-50%)' }}
-                                    className="flex items-center justify-center h-6 w-6 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors z-10"
+                                    onClick={() => {
+                                        setSearchTerm('');
+                                        setDateFilter('');
+                                    }}
+                                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 underline shrink-0 whitespace-nowrap self-center"
                                 >
-                                    <X className="w-4 h-4" />
+                                    Clear Filters
                                 </button>
                             )}
                         </div>
@@ -394,8 +518,6 @@ const AdminDayBookReview = ({ search = '' }) => {
                                     <tr>
                                         <th className="text-left p-6 text-slate-600 font-semibold">Employee</th>
                                         <th className="text-left p-6 text-slate-600 font-semibold">Total EOD Submitted</th>
-                                        <th className="text-left p-6 text-slate-600 font-semibold">Latest Submission</th>
-                                        <th className="text-left p-6 text-slate-600 font-semibold">Latest Status</th>
                                         <th className="text-left p-6 text-slate-600 font-semibold">Actions</th>
                                     </tr>
                                 </thead>
@@ -427,19 +549,6 @@ const AdminDayBookReview = ({ search = '' }) => {
                                                         {group.dayBooks.length} {group.dayBooks.length === 1 ? 'Report' : 'Reports'}
                                                     </span>
                                                 </td>
-                                                <td className="p-6 text-slate-700 font-medium whitespace-nowrap text-sm">
-                                                    {new Date(group.latestDate).toLocaleDateString('en-US', {
-                                                        weekday: 'short',
-                                                        year: 'numeric',
-                                                        month: 'short',
-                                                        day: 'numeric'
-                                                    })}
-                                                </td>
-                                                <td className="p-6">
-                                                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusBadgeClasses(group.latestStatus)}`}>
-                                                        {group.latestStatus}
-                                                    </span>
-                                                </td>
                                                 <td className="p-6">
                                                     <button
                                                         type="button"
@@ -458,7 +567,7 @@ const AdminDayBookReview = ({ search = '' }) => {
                                     })}
                                     {filteredEmployeeGroups.length === 0 && (
                                         <tr>
-                                            <td colSpan="5" className="p-16 text-center">
+                                            <td colSpan="3" className="p-16 text-center">
                                                 <div className="flex flex-col items-center justify-center space-y-3">
                                                     <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
                                                         <User className="w-8 h-8 text-slate-400" />
@@ -475,46 +584,46 @@ const AdminDayBookReview = ({ search = '' }) => {
                 </div>
             ) : (
                 /* VIEW 2: SELECTED EMPLOYEE'S EOD HISTORY VIEW (PREMIUM DISTINCT CARD LAYOUT) */
-                <div className="space-y-5 animate-enter">
+                <div className="space-y-4 sm:space-y-5 animate-enter">
                     {/* Premium Employee Banner Header Card — Medium Soft Slate-Blue Tint Theme */}
-                    <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-100 via-blue-100/80 to-indigo-100/90 border border-blue-200/90 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center space-x-4 min-w-0">
+                    <div className="p-3.5 sm:p-5 bg-gradient-to-r from-slate-100 via-blue-100/80 to-indigo-100/90 border border-blue-200/90 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
                             <button
                                 onClick={() => setSelectedEmployee(null)}
-                                className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-800 rounded-xl transition-all duration-150 text-xs font-bold flex items-center border border-slate-300/80 shrink-0 shadow-2xs"
+                                className="w-fit px-3 py-1.5 sm:px-3.5 sm:py-2 bg-white hover:bg-slate-50 text-slate-800 rounded-xl transition-all duration-150 text-xs font-bold flex items-center border border-slate-300/80 shrink-0 shadow-2xs"
                             >
-                                <ArrowLeft className="w-4 h-4 mr-1.5" />
+                                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5" />
                                 Back to Employees
                             </button>
                             <div className="h-7 w-px bg-slate-300/80 hidden md:block" />
-                            <div className="flex items-center space-x-3.5 min-w-0">
-                                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-extrabold text-lg flex items-center justify-center shrink-0 uppercase shadow-sm ring-2 ring-blue-400/40">
+                            <div className="flex items-center space-x-3 min-w-0">
+                                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-extrabold text-base sm:text-lg flex items-center justify-center shrink-0 uppercase shadow-sm ring-2 ring-blue-400/40">
                                     {String(selectedEmployee.personalInfo?.firstName?.[0] || 'E').toUpperCase()}
                                 </div>
-                                <div className="min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <h2 className="text-lg font-bold text-slate-900 tracking-tight truncate capitalize">
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                        <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight truncate capitalize">
                                             {selectedEmployee.personalInfo?.firstName} {selectedEmployee.personalInfo?.lastName}
                                         </h2>
-                                        <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-blue-600/15 text-blue-900 border border-blue-300">
-                                            {selectedEmployee.employeeId || 'EMP'}
+                                        <span className="px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold bg-blue-600/15 text-blue-900 border border-blue-300 shrink-0">
+                                            {getDisplayEmployeeId(selectedEmployee, employeeCode)}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-slate-600 mt-0.5 truncate font-medium">
+                                    <p className="text-[11px] sm:text-xs text-slate-600 mt-0.5 truncate font-medium">
                                         Employee EOD Reports History
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-3 shrink-0 self-end md:self-auto">
-                            <span className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-slate-800 border border-slate-300/80 shadow-2xs">
+                        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0 self-start md:self-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 w-full md:w-auto justify-between md:justify-end">
+                            <span className="px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold bg-white text-slate-800 border border-slate-300/80 shadow-2xs">
                                 Total {selectedEmployeeDayBooks.length} EOD {selectedEmployeeDayBooks.length === 1 ? 'Report' : 'Reports'}
                             </span>
                             <button
                                 onClick={fetchDayBooks}
                                 disabled={loading}
-                                className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border border-slate-300/80 shadow-2xs"
+                                className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-white hover:bg-slate-50 text-slate-800 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 border border-slate-300/80 shadow-2xs"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                                 Refresh
@@ -523,7 +632,7 @@ const AdminDayBookReview = ({ search = '' }) => {
                     </div>
 
                     {/* Filter Bar */}
-                    <div className="p-4 bg-white border border-slate-200/90 rounded-2xl shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-center">
+                    <div className="p-3 sm:p-4 bg-white border border-slate-200/90 rounded-2xl shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-3.5 items-center">
                         <div>
                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                                 SEARCH TASK / WORK
@@ -535,7 +644,7 @@ const AdminDayBookReview = ({ search = '' }) => {
                                     placeholder="Search task title..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-8 py-2 text-xs font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                    className="w-full pl-9 pr-8 py-1.5 sm:py-2 text-xs font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                                 />
                                 {searchTerm && (
                                     <button
@@ -558,7 +667,7 @@ const AdminDayBookReview = ({ search = '' }) => {
                                     type="date"
                                     value={dateFilter}
                                     onChange={(e) => setDateFilter(e.target.value)}
-                                    className="w-full pl-3 pr-8 py-2 text-xs font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                    className="w-full pl-3 pr-8 py-1.5 sm:py-2 text-xs font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                                 />
                                 {dateFilter && (
                                     <button
@@ -580,7 +689,7 @@ const AdminDayBookReview = ({ search = '' }) => {
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full px-3 py-2 text-xs font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                    className="w-full px-3 py-1.5 sm:py-2 text-xs font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                                 >
                                     <option value="">All Statuses</option>
                                     <option value="Submitted">Submitted</option>
@@ -619,15 +728,15 @@ const AdminDayBookReview = ({ search = '' }) => {
                                 <div
                                     key={db._id}
                                     onClick={(event) => openDayBookReview(event, db)}
-                                    className="group bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4"
+                                    className="group bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4"
                                 >
                                     {/* Date Box & Summary */}
-                                    <div className="flex items-center space-x-4 min-w-0">
+                                    <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                                         {/* Compact Date Box */}
-                                        <div className="w-14 h-14 rounded-xl bg-indigo-50/80 border border-indigo-100 flex flex-col items-center justify-center shrink-0 text-indigo-900 shadow-2xs group-hover:bg-indigo-100/80 transition-colors">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500">{weekday}</span>
-                                            <span className="text-base font-extrabold leading-none my-0.5">{dayNum}</span>
-                                            <span className="text-[9px] font-semibold text-slate-400">{monthStr}</span>
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 py-1.5 px-2 rounded-xl bg-indigo-50/80 border border-indigo-100/90 flex flex-col items-center justify-between shrink-0 text-indigo-900 shadow-2xs group-hover:bg-indigo-100/80 transition-colors">
+                                            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-indigo-600 leading-none">{weekday}</span>
+                                            <span className="text-base sm:text-lg font-black text-slate-900 leading-none my-0.5">{dayNum}</span>
+                                            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 leading-none">{monthStr}</span>
                                         </div>
 
                                         {/* Task Title summary */}
@@ -653,8 +762,8 @@ const AdminDayBookReview = ({ search = '' }) => {
                                                     return (
                                                         <div className="space-y-0.5">
                                                             {combined.map((t, idx) => (
-                                                                <div key={idx} className="flex items-center gap-2 min-w-0">
-                                                                    <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                                                                <div key={idx} className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                                                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-indigo-500 shrink-0" />
                                                                     <span className="text-xs sm:text-sm font-semibold text-slate-800 truncate" title={t}>{t}</span>
                                                                 </div>
                                                             ))}
@@ -665,7 +774,7 @@ const AdminDayBookReview = ({ search = '' }) => {
                                                 return (
                                                     <div className="space-y-1 min-w-0">
                                                         {hasFirst && (
-                                                            <div className="flex items-center gap-2 min-w-0">
+                                                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                                                                 <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
                                                                     1st Half:
                                                                 </span>
@@ -675,7 +784,7 @@ const AdminDayBookReview = ({ search = '' }) => {
                                                             </div>
                                                         )}
                                                         {hasSecond && (
-                                                            <div className="flex items-center gap-2 min-w-0">
+                                                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                                                                 <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
                                                                     2nd Half:
                                                                 </span>
@@ -689,6 +798,11 @@ const AdminDayBookReview = ({ search = '' }) => {
                                             })()}
 
                                             <div className="flex items-center space-x-2 mt-1">
+                                                {db.isHalfDay && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                                        Half Day ({db.halfDayType === 'second' ? '2nd Half' : '1st Half'})
+                                                    </span>
+                                                )}
                                                 <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-slate-100 text-slate-500 border border-slate-200/80">
                                                     <Clock className="w-2.5 h-2.5 mr-0.5 text-slate-400" />
                                                     {filledSlots} / {totalSlots} Slots Filled
@@ -698,8 +812,8 @@ const AdminDayBookReview = ({ search = '' }) => {
                                     </div>
 
                                     {/* Status & Action Buttons */}
-                                    <div className="flex items-center justify-between md:justify-end gap-3 shrink-0 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${db.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                    <div className="flex items-center justify-between md:justify-end gap-2.5 shrink-0 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                                        <span className={`px-2.5 py-0.5 sm:px-3 sm:py-1 text-[11px] sm:text-xs font-semibold rounded-full border ${db.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                             db.status === 'Rejected' ? 'bg-rose-50 text-rose-700 border-rose-200' :
                                                 db.status === 'Submitted' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                                     'bg-amber-50 text-amber-700 border-amber-200'
@@ -710,9 +824,9 @@ const AdminDayBookReview = ({ search = '' }) => {
                                         <div className="flex items-center space-x-2">
                                             <button
                                                 onClick={() => handleReview(db)}
-                                                className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow hover:scale-[1.02] transition-all flex items-center gap-1"
+                                                className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-[11px] sm:text-xs font-bold shadow-2xs hover:shadow hover:scale-[1.02] transition-all flex items-center gap-1"
                                             >
-                                                <Eye className="w-3.5 h-3.5" />
+                                                <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                                                 Review Report
                                             </button>
                                             <button
@@ -729,9 +843,9 @@ const AdminDayBookReview = ({ search = '' }) => {
                         })}
 
                         {paginatedSelectedDayBooks.length === 0 && (
-                            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-xs">
-                                <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-                                    <FileText className="w-7 h-7" />
+                            <div className="bg-white border border-slate-200 rounded-2xl p-8 sm:p-12 text-center shadow-xs">
+                                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+                                    <FileText className="w-6 h-6 sm:w-7 sm:h-7" />
                                 </div>
                                 <p className="text-slate-700 font-bold text-sm">No EOD Reports Found</p>
                                 <p className="text-slate-400 text-xs mt-1">Try clearing or adjusting your search/date filters.</p>
@@ -740,8 +854,8 @@ const AdminDayBookReview = ({ search = '' }) => {
                     </div>
 
                     {/* Pagination Bar */}
-                    <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs flex items-center justify-between">
-                        <div className="text-xs text-slate-500 font-medium">
+                    <div className="p-3 sm:p-4 bg-white border border-slate-200 rounded-2xl shadow-xs flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
+                        <div className="text-xs text-slate-500 font-medium text-center sm:text-left">
                             Showing{' '}
                             <span className="font-bold text-slate-800">
                                 {selectedEmployeeDayBooks.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}
@@ -753,27 +867,27 @@ const AdminDayBookReview = ({ search = '' }) => {
                             of <span className="font-bold text-slate-800">{selectedEmployeeDayBooks.length}</span> records
                         </div>
 
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1.5 sm:space-x-2">
                             <button
                                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                                 disabled={currentPage === 1 || loading}
-                                className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1 shadow-2xs"
+                                className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1 shadow-2xs"
                             >
-                                <ChevronLeft className="w-4 h-4" />
+                                <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                 Previous
                             </button>
 
-                            <span className="text-xs font-bold text-slate-700 px-2">
+                            <span className="text-xs font-bold text-slate-700 px-1.5 sm:px-2">
                                 Page {currentPage} of {totalPages}
                             </span>
 
                             <button
                                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                                 disabled={currentPage === totalPages || loading || selectedEmployeeDayBooks.length === 0}
-                                className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1 shadow-2xs"
+                                className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1 shadow-2xs"
                             >
                                 Next
-                                <ChevronRight className="w-4 h-4" />
+                                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </button>
                         </div>
                     </div>
@@ -782,13 +896,18 @@ const AdminDayBookReview = ({ search = '' }) => {
 
             {/* PRESERVED EXACTLY: EOD REPORT REVIEW MODAL */}
             {showReviewModal && selectedDayBook && (
-                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-2.5 sm:p-4 md:p-6 lg:left-64">
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-2.5 sm:p-4 md:p-6 lg:left-64 pt-14 sm:pt-4">
                     <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowReviewModal(false)} />
-                    <div className="relative bg-white border border-slate-200 rounded-2xl shadow-xl p-3.5 sm:p-6 md:p-7 w-full max-w-4xl max-h-[92vh] sm:max-h-[88vh] overflow-y-auto">
+                    <div className="relative bg-white border border-slate-200 rounded-2xl shadow-xl p-3.5 sm:p-6 md:p-7 w-full max-w-4xl max-h-[calc(100dvh-4.5rem)] sm:max-h-[88vh] overflow-y-auto">
                         <div className="flex items-start justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
                             <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2.5 flex-wrap">
+                                <div className="flex items-center gap-2 flex-wrap">
                                     <h2 className="text-base sm:text-xl font-bold text-slate-900 truncate">EOD Report Review</h2>
+                                    {selectedDayBook.isHalfDay && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs">
+                                            Half Day ({selectedDayBook.halfDayType === 'second' ? 'Second Half' : 'First Half'})
+                                        </span>
+                                    )}
                                     {selectedDayBook.status === 'Approved' && (
                                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs">
                                             <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
@@ -889,32 +1008,32 @@ const AdminDayBookReview = ({ search = '' }) => {
                                         onChange={(e) => setAdminComment(e.target.value)}
                                         placeholder="Provide feedback to the employee..."
                                         rows="2"
-                                        className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                                        className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 text-xs sm:text-sm"
                                     ></textarea>
                                 </div>
                             )}
 
-                            <div className="flex space-x-3 pt-3">
+                            <div className="flex flex-row space-x-2 sm:space-x-3 pt-3">
                                 <button
                                     onClick={() => updateStatus('Rejected')}
                                     disabled={selectedDayBook.status === 'Approved' || selectedDayBook.status === 'Rejected' || !!actionLoading}
-                                    className={`flex-1 px-4 py-2.5 bg-white border border-red-300 text-red-600 rounded-lg transition-all duration-200 flex items-center justify-center text-sm font-medium ${selectedDayBook.status === 'Approved' || selectedDayBook.status === 'Rejected' || !!actionLoading
+                                    className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-red-300 text-red-600 rounded-lg transition-all duration-200 flex items-center justify-center text-xs sm:text-sm font-medium ${selectedDayBook.status === 'Approved' || selectedDayBook.status === 'Rejected' || !!actionLoading
                                         ? 'opacity-50 cursor-not-allowed'
                                         : 'hover:bg-red-50'
                                         }`}
                                 >
-                                    {actionLoading === 'Rejected' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
+                                    {actionLoading === 'Rejected' ? <Loader2 className="w-4 h-4 mr-1.5 sm:mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-1.5 sm:mr-2" />}
                                     {selectedDayBook.status === 'Rejected' ? 'Rejected' : 'Reject'}
                                 </button>
                                 <button
                                     onClick={() => updateStatus('Approved')}
                                     disabled={selectedDayBook.status === 'Approved' || selectedDayBook.status === 'Rejected' || !!actionLoading}
-                                    className={`flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white text-sm font-bold rounded-lg shadow-sm transition-all duration-200 flex items-center justify-center ${selectedDayBook.status === 'Approved' || selectedDayBook.status === 'Rejected' || !!actionLoading
+                                    className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white text-xs sm:text-sm font-bold rounded-lg shadow-sm transition-all duration-200 flex items-center justify-center ${selectedDayBook.status === 'Approved' || selectedDayBook.status === 'Rejected' || !!actionLoading
                                         ? 'opacity-50 cursor-not-allowed'
                                         : 'hover:shadow-md hover:scale-[1.02]'
                                         }`}
                                 >
-                                    {actionLoading === 'Approved' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                                    {actionLoading === 'Approved' ? <Loader2 className="w-4 h-4 mr-1.5 sm:mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-1.5 sm:mr-2" />}
                                     {selectedDayBook.status === 'Approved' ? 'Approved' : 'Approve EOD'}
                                 </button>
                             </div>

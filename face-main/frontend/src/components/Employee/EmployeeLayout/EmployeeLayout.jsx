@@ -29,8 +29,9 @@ import {
   Download,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { io } from "socket.io-client";
 import { allowedKeysForDepartment, getDepartmentName, normalizeDepartment } from '../../../utils/departmentAccess';
-import { dashboardAPI, payslipAPI, getApiFileUrl } from '../../../utils/api';
+import { dashboardAPI, payslipAPI, employeeAPI, getApiFileUrl } from '../../../utils/api';
 import logo from "../../../assets/logo.jpg";
 import EmployeeHrBot from "./EmployeeHrBot";
 import { useTheme } from "../../../hooks/useTheme";
@@ -211,10 +212,169 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
   }, []);
 
   const [notifications, setNotifications] = useState([]);
+  const [chatPopup, setChatPopup] = useState(null);
+  const [userGroups, setUserGroups] = useState([]);
+  const socketRef = useRef(null);
+  const popupTimeoutRef = useRef(null);
 
   const location = useLocation();
   const navigate = useNavigate();
   const profileRef = useRef(null);
+
+  const playNotificationChime = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.type = 'sine';
+      osc2.type = 'sine';
+      osc1.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
+
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.12);
+      osc2.start(ctx.currentTime + 0.08);
+      osc2.stop(ctx.currentTime + 0.35);
+    } catch (e) {
+      // Ignore audio restriction errors
+    }
+  };
+
+  const userGroupsRef = useRef([]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (!token) return;
+
+    employeeAPI.get('/groups').then(res => {
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        setUserGroups(res.data.data);
+        userGroupsRef.current = res.data.data;
+      }
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    userGroupsRef.current = userGroups;
+  }, [userGroups]);
+
+  // Real-time Chat Socket Listener (Team Chat & Group Chat)
+  useEffect(() => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (!token) return;
+
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin.replace(/:\d+$/, ':5000');
+
+    if (!socketRef.current) {
+      const socket = io(`${SOCKET_URL}/employee`, {
+        auth: { token },
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 10
+      });
+      socketRef.current = socket;
+      window.employeeSocket = socket;
+    }
+
+    const socket = socketRef.current;
+
+    const getCurrentUserId = () => {
+      try {
+        const uStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+        if (uStr) {
+          const u = JSON.parse(uStr);
+          if (u?._id || u?.id) return String(u._id || u.id);
+        }
+      } catch (e) {}
+      return String(
+        localStorage.getItem('userId') ||
+        sessionStorage.getItem('userId') ||
+        localStorage.getItem('employeeId') ||
+        employeeData?.user?._id ||
+        employeeData?._id || ''
+      );
+    };
+
+    const showPopup = (data) => {
+      playNotificationChime();
+      setChatPopup(data);
+      window.dispatchEvent(new CustomEvent('employee-notifications-refresh'));
+      if (popupTimeoutRef.current) {
+        clearTimeout(popupTimeoutRef.current);
+      }
+      popupTimeoutRef.current = setTimeout(() => {
+        setChatPopup(null);
+      }, 6500);
+    };
+
+    const handleDirectMessage = (msg) => {
+      if (!msg || msg.fromBot) return;
+      const currentUserId = getCurrentUserId();
+      const senderId = String(msg.from || '');
+      if (msg.self || (senderId && currentUserId && senderId === currentUserId)) return;
+
+      showPopup({
+        id: msg._id || Date.now(),
+        type: 'team',
+        senderName: msg.fromName || 'Team Member',
+        text: msg.text || '',
+        peerId: senderId,
+        profileImage: msg.profileImage || null
+      });
+    };
+
+    const handleGroupMessage = (msg) => {
+      if (!msg) return;
+      const currentUserId = getCurrentUserId();
+      const senderId = String(msg.sender?._id || msg.sender?.id || msg.sender || '');
+      if (senderId && currentUserId && senderId === currentUserId) return;
+
+      const groupObj = userGroupsRef.current.find(g => String(g._id) === String(msg.groupId));
+      const groupName = groupObj?.name || msg.groupName || 'Group Chat';
+      const senderName = msg.sender?.name || msg.senderName || 'Group Member';
+
+      showPopup({
+        id: msg._id || Date.now(),
+        type: 'group',
+        senderName,
+        groupName,
+        text: msg.text || '',
+        groupId: msg.groupId,
+        profileImage: msg.sender?.profileImage || null
+      });
+    };
+
+    socket.on('message', handleDirectMessage);
+    socket.on('group:message', handleGroupMessage);
+
+    return () => {
+      socket.off('message', handleDirectMessage);
+      socket.off('group:message', handleGroupMessage);
+    };
+  }, []);
+
+  const handleChatPopupClick = () => {
+    const popup = chatPopup;
+    setChatPopup(null);
+    if (!popup) return;
+
+    if (popup.type === 'team') {
+      handleOpenTeamChat();
+    } else if (popup.type === 'group') {
+      handleOpenGroupChats();
+    }
+  };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -581,15 +741,73 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
 
             {/* Right Section */}
             <div className="flex items-center gap-2">
-              {/* Notifications */}
-              <NotificationBell
-                unreadCount={unreadNotifications}
-                notifications={notifications}
-                onNotificationRead={markAsRead}
-                onMarkAllRead={markAllAsRead}
-                onDismiss={dismissNotification}
-                onRefresh={fetchNotifications}
-              />
+              {/* Notifications & Chat Popup Container */}
+              <div className="relative flex items-center">
+                {chatPopup && (
+                  <div
+                    onClick={handleChatPopupClick}
+                    className="fixed top-16 right-4 sm:right-6 z-[99999] w-80 sm:w-96 cursor-pointer transform transition-all duration-300 ease-out animate-in fade-in slide-in-from-top-2"
+                  >
+                    <div className="relative overflow-hidden rounded-2xl border border-indigo-200/90 bg-white/95 p-3.5 sm:p-4 shadow-[0_16px_40px_rgba(79,70,229,0.18)] backdrop-blur-md dark:bg-slate-900/95 dark:border-slate-800 dark:shadow-[0_16px_40px_rgba(0,0,0,0.5)] hover:border-indigo-300 transition-all">
+                      {/* Top subtle gradient accent line */}
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600" />
+
+                      <div className="flex items-start gap-3">
+                        {/* Avatar */}
+                        <div className="relative shrink-0">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md overflow-hidden ring-2 ring-indigo-100 dark:ring-slate-700">
+                            {chatPopup.profileImage ? (
+                              <img src={getFullImageUrl(chatPopup.profileImage)} alt={chatPopup.senderName} className="h-full w-full object-cover" />
+                            ) : (
+                              <span>{chatPopup.senderName?.[0]?.toUpperCase() || 'C'}</span>
+                            )}
+                          </div>
+                          <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-xs" />
+                        </div>
+
+                        {/* Content */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">
+                              <MessageCircle className="w-3 h-3 text-indigo-500" />
+                              {chatPopup.type === 'group' ? (chatPopup.groupName ? `Group · ${chatPopup.groupName}` : 'Group Chat') : 'Team Chat'}
+                            </span>
+                            <span className="text-[10px] font-medium text-slate-400">Just now</span>
+                          </div>
+
+                          <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white truncate">
+                            {chatPopup.senderName}
+                          </h4>
+
+                          <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 mt-0.5 leading-snug">
+                            {chatPopup.text}
+                          </p>
+                        </div>
+
+                        {/* Close Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setChatPopup(null);
+                          }}
+                          className="shrink-0 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <NotificationBell
+                  unreadCount={unreadNotifications}
+                  notifications={notifications}
+                  onNotificationRead={markAsRead}
+                  onMarkAllRead={markAllAsRead}
+                  onDismiss={dismissNotification}
+                  onRefresh={fetchNotifications}
+                />
+              </div>
 
               <div className="w-px h-5 bg-slate-200 mx-1" />
 

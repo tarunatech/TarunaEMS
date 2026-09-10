@@ -59,6 +59,10 @@ export const db = drizzle(pool, {
 
 export const ensurePostgresExtensions = async () => {
   await pool.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
+  await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "isHalfDay" boolean DEFAULT false');
+  await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "halfDayType" varchar(32) DEFAULT \'full\'');
+  await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "includeBreak" boolean DEFAULT true');
+  await pool.query('ALTER TABLE "tasks" ADD COLUMN IF NOT EXISTS "achievedSoFar" text DEFAULT \'\'');
 };
 
 export default db;

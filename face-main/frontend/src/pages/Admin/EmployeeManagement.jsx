@@ -19,6 +19,7 @@ import {
   Camera,
   Calendar,
   ClipboardList,
+  FileCheck,
   TrendingUp,
   Users,
   BarChart3,
@@ -58,6 +59,7 @@ const EmployeeOverviewCard = ({
     blue: { gradient: 'from-blue-500 to-indigo-600', accent: '#3b82f6', text: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', divider: 'bg-blue-100' },
     amber: { gradient: 'from-amber-400 to-orange-500', accent: '#f59e0b', text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', divider: 'bg-amber-100' },
     violet: { gradient: 'from-violet-500 to-purple-600', accent: '#8b5cf6', text: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100', divider: 'bg-violet-100' },
+    indigo: { gradient: 'from-indigo-500 to-blue-600', accent: '#6366f1', text: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', divider: 'bg-indigo-100' },
     emerald: { gradient: 'from-emerald-500 to-teal-500', accent: '#10b981', text: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', divider: 'bg-emerald-100' },
     slate: { gradient: 'from-slate-500 to-slate-700', accent: '#64748b', text: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', divider: 'bg-slate-200' },
     rose: { gradient: 'from-rose-500 to-pink-500', accent: '#f43f5e', text: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', divider: 'bg-rose-100' }
@@ -1254,13 +1256,14 @@ const EmployeeManagement = () => {
     const employeeEmail = getSelectedEmployeeEmail(employee);
 
     try {
-      const [leavesRes, tasksRes, attendanceRes, leadsRes, problemsRes, interviewsRes] = await Promise.allSettled([
+      const [leavesRes, tasksRes, attendanceRes, leadsRes, problemsRes, interviewsRes, daybooksRes] = await Promise.allSettled([
         api.get('/leaves', { params: { search: employee.employeeId || employee.user?.employeeId || employee.fullName || employeeEmail } }),
         api.get('/tasks', { params: { assignedTo: employee._id || employeeId } }),
         attendanceAPI.getAllAttendance({ employee: employee._id || employeeId, limit: 200 }),
         leadAPI.getLeads({ includeAll: true, assignedTo: employeeEmail || employee._id || employeeId, limit: 200 }),
         isDeveloperEmployee(employee) ? api.get('/problems') : Promise.resolve({ data: { data: [] } }),
-        isHrEmployee(employee) ? api.get('/interviews/admin') : Promise.resolve({ data: { data: [] } })
+        isHrEmployee(employee) ? api.get('/interviews/admin') : Promise.resolve({ data: { data: [] } }),
+        api.get('/daybooks', { params: { employeeId: employee._id || employeeId } })
       ]);
 
       const leaves = leavesRes.status === 'fulfilled'
@@ -1280,6 +1283,9 @@ const EmployeeManagement = () => {
         : [];
       const interviews = interviewsRes.status === 'fulfilled'
         ? normalizeList(interviewsRes.value, ['data', 'interviews']).filter(item => matchesEmployee({ ...item, employee: item.createdBy || item.employee || item.hr }, employee))
+        : [];
+      const daybooks = daybooksRes.status === 'fulfilled'
+        ? normalizeList(daybooksRes.value, ['dayBooks', 'daybooks', 'data']).filter(item => matchesEmployee(item, employee))
         : [];
 
       const statusOf = (item) => String(item.status || '').toLowerCase();
@@ -1350,6 +1356,9 @@ const EmployeeManagement = () => {
       const latestProblem = sortLatest(problems.filter(item => !['solved', 'resolved', 'closed'].includes(statusOf(item))))[0];
       const scheduledInterviews = interviews.filter(item => ['scheduled', 'pending'].includes(statusOf(item))).length;
       const completedInterviews = interviews.filter(item => ['completed', 'selected', 'rejected', 'cancelled'].includes(statusOf(item))).length;
+      const approvedDaybooks = daybooks.filter(item => statusOf(item) === 'approved').length;
+      const pendingDaybooks = daybooks.filter(item => ['pending', 'submitted'].includes(statusOf(item))).length;
+      const rejectedDaybooks = daybooks.filter(item => statusOf(item) === 'rejected').length;
 
       setEmployeeOverview({
         leaves: {
@@ -1366,6 +1375,12 @@ const EmployeeManagement = () => {
           completed: completedTasks,
           overdue: overdueTasks,
           titles: taskTitles
+        },
+        daybooks: {
+          total: daybooks.length,
+          pending: pendingDaybooks,
+          approved: approvedDaybooks,
+          rejected: rejectedDaybooks
         },
         attendance: {
           total: attendance.length,
@@ -1519,11 +1534,12 @@ const EmployeeManagement = () => {
     sessionStorage.removeItem('returnToEmployeeId');
   };
 
-  const goToEmployeeDetailPage = (path) => {
+  const goToEmployeeDetailPage = (path, extraState = {}) => {
     const firstName = selectedEmployee?.personalInfo?.firstName || '';
     const lastName = selectedEmployee?.personalInfo?.lastName || '';
     const fullName = `${firstName} ${lastName}`.trim() || selectedEmployee?.user?.name || '';
     const empId = String(selectedEmployee?._id || selectedEmployee?.id || selectedEmployee?.employeeId || selectedEmployee?.user?._id || '');
+    const empCode = selectedEmployee?.employeeId || selectedEmployee?.user?.employeeId || '';
 
     if (empId) {
       sessionStorage.setItem('returnToEmployeeId', empId);
@@ -1543,9 +1559,11 @@ const EmployeeManagement = () => {
           employeeFilter: fullName,
           fromSnapshot: true,
           returnToEmployeeId: empId,
+          employeeIdCode: empCode,
           startDate: firstDay,
           endDate: lastDay,
-          selectedMonth: `${year}-${month}`
+          selectedMonth: `${year}-${month}`,
+          ...extraState
         }
       });
       return;
@@ -1555,7 +1573,9 @@ const EmployeeManagement = () => {
       state: {
         employeeFilter: fullName,
         fromSnapshot: true,
-        returnToEmployeeId: empId
+        returnToEmployeeId: empId,
+        employeeIdCode: empCode,
+        ...extraState
       }
     });
   };
@@ -2057,7 +2077,7 @@ const EmployeeManagement = () => {
       <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={handleCloseViewModal} />
 
       {/* Modal content */}
-      <div className="employee-details-view relative w-full max-w-3xl lg:max-w-6xl max-h-[74vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
+      <div className="employee-details-view relative w-full max-w-3xl lg:max-w-7xl xl:max-w-[1400px] max-h-[74vh] lg:max-h-[86vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
         <div className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-blue-100 bg-[#F8FAFC]/95 px-3 py-2.5 backdrop-blur sm:px-5 sm:py-3">
           <h2 className="text-sm sm:text-xl font-bold text-slate-900 truncate min-w-0">Employee Details</h2>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -2124,8 +2144,8 @@ const EmployeeManagement = () => {
                       </span>
                     )}
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${(selectedEmployee.status === 'Active' || !selectedEmployee.status)
-                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                        : 'bg-slate-100 border-slate-200 text-slate-600'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                      : 'bg-slate-100 border-slate-200 text-slate-600'
                       }`}>
                       {selectedEmployee.status || 'Active'}
                     </span>
@@ -2264,6 +2284,22 @@ const EmployeeManagement = () => {
                   cta="View tasks"
                   tone="violet"
                   onClick={() => goToEmployeeDetailPage('/admin/tasks')}
+                />
+                <EmployeeOverviewCard
+                  icon={FileCheck}
+                  title="EOD Day Book"
+                  value={overviewLoading ? '...' : `${employeeOverview?.daybooks?.total || 0} total`}
+                  subtitle="EOD submissions"
+                  breakdown={[
+                    { label: 'Pending', value: employeeOverview?.daybooks?.pending || 0 },
+                    { label: 'Approved', value: employeeOverview?.daybooks?.approved || 0 },
+                    { label: 'Rejected', value: employeeOverview?.daybooks?.rejected || 0 },
+                    { label: 'Total', value: employeeOverview?.daybooks?.total || 0 }
+                  ]}
+                  progress={employeeOverview?.daybooks?.total ? ((employeeOverview?.daybooks?.approved || 0) / employeeOverview.daybooks.total) * 100 : 0}
+                  cta="View EOD"
+                  tone="indigo"
+                  onClick={() => goToEmployeeDetailPage('/admin/tasks', { activeTab: 'daybooks', directToEmployeeEOD: true })}
                 />
                 {isSalesEmployee(selectedEmployee) && (
                   <>

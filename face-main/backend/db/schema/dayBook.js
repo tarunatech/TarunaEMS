@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   jsonb,
   pgEnum,
@@ -20,6 +21,9 @@ export const dayBooks = pgTable(
     slots: jsonb('slots').notNull().default([]),
     status: dayBookStatusEnum('status').notNull().default('Draft'),
     adminComment: varchar('adminComment', { length: 2048 }),
+    isHalfDay: boolean('isHalfDay').notNull().default(false),
+    halfDayType: varchar('halfDayType', { length: 32 }).default('full'),
+    includeBreak: boolean('includeBreak').notNull().default(true),
     createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
   },

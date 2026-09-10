@@ -6,7 +6,7 @@ import { tasks } from '../db/schema/task.js';
 
 const STATUSES = new Set(['Pending', 'Draft', 'Submitted', 'Approved', 'Rejected']);
 const WORK_TYPES = new Set(['Task', 'Meeting', 'Learning', 'Internal Work', 'Break', 'Lunch Break', 'Other']);
-const WRITABLE_FIELDS = ['employee', 'date', 'slots', 'status', 'adminComment', 'createdAt', 'updatedAt'];
+const WRITABLE_FIELDS = ['employee', 'date', 'slots', 'status', 'adminComment', 'isHalfDay', 'halfDayType', 'includeBreak', 'createdAt', 'updatedAt'];
 
 const columnByField = {
   id: dayBooks.id,
@@ -15,6 +15,9 @@ const columnByField = {
   date: dayBooks.date,
   status: dayBooks.status,
   adminComment: dayBooks.adminComment,
+  isHalfDay: dayBooks.isHalfDay,
+  halfDayType: dayBooks.halfDayType,
+  includeBreak: dayBooks.includeBreak,
   createdAt: dayBooks.createdAt,
   updatedAt: dayBooks.updatedAt,
 };
@@ -156,7 +159,7 @@ const populateOne = async (doc, path, select) => {
 
 class DayBookDocument {
   constructor(row = {}, options = {}) {
-    Object.assign(this, { slots: [], status: 'Draft' }, serialize(row));
+    Object.assign(this, { slots: [], status: 'Draft', isHalfDay: false, halfDayType: 'full', includeBreak: true }, serialize(row));
     if (!this.id && this._id) this.id = this._id;
     this.__isNew = options.isNew || !this._id;
   }

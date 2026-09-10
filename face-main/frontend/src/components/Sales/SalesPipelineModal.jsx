@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CheckCircle, Download, FileText, Globe, Loader2, Mail, Phone, Send, ShieldCheck, Upload, XCircle } from 'lucide-react';
+import { ArrowUp, CheckCircle, Download, FileText, Globe, Loader2, Mail, Phone, Save, Send, ShieldCheck, Sparkles, Upload, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiFileUrl, salesPipelineAPI } from '../../utils/api';
 
 const stages = [
   ['client_details', 'Client Details'],
   ['quotation', 'Quotation Details'],
-  ['admin_approval', 'Admin Approval'],
   ['proposal', 'Proposal'],
   ['sent_to_client', 'Sent to Client'],
   ['negotiation', 'Negotiation'],
@@ -421,10 +420,29 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
   const [extractingPdf, setExtractingPdf] = useState(false);
   const [activeStage, setActiveStage] = useState('client_details');
   const pdfUploadRef = useRef(null);
+  const modalScrollRef = useRef(null);
   const [approvalComments, setApprovalComments] = useState('');
   const [forms, setForms] = useState(emptyForms);
 
   const isAdmin = role === 'admin';
+
+  const scrollToTop = () => {
+    if (modalScrollRef.current) {
+      modalScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    let parent = modalScrollRef.current?.parentElement;
+    while (parent && parent !== document.body) {
+      const overflowY = window.getComputedStyle(parent).overflowY;
+      if (['auto', 'scroll'].includes(overflowY) && parent.scrollHeight > parent.clientHeight) {
+        parent.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      parent = parent.parentElement;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (document.documentElement) {
+      document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const loadPipeline = async () => {
     try {
@@ -442,7 +460,8 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
 
   const hydrate = (data) => {
     setPipeline(data);
-    setActiveStage(prev => prev || data.currentStage || 'client_details');
+    const initialStage = data.currentStage === 'admin_approval' ? 'proposal' : (data.currentStage || 'client_details');
+    setActiveStage(prev => prev === 'admin_approval' ? 'proposal' : (prev || initialStage));
     setForms({
       clientDetails: {
         ...emptyForms.clientDetails,
@@ -1027,7 +1046,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
   };
 
   const content = (
-    <div className={`${embedded ? 'w-full h-full flex flex-col' : `flex flex-col max-h-[85dvh] sm:max-h-[90vh] w-full ${isAdmin ? 'max-w-7xl' : 'max-w-5xl'} overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-6 shadow-xl`} employee-sales-pipeline-modal`}>
+    <div className={`${embedded ? 'w-full h-full flex flex-col' : `flex flex-col h-[92vh] sm:h-[95vh] max-h-[96vh] w-full ${isAdmin ? 'max-w-7xl' : 'max-w-5xl'} overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-6 shadow-xl`} employee-sales-pipeline-modal`}>
       <style>{`
           @keyframes pipelineStageIn {
             from { opacity: 0; transform: translateY(10px) scale(0.99); }
@@ -1062,7 +1081,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
           Loading pipeline...
         </div>
       ) : (
-        <div className={`pipeline-modal-scroll flex-1 ${embedded ? 'min-h-0' : 'overflow-y-auto overscroll-contain'} space-y-3 sm:space-y-5 pr-0.5`}>
+        <div ref={modalScrollRef} className={`pipeline-modal-scroll flex-1 ${embedded ? 'min-h-0' : 'overflow-y-auto overscroll-contain'} space-y-3 sm:space-y-5 pr-0.5`}>
           <StageStepper currentStage={pipeline?.currentStage} activeStage={activeStage} onSelect={setActiveStage} />
 
           <div key={activeStage} className="pipeline-stage-panel rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm sm:p-5">
@@ -1111,43 +1130,88 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                     <Download className="h-4 w-4" />
                     Generate PDF
                   </button>
-                  <button onClick={() => transition('admin_approval', 'Submitted quotation for approval')} disabled={saving} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
-                    Submit for Approval
+                  <button onClick={() => transition('proposal', 'Proceeded to proposal stage')} disabled={saving} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+                    Proceed to Proposal
                   </button>
                 </div>
               </section>
             )}
 
-            {activeStage === 'admin_approval' && (
-              <section>
-                <StageHeading title="Admin Approval" subtitle="Track approval status and admin comments" icon={<ShieldCheck className="h-4 w-4 text-indigo-600" />} />
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <Badge status={pipeline?.approval?.status} />
-                  <span className="text-xs text-slate-500">Submitted: {formatDateTime(pipeline?.approval?.submittedAt)}</span>
-                </div>
-                {isAdmin && (
-                  <div className="rounded-xl bg-slate-50 p-3">
-                    <Textarea label="Approval Comments" value={approvalComments} onChange={setApprovalComments} />
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button onClick={() => approve('approved')} disabled={saving} className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Approve</button>
-                      <button onClick={() => approve('rejected')} disabled={saving} className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700">Reject</button>
-                      <button onClick={() => approve('revision_requested')} disabled={saving} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100">Request Revision</button>
-                    </div>
-                  </div>
-                )}
-              </section>
-            )}
-
             {activeStage === 'proposal' && (
               <section>
-                <StageHeading title="Proposal" subtitle="Generate, edit, preview, and export the client proposal" icon={<FileText className="h-4 w-4 text-indigo-600" />} />
-                {pipeline?.approval?.status !== 'approved' ? (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800">
-                    Admin approval must be approved before preparing the proposal.
-                  </div>
-                ) : (
-                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(380px,0.92fr)] xl:items-start">
-                    <div className="max-h-[78vh] space-y-4 overflow-y-auto pr-1 xl:pr-2">
+                <StageHeading
+                  title="Proposal"
+                  subtitle="Generate, edit, preview, and export the client proposal"
+                  icon={<FileText className="h-4 w-4 text-indigo-600" />}
+                  actions={
+                    <>
+                      {/* Hidden PDF file input */}
+                      <input
+                        ref={pdfUploadRef}
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={handleExtractProposalFromPdf}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => pdfUploadRef.current?.click()}
+                        disabled={saving || extractingPdf}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-bold text-amber-700 transition hover:bg-amber-100 disabled:opacity-60 shadow-xs w-full sm:w-auto truncate"
+                      >
+                        {extractingPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : <Upload className="h-3.5 w-3.5 shrink-0" />}
+                        <span className="truncate">{extractingPdf ? 'Extracting...' : 'Upload PDF'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={generateProposalWithAI}
+                        disabled={saving || extractingPdf}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-fuchsia-600 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold text-white transition hover:bg-fuchsia-700 disabled:opacity-60 shadow-xs w-full sm:w-auto truncate"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 shrink-0 text-fuchsia-200" />
+                        <span className="truncate">Generate with AI</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => saveProposal('draft')}
+                        disabled={saving || extractingPdf}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 shadow-xs w-full sm:w-auto truncate"
+                      >
+                        <Save className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        <span className="truncate">Save Draft</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => saveProposal('finalized')}
+                        disabled={saving || extractingPdf}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60 shadow-xs w-full sm:w-auto truncate"
+                      >
+                        <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">Save Final</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => generateProposalPdf(false)}
+                        disabled={saving || extractingPdf}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-bold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60 shadow-xs w-full sm:w-auto truncate"
+                      >
+                        <Download className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">View PDF</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => transition('sent_to_client', 'Proposal completed and ready to send')}
+                        disabled={saving || extractingPdf}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold text-white transition hover:bg-blue-700 disabled:opacity-60 shadow-xs w-full sm:w-auto truncate"
+                      >
+                        <Send className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">Send to Client Stage</span>
+                      </button>
+                    </>
+                  }
+                />
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,0.75fr)_minmax(420px,1.25fr)] xl:items-start">
+                    <div className="space-y-4 xl:max-h-[84vh] xl:overflow-y-auto pr-1 xl:pr-2">
                       <div className="grid gap-3 sm:grid-cols-2">
                         <Input label="Company Name" value={forms.proposal.companyName} onChange={v => updateProposal('companyName', v)} />
                         <Input label="Customer Name" value={forms.proposal.customerName} onChange={v => updateProposal('customerName', v)} />
@@ -1219,7 +1283,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                       </div>
                     </div>
 
-                    <div className="flex max-h-[78vh] flex-col gap-3 overflow-y-auto pl-0 xl:sticky xl:top-4 xl:pl-2">
+                    <div className="flex flex-col gap-3 pl-0 xl:max-h-[84vh] xl:overflow-y-auto xl:sticky xl:top-4 xl:pl-2">
                       <ProposalPreview
                         proposal={forms.proposal}
                         onProposalChange={updateProposal}
@@ -1232,72 +1296,9 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                         onTitleChange={(key, title) => updateProposalObject('sectionTitles', key, title)}
                         embedded={embedded}
                       />
-
-                      <div className="rounded-xl border border-slate-200 bg-white p-2.5 sm:p-3 shadow-sm">
-                        <div className="flex flex-col gap-2 sm:gap-3">
-                          <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
-                            {/* Hidden PDF file input */}
-                            <input
-                              ref={pdfUploadRef}
-                              type="file"
-                              accept="application/pdf"
-                              className="hidden"
-                              onChange={handleExtractProposalFromPdf}
-                            />
-                            <button
-                              onClick={() => pdfUploadRef.current?.click()}
-                              disabled={saving || extractingPdf}
-                              className="inline-flex items-center justify-center gap-1 sm:gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
-                            >
-                              {extractingPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : <Upload className="h-3.5 w-3.5 shrink-0" />}
-                              <span className="truncate">{extractingPdf ? 'Extracting...' : 'Upload PDF'}</span>
-                            </button>
-                            <button
-                              onClick={generateProposalWithAI}
-                              disabled={saving || extractingPdf}
-                              className="inline-flex items-center justify-center rounded-lg bg-fuchsia-600 px-2 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-bold text-white shadow-sm transition hover:bg-fuchsia-700 disabled:opacity-60"
-                            >
-                              <span className="truncate">Generate with AI</span>
-                            </button>
-                            <button
-                              onClick={() => saveProposal('draft')}
-                              disabled={saving || extractingPdf}
-                              className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
-                            >
-                              <span className="truncate">Save Draft</span>
-                            </button>
-                            <button
-                              onClick={() => saveProposal('finalized')}
-                              disabled={saving || extractingPdf}
-                              className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-2 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
-                            >
-                              <span className="truncate">Save Final</span>
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
-                            <button
-                              onClick={() => generateProposalPdf(false)}
-                              disabled={saving || extractingPdf}
-                              className="inline-flex items-center justify-center gap-1 sm:gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
-                            >
-                              <Download className="h-3.5 w-3.5 shrink-0" />
-                              <span className="truncate">View PDF</span>
-                            </button>
-                            <button
-                              onClick={() => transition('sent_to_client', 'Proposal completed and ready to send')}
-                              disabled={saving || extractingPdf}
-                              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-2 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60"
-                            >
-                              <span className="truncate">Send to Client Stage</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
-                )}
-              </section>
+                </section>
             )}
 
             {activeStage === 'sent_to_client' && (
@@ -1339,7 +1340,17 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
           </div>
 
           <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <h3 className="mb-3 text-sm font-bold text-slate-900">Stage History</h3>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="text-sm font-bold text-slate-900">Stage History</h3>
+              <button
+                type="button"
+                onClick={scrollToTop}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-100 hover:text-blue-600 hover:border-blue-200"
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+                <span>Scroll to Top</span>
+              </button>
+            </div>
             <div className="space-y-2">
               {(pipeline?.stageHistory || []).slice().reverse().map((item, index) => (
                 <div key={`${item.toStage}-${item.changedAt}-${index}`} className="text-xs text-slate-600">
@@ -1360,7 +1371,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-start sm:items-center p-3 pt-12 sm:p-4 bg-slate-900/30 backdrop-blur-sm ${isAdmin ? 'justify-center lg:justify-end lg:pr-10' : 'justify-center'}`}
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-slate-900/30 backdrop-blur-sm ${isAdmin ? 'lg:justify-end lg:pr-8' : ''}`}
       onClick={onClose}
     >
       <div className={`w-full ${isAdmin ? 'max-w-7xl lg:ml-auto' : 'max-w-5xl'}`} onClick={(event) => event.stopPropagation()}>
@@ -1402,15 +1413,20 @@ const StageStepper = ({ currentStage, activeStage, onSelect }) => {
   );
 };
 
-const StageHeading = ({ title, subtitle, icon }) => (
-  <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+const StageHeading = ({ title, subtitle, icon, actions }) => (
+  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
     <div>
       <div className="flex items-center gap-2">
         {icon && <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-slate-200">{icon}</span>}
-        <h3 className="text-base font-bold text-slate-950">{title}</h3>
+        <h3 className="text-base sm:text-lg font-bold text-slate-950">{title}</h3>
       </div>
-      {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}
     </div>
+    {actions && (
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 w-full sm:w-auto shrink-0">
+        {actions}
+      </div>
+    )}
   </div>
 );
 
@@ -1454,42 +1470,101 @@ const Textarea = ({ label, value, onChange }) => (
   </label>
 );
 
-const ProposalRowsEditor = ({ title, rows = [], fields, onChange, onAdd, onRemove, compact = false }) => (
+const ProposalRowsEditor = ({ title, rows = [], fields, onChange, onAdd, onRemove }) => (
   <div className="rounded-xl border border-slate-200 bg-white p-3">
     <div className="mb-2.5 flex items-center justify-between gap-2">
       <h4 className="text-xs sm:text-sm font-bold text-slate-900">{title}</h4>
-      <button type="button" onClick={onAdd} className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] sm:text-xs font-semibold text-slate-600 hover:bg-slate-50">+ Add Row</button>
+      <button
+        type="button"
+        onClick={onAdd}
+        className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] sm:text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+      >
+        + Add Row
+      </button>
     </div>
-    {compact && (
-      <div className={`hidden sm:grid mb-2 gap-2 px-1 text-[10px] font-bold uppercase tracking-wide text-slate-400 ${fields.length === 2 ? 'grid-cols-[minmax(0,1fr)_120px_auto]' : 'grid-cols-[minmax(0,1fr)_minmax(140px,1fr)_minmax(90px,0.8fr)_auto]'}`}>
-        {fields.map(([, label]) => <span key={label}>{label}</span>)}
-        <span />
-      </div>
-    )}
-    <div className="space-y-2">
-      {asArray(rows).map((row, index) => (
-        <div key={`${title}-${index}`} className={`grid gap-1.5 sm:gap-2 rounded-lg bg-slate-50 p-2 ${compact ? (fields.length === 2 ? 'grid-cols-[1fr_80px_24px] sm:grid-cols-[minmax(0,1fr)_120px_auto] items-center' : 'grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(140px,1fr)_minmax(90px,0.8fr)_auto] items-center') : 'sm:grid-cols-[repeat(auto-fit,minmax(130px,1fr))_auto]'}`}>
-          {compact ? (
-            <>
-              {fields.map(([field, label]) => (
-                <label key={field} className="block min-w-0">
-                  <span className="mb-0.5 block text-[10px] font-medium text-slate-500 sm:hidden">{label}</span>
+    <div className="space-y-2.5">
+      {asArray(rows).map((row, index) => {
+        if (fields.length === 2) {
+          const [f1, f2] = fields;
+          return (
+            <div key={`${title}-${index}`} className="grid grid-cols-[minmax(0,1fr)_90px_auto] sm:grid-cols-[minmax(0,1fr)_120px_auto] items-end gap-1.5 sm:gap-2 rounded-lg bg-slate-50 p-2.5 border border-slate-100">
+              <label className="block min-w-0">
+                <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{f1[1]}</span>
+                <input
+                  value={row?.[f1[0]] || ''}
+                  onChange={v => onChange(index, f1[0], v.target.value)}
+                  className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                />
+              </label>
+              <label className="block min-w-0">
+                <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{f2[1]}</span>
+                <input
+                  value={row?.[f2[0]] || ''}
+                  onChange={v => onChange(index, f2[0], v.target.value)}
+                  className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                className="h-8 w-8 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition"
+                title="Remove row"
+              >
+                ✕
+              </button>
+            </div>
+          );
+        }
+
+        const longField = fields.find(([k]) => ['notes', 'description'].includes(k)) || fields[2];
+        const shortFields = fields.filter(f => f !== longField);
+        const [sf1, sf2] = shortFields;
+
+        return (
+          <div key={`${title}-${index}`} className="space-y-2 rounded-lg bg-slate-50 p-2.5 border border-slate-100">
+            <div className="grid grid-cols-[minmax(0,1fr)_90px_auto] sm:grid-cols-[minmax(0,1fr)_120px_auto] items-end gap-1.5 sm:gap-2">
+              {sf1 && (
+                <label className="block min-w-0">
+                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{sf1[1]}</span>
                   <input
-                    value={row?.[field] || ''}
-                    onChange={v => onChange(index, field, v.target.value)}
-                    className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs sm:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    value={row?.[sf1[0]] || ''}
+                    onChange={v => onChange(index, sf1[0], v.target.value)}
+                    className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </label>
-              ))}
-            </>
-          ) : (
-            fields.map(([field, label]) => (
-              <Input key={field} label={label} value={row?.[field]} onChange={v => onChange(index, field, v)} />
-            ))
-          )}
-          <button type="button" onClick={() => onRemove(index)} className="self-center justify-self-end sm:justify-self-auto rounded-lg px-1.5 py-1 text-xs font-bold text-red-500 hover:bg-red-50" title="Remove row">✕</button>
-        </div>
-      ))}
+              )}
+              {sf2 && (
+                <label className="block min-w-0">
+                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{sf2[1]}</span>
+                  <input
+                    value={row?.[sf2[0]] || ''}
+                    onChange={v => onChange(index, sf2[0], v.target.value)}
+                    className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </label>
+              )}
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                className="h-8 w-8 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition"
+                title="Remove row"
+              >
+                ✕
+              </button>
+            </div>
+            {longField && (
+              <label className="block w-full">
+                <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{longField[1]}</span>
+                <input
+                  value={row?.[longField[0]] || ''}
+                  onChange={v => onChange(index, longField[0], v.target.value)}
+                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                />
+              </label>
+            )}
+          </div>
+        );
+      })}
     </div>
   </div>
 );
@@ -1550,7 +1625,7 @@ const ProposalPreview = ({
   const page = (key, defaultTitle, children) => {
     const title = proposal.sectionTitles?.[key] || defaultTitle;
     return (
-      <div className={`proposal-page relative mx-auto mb-3 sm:mb-4 min-h-[460px] sm:min-h-[560px] w-full overflow-hidden rounded-sm bg-white p-3.5 sm:p-6 shadow-md sm:shadow-lg ring-1 ring-slate-300 flex flex-col justify-between ${embedded ? 'max-w-full sm:max-w-[500px]' : 'max-w-full sm:max-w-[440px]'}`}>
+      <div className={`proposal-page relative mx-auto mb-3 sm:mb-4 min-h-[460px] sm:min-h-[560px] w-full overflow-hidden rounded-sm bg-white p-3.5 sm:p-6 shadow-md sm:shadow-lg ring-1 ring-slate-300 flex flex-col justify-between ${embedded ? 'max-w-full sm:max-w-[500px]' : 'max-w-full sm:max-w-[440px] xl:max-w-[680px]'}`}>
         {/* Background Watermark - Brighter Logo */}
         <img
           src="/Taruna-logo-text.png"

@@ -74,7 +74,7 @@ const ExpenseTracker = () => {
   }, [loadData]);
 
   useEffect(() => {
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin.replace(/:\d+$/, ':5000');
     const socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       auth: { token: localStorage.getItem('token') }

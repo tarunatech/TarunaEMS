@@ -420,6 +420,23 @@ export const sendGroupMessage = async (req, res) => {
     };
     await group.save();
 
+    const io = req.app.get('io');
+    if (io) {
+      const messagePayload = {
+        _id: message._id,
+        groupId,
+        sender: {
+          _id: userId,
+          name: message.sender?.name || req.user.name || 'Group Member',
+          profileImage: message.sender?.profileImage || null
+        },
+        text: message.text,
+        timestamp: message.createdAt,
+        type: 'text'
+      };
+      io.of('/employee').to(`group:${groupId}`).emit('group:message', messagePayload);
+    }
+
     res.status(201).json({ success: true, data: message });
   } catch (error) {
     console.error('Send group message error:', error);

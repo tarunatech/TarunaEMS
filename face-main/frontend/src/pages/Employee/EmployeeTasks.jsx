@@ -23,7 +23,8 @@ import {
   RefreshCcw,
   Edit3,
   Minus,
-  History
+  History,
+  Save
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -89,6 +90,8 @@ const EmployeeTasks = () => {
     dueDate: '',
     estimatedHours: 0
   });
+  const [achievedInput, setAchievedInput] = useState('');
+  const [savingAchieved, setSavingAchieved] = useState(false);
   const [editTask, setEditTask] = useState({
     _id: '',
     title: '',
@@ -96,7 +99,8 @@ const EmployeeTasks = () => {
     descriptions: [''],
     priority: 'Medium',
     dueDate: '',
-    estimatedHours: 0
+    estimatedHours: 0,
+    achievedSoFar: ''
   });
 
   useEffect(() => {
@@ -264,15 +268,37 @@ const EmployeeTasks = () => {
     try {
       setModalLoading(true);
       setSelectedTask(task);
+      setAchievedInput(task.achievedSoFar || '');
       setShowTaskModal(true);
 
       // Optionally fetch fresh task data
       const response = await taskService.getTaskById(task._id);
-      setSelectedTask(response.task);
+      if (response?.task) {
+        setSelectedTask(response.task);
+        setAchievedInput(response.task.achievedSoFar || '');
+      }
     } catch (error) {
       toast.error('Failed to load task details');
     } finally {
       setModalLoading(false);
+    }
+  };
+
+  const handleSaveAchieved = async () => {
+    if (!selectedTask) return;
+    try {
+      setSavingAchieved(true);
+      const response = await updateTask(selectedTask._id, { achievedSoFar: achievedInput });
+      if (response?.task) {
+        setSelectedTask(response.task);
+        setAchievedInput(response.task.achievedSoFar || '');
+      }
+      toast.success('Achieved progress saved successfully');
+      await fetchTasks();
+    } catch (err) {
+      toast.error(err.message || 'Failed to save achieved progress');
+    } finally {
+      setSavingAchieved(false);
     }
   };
 
@@ -298,7 +324,8 @@ const EmployeeTasks = () => {
       descriptions: existingDescs.length > 0 ? existingDescs : [''],
       priority: task.priority || 'Medium',
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
-      estimatedHours: task.estimatedHours || 0
+      estimatedHours: task.estimatedHours || 0,
+      achievedSoFar: task.achievedSoFar || ''
     });
     setShowEditModal(true);
   };
@@ -332,11 +359,13 @@ const EmployeeTasks = () => {
         description: combinedDescription,
         priority: editTask.priority || 'Medium',
         dueDate: editTask.dueDate,
-        estimatedHours: parseFloat(editTask.estimatedHours) || 0
+        estimatedHours: parseFloat(editTask.estimatedHours) || 0,
+        achievedSoFar: editTask.achievedSoFar || ''
       });
 
       if (response?.task && selectedTask?._id === editTask._id) {
         setSelectedTask(response.task);
+        setAchievedInput(response.task.achievedSoFar || '');
       }
 
       setShowEditModal(false);
@@ -976,6 +1005,51 @@ const EmployeeTasks = () => {
                       </div>
                     </div>
 
+                    {/* Achieved So Far Section */}
+                    <div className="rounded-xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/60 via-white to-slate-50 p-3 sm:p-4 shadow-2xs">
+                      <div className="mb-2.5 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 font-bold shrink-0">
+                              <Target strokeWidth={2} className="w-3.5 h-3.5" />
+                            </div>
+                            <h4 className="text-xs sm:text-[14px] font-bold text-slate-900 truncate">Achieved So Far</h4>
+                          </div>
+                          {selectedTask.status !== 'Completed' && (
+                            <button
+                              type="button"
+                              onClick={handleSaveAchieved}
+                              disabled={savingAchieved || achievedInput === (selectedTask.achievedSoFar || '')}
+                              className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md sm:rounded-lg transition-all shadow-xs shrink-0"
+                            >
+                              {savingAchieved ? (
+                                <Loader2 strokeWidth={2} className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
+                              ) : (
+                                <Save strokeWidth={2} className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                              )}
+                              <span>Save Progress</span>
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[10.5px] sm:text-[11.5px] text-slate-500 pl-8 leading-tight">
+                          Mention milestones, progress & work completed on this task
+                        </p>
+                      </div>
+                      {selectedTask.status !== 'Completed' ? (
+                        <textarea
+                          value={achievedInput}
+                          onChange={(e) => setAchievedInput(e.target.value)}
+                          placeholder="What have you completed so far on this task? (e.g. Finished module 1, created database tables...)"
+                          rows={3}
+                          className="w-full rounded-xl border border-emerald-200/70 bg-white p-2.5 text-[12.5px] sm:text-[13px] text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all outline-none resize-none shadow-2xs"
+                        />
+                      ) : (
+                        <div className="rounded-xl border border-slate-200 bg-white p-3 text-[12.5px] text-slate-800 leading-relaxed whitespace-pre-wrap">
+                          {selectedTask.achievedSoFar || <span className="text-slate-400 italic">No achievement details recorded.</span>}
+                        </div>
+                      )}
+                    </div>
+
                     {/* Subtasks */}
                     {selectedTask.subtasks && selectedTask.subtasks.length > 0 && (
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
@@ -1280,6 +1354,20 @@ const EmployeeTasks = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* Achieved So Far Field */}
+                <div className="border-t border-slate-100 pt-3">
+                  <label className="block text-xs sm:text-[13px] font-semibold text-slate-700 mb-1">
+                    Achieved So Far
+                  </label>
+                  <textarea
+                    value={editTask.achievedSoFar || ''}
+                    onChange={(e) => setEditTask({ ...editTask, achievedSoFar: e.target.value })}
+                    placeholder="Mention key milestones, achievements, or work completed so far..."
+                    rows="2.5"
+                    className="w-full px-2.5 py-1.5 sm:px-3.5 sm:py-2 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-xs sm:text-[13px] font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-150 resize-none shadow-2xs"
+                  />
                 </div>
 
                 {/* Status Notice */}

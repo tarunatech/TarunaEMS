@@ -1107,9 +1107,50 @@ html.theme-dark .border-slate-200,
 html.theme-dark .border-slate-300,
 html.theme-dark .border-blue-100,
 html.theme-dark .border-blue-200,
+html.theme-dark .border-emerald-100,
+html.theme-dark .border-emerald-200,
+html.theme-dark .border-purple-100,
+html.theme-dark .border-purple-200,
+html.theme-dark .border-amber-100,
+html.theme-dark .border-amber-200,
+html.theme-dark .border-orange-100,
+html.theme-dark .border-orange-200,
+html.theme-dark .border-red-100,
+html.theme-dark .border-red-200,
 html.theme-dark .border-white\/30 {
   border-color: rgba(148, 163, 184, 0.24) !important;
 }
+
+html.theme-dark .text-blue-700,
+html.theme-dark .text-blue-800 {
+  color: #60a5fa !important;
+}
+
+html.theme-dark .text-emerald-700,
+html.theme-dark .text-emerald-800 {
+  color: #34d399 !important;
+}
+
+html.theme-dark .text-purple-700,
+html.theme-dark .text-purple-800 {
+  color: #c084fc !important;
+}
+
+html.theme-dark .text-amber-700,
+html.theme-dark .text-amber-800 {
+  color: #fbbf24 !important;
+}
+
+html.theme-dark .text-orange-700,
+html.theme-dark .text-orange-800 {
+  color: #fb923c !important;
+}
+
+html.theme-dark .text-red-700,
+html.theme-dark .text-red-800 {
+  color: #f87171 !important;
+}
+
 
 html.theme-dark input,
 html.theme-dark select,

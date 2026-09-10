@@ -151,14 +151,20 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [tasks, setTasks] = useState([]);
+    const [isHalfDay, setIsHalfDay] = useState(false);
+    const [halfDayType, setHalfDayType] = useState('first'); // 'first' | 'second'
+    const [includeBreak, setIncludeBreak] = useState(true);
     const navigate = useNavigate();
 
     const fetchTodayDayBook = async () => {
         try {
             setLoading(true);
             const response = await taskService.getTodayDayBook();
-            if (response.success) {
+            if (response.success && response.dayBook) {
                 setDayBook(response.dayBook);
+                setIsHalfDay(Boolean(response.dayBook.isHalfDay));
+                setHalfDayType(response.dayBook.halfDayType || 'first');
+                setIncludeBreak(response.dayBook.includeBreak !== undefined ? Boolean(response.dayBook.includeBreak) : true);
             }
         } catch (error) {
             console.error('Fetch daybook error:', error);
@@ -197,15 +203,56 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
     };
 
     const handleSlotTimeChange = (index, field, value) => {
-        const slot = dayBook.slots[index];
-        const currentTime = parseSlotType(slot.slotType);
-        const nextSlotType = buildSlotType(
-            field === 'startTime' ? value : currentTime.startTime,
-            field === 'endTime' ? value : currentTime.endTime,
-            slot.slotType
-        );
+        if (!dayBook?.slots || index < 0 || index >= dayBook.slots.length) return;
 
-        handleSlotChange(index, 'slotType', nextSlotType);
+        const newMinutes = timeInputToMinutes(value);
+        if (newMinutes === null) return;
+
+        const updatedSlots = dayBook.slots.map(s => ({ ...s }));
+        const currentSlot = updatedSlots[index];
+        const { start: curStart, end: curEnd } = getSlotMinutes(currentSlot.slotType);
+
+        if (field === 'endTime') {
+            const newStart = curStart !== null ? curStart : Math.max(0, newMinutes - 60);
+            currentSlot.slotType = buildSlotFromMinutes(newStart, newMinutes);
+
+            // Auto-sync subsequent slots chronologically
+            let prevEnd = newMinutes;
+            for (let j = index + 1; j < updatedSlots.length; j++) {
+                const nextSlot = updatedSlots[j];
+                const { start: nStart, end: nEnd } = getSlotMinutes(nextSlot.slotType);
+                if (nStart === null || nEnd === null) break;
+
+                const duration = Math.max(30, nEnd - nStart);
+                const nextNewStart = prevEnd;
+                let nextNewEnd;
+
+                if (isBreakSlot(nextSlot)) {
+                    nextNewEnd = nextNewStart + duration;
+                } else if (j === updatedSlots.length - 1) {
+                    nextNewEnd = nextNewStart < nEnd ? nEnd : nextNewStart + duration;
+                } else {
+                    nextNewEnd = nextNewStart + duration;
+                }
+
+                nextSlot.slotType = buildSlotFromMinutes(nextNewStart, nextNewEnd);
+                prevEnd = nextNewEnd;
+            }
+        } else if (field === 'startTime') {
+            const newEnd = curEnd !== null ? curEnd : newMinutes + 60;
+            currentSlot.slotType = buildSlotFromMinutes(newMinutes, newEnd);
+
+            // Auto-sync previous slot's end time if it aligned with old start time
+            if (index > 0) {
+                const prevSlot = updatedSlots[index - 1];
+                const { start: pStart } = getSlotMinutes(prevSlot.slotType);
+                if (pStart !== null && pStart < newMinutes) {
+                    prevSlot.slotType = buildSlotFromMinutes(pStart, newMinutes);
+                }
+            }
+        }
+
+        setDayBook({ ...dayBook, slots: updatedSlots });
     };
 
     const getHalfSlots = (halfKey) => dayBook?.slots
@@ -236,11 +283,11 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
 
         const splittable = halfSlots
             .map(({ slot, index }) => ({ ...getSlotMinutes(slot.slotType), index }))
-            .filter(({ start, end }) => start !== null && end !== null && end - start > 60)
+            .filter(({ start, end }) => start !== null && end !== null && end - start > 30)
             .sort((a, b) => (b.end - b.start) - (a.end - a.start))[0];
 
         if (splittable) {
-            const splitPoint = Math.min(splittable.end - 60, splittable.start + 60);
+            const splitPoint = Math.floor((splittable.start + splittable.end) / 2);
             updatedSlots[splittable.index] = {
                 ...updatedSlots[splittable.index],
                 slotType: buildSlotFromMinutes(splittable.start, splitPoint)
@@ -259,19 +306,12 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
             .filter(({ start, end }) => start !== null && end !== null)
             .sort((a, b) => a.start - b.start);
 
-        let cursor = half.start;
-        for (const range of occupied) {
-            if (range.start - cursor >= 60) break;
-            cursor = Math.max(cursor, range.end);
-        }
-
-        if (half.end - cursor < 60) {
-            toast.error(`No 1-hour space left in ${half.label}`);
-            return;
-        }
+        const lastEnd = occupied.length > 0 ? occupied[occupied.length - 1].end : half.start;
+        const newStart = lastEnd || half.start;
+        const newEnd = newStart + 60;
 
         updatedSlots.splice(findInsertIndex(half.key), 0, {
-            slotType: buildSlotFromMinutes(cursor, Math.min(cursor + 60, half.end)),
+            slotType: buildSlotFromMinutes(newStart, newEnd),
             workType: 'Other',
             description: ''
         });
@@ -279,51 +319,82 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
     };
 
     const removeSlot = (index) => {
-        const remainingWorkSlots = dayBook.slots.filter((slot, slotIndex) => slotIndex !== index && !isBreakSlot(slot));
-        if (remainingWorkSlots.length < 2) {
-            toast.error('At least one work slot is required in each half');
-            return;
+        const slotToRemove = dayBook.slots[index];
+        const halfKey = getSlotHalfKey(slotToRemove);
+
+        if (isHalfDay) {
+            if (halfKey === halfDayType) {
+                const activeHalfWorkSlots = dayBook.slots.filter(
+                    (slot, slotIndex) => slotIndex !== index && !isBreakSlot(slot) && getSlotHalfKey(slot) === halfDayType
+                );
+                if (activeHalfWorkSlots.length < 1) {
+                    toast.error(`At least one work slot is required in ${halfDayType === 'first' ? 'First half' : 'Second half'}`);
+                    return;
+                }
+            }
+        } else {
+            const remainingWorkSlotsInHalf = dayBook.slots.filter(
+                (slot, slotIndex) => slotIndex !== index && !isBreakSlot(slot) && getSlotHalfKey(slot) === halfKey
+            );
+            if (remainingWorkSlotsInHalf.length < 1) {
+                toast.error(`At least one work slot is required in ${halfKey === 'first' ? 'First half' : 'Second half'}`);
+                return;
+            }
         }
+
         setDayBook({ ...dayBook, slots: dayBook.slots.filter((_, slotIndex) => slotIndex !== index) });
     };
 
-    const isSlotInsideHalf = (slot) => {
-        if (isBreakSlot(slot)) return true;
-        const half = HALF_DAY_RANGES.find((item) => item.key === getSlotHalfKey(slot));
+    const isValidTimeSlot = (slot) => {
         const { start, end } = getSlotMinutes(slot.slotType);
-        return half && start !== null && end !== null && start >= half.start && end <= half.end && start < end;
+        return start !== null && end !== null && start < end;
     };
 
     const handleSave = async (submit = false) => {
         try {
             setSaving(true);
-            // Validate: if submitting, all entries should have descriptions
+
+            // Filter active slots based on Half Day mode & Break option
+            const activeSlots = dayBook.slots.filter(slot => {
+                if (isBreakSlot(slot)) {
+                    return includeBreak;
+                }
+                if (isHalfDay) {
+                    return getSlotHalfKey(slot) === halfDayType;
+                }
+                return true;
+            });
+
+            // Validate: if submitting, active entries should have descriptions
             if (submit) {
-                const emptySlots = dayBook.slots.filter(s => !s.description);
+                const emptySlots = activeSlots.filter(s => !s.description);
                 if (emptySlots.length > 0) {
-                    toast.error('Please fill in all slot descriptions before submitting');
+                    toast.error('Please fill in descriptions for active slots before submitting');
                     setSaving(false);
                     return;
                 }
 
-                const emptyTimeSlots = dayBook.slots.filter(s => !s.slotType?.trim());
+                const emptyTimeSlots = activeSlots.filter(s => !s.slotType?.trim());
                 if (emptyTimeSlots.length > 0) {
                     toast.error('Please fill in all time slots before submitting');
                     setSaving(false);
                     return;
                 }
 
-                const outOfRangeSlots = dayBook.slots.filter(slot => !isSlotInsideHalf(slot));
-                if (outOfRangeSlots.length > 0) {
-                    toast.error('Work slots must stay inside First half or Second half time range');
+                const invalidTimeSlots = activeSlots.filter(slot => !isValidTimeSlot(slot));
+                if (invalidTimeSlots.length > 0) {
+                    toast.error('Each time slot end time must be after its start time');
                     setSaving(false);
                     return;
                 }
             }
 
             const response = await taskService.submitDayBook({
-                slots: dayBook.slots,
-                status: submit ? 'Submitted' : 'Draft'
+                slots: activeSlots,
+                status: submit ? 'Submitted' : 'Draft',
+                isHalfDay,
+                halfDayType: isHalfDay ? halfDayType : 'full',
+                includeBreak
             });
 
             if (response.success) {
@@ -548,35 +619,61 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
 
     const renderHalfSection = (half) => {
         const slotsForHalf = getHalfSlots(half.key);
+        const isInactiveHalf = isHalfDay && halfDayType !== half.key;
+
         return (
-            <section key={half.key} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:p-4">
+            <section
+                key={half.key}
+                className={`rounded-xl border transition-all duration-200 p-2.5 sm:p-4 ${
+                    isInactiveHalf
+                        ? 'border-slate-200 bg-slate-100/60 opacity-60'
+                        : isHalfDay
+                        ? 'border-blue-300 bg-blue-50/20 shadow-2xs'
+                        : 'border-slate-200 bg-slate-50'
+                }`}
+            >
                 <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className='flex flex-row gap-2 '>
-                        <p className="text-sm font-bold text-slate-900 sm:text-base">{half.label}:
-                        </p>
-                        <p className="text-xs mt-1 font-medium text-slate-500">{half.rangeLabel}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-bold text-slate-900 sm:text-base">{half.label}:</p>
+                        <p className="text-xs font-medium text-slate-500">{half.rangeLabel}</p>
+                        {isHalfDay && halfDayType === half.key && (
+                            <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+                                Active Shift
+                            </span>
+                        )}
+                        {isInactiveHalf && (
+                            <span className="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                Omitted for Half Day
+                            </span>
+                        )}
                     </div>
-                    {isEditable && (
+                    {isEditable && !isInactiveHalf && (
                         <button
                             type="button"
                             onClick={() => addSlotToHalf(half)}
-                            className="inline-flex w-fit items-center justify-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:border-blue-300 hover:bg-blue-50"
+                            className="inline-flex w-fit items-center justify-center rounded-lg border border-blue-200 bg-white px-2 py-1 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-semibold text-blue-700 shadow-2xs transition-all duration-200 hover:border-blue-300 hover:bg-blue-50"
                         >
-                            <Plus className="mr-1.5 h-3.5 w-3.5" />
+                            <Plus className="mr-1 h-3 w-3 sm:mr-1.5 sm:h-3.5 sm:w-3.5" />
                             Add slot
                         </button>
                     )}
                 </div>
 
-                <div className="space-y-2">
-                    {slotsForHalf.length ? (
-                        slotsForHalf.map(({ slot, index }) => renderSlotCard(slot, index, embedded))
-                    ) : (
-                        <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-5 text-center text-sm text-slate-500">
-                            No slots added for this half.
-                        </div>
-                    )}
-                </div>
+                {!isInactiveHalf ? (
+                    <div className="space-y-2">
+                        {slotsForHalf.length ? (
+                            slotsForHalf.map(({ slot, index }) => renderSlotCard(slot, index, embedded))
+                        ) : (
+                            <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-5 text-center text-sm text-slate-500">
+                                No slots added for this half.
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="rounded-lg border border-dashed border-slate-300/80 bg-white/50 px-4 py-3 text-center text-xs text-slate-400 font-medium">
+                        This half is omitted because you selected {halfDayType === 'first' ? 'First half' : 'Second half'} for Half Day EOD.
+                    </div>
+                )}
             </section>
         );
     };
@@ -658,47 +755,115 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                     <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
                 </div>
                 <p className="text-[11px] leading-snug text-slate-600 sm:text-xs font-medium">
-                    Fill each slot and link tasks where needed.
+                    Fill each slot and link tasks where needed. Toggle Half Day EOD if you are submitting for a half day shift.
                 </p>
+            </div>
+
+            {/* Half Day Settings Card */}
+            <div className="animate-enter rounded-xl sm:rounded-2xl border border-indigo-200/80 bg-gradient-to-r from-indigo-50/90 via-blue-50/70 to-slate-50 p-2.5 sm:p-3.5 shadow-2xs">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="flex items-center space-x-2.5">
+                        <input
+                            type="checkbox"
+                            id="halfDayCheckbox"
+                            disabled={!isEditable}
+                            checked={isHalfDay}
+                            onChange={(e) => setIsHalfDay(e.target.checked)}
+                            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 disabled:opacity-50 cursor-pointer"
+                        />
+                        <label htmlFor="halfDayCheckbox" className="cursor-pointer select-none">
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 block leading-tight">Half Day EOD Submission</span>
+                            <span className="text-[11px] text-slate-500 block leading-tight mt-0.5">Check this box if you worked a half day and wish to submit only one half</span>
+                        </label>
+                    </div>
+
+                    {isHalfDay && (
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-indigo-100">
+                            <div className="inline-flex rounded-xl bg-white p-1 border border-slate-200/90 shadow-2xs">
+                                <button
+                                    type="button"
+                                    disabled={!isEditable}
+                                    onClick={() => setHalfDayType('first')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                        halfDayType === 'first'
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    ☀️ First Half (10:00 AM - 1:00 PM)
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={!isEditable}
+                                    onClick={() => setHalfDayType('second')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                        halfDayType === 'second'
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    🌙 Second Half (2:00 PM - 7:00 PM)
+                                </button>
+                            </div>
+
+                            <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-200/90 shadow-2xs text-xs font-semibold text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    disabled={!isEditable}
+                                    checked={includeBreak}
+                                    onChange={(e) => setIncludeBreak(e.target.checked)}
+                                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 disabled:opacity-50 cursor-pointer"
+                                />
+                                <span>Include Break (1:00 PM - 2:00 PM)</span>
+                            </label>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Slots */}
             <div className="animate-enter space-y-3 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm sm:p-4" style={{ animationDelay: '80ms' }}>
                 {renderHalfSection(HALF_DAY_RANGES[0])}
-                {getBreakSlots().map(({ slot, index }) => (
-                    <section key={`break-${index}`} className="rounded-lg border border-slate-200/80 bg-slate-100/50 px-2.5 py-1.5 sm:px-3 sm:py-2">
-                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center gap-1 rounded-md bg-amber-100/80 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200/60">
-                                    Break
-                                </span>
-                                <span className="text-xs font-semibold text-slate-800">{slot.slotType}</span>
-                                <span className="text-xs text-slate-400 font-medium">• Lunch Break</span>
+                {includeBreak ? (
+                    getBreakSlots().map(({ slot, index }) => (
+                        <section key={`break-${index}`} className="rounded-lg border border-slate-200/80 bg-slate-100/50 px-2.5 py-1.5 sm:px-3 sm:py-2">
+                            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-100/80 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-amber-800 border border-amber-200/60">
+                                        Break
+                                    </span>
+                                    <span className="text-[11px] sm:text-xs font-semibold text-slate-800">{slot.slotType}</span>
+                                    <span className="text-[10px] sm:text-xs text-slate-400 font-medium">• Lunch Break</span>
+                                </div>
+                                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1 w-full sm:w-auto max-w-[210px]">
+                                    <input
+                                        type="time"
+                                        disabled={!isEditable}
+                                        value={parseSlotType(slot.slotType).startTime}
+                                        onChange={(e) => handleSlotTimeChange(index, 'startTime', e.target.value)}
+                                        onClick={openTimePicker}
+                                        onFocus={openTimePicker}
+                                        className="min-w-0 w-full cursor-pointer rounded-md border border-slate-300/80 bg-white px-1 py-0.5 text-[11px] sm:text-xs font-bold tracking-tight text-slate-800 transition-all duration-200 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                    />
+                                    <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium shrink-0">to</span>
+                                    <input
+                                        type="time"
+                                        disabled={!isEditable}
+                                        value={parseSlotType(slot.slotType).endTime}
+                                        onChange={(e) => handleSlotTimeChange(index, 'endTime', e.target.value)}
+                                        onClick={openTimePicker}
+                                        onFocus={openTimePicker}
+                                        className="min-w-0 w-full cursor-pointer rounded-md border border-slate-300/80 bg-white px-1 py-0.5 text-[11px] sm:text-xs font-bold tracking-tight text-slate-800 transition-all duration-200 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                    />
+                                </div>
                             </div>
-                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1 w-full sm:w-auto max-w-[210px]">
-                                <input
-                                    type="time"
-                                    disabled={!isEditable}
-                                    value={parseSlotType(slot.slotType).startTime}
-                                    onChange={(e) => handleSlotTimeChange(index, 'startTime', e.target.value)}
-                                    onClick={openTimePicker}
-                                    onFocus={openTimePicker}
-                                    className="min-w-0 w-full cursor-pointer rounded-md border border-slate-300/80 bg-white px-1.5 py-0.5 text-xs font-bold tracking-tight text-slate-800 transition-all duration-200 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-                                />
-                                <span className="text-[11px] text-slate-400 font-medium shrink-0">to</span>
-                                <input
-                                    type="time"
-                                    disabled={!isEditable}
-                                    value={parseSlotType(slot.slotType).endTime}
-                                    onChange={(e) => handleSlotTimeChange(index, 'endTime', e.target.value)}
-                                    onClick={openTimePicker}
-                                    onFocus={openTimePicker}
-                                    className="min-w-0 w-full cursor-pointer rounded-md border border-slate-300/80 bg-white px-1.5 py-0.5 text-xs font-bold tracking-tight text-slate-800 transition-all duration-200 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-                                />
-                            </div>
-                        </div>
-                    </section>
-                ))}
+                        </section>
+                    ))
+                ) : (
+                    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-100/40 px-3 py-2 text-center text-xs text-slate-400 font-medium">
+                        Lunch Break (1:00 PM - 2:00 PM) excluded from this submission.
+                    </div>
+                )}
                 {renderHalfSection(HALF_DAY_RANGES[1])}
             </div>
 

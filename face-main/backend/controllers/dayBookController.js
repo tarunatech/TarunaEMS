@@ -54,7 +54,7 @@ export const getTodayDayBook = async (req, res) => {
 // @access  Private (Employee)
 export const submitDayBook = async (req, res) => {
     try {
-        const { slots, status } = req.body;
+        const { slots, status, isHalfDay, halfDayType, includeBreak } = req.body;
         const employee = await Employee.findOne({ user: req.user.id });
 
         if (!Array.isArray(slots) || slots.some(slot => !slot.slotType?.trim())) {
@@ -64,9 +64,17 @@ export const submitDayBook = async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        const updatePayload = {
+            slots,
+            status: status || 'Submitted',
+            isHalfDay: isHalfDay !== undefined ? Boolean(isHalfDay) : false,
+            halfDayType: halfDayType || (isHalfDay ? 'first' : 'full'),
+            includeBreak: includeBreak !== undefined ? Boolean(includeBreak) : true,
+        };
+
         const dayBook = await DayBook.findOneAndUpdate(
             { employee: employee._id, date: { $gte: today, $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000) } },
-            { slots, status: status || 'Submitted' },
+            updatePayload,
             { new: true, runValidators: true }
         ).populate('slots.taskRef');
 

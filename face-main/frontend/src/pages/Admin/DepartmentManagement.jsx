@@ -17,9 +17,9 @@ import toast from 'react-hot-toast';
 import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 
 const ModalShell = ({ title, onClose, children, className = '' }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-1.5 sm:p-4">
     <div className="fixed inset-0 bg-slate-900/30" onClick={onClose} />
-    <div className={`premium-panel relative flex max-h-[70dvh] sm:max-h-[90vh] w-[calc(100vw-1rem)] max-w-sm flex-col overflow-hidden rounded-xl sm:w-full sm:max-w-4xl sm:rounded-2xl ${className}`}>
+    <div className={`premium-panel relative flex max-h-[42dvh] sm:max-h-[90vh] w-[calc(100vw-1.5rem)] max-w-sm flex-col overflow-hidden rounded-xl sm:w-full sm:max-w-4xl sm:rounded-2xl ${className}`}>
       <style>{`
         .department-modal-scroll {
           scrollbar-width: none;
@@ -29,13 +29,13 @@ const ModalShell = ({ title, onClose, children, className = '' }) => (
           display: none;
         }
       `}</style>
-      <div className="shrink-0 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:mb-6 sm:border-b-0 sm:bg-transparent sm:p-6 sm:pb-0">
-        <h2 className="min-w-0 truncate text-base font-bold text-slate-900 sm:text-2xl">{title}</h2>
-        <button onClick={onClose} className="shrink-0 text-slate-500 hover:text-slate-900">
-          <X className="h-5 w-5 sm:h-6 sm:w-6" />
+      <div className="shrink-0 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-2.5 py-1.5 backdrop-blur sm:mb-6 sm:border-b-0 sm:bg-transparent sm:p-6 sm:pb-0">
+        <h2 className="min-w-0 truncate text-xs font-bold text-slate-900 sm:text-2xl">{title}</h2>
+        <button onClick={onClose} className="shrink-0 text-slate-500 hover:text-slate-900 p-0.5">
+          <X className="h-4 w-4 sm:h-6 sm:w-6" />
         </button>
       </div>
-      <div className="department-modal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 sm:pt-0">
+      <div className="department-modal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-2.5 sm:p-6 sm:pt-0">
         {children}
       </div>
     </div>
@@ -770,61 +770,61 @@ const DepartmentManagement = () => {
       )}
 
       {showViewModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-1.5 sm:p-4">
           <div className="fixed inset-0 bg-slate-900/40" onClick={() => setShowViewModal(false)} />
-          <div className="premium-panel relative flex max-h-[85dvh] sm:max-h-[90vh] w-[calc(100vw-1rem)] max-w-sm flex-col overflow-hidden rounded-xl sm:w-full sm:max-w-4xl sm:rounded-2xl">
-            <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:mb-6 sm:border-b-0 sm:bg-transparent sm:p-6 sm:pb-0">
-              <h2 className="min-w-0 truncate text-base font-bold text-slate-900 sm:text-2xl">Department Details</h2>
-              <div className="flex shrink-0 items-center gap-2">
+          <div className="premium-panel relative flex max-h-[42dvh] sm:max-h-[90vh] w-[calc(100vw-1.5rem)] max-w-sm flex-col overflow-hidden rounded-xl sm:w-full sm:max-w-4xl sm:rounded-2xl">
+            <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-2.5 py-1.5 backdrop-blur sm:mb-6 sm:border-b-0 sm:bg-transparent sm:p-6 sm:pb-0">
+              <h2 className="min-w-0 truncate text-xs sm:text-2xl font-bold text-slate-900">Department Details</h2>
+              <div className="flex shrink-0 items-center gap-1.5">
                 <button
                   onClick={() => {
                     setShowViewModal(false);
                     setShowEditModal(true);
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800 sm:px-3 sm:text-sm"
+                  className="inline-flex items-center gap-1 rounded-md border border-blue-100 bg-blue-50 px-1 py-0 text-[11px] font-semibold text-blue-700 transition-all duration-200 hover:border-blue-200 hover:bg-blue-100 hover:text-blue-800 sm:px-3 sm:py-1 sm:text-sm"
                 >
-                  <Edit className="h-3.5 w-3.5" />
+                  <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   Edit
                 </button>
-                <button onClick={() => setShowViewModal(false)} className="text-slate-500 hover:text-slate-900">
-                  <X className="h-5 w-5 sm:h-6 sm:w-6" />
+                <button onClick={() => setShowViewModal(false)} className="text-slate-500 hover:text-slate-900 p-0.5">
+                  <X className="h-4 w-4 sm:h-6 sm:w-6" />
                 </button>
               </div>
             </div>
 
             {selectedDepartment && (
-              <div className="department-modal-scroll min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3 sm:space-y-6 sm:p-6 sm:pt-0">
-                <div className="flex items-center space-x-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:space-x-4 sm:p-4">
-                  <div className="premium-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-full sm:h-16 sm:w-16" style={{ '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
-                    <Building className="h-5 w-5 sm:h-8 sm:w-8" />
+              <div className="department-modal-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-2 sm:space-y-6 sm:p-6 sm:pt-0">
+                <div className="flex items-center space-x-2.5 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:space-x-4 sm:p-4">
+                  <div className="premium-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-full sm:h-16 sm:w-16" style={{ '--icon-gradient': 'linear-gradient(135deg,#6366f1,#7c3aed)', '--icon-shadow': '0 12px 24px rgba(99,102,241,0.25)' }}>
+                    <Building className="h-3.5 w-3.5 sm:h-8 sm:w-8" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="truncate text-base font-bold text-slate-900 sm:text-xl">{selectedDepartment.name}</h3>
-                    <p className="text-sm text-blue-600 sm:text-base">{selectedDepartment.code}</p>
-                    <p className="break-words text-xs text-slate-500 sm:text-base">{selectedDepartment.description}</p>
+                    <h3 className="truncate text-xs sm:text-xl font-bold text-slate-900">{selectedDepartment.name}</h3>
+                    <p className="text-[11px] sm:text-base text-blue-600">{selectedDepartment.code}</p>
+                    <p className="break-words text-[11px] sm:text-base text-slate-500">{selectedDepartment.description}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6">
-                  <div className="space-y-2 sm:space-y-4">
-                    <h4 className="text-sm font-semibold text-slate-900 sm:text-lg">Information</h4>
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <p className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-6">
+                  <div className="space-y-1 sm:space-y-4">
+                    <h4 className="text-xs font-semibold text-slate-900 sm:text-lg">Information</h4>
+                    <div className="space-y-0.5 sm:space-y-2">
+                      <p className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-1.5 rounded-lg bg-slate-50 px-2 py-0.5 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
                         <span className="text-slate-900">Manager:</span>
                         <span className="min-w-0 break-words">
                           {selectedDepartment.manager || 'Not assigned'}
                         </span>
                       </p>
-                      <p className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
+                      <p className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-1.5 rounded-lg bg-slate-50 px-2 py-1 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
                         <span className="text-slate-900">Location:</span>
                         <span className="min-w-0 break-words">
                           {selectedDepartment.location || 'Not specified'}
                         </span>
                       </p>
-                      <p className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
+                      <p className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
                         <span className="text-slate-900">Status:</span>
                         <span
-                          className={`w-fit rounded-full px-2 py-1 text-xs sm:ml-2 ${selectedDepartment.status === 'Active'
+                          className={`w-fit rounded-full px-1.5 py-0.5 text-xs sm:ml-2 ${selectedDepartment.status === 'Active'
                             ? 'bg-green-100 text-green-700'
                             : selectedDepartment.status === 'Inactive'
                               ? 'bg-red-100 text-red-700'
@@ -834,7 +834,7 @@ const DepartmentManagement = () => {
                           {selectedDepartment.status}
                         </span>
                       </p>
-                      <p className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
+                      <p className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-1.5 rounded-lg bg-slate-50 px-2 py-1 text-xs text-slate-600 sm:block sm:bg-transparent sm:p-0 sm:text-base">
                         <span className="text-slate-900">Employees:</span>
                         <span>
                           {selectedDepartment.employeeCount || 0}
@@ -843,12 +843,12 @@ const DepartmentManagement = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2 sm:space-y-4">
-                    <h4 className="text-sm font-semibold text-slate-900 sm:text-lg">Goals</h4>
+                  <div className="space-y-1.5 sm:space-y-4">
+                    <h4 className="text-xs font-semibold text-slate-900 sm:text-lg">Goals</h4>
                     {selectedDepartment.goals && selectedDepartment.goals.length > 0 ? (
-                      <ul className="space-y-1.5 sm:space-y-2">
+                      <ul className="space-y-1 sm:space-y-2">
                         {selectedDepartment.goals.map((goal, index) => (
-                          <li key={index} className="flex items-start space-x-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 sm:bg-transparent sm:p-0 sm:text-base">
+                          <li key={index} className="flex items-start space-x-1.5 rounded-lg bg-slate-50 px-2 py-1 text-xs text-slate-600 sm:bg-transparent sm:p-0 sm:text-base">
                             <CheckCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-blue-600 sm:mt-1 sm:h-4 sm:w-4" />
                             <span className="break-words">{goal}</span>
                           </li>
@@ -860,16 +860,16 @@ const DepartmentManagement = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3 sm:space-y-4">
+                <div className="space-y-2 sm:space-y-4">
                   <div className="flex items-center justify-between gap-3">
-                    <h4 className="text-sm font-semibold text-slate-900 sm:text-lg">Employees</h4>
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                    <h4 className="text-xs font-semibold text-slate-900 sm:text-lg">Employees</h4>
+                    <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
                       {departmentEmployees.length || selectedDepartment.employeeCount || 0} employee{(departmentEmployees.length || selectedDepartment.employeeCount || 0) === 1 ? '' : 's'}
                     </span>
                   </div>
 
                   {loadingDepartmentEmployees ? (
-                    <div className="flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-6 text-slate-500">
+                    <div className="flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500 sm:p-6 sm:text-sm">
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Loading employees...
                     </div>
@@ -883,7 +883,7 @@ const DepartmentManagement = () => {
                       </div>
                       <div className="divide-y divide-slate-100">
                         {departmentEmployees.map((employee) => (
-                          <div key={employee._id || employee.id} className="grid gap-2 px-4 py-3 text-sm sm:grid-cols-[1.2fr_0.8fr_1fr_0.7fr] sm:items-center">
+                          <div key={employee._id || employee.id} className="grid gap-1.5 px-3 py-2 text-xs sm:grid-cols-[1.2fr_0.8fr_1fr_0.7fr] sm:items-center sm:gap-2 sm:px-4 sm:py-3 sm:text-sm">
                             <div className="min-w-0">
                               <p className="truncate font-semibold text-slate-900">{getEmployeeName(employee)}</p>
                               <p className="truncate text-xs text-slate-500">{employee.user?.email || employee.contactInfo?.personalEmail || 'No email'}</p>
@@ -897,7 +897,7 @@ const DepartmentManagement = () => {
                               {employee.workInfo?.position || 'Not specified'}
                             </div>
                             <div>
-                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${employee.status === 'Active'
+                              <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${employee.status === 'Active'
                                 ? 'bg-green-100 text-green-700'
                                 : employee.status === 'Inactive'
                                   ? 'bg-red-100 text-red-700'
@@ -911,7 +911,7 @@ const DepartmentManagement = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-xs text-slate-500 sm:p-6 sm:text-sm">
                       No employees assigned to this department.
                     </div>
                   )}

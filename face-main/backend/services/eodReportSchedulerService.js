@@ -52,75 +52,177 @@ const getEmployeePosition = (employee = {}) => (
   'N/A'
 );
 
-const cleanList = (values = []) => [...new Set(
-  values
-    .map((value) => String(value || '').trim())
-    .filter(Boolean)
-)].join(', ');
+const parseTimeToMinutes = (timeStr) => {
+  if (!timeStr) return null;
+  const match = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return null;
+  let hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const meridiem = match[3].toUpperCase();
+  if (meridiem === 'PM' && hours !== 12) hours += 12;
+  if (meridiem === 'AM' && hours === 12) hours = 0;
+  return hours * 60 + minutes;
+};
 
-const splitTimeSlot = (slotType = '') => {
-  const parts = String(slotType)
-    .split(/\s+-\s+|-/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  if (parts.length >= 2) return { start: parts[0], end: parts[parts.length - 1] };
-  return { start: slotType || '', end: slotType || '' };
+const getSlotTimeRange = (slotType = '') => {
+  const parts = String(slotType).split(/\s+-\s+|-/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    const startMins = parseTimeToMinutes(parts[0]);
+    const endMins = parseTimeToMinutes(parts[parts.length - 1]);
+    const midpointMins = (startMins !== null && endMins !== null) ? (startMins + endMins) / 2 : null;
+    return {
+      start: parts[0],
+      end: parts[parts.length - 1],
+      startMins,
+      endMins,
+      midpointMins
+    };
+  }
+  return { start: slotType || '', end: slotType || '', startMins: null, endMins: null, midpointMins: null };
 };
 
 const isBreakSlot = (slot = {}) => {
   const text = `${slot.workType || ''} ${slot.description || ''} ${slot.slotType || ''}`.toLowerCase();
-  return text.includes('lunch') || text.includes('break');
+  return slot.workType === 'Break' || slot.workType === 'Lunch Break' || text.includes('lunch') || text.includes('break');
 };
 
-const buildHalfDescriptions = (slots = []) => {
-  const breakIndex = slots.findIndex(isBreakSlot);
-  const workSlots = slots.filter((slot) => !isBreakSlot(slot));
-  const getDescription = (slot) => slot.description || '';
+const getSlotTaskTitle = (slot = {}) => {
+  if (isBreakSlot(slot)) return '';
+  if (slot.taskTitle && String(slot.taskTitle).trim()) {
+    return String(slot.taskTitle).trim();
+  }
+  if (slot.taskRef && typeof slot.taskRef === 'object' && slot.taskRef.title) {
+    return String(slot.taskRef.title).trim();
+  }
+  if (slot.workType) {
+    return String(slot.workType).trim();
+  }
+  return '';
+};
 
-  if (breakIndex >= 0) {
+const parseDescriptionSections = (description = '') => {
+  const text = String(description || '').trim();
+  if (!text) return { completed: '', pending: '' };
+
+  const completedMatch = text.match(/(?:Completed Work|Completed):\s*([\s\S]*?)(?=(?:\n\nPending Work|\n\nPending|Pending Work:|Pending:)|$)/i);
+  const pendingMatch = text.match(/(?:Pending Work|Pending):\s*([\s\S]*?)$/i);
+
+  if (completedMatch || pendingMatch) {
     return {
-      firstHalf: cleanList(slots.slice(0, breakIndex).map(getDescription)),
-      secondHalf: cleanList(slots.slice(breakIndex + 1).map(getDescription)),
+      completed: completedMatch ? completedMatch[1].trim() : '',
+      pending: pendingMatch ? pendingMatch[1].trim() : ''
     };
   }
 
-  const midpoint = Math.ceil(workSlots.length / 2);
+  return { completed: text, pending: '' };
+};
+
+const buildHalfSummaries = (slots = []) => {
+  const firstHalfItems = [];
+  const secondHalfItems = [];
+
+  slots.forEach((slot) => {
+    if (!slot || isBreakSlot(slot)) return;
+
+    const timeRange = getSlotTimeRange(slot.slotType);
+    // 2:00 PM IST is 14 * 60 = 840 minutes
+    const isFirstHalf = timeRange.midpointMins === null || timeRange.midpointMins < 14 * 60;
+
+    const title = getSlotTaskTitle(slot);
+    const { completed, pending } = parseDescriptionSections(slot.description);
+
+    const slotParts = [];
+    if (title) {
+      slotParts.push(`Task: ${title}`);
+    }
+
+    if (completed) {
+      slotParts.push(`Completed Work:\n${completed}`);
+    } else if (!pending && slot.description && slot.description.trim()) {
+      slotParts.push(`Completed Work:\n${slot.description.trim()}`);
+    }
+
+    if (pending) {
+      slotParts.push(`Pending Work:\n${pending}`);
+    }
+
+    const slotText = slotParts.join('\n\n');
+    if (slotText) {
+      if (isFirstHalf) {
+        firstHalfItems.push(slotText);
+      } else {
+        secondHalfItems.push(slotText);
+      }
+    }
+  });
+
+  const formatList = (items) => {
+    if (!items.length) return 'N/A';
+    const unique = [...new Set(items)];
+    return unique.join('\n\n---\n\n');
+  };
+
   return {
-    firstHalf: cleanList(workSlots.slice(0, midpoint).map(getDescription)),
-    secondHalf: cleanList(workSlots.slice(midpoint).map(getDescription)),
+    firstHalf: formatList(firstHalfItems),
+    secondHalf: formatList(secondHalfItems)
   };
 };
 
-const getTaskTitles = (slots = [], assignedTasks = []) => cleanList([
-  ...assignedTasks.map((task) => task.title || ''),
-  ...slots.map((slot) => slot.taskRef?.title || '')
-]);
+const getTimes = (slots = []) => {
+  const nonBreakSlots = slots.filter((slot) => !isBreakSlot(slot));
+  const targetSlots = nonBreakSlots.length ? nonBreakSlots : slots;
+  if (!targetSlots.length) return { timeIn: 'N/A', timeOut: 'N/A' };
+
+  const firstRange = getSlotTimeRange(targetSlots[0].slotType);
+  const lastRange = getSlotTimeRange(targetSlots[targetSlots.length - 1].slotType);
+
+  return {
+    timeIn: firstRange.start || 'N/A',
+    timeOut: lastRange.end || 'N/A'
+  };
+};
+
+const getTaskTitles = (slots = []) => {
+  const titles = new Set();
+
+  slots.forEach((slot) => {
+    const title = getSlotTaskTitle(slot);
+    if (title) {
+      titles.add(title);
+    }
+  });
+
+  const list = [...titles];
+  return list.length ? list.join('\n') : 'N/A';
+};
 
 const buildRows = (dayBooks = [], tasksByEmployee = new Map(), employeesById = new Map()) => {
   return dayBooks.map((dayBook) => {
     const populatedEmployee = dayBook.employee || {};
     const employeeKey = String(populatedEmployee._id || populatedEmployee.id || dayBook.employee || '');
     const employee = employeesById.get(employeeKey) || populatedEmployee;
-    const assignedTasks = tasksByEmployee.get(employeeKey) || [];
-    const slots = Array.isArray(dayBook.slots) && dayBook.slots.length
-      ? dayBook.slots
-      : [{ slotType: '', workType: '', taskRef: null, description: '' }];
-    const firstSlotTime = splitTimeSlot(slots[0]?.slotType);
-    const lastSlotTime = splitTimeSlot(slots[slots.length - 1]?.slotType);
-    const { firstHalf, secondHalf } = buildHalfDescriptions(slots);
+    const slots = Array.isArray(dayBook.slots) ? dayBook.slots : [];
+
+    const { timeIn, timeOut } = getTimes(slots);
+    const { firstHalf, secondHalf } = buildHalfSummaries(slots);
+
+    let position = getEmployeePosition(employee);
+    if (dayBook.isHalfDay) {
+      const halfTypeStr = dayBook.halfDayType === 'second' ? 'Second Half' : 'First Half';
+      position = `${position} (Half Day - ${halfTypeStr})`;
+    }
 
     return {
       name: getEmployeeName(employee),
       employeeId: employee.employeeId || 'N/A',
       date: formatDate(dayBook.date),
-      position: getEmployeePosition(employee),
+      position,
       department: employee.workInfo?.department?.name || employee.departmentName || employee.workInfo?.departmentName || 'N/A',
-      timeIn: firstSlotTime.start || 'N/A',
-      timeOut: lastSlotTime.end || 'N/A',
-      taskGiven: getTaskTitles(slots, assignedTasks) || 'N/A',
-      firstHalf: firstHalf || 'N/A',
-      secondHalf: secondHalf || 'N/A',
+      timeIn,
+      timeOut,
+      taskGiven: getTaskTitles(slots),
+      firstHalf,
+      secondHalf,
     };
   });
 };
@@ -130,11 +232,11 @@ const buildExcelHtml = (rows, reportDate) => {
     ['NAME', 'name', 140],
     ['ID', 'employeeId', 90],
     ['DATE', 'date', 105],
-    ['POSITION', 'position', 130],
-    ['DEPT', 'department', 150],
-    ['TIME IN', 'timeIn', 90],
-    ['TIME-OUT', 'timeOut', 100],
-    ['TASK GIVEN', 'taskGiven', 240],
+    ['POSITION', 'position', 140],
+    ['DEPT', 'department', 140],
+    ['TIME IN', 'timeIn', 95],
+    ['TIME-OUT', 'timeOut', 95],
+    ['TASK GIVEN', 'taskGiven', 220],
     ['FIRST-HALF', 'firstHalf', 360],
     ['SECOND-HALF', 'secondHalf', 360],
   ];
@@ -151,11 +253,13 @@ const buildExcelHtml = (rows, reportDate) => {
     ? rows.map((row, rowIndex) => `
         <tr style="background:${rowIndex % 2 === 0 ? '#ffffff' : '#f5f7f8'};">
           ${columns.map(([, key]) => {
-            const extraStyle = descriptionKeys.has(key)
-              ? 'white-space:normal;word-wrap:break-word;mso-style-parent:style0;'
-              : 'white-space:nowrap;';
-            return `<td style="border:1px solid #e5e7eb;padding:8px;vertical-align:top;mso-number-format:'\\@';${extraStyle}">${escapeHtml(row[key])}</td>`;
-          }).join('')}
+      const isDesc = descriptionKeys.has(key);
+      const extraStyle = isDesc
+        ? 'white-space:pre-wrap;word-wrap:break-word;mso-data-placement:same-cell;'
+        : 'white-space:nowrap;';
+      const cellValue = escapeHtml(row[key]).replace(/\n/g, '<br/>');
+      return `<td style="border:1px solid #e5e7eb;padding:8px;vertical-align:top;mso-number-format:'\\@';${extraStyle}">${cellValue}</td>`;
+    }).join('')}
         </tr>
       `).join('')
     : `<tr><td colspan="${columns.length}" style="border:1px solid #e5e7eb;padding:12px;">No submitted EOD reports found for ${escapeHtml(reportDate)}.</td></tr>`;
@@ -164,6 +268,9 @@ const buildExcelHtml = (rows, reportDate) => {
     <html>
       <head>
         <meta charset="UTF-8" />
+        <style>
+          td, th { vertical-align: top; }
+        </style>
       </head>
       <body>
         <table>
@@ -253,7 +360,7 @@ export const startEodReportScheduler = () => {
   }
 
   eodReportJob = cron.schedule(
-    '25 11 * * *',
+    '10 21 * * *',
     async () => {
       const istTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
       console.log(`[${istTime}] Daily EOD Excel report job started`);

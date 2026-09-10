@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
-import { 
+import {
   Users, Calendar, Clock, MapPin, Search, Download,
   Edit3, Trash2, CheckCircle, XCircle, AlertCircle, Timer,
   TrendingUp, Building2, User, MoreVertical, RefreshCw, Eye, ArrowLeft
@@ -39,7 +39,7 @@ const AdminAttendance = () => {
   const isFromSnapshot = Boolean(location.state?.fromSnapshot);
   const initialStartDate = location.state?.startDate || (isFromSnapshot ? initialDateRange.startDate : today);
   const initialEndDate = location.state?.endDate || (isFromSnapshot ? initialDateRange.endDate : today);
-  const initialMonth = location.state?.selectedMonth || (isFromSnapshot ? currentMonthDefault : '');
+  const initialMonth = location.state?.selectedMonth || currentMonthDefault;
 
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [attendanceSummary, setAttendanceSummary] = useState(null);
@@ -173,14 +173,15 @@ const AdminAttendance = () => {
   };
 
   const clearFilters = () => {
+    const { startDate, endDate } = getMonthDateRange(currentMonthDefault);
     setFilters({
-      startDate: today,
-      endDate: today,
+      startDate,
+      endDate,
       department: '',
       status: '',
       search: ''
     });
-    setSelectedMonth('');
+    setSelectedMonth(currentMonthDefault);
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
@@ -335,7 +336,7 @@ const AdminAttendance = () => {
       ['Date', 'Employee', 'Employee ID', 'Department', 'Check In', 'Check Out', 'Working Time', 'Status'],
       ...attendanceRecords.map(record => [
         formatDate(record.date),
-        record.employeeData?.personalInfo ? 
+        record.employeeData?.personalInfo ?
           `${record.employeeData.personalInfo.firstName} ${record.employeeData.personalInfo.lastName}` :
           record.userData?.name || 'Unknown',
         record.userData?.employeeId || '',
@@ -362,7 +363,7 @@ const AdminAttendance = () => {
 
   return (
     <AdminLayout>
-        <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-4 sm:space-y-6">
+      <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="glass-morphism neon-border rounded-2xl p-6">
           {location.state?.fromSnapshot && (
@@ -377,25 +378,25 @@ const AdminAttendance = () => {
           )}
           <div className="flex flex-col md:flex-row md:items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              <h1 className="text-xl md:text-3xl font-bold text-slate-900 mb-1 md:mb-2">
                 Attendance <span className="text-blue-600">Management</span>
               </h1>
-              <p className="text-slate-500">Monitor and manage employee attendance records</p>
+              <p className="text-xs sm:text-sm text-slate-500">Monitor and manage employee attendance records</p>
             </div>
-            <div className="mt-3 flex flex-row items-center gap-2 md:mt-0 md:space-x-3">
+            <div className="mt-2 md:mt-0 flex flex-row items-center gap-2 md:space-x-3">
               <button
                 onClick={exportAttendanceData}
                 disabled={attendanceRecords.length === 0}
-                className="flex-1 md:flex-none flex items-center justify-center space-x-1.5 rounded-lg sm:rounded-xl border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 md:py-2"
+                className="flex-1 md:flex-none flex items-center justify-center space-x-1 md:space-x-1.5 rounded-lg md:rounded-xl border border-blue-100 bg-blue-50 px-2 py-1 md:px-4 md:py-2 text-[11px] md:text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Download className="w-3 h-3 md:w-4 md:h-4" />
                 <span>Export</span>
               </button>
               <button
                 onClick={fetchAttendanceData}
-                className="flex-1 md:flex-none flex items-center justify-center space-x-1.5 rounded-lg sm:rounded-xl bg-blue-600 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 sm:px-4 md:py-2"
+                className="flex-1 md:flex-none flex items-center justify-center space-x-1 md:space-x-1.5 rounded-lg md:rounded-xl bg-blue-600 px-2 py-1 md:px-4 md:py-2 text-[11px] md:text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
               >
-                <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <RefreshCw className="w-3 h-3 md:w-4 md:h-4" />
                 <span>Refresh</span>
               </button>
             </div>
@@ -470,103 +471,109 @@ const AdminAttendance = () => {
 
         {/* Filters */}
         <div className="premium-panel rounded-2xl p-4 sm:p-5">
-            <h3 className="text-base font-bold text-slate-900 mb-3">Filters & Search</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] sm:text-sm font-medium text-slate-600">Select Month</label>
-                  {selectedMonth !== currentMonthDefault && (
-                    <button
-                      type="button"
-                      onClick={() => handleMonthChange(currentMonthDefault)}
-                      className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      This Month
-                    </button>
-                  )}
-                </div>
-                <input
-                  type="month"
-                  value={selectedMonth}
-                  onChange={(e) => handleMonthChange(e.target.value)}
-                  className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Start Date</label>
-                <input
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                  className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">End Date</label>
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                  className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Department</label>
-                <select
-                  value={filters.department}
-                  onChange={(e) => handleFilterChange('department', e.target.value)}
-                  className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
-                >
-                  <option value="">All Departments</option>
-                  {departments.map(dept => (
-                    <option key={dept._id || dept.id} value={dept._id || dept.id}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Status</label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
-                >
-                  <option value="">All Status</option>
-                  {ATTENDANCE_STATUS_OPTIONS.map(status => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-bold text-slate-900">Filters & Search</h3>
+            {/* Clear Filters – visible on mobile beside title */}
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="sm:hidden inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900"
+            >
+              Clear Filters
+            </button>
+          </div>
+          {/* Mobile: col-span-2 = full width; sm+ collapses into 3/5-col grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
+            {/* Month – full width on mobile */}
+            <div className="col-span-2 sm:col-span-1">
+              <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Select Month</label>
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => handleMonthChange(e.target.value)}
+                className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
+              />
             </div>
-            <div className="mt-2.5 sm:mt-4 grid grid-cols-3 sm:flex sm:items-end sm:justify-between gap-2 sm:gap-4">
-              <div className="col-span-2 w-full sm:max-w-sm">
-                <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Search Employee</label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Name or employee ID..."
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange('search', e.target.value)}
-                    className="premium-input w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none text-xs sm:text-sm"
-                  />
-                </div>
-              </div>
-              <div className="col-span-1 flex items-end">
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="w-full inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 whitespace-nowrap"
-                >
-                  Clear Filters
-                </button>
-              </div>
+            {/* Start Date – half width on mobile */}
+            <div className="col-span-1">
+              <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Start Date</label>
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
+              />
+            </div>
+            {/* End Date – half width on mobile */}
+            <div className="col-span-1">
+              <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">End Date</label>
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
+              />
+            </div>
+            {/* Department – half width on mobile */}
+            <div className="col-span-1">
+              <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Department</label>
+              <select
+                value={filters.department}
+                onChange={(e) => handleFilterChange('department', e.target.value)}
+                className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
+              >
+                <option value="">All Departments</option>
+                {departments.map(dept => (
+                  <option key={dept._id || dept.id} value={dept._id || dept.id}>
+                    {dept.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Status – half width on mobile */}
+            <div className="col-span-1">
+              <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="premium-input w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm"
+              >
+                <option value="">All Status</option>
+                {ATTENDANCE_STATUS_OPTIONS.map(status => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
             </div>
           </div>
+          {/* Search + Clear Filters row */}
+          <div className="mt-2.5 sm:mt-4 flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3">
+            {/* Search – full width on mobile, capped on desktop */}
+            <div className="w-full sm:max-w-sm">
+              <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Search Employee</label>
+              <div className="relative">
+                <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Name or employee ID..."
+                  value={filters.search}
+                  onChange={(e) => handleFilterChange('search', e.target.value)}
+                  className="premium-input w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none text-xs sm:text-sm"
+                />
+              </div>
+            </div>
+            {/* Clear Filters – desktop only beside search */}
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="hidden sm:inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 whitespace-nowrap"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
 
         {/* Attendance Records Table */}
-        <div className="premium-panel rounded-2xl p-4 sm:p-6">
+        <div className="premium-panel rounded-2xl p-3 sm:p-6">
           <div className="flex items-start justify-between gap-3 mb-4 sm:mb-6">
             <h2 className="text-xl font-bold text-slate-900">Attendance Records</h2>
             <p className="text-slate-500 text-sm text-right">
@@ -576,7 +583,7 @@ const AdminAttendance = () => {
 
           <>
             {/* Mobile Cards */}
-            <div className="scrollbar-hide md:hidden grid max-h-[62dvh] gap-3 overflow-y-auto overscroll-contain pr-1">
+            <div className="scrollbar-hide md:hidden grid max-h-[62dvh] gap-3 overflow-y-auto overflow-x-hidden overscroll-contain pr-1">
               {loading ? (
                 <div className="col-span-full text-center py-8 text-slate-500">
                   <div className="flex items-center justify-center space-x-2">
@@ -594,8 +601,8 @@ const AdminAttendance = () => {
                 </div>
               ) : (
                 attendanceRecords.map((record) => (
-                  <div key={record._id} onClick={(event) => openAttendanceDetails(event, record)} className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm hover:border-blue-200 hover:bg-blue-50/40 transition-colors cursor-pointer">
-                    <div className="flex items-start justify-between mb-2 sm:mb-3">
+                  <div key={record._id} onClick={(event) => openAttendanceDetails(event, record)} className="bg-white border border-slate-200 rounded-xl p-2.5 sm:p-4 shadow-sm hover:border-blue-200 hover:bg-blue-50/40 transition-colors cursor-pointer overflow-hidden w-full">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3 gap-1">
                       <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm shadow-blue-500/20">
                           <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
@@ -611,67 +618,71 @@ const AdminAttendance = () => {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-1 ml-1 sm:ml-2">
+                      <div className="flex items-center gap-0 shrink-0 ml-auto">
                         <button
                           onClick={() => setViewingRecord(record)}
-                          className="p-1 sm:p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          className="p-0.5 text-slate-400 hover:text-indigo-600 bg-transparent hover:bg-transparent rounded transition-colors"
                           title="View Details"
                         >
-                          <Eye className="w-4 h-4 sm:w-4 sm:h-4" />
+                          <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
                         <button
                           onClick={() => handleEditRecord(record)}
-                          className="p-1 sm:p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-0.5 text-slate-400 hover:text-blue-600 bg-transparent hover:bg-transparent rounded transition-colors"
                           title="Edit Record"
                         >
-                          <Edit3 className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteRecord(record._id)}
-                          className="p-1 sm:p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-0.5 text-slate-400 hover:text-red-600 bg-transparent hover:bg-transparent rounded transition-colors"
                           title="Delete Record"
                         >
-                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
                       </div>
                     </div>
-                    <div className="space-y-1 sm:space-y-2">
-                      <div className="flex justify-between items-center">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <div className="flex justify-between items-center gap-2">
                         <span className="text-slate-500 text-xs">Date</span>
                         <span className="text-slate-800 text-xs sm:text-sm">{formatDate(record.date)}</span>
                       </div>
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center gap-2">
                         <span className="text-slate-500 text-xs">Check In</span>
-                        <span className="text-slate-800 text-xs sm:text-sm">{formatTime(record.checkInTime)}</span>
-                        {record.isLate && (
-                          <span className="text-red-400 text-xs ml-1">{record.lateMinutes}m late</span>
-                        )}
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 text-xs">Check Out</span>
-                        <span className="text-slate-800 text-xs sm:text-sm">{formatTime(record.checkOutTime)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 text-xs">Working Time</span>
-                        <div className="text-right">
-                          <span className="rounded-lg bg-blue-50 px-2 py-1 text-blue-800 text-xs sm:text-sm font-bold border border-blue-100">{formatWorkingTime(record)}</span>
-                          {record.checkInTime && !record.checkOutTime && (
-                            <div className="mt-1  text-[11px] font-medium text-emerald-700">Live</div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-800 text-xs sm:text-sm">{formatTime(record.checkInTime)}</span>
+                          {record.isLate && (
+                            <span className="text-red-400 text-xs">{record.lateMinutes}m late</span>
                           )}
                         </div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 text-xs">Status</span>
-                        <span className={`text-xs px-1 sm:px-2 py-1 rounded-full ${getStatusColor(record.status)}`}>
-                          {record.status}
-                        </span>
-                        {record.isManualEntry && (
-                          <span className="text-amber-600 text-xs ml-1">Manual</span>
-                        )}
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 text-xs">Check Out</span>
+                        <span className="text-slate-800 text-xs sm:text-sm">{formatTime(record.checkOutTime)}</span>
                       </div>
-                      <div className="flex justify-between items-center pt-1 sm:pt-2 border-t border-slate-200">
-                        <span className="text-slate-500 text-xs">Location</span>
-                        <span className="text-slate-500 text-xs truncate max-w-24 sm:max-w-32">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 text-xs">Working Time</span>
+                        <div className="text-right flex items-center gap-1.5">
+                          <span className="rounded-lg bg-blue-50 px-2 py-0.5 text-blue-800 text-xs sm:text-sm font-bold border border-blue-100">{formatWorkingTime(record)}</span>
+                          {record.checkInTime && !record.checkOutTime && (
+                            <span className="text-[11px] font-medium text-emerald-700">Live</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 text-xs">Status</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${getStatusColor(record.status)}`}>
+                            {record.status}
+                          </span>
+                          {record.isManualEntry && (
+                            <span className="text-amber-600 text-xs">Manual</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center gap-2 pt-1.5 border-t border-slate-200">
+                        <span className="text-slate-500 text-xs shrink-0">Location</span>
+                        <span className="text-slate-500 text-xs truncate max-w-[160px] sm:max-w-[200px] text-right">
                           {record.checkInLocation?.address || 'Unavailable'}
                         </span>
                       </div>
@@ -727,7 +738,7 @@ const AdminAttendance = () => {
                               </div>
                               <div>
                                 <p className="text-slate-900 font-medium">
-                                  {record.employeeData?.personalInfo ? 
+                                  {record.employeeData?.personalInfo ?
                                     `${record.employeeData.personalInfo.firstName} ${record.employeeData.personalInfo.lastName}` :
                                     record.userData?.name || 'Unknown'}
                                 </p>
@@ -905,33 +916,33 @@ const AdminAttendance = () => {
                   Close
                 </button>
               </div>
-              
+
               <div className="max-h-[calc(90dvh-2.75rem)] overflow-y-auto overscroll-contain p-2 sm:max-h-[78vh] sm:p-5">
                 <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 sm:gap-3">
                   <div className="attendance-detail-row">
                     <label>Employee</label>
                     <p>
-                      {viewingRecord.employeeData?.personalInfo ? 
+                      {viewingRecord.employeeData?.personalInfo ?
                         `${viewingRecord.employeeData.personalInfo.firstName} ${viewingRecord.employeeData.personalInfo.lastName}` :
                         viewingRecord.userData?.name || 'Unknown'}
                     </p>
                   </div>
-                  
+
                   <div className="attendance-detail-row">
                     <label>Date</label>
                     <p>{formatDate(viewingRecord.date)}</p>
                   </div>
-                  
+
                   <div className="attendance-detail-row">
                     <label>Check In</label>
                     <p>{formatTime(viewingRecord.checkInTime)}</p>
                   </div>
-                  
+
                   <div className="attendance-detail-row">
                     <label>Check Out</label>
                     <p>{formatTime(viewingRecord.checkOutTime)}</p>
                   </div>
-                  
+
                   <div className="attendance-detail-row">
                     <label>Working Hours</label>
                     <div className="min-w-0 text-right sm:text-left">
@@ -943,7 +954,7 @@ const AdminAttendance = () => {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="attendance-detail-row">
                     <label>Status</label>
                     <span className={`inline-flex rounded-full px-1.5 py-0.5 text-xs sm:px-2 sm:py-1 ${getStatusColor(viewingRecord.status)}`}>
@@ -957,7 +968,7 @@ const AdminAttendance = () => {
                       {getLocationText(viewingRecord.checkInLocation)}
                     </p>
                   </div>
-                  
+
                   {viewingRecord.checkOutLocation && (
                     <div className="attendance-detail-block">
                       <label className="block">Check Out Location</label>
@@ -966,28 +977,28 @@ const AdminAttendance = () => {
                       </p>
                     </div>
                   )}
-                  
+
                   <div className="attendance-detail-row">
                     <label>Device</label>
                     <p>
                       {viewingRecord.deviceInfo?.browser || 'Unknown'} on {viewingRecord.deviceInfo?.platform || 'Unknown'}
                     </p>
                   </div>
-                  
+
                   {viewingRecord.notes && (
                     <div className="attendance-detail-block sm:col-span-2">
                       <label className="block">Notes</label>
                       <p className="mt-0.5">{viewingRecord.notes}</p>
                     </div>
                   )}
-                  
+
                   {viewingRecord.isLate && (
                     <div className="attendance-detail-row bg-red-50">
                       <label>Late</label>
                       <p className="!text-red-600">{viewingRecord.lateMinutes} minutes late</p>
                     </div>
                   )}
-                  
+
                   {viewingRecord.isManualEntry && (
                     <div className="attendance-detail-block bg-amber-50 sm:col-span-2">
                       <label className="block">Manual Entry Reason</label>
@@ -1008,12 +1019,12 @@ const AdminAttendance = () => {
             <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-md" onClick={() => setEditingRecord(null)} />
             <div className="premium-panel relative rounded-xl sm:rounded-2xl p-4 sm:p-5 w-full max-w-full sm:max-w-md">
               <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3">Edit Attendance Record</h3>
-              
+
               <div className="space-y-2 sm:space-y-3">
                 <div>
                   <label className="block text-xs text-slate-500 mb-1">Employee</label>
                   <p className="text-slate-900 text-xs sm:text-sm">
-                    {editingRecord.employeeData?.personalInfo ? 
+                    {editingRecord.employeeData?.personalInfo ?
                       `${editingRecord.employeeData.personalInfo.firstName} ${editingRecord.employeeData.personalInfo.lastName}` :
                       editingRecord.userData?.name || 'Unknown'}
                   </p>
@@ -1072,16 +1083,16 @@ const AdminAttendance = () => {
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2 mt-4">
+              <div className="flex flex-row items-center space-x-2 mt-4">
                 <button
                   onClick={handleUpdateRecord}
-                  className="premium-primary-button flex-1 px-2 sm:px-3 py-1.5 font-medium rounded-lg transition-all duration-300 text-xs sm:text-sm"
+                  className="premium-primary-button flex-1 px-2 py-1 sm:px-3 sm:py-1.5 font-medium rounded-lg transition-all duration-300 text-[11px] sm:text-sm"
                 >
                   Update Record
                 </button>
                 <button
                   onClick={() => setEditingRecord(null)}
-                  className="flex-1 px-2 sm:px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium rounded-lg transition-colors text-xs sm:text-sm"
+                  className="flex-1 px-2 py-1 sm:px-3 sm:py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium rounded-lg transition-colors text-[11px] sm:text-sm"
                 >
                   Cancel
                 </button>

@@ -51,15 +51,9 @@ const setupChatSocket = (io) => {
     
     console.log(`Employee connected: ${userName} (${socket.id})`);
     
-    const existingSocketId = userSockets.get(userId);
-    if (existingSocketId && existingSocketId !== socket.id) {
-      const existingSocket = employeeNamespace.sockets.get(existingSocketId);
-      if (existingSocket) {
-        console.log(`Disconnecting previous socket for user ${userId}`);
-        existingSocket.disconnect(true);
-      }
-    }
-    
+    // Join dedicated room for this user so all user sockets receive messages (DMs, notifications, etc.)
+    socket.join(`user:${userId}`);
+
     userSockets.set(userId, socket.id);
     onlineUsers.set(userId, {
       socketId: socket.id,
@@ -160,20 +154,17 @@ const setupChatSocket = (io) => {
         });
         await messageDoc.save();
 
-        const recipientSocketId = userSockets.get(to);
         const senderDisplayName = userName; // normalized above
-        if (recipientSocketId) {
-          io.of('/employee').to(recipientSocketId).emit('message', {
-            _id: messageDoc._id,
-            from,
-            fromName: fromName || senderDisplayName,
-            to,
-            text: messageDoc.text,
-            timestamp: messageDoc.timestamp,
-            self: false,
-            fromBot: false
-          });
-        }
+        io.of('/employee').to(`user:${to}`).emit('message', {
+          _id: messageDoc._id,
+          from,
+          fromName: fromName || senderDisplayName,
+          to,
+          text: messageDoc.text,
+          timestamp: messageDoc.timestamp,
+          self: false,
+          fromBot: false
+        });
 
         socket.emit('message', {
           _id: messageDoc._id,

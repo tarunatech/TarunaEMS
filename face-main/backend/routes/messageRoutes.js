@@ -171,17 +171,34 @@ router.post('/', async (req, res) => {
       text: text.trim()
     });
     await message.save();
-    await message.populate('from', 'name email');
+    await message.populate('from', 'name email profileImage');
+
+    let senderDisplayName = message.from?.name;
+    if (!senderDisplayName || /^unknown( user)?$/i.test(senderDisplayName)) {
+      const senderEmp = await Employee.findOne({ user: from });
+      const firstName = senderEmp?.personalInfo?.firstName?.trim();
+      const lastName = senderEmp?.personalInfo?.lastName?.trim();
+      senderDisplayName = [firstName, lastName].filter(Boolean).join(' ') || senderEmp?.fullName || message.from?.email || 'Team Member';
+    }
 
     const responseData = {
       _id: message._id,
       from: message.from._id || message.from,
-      fromName: message.from?.name || 'Unknown',
+      fromName: senderDisplayName,
       to: message.to,
       text: message.text,
       timestamp: message.timestamp,
+      profileImage: message.from?.profileImage || null,
       fromBot: message.fromBot || false
     };
+
+    const io = req.app.get('io');
+    if (io) {
+      io.of('/employee').to(`user:${to}`).emit('message', {
+        ...responseData,
+        self: false
+      });
+    }
 
     res.status(201).json({ success: true, data: responseData });
   } catch (error) {

@@ -400,7 +400,12 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
                     </div>
 
                     {/* Status & Toggle */}
-                    <div className="flex items-center space-x-3 shrink-0">
+                    <div className="flex items-center space-x-2 shrink-0">
+                      {db.isHalfDay && (
+                        <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          Half Day ({db.halfDayType === 'second' ? '2nd Half' : '1st Half'})
+                        </span>
+                      )}
                       {getStatusBadge(db.status)}
                       <button className="p-1 text-slate-400 hover:text-slate-600 rounded">
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

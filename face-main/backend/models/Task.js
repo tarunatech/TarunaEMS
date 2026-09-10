@@ -14,7 +14,7 @@ const WRITABLE_FIELDS = [
   'title', 'description', 'assignedTo', 'assignedBy', 'project', 'priority', 'status', 'dueDate',
   'startDate', 'completedDate', 'estimatedHours', 'actualHours', 'category', 'tags', 'attachments',
   'comments', 'subtasks', 'dependencies', 'progress', 'isRecurring', 'recurringPattern',
-  'lastRecurringDate', 'nextRecurringDate', 'isSelfAssigned', 'createdAt', 'updatedAt',
+  'lastRecurringDate', 'nextRecurringDate', 'isSelfAssigned', 'achievedSoFar', 'createdAt', 'updatedAt',
 ];
 
 const columnByField = {
@@ -37,6 +37,7 @@ const columnByField = {
   isRecurring: tasks.isRecurring,
   recurringPattern: tasks.recurringPattern,
   isSelfAssigned: tasks.isSelfAssigned,
+  achievedSoFar: tasks.achievedSoFar,
   createdAt: tasks.createdAt,
   updatedAt: tasks.updatedAt,
 };
@@ -86,6 +87,10 @@ const normalizeInput = (data = {}, existing = null) => {
     normalized.description = String(normalized.description).trim();
     if (!normalized.description) throw new Error('Task description is required');
     validateLength(normalized.description, 1000, 'Task description cannot exceed 1000 characters');
+  }
+  if (normalized.achievedSoFar !== undefined) {
+    normalized.achievedSoFar = String(normalized.achievedSoFar || '').trim();
+    validateLength(normalized.achievedSoFar, 2000, 'Achieved so far cannot exceed 2000 characters');
   }
   if (normalized.project !== undefined) {
     normalized.project = String(normalized.project || '').trim();
@@ -198,6 +203,7 @@ const serialize = (row) => {
   if (!row) return null;
   return addVirtuals({
     ...row,
+    achievedSoFar: row.achievedSoFar || '',
     estimatedHours: row.estimatedHours === null || row.estimatedHours === undefined ? row.estimatedHours : Number(row.estimatedHours),
     actualHours: Number(row.actualHours || 0),
     tags: normalizeArray(row.tags),
@@ -334,6 +340,7 @@ class TaskDocument {
       progress: 0,
       isRecurring: false,
       isSelfAssigned: false,
+      achievedSoFar: '',
     }, serialize(row));
     if (!this.id && this._id) this.id = this._id;
     this.__isNew = options.isNew || !this._id;

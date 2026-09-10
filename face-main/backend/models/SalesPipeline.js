@@ -57,6 +57,9 @@ const normalizeHistory = (history = []) => asArray(history).map((item) => ({
 
 const normalizeInput = (data = {}) => {
   const normalized = pickWritable(data);
+  if (normalized.currentStage === 'admin_approval') {
+    normalized.currentStage = 'proposal';
+  }
   if (normalized.currentStage !== undefined && !STAGES.has(normalized.currentStage)) unsupported(`currentStage value "${normalized.currentStage}"`);
 
   if (normalized.clientDetails !== undefined) {

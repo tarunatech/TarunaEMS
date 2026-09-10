@@ -72,6 +72,13 @@ const AdminTaskManagement = () => {
     }
   }, [location.state]);
 
+  useEffect(() => {
+    const navTab = location.state?.activeTab;
+    if (navTab) {
+      setActiveTab(navTab);
+    }
+  }, [location.state]);
+
   const isNavigatedFromStatCard = Boolean(location.state?.employeeFilter || location.state?.search);
 
   const activeEmployeeTasks = useMemo(() => {
@@ -1231,13 +1238,24 @@ const AdminTaskManagement = () => {
                 </div>
               </div>
             </div>
+          </div>
+        ) : activeTab === 'daybooks' ? (
+          <AdminDayBookReview
+            search={searchTerm}
+            initialEmployeeId={location.state?.directToEmployeeEOD ? (location.state?.returnToEmployeeId || location.state?.employeeFilter) : null}
+            employeeCode={location.state?.directToEmployeeEOD ? (location.state?.employeeIdCode || '') : null}
+            directToEmployeeEOD={Boolean(location.state?.directToEmployeeEOD)}
+          />
+        ) : (
+          <AdminPerformanceReview search={searchTerm} />
+        )}
 
             {/* Add Task Modal */}
             {
               showAddModal && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-4 lg:left-64">
+                <div className="fixed inset-0 z-[9999] flex items-start pt-6 sm:items-center sm:pt-0 justify-center p-2 sm:p-4 lg:left-64">
                   <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-                  <div className="admin-modal-inner relative flex max-h-[48dvh] sm:max-h-[85vh] lg:max-h-[90vh] w-full sm:max-w-md md:max-w-xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl bg-white border border-slate-200 p-3 sm:p-5 md:p-6 lg:p-7 shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
+                  <div className="admin-modal-inner relative flex max-h-[calc(100dvh-2.2rem)] sm:max-h-[85vh] lg:max-h-[90vh] w-full sm:max-w-md md:max-w-xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl bg-white border border-slate-200 p-2.5 sm:p-5 md:p-6 lg:p-7 shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
                     <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:border-b-0 sm:pb-4">
                       <h2 className="text-sm sm:text-xl md:text-2xl font-bold text-slate-900">Create New Task</h2>
                       <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-900">
@@ -1311,15 +1329,15 @@ const AdminTaskManagement = () => {
                             <button
                               type="button"
                               onClick={() => setNewTask(prev => ({ ...prev, descriptions: [...(prev.descriptions || ['']), ''] }))}
-                              className="flex items-center gap-1.5 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg transition-all duration-200 w-full justify-center"
+                              className="flex items-center gap-1.5 px-3 py-1 text-xs sm:text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg transition-all duration-200 w-auto justify-center self-start"
                             >
                               <PlusCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               Add Description
                             </button>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                        {/* Multi-Select Assign To Section */}
+
+                        {/* Multi-Select Assign To Section (Full Width) */}
                         {(() => {
                           const selectedEmpIds = Array.isArray(newTask.assignedTo)
                             ? newTask.assignedTo
@@ -1389,14 +1407,14 @@ const AdminTaskManagement = () => {
                                 </div>
                               )}
 
-                              <div className="max-h-48 sm:max-h-56 overflow-y-auto border border-slate-200/90 rounded-xl p-2 bg-slate-50/50">
+                              <div className="max-h-36 sm:max-h-56 overflow-y-auto border border-slate-200/90 rounded-xl p-2 bg-slate-50/50">
                                 {employeesLoading ? (
                                   <div className="flex items-center space-x-2 p-3">
                                     <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
                                     <span className="text-slate-500 text-xs">Loading employees...</span>
                                   </div>
                                 ) : (
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2">
+                                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-2">
                                     {getAssignableEmployees()
                                       .filter(emp => {
                                         if (!taskAssignSearch.trim()) return true;
@@ -1413,13 +1431,13 @@ const AdminTaskManagement = () => {
                                         return (
                                           <label
                                             key={emp._id}
-                                            className={`flex items-center justify-between p-2 rounded-lg border transition-all duration-150 cursor-pointer ${
+                                            className={`flex items-center justify-between p-1.5 sm:p-2 rounded-lg border transition-all duration-150 cursor-pointer ${
                                               isChecked
                                                 ? 'bg-blue-50/90 border-blue-300 shadow-2xs font-semibold'
                                                 : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                                             }`}
                                           >
-                                            <div className="flex items-center space-x-2 min-w-0">
+                                            <div className="flex items-center space-x-1.5 min-w-0">
                                               <input
                                                 type="checkbox"
                                                 checked={isChecked}
@@ -1432,15 +1450,15 @@ const AdminTaskManagement = () => {
                                                     return { ...prev, assignedTo: next };
                                                   });
                                                 }}
-                                                className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer shrink-0"
+                                                className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer shrink-0"
                                               />
                                               <div className="min-w-0 flex-1">
-                                                <p className="text-xs text-slate-900 truncate font-medium">{name}</p>
-                                                {empCode && <p className="text-[10px] text-slate-500 font-normal truncate">{empCode}</p>}
+                                                <p className="text-[11px] sm:text-xs text-slate-900 truncate font-medium">{name}</p>
+                                                {empCode && <p className="text-[9.5px] sm:text-[10px] text-slate-500 font-normal truncate">{empCode}</p>}
                                               </div>
                                             </div>
                                             {dept && (
-                                              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-normal shrink-0 ml-1">
+                                              <span className="text-[9px] sm:text-[9.5px] px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-normal shrink-0 ml-1 truncate max-w-[50px] sm:max-w-none">
                                                 {dept}
                                               </span>
                                             )}
@@ -1453,6 +1471,8 @@ const AdminTaskManagement = () => {
                             </div>
                           );
                         })()}
+
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
                           <div>
                             <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Priority *</label>
                             <select
@@ -1466,8 +1486,6 @@ const AdminTaskManagement = () => {
                               <option value="Critical">Critical</option>
                             </select>
                           </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
                           <div>
                             <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Due Date *</label>
                             <input
@@ -1480,6 +1498,9 @@ const AdminTaskManagement = () => {
                               required
                             />
                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
                           <div>
                             <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Est. Hours *</label>
                             <input
@@ -1494,7 +1515,7 @@ const AdminTaskManagement = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="sticky bottom-0 z-10 flex shrink-0 justify-end space-x-2 sm:space-x-4 border-t border-slate-100 bg-white/95 pt-2 backdrop-blur sm:pt-4">
+                      <div className="sticky bottom-0 z-10 flex shrink-0 justify-end space-x-2 sm:space-x-4 border-t border-slate-100 bg-white pt-2.5 pb-1 sm:pt-4 sm:pb-0">
                         <button
                           type="button"
                           onClick={() => setShowAddModal(false)}
@@ -1522,7 +1543,7 @@ const AdminTaskManagement = () => {
               showEditModal && selectedTask && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-4 lg:left-64">
                   <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
-                  <div className="admin-modal-inner relative flex max-h-[48dvh] sm:max-h-[85vh] w-full sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl flex-col overflow-hidden rounded-2xl bg-white border border-slate-200 p-3 sm:p-5 md:p-6 shadow-xl">
+                  <div className="admin-modal-inner relative flex max-h-[85dvh] sm:max-h-[85vh] lg:max-h-[90vh] w-full sm:max-w-lg md:max-w-xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl bg-white border border-slate-200 p-3 sm:p-5 md:p-6 shadow-xl">
                     <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:border-b-0 sm:pb-4">
                       <h2 className="text-sm sm:text-xl md:text-2xl font-bold text-slate-900">Edit Task</h2>
                       <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-900">
@@ -1548,7 +1569,7 @@ const AdminTaskManagement = () => {
                             {(selectedTask?.descriptions || [selectedTask?.description || '']).map((desc, idx) => (
                               <div key={idx} className="relative group">
                                 <div className="flex items-start gap-1.5 sm:gap-2">
-                                  <div className="flex-shrink-0 w-4 h-4 sm:w-6 sm:h-6 mt-1.5 sm:mt-3 flex items-center justify-center rounded-full bg-amber-50 border border-amber-200 text-amber-600 text-[10px] sm:text-xs font-bold">{idx + 1}</div>
+                                  <div className="flex-shrink-0 w-4 h-4 sm:w-6 sm:h-6 mt-1.5 sm:mt-3 flex items-center justify-center rounded-full bg-blue-50 border border-blue-200 text-blue-600 text-[10px] sm:text-xs font-bold">{idx + 1}</div>
                                   <textarea
                                     value={desc}
                                     onChange={(e) => {
@@ -1579,7 +1600,7 @@ const AdminTaskManagement = () => {
                             <button
                               type="button"
                               onClick={() => setSelectedTask(prev => ({ ...prev, descriptions: [...(prev.descriptions || [prev.description || '']), ''] }))}
-                              className="flex items-center gap-1.5 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 hover:border-amber-300 rounded-lg transition-all duration-200 w-full justify-center"
+                              className="flex items-center gap-1.5 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg transition-all duration-200 w-full justify-center"
                             >
                               <PlusCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               Add Description
@@ -1646,18 +1667,32 @@ const AdminTaskManagement = () => {
                               type="number"
                               min="0"
                               step="0.5"
-                              value={selectedTask?.estimatedHours || ''}
+                              value={selectedTask?.estimatedHours || 0}
                               onChange={(e) => setSelectedTask({ ...selectedTask, estimatedHours: parseFloat(e.target.value) || 0 })}
                               className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                               required
                             />
                           </div>
                         </div>
+
+                        <div>
+                          <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Achieved So Far</label>
+                          <textarea
+                            rows="2"
+                            value={selectedTask?.achievedSoFar || ''}
+                            onChange={(e) => setSelectedTask({ ...selectedTask, achievedSoFar: e.target.value })}
+                            placeholder="Employee achievements logged..."
+                            className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none"
+                          />
+                        </div>
                       </div>
                       <div className="sticky bottom-0 z-10 flex shrink-0 justify-end space-x-2 sm:space-x-4 border-t border-slate-100 bg-white/95 pt-2 backdrop-blur sm:pt-4">
                         <button
                           type="button"
-                          onClick={() => setShowEditModal(false)}
+                          onClick={() => {
+                            setShowEditModal(false);
+                            setSelectedTask(null);
+                          }}
                           className="px-3 sm:px-6 py-1.5 sm:py-3 border border-slate-200 text-xs sm:text-sm text-slate-700 rounded-lg bg-white hover:bg-slate-50 transition-all duration-200"
                         >
                           Cancel
@@ -1680,12 +1715,11 @@ const AdminTaskManagement = () => {
             {/* View Task Modal */}
             {
               showViewModal && selectedTask && (
-                <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-2 md:p-4 lg:left-64">
-                  <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
-                  <div className="task-details-modal task-details-modal-scroll relative w-full rounded-t-3xl border border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.20)] max-h-[94dvh] overflow-y-auto sm:rounded-2xl sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl sm:max-h-[88vh]">
-
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-4 lg:left-64">
+                  <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowViewModal(false)} />
+                  <div className="admin-modal-inner relative flex max-h-[calc(100dvh-4rem)] sm:max-h-[85vh] lg:max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200">
                     {/* Modal Header */}
-                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-3.5 py-3 sm:px-6 sm:py-5">
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-200 bg-white px-3.5 py-3 sm:px-6 sm:py-5">
                       <div className="min-w-0 flex-1">
                         <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-blue-500 mb-0.5 truncate">Task Details</p>
                         <h2 className="text-xs sm:text-lg font-bold tracking-tight text-slate-900 truncate">{selectedTask.title || 'Untitled Task'}</h2>
@@ -1721,52 +1755,106 @@ const AdminTaskManagement = () => {
                     ) : (
                       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(300px,1fr)]">
 
-                        {/* ── LEFT COLUMN: Descriptions + Comments ── */}
-                        <div className="space-y-5 border-b border-slate-100 p-5 sm:p-6 lg:border-b-0 lg:border-r">
-
-                          {/* Descriptions */}
-                          <div>
-                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">Descriptions</p>
-                            <div className="space-y-2">
-                              {((selectedTask.description || '').split('\n\n').map(s => s.trim()).filter(Boolean).length > 0
-                                ? (selectedTask.description || '').split('\n\n').map(s => s.trim()).filter(Boolean)
-                                : ['No description']
-                              ).map((desc, idx) => (
-                                <div key={idx} className="flex gap-3 items-start rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 hover:bg-slate-100/60 transition-colors">
-                                  <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center shadow-sm">{idx + 1}</span>
-                                  <p className="text-[12.5px] leading-relaxed text-slate-800 flex-1 min-w-0 sm:text-sm">{desc}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Comments */}
-                          {selectedTask.comments && selectedTask.comments.length > 0 && (
+                        {/* ── LEFT COLUMN: Descriptions + Comments + Review ── */}
+                        <div className="flex flex-col justify-between space-y-5 border-b border-slate-200 p-5 sm:p-6 lg:border-b-0 lg:border-r">
+                          <div className="space-y-5">
+                            {/* Descriptions */}
                             <div>
-                              <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-                                Comments
-                                <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 py-0.5 text-[9px] font-bold text-slate-600">{selectedTask.comments.length}</span>
-                              </p>
-                              <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
-                                {selectedTask.comments.slice(-5).map((comment) => (
-                                  <div key={comment._id} className="rounded-xl border border-slate-200 bg-white p-3">
-                                    <div className="mb-1 flex items-center gap-2">
-                                      <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                                        <User className="w-2.5 h-2.5 text-white" />
-                                      </div>
-                                      <span className="text-[11.5px] font-semibold text-slate-900">{comment.user?.name || 'Unknown'}</span>
-                                      <span className="text-[9.5px] text-slate-400">{formatDate(comment.createdAt)}</span>
-                                    </div>
-                                    <p className="text-[11px] leading-snug text-slate-600 pl-7">{comment.text}</p>
+                              <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">Descriptions</p>
+                              <div className="space-y-2">
+                                {((selectedTask.description || '').split('\n\n').map(s => s.trim()).filter(Boolean).length > 0
+                                  ? (selectedTask.description || '').split('\n\n').map(s => s.trim()).filter(Boolean)
+                                  : ['No description']
+                                ).map((desc, idx) => (
+                                  <div key={idx} className="flex gap-3 items-start rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 hover:bg-slate-100 transition-colors">
+                                    <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center shadow-sm">{idx + 1}</span>
+                                    <p className="text-[12.5px] leading-relaxed text-slate-800 flex-1 min-w-0 sm:text-sm">{desc}</p>
                                   </div>
                                 ))}
+                              </div>
+                            </div>
+
+                            {/* Achieved So Far (Only shown if employee has filled something) */}
+                            {Boolean(selectedTask.achievedSoFar && selectedTask.achievedSoFar.trim()) && (
+                              <div>
+                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">Achieved So Far</p>
+                                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 shadow-2xs">
+                                  <div className="flex items-center gap-2 mb-1.5 text-emerald-800 font-semibold text-xs">
+                                    <Target className="w-4 h-4 text-emerald-600 shrink-0" />
+                                    <span>Employee Progress Update</span>
+                                  </div>
+                                  <p className="text-[12.5px] leading-relaxed text-slate-800 whitespace-pre-wrap sm:text-sm pl-6">
+                                    {selectedTask.achievedSoFar}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Comments */}
+                            {selectedTask.comments && selectedTask.comments.length > 0 && (
+                              <div>
+                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                                  Comments
+                                  <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 py-0.5 text-[9px] font-bold text-slate-600">{selectedTask.comments.length}</span>
+                                </p>
+                                <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                                  {selectedTask.comments.slice(-5).map((comment) => (
+                                    <div key={comment._id} className="rounded-xl border border-slate-200 bg-white p-3">
+                                      <div className="mb-1 flex items-center gap-2">
+                                        <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                                          <User className="w-2.5 h-2.5 text-white" />
+                                        </div>
+                                        <span className="text-[11.5px] font-semibold text-slate-900">{comment.user?.name || 'Unknown'}</span>
+                                        <span className="text-[9.5px] text-slate-400">{formatDate(comment.createdAt)}</span>
+                                      </div>
+                                      <p className="text-[11px] leading-snug text-slate-600 pl-7">{comment.text}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Review Panel */}
+                          {selectedTask.status === 'Review' && (
+                            <div className="mt-auto rounded-xl border border-purple-100 bg-purple-50 p-3.5 sm:p-4 shadow-sm">
+                              <div className="mb-3 flex items-center justify-between gap-2">
+                                <div>
+                                  <p className="text-xs font-bold uppercase tracking-wider text-purple-700">Review Decision</p>
+                                  <p className="mt-0.5 text-xs text-slate-500">Approve, request changes, or reject task submission.</p>
+                                </div>
+                                <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold text-purple-700 whitespace-nowrap">Pending Review</span>
+                              </div>
+                              <textarea
+                                value={reviewFeedback}
+                                onChange={(e) => setReviewFeedback(e.target.value)}
+                                rows={2}
+                                placeholder="Feedback for rejection or changes..."
+                                className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                              />
+                              <div className="mt-3 grid grid-cols-3 gap-2">
+                                <button type="button" onClick={() => handleReviewTask('approve')} disabled={!!reviewLoading}
+                                  className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-500 disabled:opacity-60">
+                                  {reviewLoading === 'approve' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="mr-1.5 h-3.5 w-3.5" />}
+                                  Approve
+                                </button>
+                                <button type="button" onClick={() => handleReviewTask('changes')} disabled={!!reviewLoading}
+                                  className="inline-flex items-center justify-center rounded-xl bg-amber-500 px-3 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-amber-400 disabled:opacity-60">
+                                  {reviewLoading === 'changes' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
+                                  Changes
+                                </button>
+                                <button type="button" onClick={() => handleReviewTask('reject')} disabled={!!reviewLoading}
+                                  className="inline-flex items-center justify-center rounded-xl bg-red-600 px-3 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-red-500 disabled:opacity-60">
+                                  {reviewLoading === 'reject' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />}
+                                  Reject
+                                </button>
                               </div>
                             </div>
                           )}
                         </div>
 
-                        {/* ── RIGHT COLUMN: Meta + Progress + Review ── */}
-                        <div className="space-y-5 bg-slate-50/50 p-5 sm:p-6">
+                        {/* ── RIGHT COLUMN: Meta + Progress ── */}
+                        <div className="space-y-5 bg-slate-50 p-5 sm:p-6">
 
                           {/* Meta info */}
                           <div>
@@ -1812,43 +1900,6 @@ const AdminTaskManagement = () => {
                               <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style={{ width: selectedTask.progress + '%' }} />
                             </div>
                           </div>
-
-                          {/* Review Panel */}
-                          {selectedTask.status === 'Review' && (
-                            <div className="rounded-xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-2.5 sm:p-4 shadow-[0_4px_20px_rgba(79,70,229,0.08)]">
-                              <div className="mb-2 sm:mb-3 flex items-center justify-between gap-1.5">
-                                <div>
-                                  <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider sm:tracking-widest text-purple-700">Review Decision</p>
-                                  <p className="mt-0.5 text-[9px] sm:text-[10px] text-slate-500 leading-snug">Approve, request changes, or reject.</p>
-                                </div>
-                                <span className="rounded-full bg-purple-100 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[8px] sm:text-[9px] font-bold text-purple-700 whitespace-nowrap">Pending</span>
-                              </div>
-                              <textarea
-                                value={reviewFeedback}
-                                onChange={(e) => setReviewFeedback(e.target.value)}
-                                rows={2}
-                                placeholder="Feedback for rejection or changes..."
-                                className="w-full resize-none rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 sm:px-3 sm:py-2 text-[10.5px] sm:text-[11.5px] text-slate-900 placeholder-slate-400 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                              />
-                              <div className="mt-2 sm:mt-2.5 grid grid-cols-3 gap-1 sm:gap-2">
-                                <button type="button" onClick={() => handleReviewTask('approve')} disabled={!!reviewLoading}
-                                  className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-1 py-1 sm:px-2.5 sm:py-2 text-[9px] sm:text-[11px] font-bold text-white shadow-xs transition hover:bg-emerald-500 disabled:opacity-60">
-                                  {reviewLoading === 'approve' ? <Loader2 className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3 animate-spin" /> : <CheckCircle className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3" />}
-                                  Approve
-                                </button>
-                                <button type="button" onClick={() => handleReviewTask('changes')} disabled={!!reviewLoading}
-                                  className="inline-flex items-center justify-center rounded-lg bg-amber-500 px-1 py-1 sm:px-2.5 sm:py-2 text-[9px] sm:text-[11px] font-bold text-white shadow-xs transition hover:bg-amber-400 disabled:opacity-60">
-                                  {reviewLoading === 'changes' ? <Loader2 className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3 animate-spin" /> : <RefreshCw className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3" />}
-                                  Changes
-                                </button>
-                                <button type="button" onClick={() => handleReviewTask('reject')} disabled={!!reviewLoading}
-                                  className="inline-flex items-center justify-center rounded-lg bg-red-600 px-1 py-1 sm:px-2.5 sm:py-2 text-[9px] sm:text-[11px] font-bold text-white shadow-xs transition hover:bg-red-500 disabled:opacity-60">
-                                  {reviewLoading === 'reject' ? <Loader2 className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3 animate-spin" /> : <AlertTriangle className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3" />}
-                                  Reject
-                                </button>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </div>
                     )}
@@ -1856,14 +1907,8 @@ const AdminTaskManagement = () => {
                 </div>
               )
             }
-          </div>
-        ) : activeTab === 'daybooks' ? (
-          <AdminDayBookReview search={searchTerm} />
-        ) : (
-          <AdminPerformanceReview search={searchTerm} />
-        )}
       </div>
-    </AdminLayout >
+    </AdminLayout>
   );
 };
 

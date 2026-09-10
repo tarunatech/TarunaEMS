@@ -9,6 +9,7 @@ import {
   timestamp,
   uuid,
   varchar,
+  text,
 } from 'drizzle-orm/pg-core';
 
 export const taskPriorityEnum = pgEnum('task_priority', ['Low', 'Medium', 'High', 'Critical']);
@@ -54,6 +55,7 @@ export const tasks = pgTable(
     lastRecurringDate: timestamp('lastRecurringDate', { withTimezone: true }),
     nextRecurringDate: timestamp('nextRecurringDate', { withTimezone: true }),
     isSelfAssigned: boolean('isSelfAssigned').notNull().default(false),
+    achievedSoFar: text('achievedSoFar').notNull().default(''),
     createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
   },
