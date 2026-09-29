@@ -145,7 +145,26 @@ export const employeeAPI = {
 
   // Message/Chat endpoints
   get: (endpoint) => API.get(endpoint),
-  post: (endpoint, data) => API.post(endpoint, data)
+  post: (endpoint, data) => API.post(endpoint, data),
+
+  // Group Chat endpoints
+  getGroupChats: () => API.get('/groups'),
+  getGroupById: (groupId) => API.get(`/groups/${groupId}`),
+  createGroupChat: (data) => API.post('/groups', {
+    ...data,
+    memberIds: data?.memberIds || data?.members || []
+  }),
+  updateGroup: (groupId, data) => API.put(`/groups/${groupId}`, data),
+  deleteGroupChat: (groupId) => API.delete(`/groups/${groupId}`),
+  addGroupMembers: (groupId, data) => API.post(`/groups/${groupId}/members`, {
+    ...data,
+    memberIds: data?.memberIds || data?.members || []
+  }),
+  removeGroupMember: (groupId, memberId) => API.delete(`/groups/${groupId}/members/${memberId}`),
+  updateGroupMemberRole: (groupId, memberId, data) => API.put(`/groups/${groupId}/members/${memberId}/role`, data),
+  leaveGroupChat: (groupId) => API.post(`/groups/${groupId}/leave`),
+  getGroupMessages: (groupId, params = {}) => API.get(`/groups/${groupId}/messages`, { params }),
+  sendGroupMessage: (groupId, data) => API.post(`/groups/${groupId}/messages`, data)
 };
 
 // Department API calls

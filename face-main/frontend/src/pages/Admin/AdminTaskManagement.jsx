@@ -49,9 +49,35 @@ const AdminTaskManagement = () => {
     stats,
     createTask,
     updateTask,
+    updateProgress,
     deleteTask,
     fetchTasks
   } = useTasks();
+
+  useEffect(() => {
+    if (selectedTask?._id) {
+      const updated = tasks.find((t) => t._id === selectedTask._id);
+      if (updated && (updated.progress !== selectedTask.progress || updated.status !== selectedTask.status)) {
+        setSelectedTask((prev) => (prev ? { ...prev, ...updated } : null));
+      }
+    }
+  }, [tasks]);
+
+  const updateTaskProgress = async (taskId, progress) => {
+    const validProgress = Math.max(0, Math.min(100, Math.round(progress)));
+    if (selectedTask && selectedTask._id === taskId) {
+      setSelectedTask((prev) => (prev ? { ...prev, progress: validProgress } : prev));
+    }
+    try {
+      const response = await updateProgress(taskId, validProgress);
+      if (response?.task && selectedTask?._id === taskId) {
+        setSelectedTask(response.task);
+      }
+    } catch (error) {
+      toast.error('Failed to update task progress');
+      await fetchTasks();
+    }
+  };
 
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
@@ -978,15 +1004,26 @@ const AdminTaskManagement = () => {
                                 {task.status}
                               </span>
                             </td>
-                            <td className="p-3">
+                            <td className="p-3" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center space-x-2">
-                                <div className="flex-1 bg-slate-200 rounded-full h-2 min-w-[60px]">
-                                  <div
-                                    className="bg-blue-600 h-2 rounded-full"
-                                    style={{ width: `${task.progress}%` }}
-                                  ></div>
-                                </div>
-                                <span className="text-blue-700 text-xs">{task.progress}%</span>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={task.progress || 0}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    updateTaskProgress(task._id, parseInt(e.target.value, 10));
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  disabled={task.status === 'Completed'}
+                                  className="h-2 flex-1 cursor-pointer appearance-none rounded-full accent-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60 min-w-[60px]"
+                                  style={{
+                                    background: `linear-gradient(to right, #2563eb ${task.progress || 0}%, #e2e8f0 ${task.progress || 0}%)`
+                                  }}
+                                  title={task.status === 'Completed' ? 'Completed' : `Click or drag to set progress (${task.progress}%)`}
+                                />
+                                <span className="text-blue-700 text-xs font-semibold shrink-0">{task.progress}%</span>
                               </div>
                             </td>
                             <td className="p-3">
@@ -1124,16 +1161,27 @@ const AdminTaskManagement = () => {
                             </div>
                           </div>
 
-                          <div>
-                            <p className="text-slate-500 text-xs mb-2">Progress</p>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <p className="text-slate-500 text-xs mb-1.5">Progress</p>
                             <div className="flex items-center space-x-2">
-                              <div className="flex-1 bg-slate-200 rounded-full h-2">
-                                <div
-                                  className="bg-blue-600 h-2 rounded-full"
-                                  style={{ width: `${task.progress}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-blue-700 text-xs">{task.progress}%</span>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={task.progress || 0}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  updateTaskProgress(task._id, parseInt(e.target.value, 10));
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                disabled={task.status === 'Completed'}
+                                className="h-2 flex-1 cursor-pointer appearance-none rounded-full accent-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                                style={{
+                                  background: `linear-gradient(to right, #2563eb ${task.progress || 0}%, #e2e8f0 ${task.progress || 0}%)`
+                                }}
+                                title={task.status === 'Completed' ? 'Completed' : `Click or drag to set progress (${task.progress}%)`}
+                              />
+                              <span className="text-blue-700 text-xs font-semibold shrink-0">{task.progress}%</span>
                             </div>
                           </div>
 
@@ -1896,9 +1944,19 @@ const AdminTaskManagement = () => {
                               <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Progress</p>
                               <span className="text-sm font-bold text-blue-600">{selectedTask.progress}%</span>
                             </div>
-                            <div className="w-full rounded-full bg-slate-200 h-2.5">
-                              <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style={{ width: selectedTask.progress + '%' }} />
-                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={selectedTask.progress || 0}
+                              onChange={(e) => updateTaskProgress(selectedTask._id, parseInt(e.target.value, 10))}
+                              className="h-2 w-full cursor-pointer appearance-none rounded-full accent-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{
+                                background: `linear-gradient(to right, #2563eb ${selectedTask.progress || 0}%, #e2e8f0 ${selectedTask.progress || 0}%)`
+                              }}
+                              disabled={selectedTask.status === 'Completed'}
+                              title={selectedTask.status === 'Completed' ? 'Completed' : `Click or drag to set progress (${selectedTask.progress}%)`}
+                            />
                           </div>
                         </div>
                       </div>

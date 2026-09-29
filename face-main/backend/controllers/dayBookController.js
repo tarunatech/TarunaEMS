@@ -27,6 +27,13 @@ export const getTodayDayBook = async (req, res) => {
         }).populate('slots.taskRef');
 
         if (!dayBook) {
+            const now = new Date();
+            const hours24 = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const meridiem = hours24 >= 12 ? 'PM' : 'AM';
+            const hours12 = hours24 % 12 || 12;
+            const currentTimeStr = `${hours12}:${minutes} ${meridiem}`;
+
             // Create a default day book with slots as requested by user
             dayBook = await DayBook.create({
                 employee: employee._id,
@@ -34,7 +41,7 @@ export const getTodayDayBook = async (req, res) => {
                 slots: [
                     { slotType: '10:00 AM - 1:00 PM', workType: 'Task', description: '' },
                     { slotType: '1:00 PM - 2:00 PM', workType: 'Break', description: 'Lunch Break' },
-                    { slotType: '2:00 PM - 7:00 PM', workType: 'Task', description: '' }
+                    { slotType: `2:00 PM - ${currentTimeStr}`, workType: 'Task', description: '' }
                 ]
             });
         } else if (dayBook.status === 'Pending') {

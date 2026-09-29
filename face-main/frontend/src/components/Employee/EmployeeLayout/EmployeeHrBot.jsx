@@ -205,14 +205,14 @@ const EmployeeHrBot = () => {
         ref={launcherRef}
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-[9998] flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-white opacity-45 shadow-[0_10px_22px_rgba(37,99,235,0.18)] transition-all duration-300 hover:-translate-y-1 hover:opacity-100 hover:shadow-[0_20px_42px_rgba(37,99,235,0.42)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200"
+        className="fixed bottom-3.5 right-3.5 sm:bottom-6 sm:right-6 z-[9998] flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-white opacity-60 sm:opacity-45 shadow-[0_6px_16px_rgba(37,99,235,0.22)] sm:shadow-[0_10px_22px_rgba(37,99,235,0.18)] transition-all duration-300 hover:-translate-y-1 hover:opacity-100 hover:shadow-[0_20px_42px_rgba(37,99,235,0.42)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200"
         title="HR Assistant"
       >
-        <Bot className="w-7 h-7" />
+        <Bot className="w-5 h-5 sm:w-7 sm:h-7" />
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-[9999] w-[calc(100vw-3rem)] max-w-md">
+        <div className="fixed bottom-16 right-3 left-3 sm:left-auto sm:right-6 sm:bottom-24 z-[9999] w-auto sm:w-[calc(100vw-3rem)] max-w-md">
           <div ref={botPanelRef} className="employee-hr-bot-modal bg-white border border-blue-100 rounded-2xl h-[70vh] max-h-[620px] flex flex-col shadow-[0_24px_60px_rgba(15,23,42,0.22)] overflow-hidden">
             <div className="employee-hr-bot-header flex items-center justify-between p-4 border-b border-blue-100/80 bg-gradient-to-r from-slate-50 to-blue-50">
               <h2 className="employee-hr-bot-title text-[17px] font-semibold tracking-tight text-slate-900 flex items-center">

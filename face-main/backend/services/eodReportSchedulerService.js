@@ -126,7 +126,11 @@ const buildHalfSummaries = (slots = []) => {
 
     const timeRange = getSlotTimeRange(slot.slotType);
     // 2:00 PM IST is 14 * 60 = 840 minutes
-    const isFirstHalf = timeRange.midpointMins === null || timeRange.midpointMins < 14 * 60;
+    const isFirstHalf = (timeRange.startMins !== null && timeRange.startMins >= 14 * 60)
+      ? false
+      : (timeRange.startMins !== null && timeRange.startMins < 13 * 60
+        ? true
+        : (timeRange.midpointMins === null || timeRange.midpointMins < 14 * 60));
 
     const title = getSlotTaskTitle(slot);
     const { completed, pending } = parseDescriptionSections(slot.description);

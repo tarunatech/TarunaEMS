@@ -66,7 +66,9 @@ const getDayBookHalvesSummary = (dayBook) => {
     const start = toMins(startStr);
     const end = toMins(endStr);
     const mid = (start !== null && end !== null) ? (start + end) / 2 : null;
-    const isFirst = mid === null || mid < 14 * 60;
+    const isFirst = (start !== null && start >= 14 * 60)
+      ? false
+      : (start !== null && start < 13 * 60 ? true : (mid === null || mid < 14 * 60));
 
     if (isFirst) {
       if (!seenFirst.has(title.toLowerCase())) {
@@ -108,29 +110,29 @@ const getStatusBadge = (status) => {
   switch (status) {
     case 'Approved':
       return (
-        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+          <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-600 dark:text-emerald-400" />
           Approved
         </span>
       );
     case 'Rejected':
       return (
-        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-          <XCircle className="w-3.5 h-3.5 mr-1 text-rose-600" />
+        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60">
+          <XCircle className="w-3.5 h-3.5 mr-1 text-rose-600 dark:text-rose-400" />
           Rejected
         </span>
       );
     case 'Submitted':
       return (
-        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-          <Clock className="w-3.5 h-3.5 mr-1 text-blue-600" />
+        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60">
+          <Clock className="w-3.5 h-3.5 mr-1 text-blue-600 dark:text-blue-400" />
           Submitted
         </span>
       );
     default:
       return (
-        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-          <AlertCircle className="w-3.5 h-3.5 mr-1 text-slate-500" />
+        <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+          <AlertCircle className="w-3.5 h-3.5 mr-1 text-slate-500 dark:text-slate-400" />
           {status || 'Draft'}
         </span>
       );
@@ -213,32 +215,32 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="eod-history-modal bg-white rounded-2xl shadow-2xl border border-slate-200 w-[96%] max-w-[1450px] max-h-[72vh] flex flex-col overflow-hidden animate-enter"
+        className="eod-history-modal bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-[96%] max-w-[1450px] max-h-[72vh] flex flex-col overflow-hidden animate-enter"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-3.5 sm:p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/60 shrink-0">
+        <div className="p-3.5 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-900/80 shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shadow-2xs">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-2xs">
               <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">My EOD Report History</h2>
-              <p className="text-[11px] sm:text-xs text-slate-500">View past submitted daybooks and admin reviews</p>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">My EOD Report History</h2>
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">View past submitted daybooks and admin reviews</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Filter Bar */}
-        <div className="px-3 py-2.5 sm:px-4 sm:py-3 border-b border-slate-200 bg-white grid grid-cols-1 sm:grid-cols-3 gap-3 items-center shrink-0">
+        <div className="px-3 py-2.5 sm:px-4 sm:py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 grid grid-cols-1 sm:grid-cols-3 gap-3 items-center shrink-0">
           <div>
-            <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
+            <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">
               Filter by Date
             </label>
             <div className="relative">
@@ -246,12 +248,12 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
                 type="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full pl-2.5 pr-7 py-1 text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full pl-2.5 pr-7 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
               {dateFilter && (
                 <button
                   onClick={() => setDateFilter('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -260,13 +262,13 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
           </div>
 
           <div>
-            <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
+            <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">
               Filter by Status
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-2.5 py-1 text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             >
               <option value="">All Statuses</option>
               <option value="Submitted">Submitted</option>
@@ -283,7 +285,7 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
                   setDateFilter('');
                   setStatusFilter('');
                 }}
-                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 underline"
+                className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
               >
                 Clear Filters
               </button>
@@ -291,7 +293,7 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
             <button
               onClick={fetchHistory}
               disabled={loading}
-              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
+              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
             >
               <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -300,7 +302,7 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 bg-slate-50/40">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 bg-slate-50/40 dark:bg-slate-950/50">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-2">
               <Loader2 className="w-7 h-7 animate-spin text-blue-600" />
@@ -308,11 +310,11 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
             </div>
           ) : paginatedDayBooks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-2">
                 <FileText className="w-5 h-5" />
               </div>
-              <p className="text-xs font-semibold text-slate-700">No EOD reports found</p>
-              <p className="text-[11px] text-slate-400 mt-0.5 max-w-xs">
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No EOD reports found</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 max-w-xs">
                 {dateFilter || statusFilter
                   ? 'No records match your selected date or status filter.'
                   : 'You have not submitted any EOD day books yet.'}
@@ -335,19 +337,19 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
               return (
                 <div
                   key={db._id}
-                  className="bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-xs hover:border-blue-300 transition-all duration-150"
+                  className="bg-white dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs hover:border-blue-400 dark:hover:border-blue-500/40 hover:shadow-md transition-all duration-150"
                 >
                   {/* Row Summary Header */}
                   <div
                     onClick={() => setExpandedId(isExpanded ? null : db._id)}
-                    className="p-2.5 sm:px-3.5 sm:py-2.5 cursor-pointer flex flex-wrap md:flex-nowrap items-center justify-between gap-3 hover:bg-blue-50/30 transition-colors"
+                    className="p-2.5 sm:px-3.5 sm:py-2.5 cursor-pointer flex flex-wrap md:flex-nowrap items-center justify-between gap-3 hover:bg-blue-50/40 dark:hover:bg-slate-800/50 transition-colors"
                   >
                     <div className="flex items-center space-x-2.5 shrink-0">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-600 font-semibold text-xs">
-                        <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-semibold text-xs">
+                        <Calendar className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                       </div>
                       <div>
-                        <p className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                        <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-tight">
                           {new Date(db.date).toLocaleDateString('en-US', {
                             weekday: 'short',
                             year: 'numeric',
@@ -355,8 +357,8 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
                             day: 'numeric'
                           })}
                         </p>
-                        <p className="text-[11px] text-slate-500">
-                          Slots filled: <span className="font-semibold text-slate-700">{db.slots?.filter((s) => s.description).length || 0} / {db.slots?.length || 0}</span>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Slots filled: <span className="font-semibold text-slate-700 dark:text-slate-300">{db.slots?.filter((s) => s.description).length || 0} / {db.slots?.length || 0}</span>
                         </p>
                       </div>
                     </div>
@@ -364,11 +366,11 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
                     {/* Task summary */}
                     <div className="flex-1 max-w-sm px-2 min-w-0">
                       {!hasFirst && !hasSecond ? (
-                        <span className="text-slate-400 italic text-xs">No tasks specified</span>
+                        <span className="text-slate-400 dark:text-slate-500 italic text-xs">No tasks specified</span>
                       ) : !bothPresent || setsEqual ? (
                         <div className="space-y-0.5 min-w-0">
                           {[...new Map([...firstHalf, ...secondHalf].map((t) => [t.toLowerCase(), t])).values()].map((t, idx) => (
-                            <span key={idx} className="block text-xs font-semibold text-slate-800 truncate" title={t}>
+                            <span key={idx} className="block text-xs font-semibold text-slate-800 dark:text-slate-200 truncate" title={t}>
                               • {t}
                             </span>
                           ))}
@@ -377,20 +379,20 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
                         <div className="space-y-1 min-w-0">
                           {hasFirst && (
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0">
                                 1st Half:
                               </span>
-                              <span className="text-xs font-semibold text-slate-800 truncate">
+                              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
                                 {firstHalf.join(', ')}
                               </span>
                             </div>
                           )}
                           {hasSecond && (
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0">
                                 2nd Half:
                               </span>
-                              <span className="text-xs font-semibold text-slate-800 truncate">
+                              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
                                 {secondHalf.join(', ')}
                               </span>
                             </div>
@@ -402,12 +404,12 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
                     {/* Status & Toggle */}
                     <div className="flex items-center space-x-2 shrink-0">
                       {db.isHalfDay && (
-                        <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                           Half Day ({db.halfDayType === 'second' ? '2nd Half' : '1st Half'})
                         </span>
                       )}
                       {getStatusBadge(db.status)}
-                      <button className="p-1 text-slate-400 hover:text-slate-600 rounded">
+                      <button className="p-1 text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded">
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                     </div>
@@ -415,19 +417,19 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
 
                   {/* Expanded Slot Details */}
                   {isExpanded && (
-                    <div className="p-4 bg-slate-50 border-t border-slate-200 space-y-3 text-xs">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800 space-y-3 text-xs">
                       {/* Admin Comment if present */}
                       {db.adminComment && (
-                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 flex items-start space-x-2">
-                          <MessageSquare className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg text-amber-900 dark:text-amber-200 flex items-start space-x-2">
+                          <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                           <div>
-                            <span className="font-bold text-amber-800 block">Admin Feedback:</span>
-                            <p className="mt-0.5">{db.adminComment}</p>
+                            <span className="font-bold text-amber-800 dark:text-amber-300 block">Admin Feedback:</span>
+                            <p className="mt-0.5 text-amber-900 dark:text-amber-200">{db.adminComment}</p>
                           </div>
                         </div>
                       )}
 
-                      <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                      <h4 className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
                         Slot Details
                       </h4>
 
@@ -443,34 +445,35 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
                           return (
                             <div
                               key={idx}
-                              className={`p-3 rounded-lg border ${isBreak
-                                  ? 'bg-amber-50/60 border-amber-200/60 text-slate-600'
-                                  : 'bg-white border-slate-200'
-                                }`}
+                              className={`p-3 rounded-lg border ${
+                                isBreak
+                                  ? 'bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-800/40 text-slate-600 dark:text-amber-200/90'
+                                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                              }`}
                             >
                               <div className="flex items-center justify-between font-semibold mb-1">
-                                <span className="text-slate-900">{slot.slotType}</span>
-                                <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] text-slate-600">
+                                <span className="text-slate-900 dark:text-white">{slot.slotType}</span>
+                                <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[10px] text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
                                   {getSlotTaskTitle(slot) || slot.workType || 'Task'}
                                 </span>
                               </div>
 
                               {!isBreak && (
-                                <div className="space-y-1 mt-1 text-slate-600">
+                                <div className="space-y-1 mt-1 text-slate-600 dark:text-slate-300">
                                   {completed && (
                                     <div>
-                                      <span className="font-bold text-slate-700">Completed Work: </span>
+                                      <span className="font-bold text-slate-700 dark:text-slate-200">Completed Work: </span>
                                       <span>{completed}</span>
                                     </div>
                                   )}
                                   {pending && (
                                     <div>
-                                      <span className="font-bold text-amber-700">Pending Work: </span>
+                                      <span className="font-bold text-amber-700 dark:text-amber-400">Pending Work: </span>
                                       <span>{pending}</span>
                                     </div>
                                   )}
                                   {!completed && !pending && (
-                                    <span className="italic text-slate-400">No detailed work description provided.</span>
+                                    <span className="italic text-slate-400 dark:text-slate-500">No detailed work description provided.</span>
                                   )}
                                 </div>
                               )}
@@ -487,37 +490,37 @@ const EmployeeEODHistoryModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer Pagination Bar */}
-        <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
-          <div className="text-xs text-slate-500 font-medium">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
+          <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
             Showing{' '}
-            <span className="font-bold text-slate-800">
+            <span className="font-bold text-slate-800 dark:text-slate-200">
               {filteredDayBooks.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}
             </span>{' '}
             to{' '}
-            <span className="font-bold text-slate-800">
+            <span className="font-bold text-slate-800 dark:text-slate-200">
               {Math.min(currentPage * ITEMS_PER_PAGE, filteredDayBooks.length)}
             </span>{' '}
-            of <span className="font-bold text-slate-800">{filteredDayBooks.length}</span> records
+            of <span className="font-bold text-slate-800 dark:text-slate-200">{filteredDayBooks.length}</span> records
           </div>
 
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1 || loading}
-              className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
             >
               <ChevronLeft className="w-4 h-4" />
               Previous
             </button>
 
-            <span className="text-xs font-bold text-slate-700 px-2">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 px-2">
               Page {currentPage} of {totalPages}
             </span>
 
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages || loading || filteredDayBooks.length === 0}
-              className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
             >
               Next
               <ChevronRight className="w-4 h-4" />

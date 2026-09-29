@@ -382,7 +382,7 @@ const Header = ({ sidebarItems, location, setSidebarOpen }) => {
               onClick={() => setChatPopup(null)}
               className="fixed top-16 right-4 sm:right-6 z-[99999] w-80 sm:w-96 cursor-pointer transform transition-all duration-300 ease-out animate-in fade-in slide-in-from-top-2"
             >
-              <div className="relative overflow-hidden rounded-2xl border border-indigo-200/90 bg-white/95 p-3.5 sm:p-4 shadow-[0_16px_40px_rgba(79,70,229,0.18)] backdrop-blur-md dark:bg-slate-900/95 dark:border-slate-800 dark:shadow-[0_16px_40px_rgba(0,0,0,0.5)] hover:border-indigo-300 transition-all">
+              <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-xl shadow-slate-200/50 dark:bg-slate-900 dark:border-slate-800 dark:shadow-[0_16px_40px_rgba(0,0,0,0.5)] hover:border-indigo-300 dark:hover:border-indigo-800 transition-all">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600" />
 
                 <div className="flex items-start gap-3">

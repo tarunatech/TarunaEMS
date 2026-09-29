@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback, useLayoutEffect, useMe
 import { useLocation, useNavigate } from 'react-router-dom';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
 import {
-  User, Clock, Calendar, DollarSign, CheckCircle, AlertCircle, MapPin, Bell, Award, Target, TrendingUp, FileText, MessageCircle, X, Send, Bot, Camera, Download, Users, Loader2, CheckSquare, AlertTriangle, Video, Briefcase, HelpCircle
+  User, Clock, Calendar, DollarSign, CheckCircle, AlertCircle, MapPin, Bell, Award, Target, TrendingUp, FileText, MessageCircle, X, Send, Bot, Camera, Download, Users, Loader2, CheckSquare, AlertTriangle, Video, Briefcase, HelpCircle, ArrowLeft, Search
 } from 'lucide-react';
 import GroupChatModal from '../../components/Employee/GroupChat/GroupChatModal';
 import toast from 'react-hot-toast';
@@ -311,6 +311,7 @@ const EmployeeDashboard = () => {
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [newMessage, setNewMessage] = useState('');
+  const [peerSearchQuery, setPeerSearchQuery] = useState('');
   const [newBotMessage, setNewBotMessage] = useState('');
   const [loadingChat, setLoadingChat] = useState(false);
   const [loadingBot, setLoadingBot] = useState(false);
@@ -451,6 +452,16 @@ const EmployeeDashboard = () => {
       return (a.name || '').localeCompare(b.name || '');
     });
   }, [peers, peerActivity, unreadCounts, getPeerId]);
+
+  const filteredSortedPeers = useMemo(() => {
+    if (!peerSearchQuery.trim()) return sortedPeers;
+    const q = peerSearchQuery.toLowerCase().trim();
+    return sortedPeers.filter(peer => {
+      const name = getPersonDisplayName(peer, '').toLowerCase();
+      const pos = (peer.position || peer.workInfo?.position || '').toLowerCase();
+      return name.includes(q) || pos.includes(q);
+    });
+  }, [sortedPeers, peerSearchQuery]);
 
   const totalUnreadTeamMessages = useMemo(() => {
     return Object.values(unreadCounts).reduce((sum, count) => sum + Number(count || 0), 0);
@@ -1362,23 +1373,20 @@ const EmployeeDashboard = () => {
   const handleCloseChatModal = () => {
     setShowChatModal(false);
     setNewMessage('');
-    // Don't clear selectedPeer and messages immediately to avoid flash
+    if (location?.search && location.search.includes('openChat')) {
+      navigate('/employee/dashboard', { replace: true });
+    }
     setTimeout(() => {
       setSelectedPeer(null);
       setChatMessages([]);
     }, 300);
   };
 
-  const handleCloseBotModal = () => {
-    setShowBotModal(false);
-    setNewBotMessage('');
-    setTimeout(() => {
-      setBotMessages([]);
-    }, 300);
-  };
-
   const handleCloseGroupChatModal = () => {
     setShowGroupChatModal(false);
+    if (location?.search && location.search.includes('openChat')) {
+      navigate('/employee/dashboard', { replace: true });
+    }
   };
 
   return (
@@ -1437,7 +1445,288 @@ const EmployeeDashboard = () => {
           animation: ambientParticleFloat 11s ease-in-out infinite;
         }
       `}</style>
-      <div className="space-y-5 bg-slate-50">
+      {showChatModal ? (
+        /* Full-Page Team Chat View */
+        <div className="w-full h-[calc(100vh-6.5rem)] min-h-[580px] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-enter">
+          {/* Top Bar Header */}
+          <header className="h-12 sm:h-14 border-b border-slate-200 bg-white px-2.5 sm:px-6 flex items-center justify-between z-10 shrink-0 gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
+              <button
+                onClick={handleCloseChatModal}
+                className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-all text-xs sm:text-sm font-medium shadow-2xs shrink-0"
+                title="Back to Dashboard"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="hidden sm:inline">Back to Dashboard</span>
+                <span className="sm:hidden text-[11px]">Back</span>
+              </button>
+              <div className="h-4 sm:h-5 w-px bg-slate-200 mx-0.5 hidden sm:block shrink-0" />
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-xs shrink-0">
+                  <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-xs sm:text-base font-bold text-slate-900 leading-tight flex items-center gap-1.5">
+                    <span className="hidden sm:inline whitespace-nowrap">Team Chat</span>
+                    <span className="hidden md:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      {Array.from(onlineUsers).length} Online
+                    </span>
+                  </h1>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+              <span className="md:hidden inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {Array.from(onlineUsers).length}
+              </span>
+              <button
+                onClick={handleCloseChatModal}
+                className="p-1 sm:p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all shrink-0"
+                title="Close Chat"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
+          </header>
+
+          {/* Main Chat Workspace */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Left Sidebar - Colleagues List */}
+            <aside className={`w-full md:w-64 lg:w-72 border-r border-slate-200 bg-white flex flex-col shrink-0 ${selectedPeer ? 'hidden md:flex' : 'flex'}`}>
+              {/* Search box */}
+              <div className="p-3 border-b border-slate-200">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={peerSearchQuery}
+                    onChange={(e) => setPeerSearchQuery(e.target.value)}
+                    placeholder="Search colleagues by name..."
+                    className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  />
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                </div>
+              </div>
+
+              {/* Colleagues Count Header */}
+              <div className="px-3.5 py-2 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between text-xs font-semibold text-slate-500">
+                <span>Colleagues ({filteredSortedPeers.length})</span>
+                <span className="text-[11px] font-medium text-emerald-600">{Array.from(onlineUsers).length} active</span>
+              </div>
+
+              {/* Colleagues List */}
+              <div className="flex-1 overflow-y-auto divide-y divide-slate-200/60">
+                {filteredSortedPeers.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 text-sm">
+                    <p className="font-medium">No colleagues found</p>
+                    <p className="text-xs mt-1 text-slate-500">Try a different search query</p>
+                  </div>
+                ) : (
+                  filteredSortedPeers.map(peer => {
+                    const isOnline = onlineUsers.has(peer._id);
+                    const peerName = getPersonDisplayName(peer, 'Employee');
+                    const peerId = getPeerId(peer);
+                    const unreadCount = unreadCounts[peerId] || 0;
+                    const lastMessage = peerActivity[peerId]?.lastMessage || '';
+                    const isSelected = selectedPeer?._id === peer._id;
+
+                    return (
+                      <button
+                        key={peer._id}
+                        type="button"
+                        onClick={() => handleSelectPeer(peer)}
+                        className={`w-full text-left p-3 flex items-center gap-2.5 transition-all ${
+                          isSelected
+                            ? 'bg-indigo-50/90 border-l-4 border-indigo-600 chat-peer-selected'
+                            : 'hover:bg-slate-50 border-l-4 border-transparent'
+                        }`}
+                      >
+                        <div className="relative shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm shadow-xs">
+                            {peerName.charAt(0).toUpperCase()}
+                          </div>
+                          <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-sm font-semibold truncate peer-name ${isSelected ? 'text-indigo-900 font-bold' : 'text-slate-900'}`}>
+                              {peerName}
+                            </span>
+                            {unreadCount > 0 && (
+                              <span className="ml-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[10px] font-bold text-white shadow-xs">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 truncate mt-0.5">
+                            {lastMessage || peer.position || peer.workInfo?.position || 'Employee'}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </aside>
+
+            {/* Right Panel - Active Chat or Empty State */}
+            <main className={`flex-1 flex flex-col bg-[#f8fafc] overflow-hidden ${!selectedPeer ? 'hidden md:flex' : 'flex'}`}>
+              {selectedPeer ? (
+                <>
+                  {/* Active Chat Header */}
+                  <div className="h-11 sm:h-14 px-3 sm:px-6 border-b border-slate-200 bg-white flex items-center justify-between shrink-0 gap-2">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <button
+                        onClick={() => setSelectedPeer(null)}
+                        className="md:hidden p-1 -ml-1 text-slate-500 hover:text-slate-800 rounded-lg shrink-0"
+                        title="Back to list"
+                      >
+                        <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                      <div className="relative shrink-0">
+                        <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-xs">
+                          {getPersonDisplayName(selectedPeer, 'Employee').charAt(0).toUpperCase()}
+                        </div>
+                        <span className={`absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border-2 border-white dark:border-slate-900 ${onlineUsers.has(selectedPeer._id) ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <h2 className="text-xs sm:text-base font-bold text-slate-900 leading-tight truncate">
+                          {getPersonDisplayName(selectedPeer, 'Employee')}
+                        </h2>
+                        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-500 truncate">
+                          <span className="truncate">{selectedPeer.position || selectedPeer.workInfo?.position || 'Employee'}</span>
+                          <span>•</span>
+                          {onlineUsers.has(selectedPeer._id) ? (
+                            typingUsers.has(selectedPeer._id) ? (
+                              <span className="text-indigo-600 font-medium animate-pulse">typing…</span>
+                            ) : (
+                              <span className="text-emerald-600 font-medium">Online</span>
+                            )
+                          ) : (
+                            <span>Offline</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Messages Thread */}
+                  <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                    {loadingChat ? (
+                      <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                        <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-2" />
+                        <p className="text-sm">Loading conversation…</p>
+                      </div>
+                    ) : (
+                      (() => {
+                        const currentUserId = String(employeeData?.id || employeeData?._id);
+                        const selectedPeerId = String(selectedPeer._id || selectedPeer.user?._id);
+                        const filteredMessages = chatMessages.filter(msg => {
+                          const msgFrom = String(msg.from || '');
+                          const msgTo = String(msg.to || '');
+                          return (msgFrom === currentUserId && msgTo === selectedPeerId) ||
+                            (msgFrom === selectedPeerId && msgTo === currentUserId);
+                        });
+
+                        if (filteredMessages.length === 0) {
+                          return (
+                            <div className="flex flex-col items-center justify-center h-full text-slate-400 py-12">
+                              <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 mb-3 shadow-2xs">
+                                <MessageCircle className="w-7 h-7" strokeWidth={1.75} />
+                              </div>
+                              <h3 className="text-sm font-bold text-slate-800">No messages yet</h3>
+                              <p className="text-xs text-slate-500 mt-1 max-w-sm text-center">
+                                Send your first message to start collaborating with {getPersonDisplayName(selectedPeer, 'this colleague')}.
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <>
+                            {filteredMessages.map((msg, idx) => (
+                              <div key={msg._id || `msg-${idx}`} className={`flex ${msg.self ? 'justify-end' : 'justify-start'} animate-enter`}>
+                                <div className={`max-w-[85%] sm:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl shadow-xs ${
+                                  msg.self
+                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-tr-xs'
+                                    : 'bg-white border border-slate-200 text-slate-900 rounded-tl-xs shadow-xs'
+                                }`}>
+                                  {!msg.self && (
+                                    <div className="text-[11px] font-bold text-indigo-600 mb-1">
+                                      {msg.fromName || getPersonDisplayName(selectedPeer, 'Employee')}
+                                    </div>
+                                  )}
+                                  <div className="text-xs sm:text-sm break-words leading-relaxed whitespace-pre-wrap">{msg.text}</div>
+                                  <div className={`text-[10px] mt-1 text-right ${msg.self ? 'text-blue-100' : 'text-slate-400'}`}>
+                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                          </>
+                        );
+                      })()
+                    )}
+                  </div>
+
+                  {/* Compose Bar */}
+                  <div className="p-3 sm:p-4 border-t border-slate-200 bg-white shrink-0">
+                    <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex items-end gap-2 max-w-5xl mx-auto">
+                      <textarea
+                        rows={1}
+                        value={newMessage}
+                        onChange={(e) => {
+                          handleChatMessageChange(e);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMessage();
+                            e.target.style.height = 'auto';
+                          }
+                        }}
+                        placeholder={`Message ${getPersonDisplayName(selectedPeer, 'colleague')}...`}
+                        className="flex-1 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none max-h-32 min-h-[38px] leading-relaxed [scrollbar-width:thin]"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newMessage.trim()}
+                        className="h-[38px] px-4 sm:px-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-xs hover:shadow transition-all flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <span className="hidden sm:inline">Send</span>
+                        <Send className="w-4 h-4" strokeWidth={2} />
+                      </button>
+                    </form>
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-indigo-500 mb-3 shadow-xs">
+                    <MessageCircle className="w-8 h-8" strokeWidth={1.75} />
+                  </div>
+                  <h2 className="text-base font-bold text-slate-900 mb-1">Welcome to Team Chat</h2>
+                  <p className="text-xs sm:text-sm text-slate-500 max-w-md">
+                    Select any colleague from the left directory to start a direct one-on-one conversation in real time.
+                  </p>
+                </div>
+              )}
+            </main>
+          </div>
+        </div>
+      ) : showGroupChatModal ? (
+        <GroupChatModal
+          isOpen={showGroupChatModal}
+          onClose={handleCloseGroupChatModal}
+          socket={socketRef.current}
+          employeeData={employeeData}
+          onlineUsers={onlineUsers}
+        />
+      ) : (
+        <div className="space-y-5 bg-slate-50">
         {/* Welcome Section */}
         <div
           className="relative min-h-[220px] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0C0F1] p-6 animate-enter transition-shadow duration-300 hover:shadow-[0_16px_36px_rgba(15,23,42,0.18)] md:p-9"
@@ -1785,164 +2074,8 @@ const EmployeeDashboard = () => {
             </button>
           </div>
         </div>
-
-        {/* Chat Modal - rendered inline to prevent remounting */}
-        {showChatModal && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-            <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[99998]" onClick={handleCloseChatModal} />
-            <div className="employee-chat-modal relative z-[99999] bg-white border border-slate-200 rounded-2xl w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl shadow-slate-900/10 animate-enter overflow-hidden" style={{ animationDuration: '0.2s' }}>
-              <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                <h2 className="text-[15px] font-semibold text-slate-900 flex items-center">
-                  <MessageCircle className="w-4 h-4 mr-2 text-indigo-600" strokeWidth={1.75} />
-                  Employee Chat
-                </h2>
-                <button onClick={handleCloseChatModal} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">
-                  <X className="w-[18px] h-[18px]" />
-                </button>
-              </div>
-              <div className="flex flex-1 overflow-hidden">
-                <div className="employee-chat-sidebar w-1/3 border-r border-slate-100 overflow-y-auto">
-                  <div className="p-3 text-[12px] text-slate-500 font-medium">Colleagues ({peers.length})</div>
-                  {peers.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400 text-[13px]">No colleagues available</div>
-                  ) : (
-                    sortedPeers.map(peer => {
-                      const isOnline = onlineUsers.has(peer._id);
-                      const peerName = getPersonDisplayName(peer, 'Employee');
-                      const peerId = getPeerId(peer);
-                      const unreadCount = unreadCounts[peerId] || 0;
-                      const lastMessage = peerActivity[peerId]?.lastMessage || '';
-                      return (
-                        <div
-                          key={peer._id}
-                          onClick={() => handleSelectPeer(peer)}
-                          className={`employee-chat-peer p-3 border-l-2 cursor-pointer transition-colors duration-150 ${selectedPeer?._id === peer._id
-                            ? 'border-indigo-500 bg-indigo-50/60 text-slate-900'
-                            : 'border-transparent text-slate-500 hover:bg-slate-50'
-                            }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="text-[13px] font-medium truncate">{peerName}</div>
-                            <div className="ml-2 flex flex-shrink-0 items-center gap-2">
-                              {unreadCount > 0 && (
-                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-500 px-1.5 text-[10.5px] font-semibold leading-none text-white">
-                                  {unreadCount > 99 ? '99+' : unreadCount}
-                                </span>
-                              )}
-                              <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} title={isOnline ? 'Online' : 'Offline'} />
-                            </div>
-                          </div>
-                          <div className="text-[11.5px] text-slate-400 flex items-center gap-1 min-w-0 mt-0.5">
-                            <span className="truncate">{lastMessage || peer.position || peer.workInfo?.position || 'Employee'}</span>
-                            {isOnline && <span className="text-emerald-600">• Online</span>}
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-                <div className="flex-1 flex flex-col">
-                  {selectedPeer ? (
-                    <>
-                      <div className="employee-chat-header p-3 border-b border-slate-100 bg-slate-50/60">
-                        <div className="flex items-center gap-2">
-                          <div className="text-[13.5px] font-semibold text-slate-900">{getPersonDisplayName(selectedPeer, 'Employee')}</div>
-                          <div className={`w-1.5 h-1.5 rounded-full ${onlineUsers.has(selectedPeer._id) ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                        </div>
-                        <div className="text-[12px] text-slate-500 flex items-center gap-2">
-                          <span>{selectedPeer.position || selectedPeer.workInfo?.position || 'Employee'}</span>
-                          {onlineUsers.has(selectedPeer._id) ? (
-                            typingUsers.has(selectedPeer._id) ? (
-                              <span className="text-indigo-600 animate-pulse">typing…</span>
-                            ) : (
-                              <span className="text-emerald-600">Online</span>
-                            )
-                          ) : (
-                            <span className="text-slate-400">Offline</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="employee-chat-messages flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/40 relative">
-                        {loadingChat ? (
-                          <div className="flex items-center justify-center h-full">
-                            <div className="text-slate-400 text-[13px]">Loading chat history…</div>
-                          </div>
-                        ) : (
-                          <>
-                            {(() => {
-                              const currentUserId = String(employeeData.id || employeeData._id);
-                              const selectedPeerId = String(selectedPeer._id || selectedPeer.user?._id);
-                              const filteredMessages = chatMessages.filter(msg => {
-                                const msgFrom = String(msg.from || '');
-                                const msgTo = String(msg.to || '');
-                                return (msgFrom === currentUserId && msgTo === selectedPeerId) ||
-                                  (msgFrom === selectedPeerId && msgTo === currentUserId);
-                              });
-                              if (filteredMessages.length === 0) {
-                                return (
-                                  <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                                    <MessageCircle className="w-12 h-12 mb-3 opacity-25" strokeWidth={1.5} />
-                                    <p className="text-[13px]">No messages yet</p>
-                                    <p className="text-[11.5px] mt-1">Start a conversation with {getPersonDisplayName(selectedPeer, 'this colleague')}</p>
-                                  </div>
-                                );
-                              }
-                              return filteredMessages.map((msg, idx) => (
-                                <div key={msg._id || `msg-${idx}`} className={`flex ${msg.self ? 'justify-end' : 'justify-start'}`}>
-                                  <div className={`employee-chat-bubble max-w-xs md:max-w-md px-3.5 py-2.5 rounded-xl ${msg.self ? 'employee-chat-bubble-self bg-indigo-600 text-white' : 'employee-chat-bubble-peer bg-white border border-slate-200 text-slate-900'}`}>
-                                    {!msg.self && (
-                                      <div className="text-[11px] text-slate-400 mb-0.5 font-medium">
-                                        {msg.fromName || getPersonDisplayName(selectedPeer, 'Employee')}
-                                      </div>
-                                    )}
-                                    <div className="text-[13px] break-words">{msg.text}</div>
-                                    <div className={`text-[10.5px] mt-1 ${msg.self ? 'text-indigo-200' : 'text-slate-400'}`}>
-                                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                  </div>
-                                </div>
-                              ));
-                            })()}
-                            <div ref={messagesEndRef} />
-                          </>
-                        )}
-                      </div>
-                      <div className="employee-chat-compose p-3 border-t border-slate-100">
-                        <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex">
-                          <input
-                            type="text"
-                            value={newMessage}
-                            onChange={handleChatMessageChange}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                sendMessage();
-                              }
-                            }}
-                            placeholder="Type a message…"
-                            className="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-l-lg text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors duration-150"
-                            autoComplete="off"
-                          />
-                          <button
-                            type="submit"
-                            disabled={!newMessage.trim()}
-                            className="px-4 bg-indigo-600 text-white rounded-r-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-500 transition-colors duration-150"
-                          >
-                            <Send className="w-4 h-4" strokeWidth={1.75} />
-                          </button>
-                        </form>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center text-slate-400 text-[13px]">
-                      Select a colleague to start chatting
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      </div>
+      )}
 
         {/* Bot Modal - rendered inline to prevent remounting */}
         {showBotModal && (
@@ -2304,15 +2437,6 @@ const EmployeeDashboard = () => {
           </div>
         )}
 
-        {/* Group Chat Modal */}
-        <GroupChatModal
-          isOpen={showGroupChatModal}
-          onClose={handleCloseGroupChatModal}
-          socket={socketRef.current}
-          employeeData={employeeData}
-          onlineUsers={onlineUsers}
-        />
-      </div>
     </EmployeeLayout>
   );
 };

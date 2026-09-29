@@ -103,7 +103,9 @@ const getDayBookHalvesSummary = (dayBook) => {
         const start = toMins(startStr);
         const end = toMins(endStr);
         const mid = (start !== null && end !== null) ? (start + end) / 2 : null;
-        const isFirst = mid === null || mid < 14 * 60;
+        const isFirst = (start !== null && start >= 14 * 60)
+            ? false
+            : (start !== null && start < 13 * 60 ? true : (mid === null || mid < 14 * 60));
 
         if (isFirst) {
             if (!seenFirst.has(title.toLowerCase())) {
@@ -728,15 +730,15 @@ const AdminDayBookReview = ({ search = '', initialEmployeeId = null, employeeCod
                                 <div
                                     key={db._id}
                                     onClick={(event) => openDayBookReview(event, db)}
-                                    className="group bg-white border border-slate-200/90 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4"
+                                    className="group bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500/50 rounded-2xl p-3 sm:p-4 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4"
                                 >
                                     {/* Date Box & Summary */}
                                     <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                                         {/* Compact Date Box */}
-                                        <div className="w-14 h-14 sm:w-16 sm:h-16 py-1.5 px-2 rounded-xl bg-indigo-50/80 border border-indigo-100/90 flex flex-col items-center justify-between shrink-0 text-indigo-900 shadow-2xs group-hover:bg-indigo-100/80 transition-colors">
-                                            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-indigo-600 leading-none">{weekday}</span>
-                                            <span className="text-base sm:text-lg font-black text-slate-900 leading-none my-0.5">{dayNum}</span>
-                                            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 leading-none">{monthStr}</span>
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 py-1.5 px-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100/90 dark:border-indigo-800/60 flex flex-col items-center justify-between shrink-0 text-indigo-900 dark:text-indigo-200 shadow-2xs group-hover:bg-indigo-100/80 dark:group-hover:bg-indigo-900/50 transition-colors">
+                                            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 leading-none">{weekday}</span>
+                                            <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-none my-0.5">{dayNum}</span>
+                                            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-none">{monthStr}</span>
                                         </div>
 
                                         {/* Task Title summary */}

@@ -1103,8 +1103,15 @@ html.theme-dark .text-secondary-400 {
   color: #94a3b8 !important;
 }
 
+html.theme-dark .border-slate-100,
 html.theme-dark .border-slate-200,
+html.theme-dark .border-slate-200\/90,
+html.theme-dark .border-slate-200\/80,
+html.theme-dark .border-slate-200\/70,
+html.theme-dark .border-slate-200\/60,
 html.theme-dark .border-slate-300,
+html.theme-dark .divide-slate-100 > * + *,
+html.theme-dark .divide-slate-200 > * + *,
 html.theme-dark .border-blue-100,
 html.theme-dark .border-blue-200,
 html.theme-dark .border-emerald-100,
@@ -1119,6 +1126,17 @@ html.theme-dark .border-red-100,
 html.theme-dark .border-red-200,
 html.theme-dark .border-white\/30 {
   border-color: rgba(148, 163, 184, 0.24) !important;
+}
+
+html.theme-dark .chat-peer-selected,
+html.theme-dark .chat-group-selected {
+  background-color: rgba(99, 102, 241, 0.22) !important;
+  border-left-color: #818cf8 !important;
+}
+
+html.theme-dark .chat-peer-selected .peer-name,
+html.theme-dark .chat-group-selected .group-name {
+  color: #c7d2fe !important;
 }
 
 html.theme-dark .text-blue-700,
@@ -3488,10 +3506,93 @@ html.theme-dark .day-book-entry-page .bg-blue-50\/50 p {
   color: #f8fafc !important;
 }
 
+/* Half Day Settings Card */
+html.theme-dark .day-book-entry-page .half-day-settings-card,
+html.theme-dark .day-book-entry-page .border-indigo-200\/80 {
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.6) 0%, rgba(15, 23, 42, 0.85) 50%, rgba(30, 41, 59, 0.7) 100%) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.theme-dark .day-book-entry-page .half-day-settings-card span.text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .day-book-entry-page .half-day-settings-card span.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .day-book-entry-page .half-day-settings-card .border-indigo-100 {
+  border-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+/* Half Day Shift Toggle Group */
+html.theme-dark .day-book-entry-page .half-day-toggle-group,
+html.theme-dark .day-book-entry-page .half-day-settings-card .inline-flex.rounded-xl.bg-white {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+
+html.theme-dark .day-book-entry-page .half-day-toggle-group button.text-slate-600,
+html.theme-dark .day-book-entry-page .half-day-settings-card button.text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .day-book-entry-page .half-day-toggle-group button.text-slate-600:hover,
+html.theme-dark .day-book-entry-page .half-day-settings-card button.text-slate-600:hover {
+  color: #f8fafc !important;
+  background-color: rgba(51, 65, 85, 0.5) !important;
+}
+
+/* Include Break checkbox toggle in Half Day card */
+html.theme-dark .day-book-entry-page .half-day-break-toggle,
+html.theme-dark .day-book-entry-page .half-day-settings-card label.bg-white {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  color: #e2e8f0 !important;
+}
+
+html.theme-dark .day-book-entry-page .half-day-break-toggle span,
+html.theme-dark .day-book-entry-page .half-day-settings-card label.bg-white span {
+  color: #e2e8f0 !important;
+}
+
 /* Main Slots Outer Card Box */
 html.theme-dark .day-book-entry-page .space-y-3.rounded-2xl.border.border-slate-200.bg-white {
   background-color: #0f172a !important;
   border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+/* Half Shift Sections */
+html.theme-dark .day-book-entry-page .half-shift-section.bg-slate-50,
+html.theme-dark .day-book-entry-page section.bg-slate-50 {
+  background-color: rgba(15, 23, 42, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .day-book-entry-page .half-shift-section.bg-blue-50\/20,
+html.theme-dark .day-book-entry-page section.bg-blue-50\/20 {
+  background-color: rgba(30, 58, 138, 0.15) !important;
+  border-color: rgba(96, 165, 250, 0.3) !important;
+}
+
+html.theme-dark .day-book-entry-page .half-shift-section.bg-slate-100\/60,
+html.theme-dark .day-book-entry-page section.bg-slate-100\/60 {
+  background-color: rgba(15, 23, 42, 0.4) !important;
+  border-color: rgba(148, 163, 184, 0.12) !important;
+}
+
+/* Active Shift Badge */
+html.theme-dark .day-book-entry-page .bg-blue-100 {
+  background-color: rgba(37, 99, 235, 0.25) !important;
+  border-color: rgba(96, 165, 250, 0.4) !important;
+  color: #93c5fd !important;
+}
+
+/* Omitted for Half Day Badge */
+html.theme-dark .day-book-entry-page .bg-slate-200 {
+  background-color: rgba(51, 65, 85, 0.6) !important;
+  color: #94a3b8 !important;
 }
 
 /* Individual Slot Card */
@@ -3503,11 +3604,38 @@ html.theme-dark .day-book-entry-page .rounded-xl.border.border-slate-200\/80 {
 }
 
 /* Break Time Slot Bar */
+html.theme-dark .day-book-entry-page .break-slot-section,
 html.theme-dark .day-book-entry-page section.bg-slate-100\/50,
 html.theme-dark .day-book-entry-page .bg-slate-100 {
-  background-color: rgba(30, 41, 59, 0.8) !important;
-  border-color: rgba(148, 163, 184, 0.18) !important;
+  background-color: rgba(30, 41, 59, 0.7) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
   color: #f8fafc !important;
+}
+
+html.theme-dark .day-book-entry-page .break-badge,
+html.theme-dark .day-book-entry-page span.bg-amber-100\/80 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #fbbf24 !important;
+}
+
+html.theme-dark .day-book-entry-page .break-time-text,
+html.theme-dark .day-book-entry-page .break-slot-section span.text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .day-book-entry-page .break-label-text,
+html.theme-dark .day-book-entry-page .break-to-text,
+html.theme-dark .day-book-entry-page .break-slot-section span.text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Excluded Break Banner */
+html.theme-dark .day-book-entry-page .break-excluded-notice,
+html.theme-dark .day-book-entry-page .bg-slate-100\/40 {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #94a3b8 !important;
 }
 
 /* Inputs, Time Inputs, Textareas, Selects in DayBookEntry */
@@ -3527,6 +3655,55 @@ html.theme-dark .day-book-entry-page textarea.bg-emerald-50\/20 {
 html.theme-dark .day-book-entry-page textarea.bg-amber-50\/20 {
   background-color: rgba(245, 158, 11, 0.1) !important;
   border-color: rgba(251, 191, 36, 0.28) !important;
+}
+
+/* Bottom Action Buttons Bar */
+html.theme-dark .day-book-entry-page .daybook-actions-bar,
+html.theme-dark .day-book-entry-page .border-t.border-slate-200.bg-slate-50 {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+/* Cancel Button */
+html.theme-dark .day-book-entry-page .daybook-btn-cancel,
+html.theme-dark .day-book-entry-page button.border-slate-200.text-slate-500 {
+  background-color: rgba(30, 41, 59, 0.75) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .day-book-entry-page .daybook-btn-cancel:hover,
+html.theme-dark .day-book-entry-page button.border-slate-200.text-slate-500:hover {
+  background-color: rgba(51, 65, 85, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.45) !important;
+  color: #ffffff !important;
+}
+
+/* Save Button */
+html.theme-dark .day-book-entry-page .daybook-btn-save,
+html.theme-dark .day-book-entry-page button.border-slate-300.text-slate-700 {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.32) !important;
+  color: #f1f5f9 !important;
+}
+
+html.theme-dark .day-book-entry-page .daybook-btn-save:hover,
+html.theme-dark .day-book-entry-page button.border-slate-300.text-slate-700:hover {
+  background-color: rgba(51, 65, 85, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.55) !important;
+  color: #ffffff !important;
+}
+
+/* Submit Button */
+html.theme-dark .day-book-entry-page .daybook-btn-submit {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #4f46e5 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45) !important;
+}
+
+html.theme-dark .day-book-entry-page .daybook-btn-submit:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #4338ca 100%) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.6) !important;
 }
 
 html.theme-dark .admin-leave-calendar {
@@ -3985,3 +4162,32 @@ html.theme-dark .employee-hr-bot-header {
 html.theme-dark .employee-hr-bot-title {
   color: #0f172a !important;
 }
+
+/* Employee EOD History Modal Dark Theme */
+html.theme-dark .eod-history-modal {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55) !important;
+}
+
+html.theme-dark .eod-history-modal input[type="date"],
+html.theme-dark .eod-history-modal select {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .eod-history-modal input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8) !important;
+}
+
+html.theme-dark .eod-history-modal .hover\:border-blue-400:hover,
+html.theme-dark .eod-history-modal .hover\:border-blue-300:hover {
+  border-color: rgba(99, 102, 241, 0.45) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.theme-dark .eod-history-modal .hover\:bg-blue-50\/40:hover,
+html.theme-dark .eod-history-modal .hover\:bg-blue-50\/30:hover {
+  background-color: rgba(30, 41, 59, 0.75) !important;
+}

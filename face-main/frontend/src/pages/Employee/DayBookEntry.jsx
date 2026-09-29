@@ -139,11 +139,81 @@ const isBreakSlot = (slot) => {
 const getSlotHalfKey = (slot) => {
     if (isBreakSlot(slot)) return 'break';
 
-    const { start, end } = getSlotMinutes(slot.slotType);
-    if (start === null || end === null) return 'first';
+    const { start, end } = getSlotMinutes(slot?.slotType);
+    if (start !== null) {
+        if (start >= 14 * 60) return 'second';
+        if (start < 13 * 60) return 'first';
+    }
 
+    if (start === null || end === null) return 'first';
     const midpoint = (start + end) / 2;
     return midpoint < 14 * 60 ? 'first' : 'second';
+};
+
+const getCurrentTimeFormatted = () => {
+    const now = new Date();
+    const hours24 = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const meridiem = hours24 >= 12 ? 'PM' : 'AM';
+    const hours12 = hours24 % 12 || 12;
+    return `${hours12}:${minutes} ${meridiem}`;
+};
+
+const applyCurrentTimeToEndSlot = (slots, isHalf, halfType) => {
+    if (!slots || !Array.isArray(slots) || slots.length === 0) return slots || [];
+
+    const currentTimeStr = getCurrentTimeFormatted();
+    const updatedSlots = slots.map(s => ({ ...s }));
+
+    const firstHalfIndices = [];
+    const secondHalfIndices = [];
+
+    updatedSlots.forEach((slot, idx) => {
+        if (!isBreakSlot(slot)) {
+            if (getSlotHalfKey(slot) === 'first') {
+                firstHalfIndices.push(idx);
+            } else {
+                secondHalfIndices.push(idx);
+            }
+        }
+    });
+
+    if (isHalf) {
+        if (halfType === 'first') {
+            if (firstHalfIndices.length > 0) {
+                const lastIdx = firstHalfIndices[firstHalfIndices.length - 1];
+                const parsed = parseSlotType(updatedSlots[lastIdx].slotType);
+                const startStr = fromTimeInputValue(parsed.startTime) || '10:00 AM';
+                updatedSlots[lastIdx].slotType = `${startStr} - ${currentTimeStr}`;
+            }
+        } else {
+            if (secondHalfIndices.length > 0) {
+                const lastIdx = secondHalfIndices[secondHalfIndices.length - 1];
+                const parsed = parseSlotType(updatedSlots[lastIdx].slotType);
+                const startStr = fromTimeInputValue(parsed.startTime) || '2:00 PM';
+                updatedSlots[lastIdx].slotType = `${startStr} - ${currentTimeStr}`;
+            }
+        }
+    } else {
+        // Normal Day (Full Day)
+        // If first half has single slot, ensure standard end is 1:00 PM
+        if (firstHalfIndices.length === 1) {
+            const firstIdx = firstHalfIndices[0];
+            const parsed = parseSlotType(updatedSlots[firstIdx].slotType);
+            const startStr = fromTimeInputValue(parsed.startTime) || '10:00 AM';
+            updatedSlots[firstIdx].slotType = `${startStr} - 1:00 PM`;
+        }
+
+        // Second half last slot fetches current time
+        if (secondHalfIndices.length > 0) {
+            const lastIdx = secondHalfIndices[secondHalfIndices.length - 1];
+            const parsed = parseSlotType(updatedSlots[lastIdx].slotType);
+            const startStr = fromTimeInputValue(parsed.startTime) || '2:00 PM';
+            updatedSlots[lastIdx].slotType = `${startStr} - ${currentTimeStr}`;
+        }
+    }
+
+    return updatedSlots;
 };
 
 const DayBookEntry = ({ embedded = false, onClose }) => {
@@ -161,9 +231,20 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
             setLoading(true);
             const response = await taskService.getTodayDayBook();
             if (response.success && response.dayBook) {
-                setDayBook(response.dayBook);
-                setIsHalfDay(Boolean(response.dayBook.isHalfDay));
-                setHalfDayType(response.dayBook.halfDayType || 'first');
+                const isHalf = Boolean(response.dayBook.isHalfDay);
+                const halfType = response.dayBook.halfDayType || 'first';
+                let slots = response.dayBook.slots || [];
+
+                if (response.dayBook.status === 'Draft' || response.dayBook.status === 'Pending' || !response.dayBook.status) {
+                    slots = applyCurrentTimeToEndSlot(slots, isHalf, halfType);
+                }
+
+                setDayBook({
+                    ...response.dayBook,
+                    slots
+                });
+                setIsHalfDay(isHalf);
+                setHalfDayType(halfType);
                 setIncludeBreak(response.dayBook.includeBreak !== undefined ? Boolean(response.dayBook.includeBreak) : true);
             }
         } catch (error) {
@@ -624,7 +705,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
         return (
             <section
                 key={half.key}
-                className={`rounded-xl border transition-all duration-200 p-2.5 sm:p-4 ${
+                className={`half-shift-section rounded-xl border transition-all duration-200 p-2.5 sm:p-4 ${
                     isInactiveHalf
                         ? 'border-slate-200 bg-slate-100/60 opacity-60'
                         : isHalfDay
@@ -760,7 +841,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
             </div>
 
             {/* Half Day Settings Card */}
-            <div className="animate-enter rounded-xl sm:rounded-2xl border border-indigo-200/80 bg-gradient-to-r from-indigo-50/90 via-blue-50/70 to-slate-50 p-2.5 sm:p-3.5 shadow-2xs">
+            <div className="half-day-settings-card animate-enter rounded-xl sm:rounded-2xl border border-indigo-200/80 bg-gradient-to-r from-indigo-50/90 via-blue-50/70 to-slate-50 p-2.5 sm:p-3.5 shadow-2xs">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                     <div className="flex items-center space-x-2.5">
                         <input
@@ -768,7 +849,14 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                             id="halfDayCheckbox"
                             disabled={!isEditable}
                             checked={isHalfDay}
-                            onChange={(e) => setIsHalfDay(e.target.checked)}
+                            onChange={(e) => {
+                                const checked = e.target.checked;
+                                setIsHalfDay(checked);
+                                if (dayBook?.slots) {
+                                    const updatedSlots = applyCurrentTimeToEndSlot(dayBook.slots, checked, halfDayType);
+                                    setDayBook({ ...dayBook, slots: updatedSlots });
+                                }
+                            }}
                             className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 disabled:opacity-50 cursor-pointer"
                         />
                         <label htmlFor="halfDayCheckbox" className="cursor-pointer select-none">
@@ -779,11 +867,17 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
 
                     {isHalfDay && (
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-indigo-100">
-                            <div className="inline-flex rounded-xl bg-white p-1 border border-slate-200/90 shadow-2xs">
+                            <div className="half-day-toggle-group inline-flex rounded-xl bg-white p-1 border border-slate-200/90 shadow-2xs">
                                 <button
                                     type="button"
                                     disabled={!isEditable}
-                                    onClick={() => setHalfDayType('first')}
+                                    onClick={() => {
+                                        setHalfDayType('first');
+                                        if (dayBook?.slots) {
+                                            const updatedSlots = applyCurrentTimeToEndSlot(dayBook.slots, true, 'first');
+                                            setDayBook({ ...dayBook, slots: updatedSlots });
+                                        }
+                                    }}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                         halfDayType === 'first'
                                             ? 'bg-blue-600 text-white shadow-xs'
@@ -795,7 +889,13 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                                 <button
                                     type="button"
                                     disabled={!isEditable}
-                                    onClick={() => setHalfDayType('second')}
+                                    onClick={() => {
+                                        setHalfDayType('second');
+                                        if (dayBook?.slots) {
+                                            const updatedSlots = applyCurrentTimeToEndSlot(dayBook.slots, true, 'second');
+                                            setDayBook({ ...dayBook, slots: updatedSlots });
+                                        }
+                                    }}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                         halfDayType === 'second'
                                             ? 'bg-blue-600 text-white shadow-xs'
@@ -806,7 +906,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                                 </button>
                             </div>
 
-                            <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-200/90 shadow-2xs text-xs font-semibold text-slate-700">
+                            <label className="half-day-break-toggle flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-200/90 shadow-2xs text-xs font-semibold text-slate-700">
                                 <input
                                     type="checkbox"
                                     disabled={!isEditable}
@@ -826,14 +926,14 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                 {renderHalfSection(HALF_DAY_RANGES[0])}
                 {includeBreak ? (
                     getBreakSlots().map(({ slot, index }) => (
-                        <section key={`break-${index}`} className="rounded-lg border border-slate-200/80 bg-slate-100/50 px-2.5 py-1.5 sm:px-3 sm:py-2">
+                        <section key={`break-${index}`} className="break-slot-section rounded-lg border border-slate-200/80 bg-slate-100/50 px-2.5 py-1.5 sm:px-3 sm:py-2">
                             <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-100/80 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-amber-800 border border-amber-200/60">
+                                    <span className="break-badge inline-flex items-center gap-1 rounded-md bg-amber-100/80 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-amber-800 border border-amber-200/60">
                                         Break
                                     </span>
-                                    <span className="text-[11px] sm:text-xs font-semibold text-slate-800">{slot.slotType}</span>
-                                    <span className="text-[10px] sm:text-xs text-slate-400 font-medium">• Lunch Break</span>
+                                    <span className="break-time-text text-[11px] sm:text-xs font-semibold text-slate-800">{slot.slotType}</span>
+                                    <span className="break-label-text text-[10px] sm:text-xs text-slate-400 font-medium">• Lunch Break</span>
                                 </div>
                                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1 w-full sm:w-auto max-w-[210px]">
                                     <input
@@ -845,7 +945,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                                         onFocus={openTimePicker}
                                         className="min-w-0 w-full cursor-pointer rounded-md border border-slate-300/80 bg-white px-1 py-0.5 text-[11px] sm:text-xs font-bold tracking-tight text-slate-800 transition-all duration-200 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                                     />
-                                    <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium shrink-0">to</span>
+                                    <span className="break-to-text text-[10px] sm:text-[11px] text-slate-400 font-medium shrink-0">to</span>
                                     <input
                                         type="time"
                                         disabled={!isEditable}
@@ -860,7 +960,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                         </section>
                     ))
                 ) : (
-                    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-100/40 px-3 py-2 text-center text-xs text-slate-400 font-medium">
+                    <div className="break-excluded-notice rounded-lg border border-dashed border-slate-200 bg-slate-100/40 px-3 py-2 text-center text-xs text-slate-400 font-medium">
                         Lunch Break (1:00 PM - 2:00 PM) excluded from this submission.
                     </div>
                 )}
@@ -869,18 +969,18 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
 
             {/* Action Buttons */}
             {isEditable && (
-                <div className={`items-center justify-end gap-2 sm:flex sm:gap-3 ${embedded ? 'sticky bottom-0 z-20 -mx-2.5 grid grid-cols-2 border-t border-slate-200 bg-slate-50 px-2.5 py-2 sm:static sm:mx-0 sm:border-t-0 sm:bg-transparent sm:px-0 sm:pb-2 sm:pt-0' : 'flex flex-col sm:flex-row pb-12'}`}>
+                <div className={`daybook-actions-bar items-center justify-end gap-2 sm:flex sm:gap-3 ${embedded ? 'sticky bottom-0 z-20 -mx-2.5 grid grid-cols-2 border-t border-slate-200 bg-slate-50 px-2.5 py-2 sm:static sm:mx-0 sm:border-t-0 sm:bg-transparent sm:px-0 sm:pb-2 sm:pt-0' : 'flex flex-col sm:flex-row pb-12'}`}>
                     <button
                         disabled={saving}
                         onClick={handleBack}
-                        className="col-span-2 order-last flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 transition-all duration-200 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50 sm:order-first sm:w-auto sm:px-8 sm:py-3 sm:text-base"
+                        className="daybook-btn-cancel col-span-2 order-last flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 transition-all duration-200 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50 sm:order-first sm:w-auto sm:px-8 sm:py-3 sm:text-base"
                     >
                         Cancel
                     </button>
                     <button
                         disabled={saving}
                         onClick={() => handleSave(false)}
-                        className="flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 disabled:opacity-50 sm:w-auto sm:px-8 sm:py-3 sm:text-base"
+                        className="daybook-btn-save flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition-all duration-200 hover:bg-slate-50 disabled:opacity-50 sm:w-auto sm:px-8 sm:py-3 sm:text-base"
                     >
                         {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
                         Save
@@ -888,7 +988,7 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                     <button
                         disabled={saving}
                         onClick={() => handleSave(true)}
-                        className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-3 py-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md disabled:opacity-50 disabled:hover:scale-100 sm:w-auto sm:px-8 sm:py-3 sm:text-base"
+                        className="daybook-btn-submit flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 px-3 py-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md disabled:opacity-50 disabled:hover:scale-100 sm:w-auto sm:px-8 sm:py-3 sm:text-base"
                     >
                         {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
                         Submit

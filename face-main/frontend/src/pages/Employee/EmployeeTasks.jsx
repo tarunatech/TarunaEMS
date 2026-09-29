@@ -161,6 +161,15 @@ const EmployeeTasks = () => {
   }, [tasks, searchTerm, statusFilter, priorityFilter]);
 
   useEffect(() => {
+    if (selectedTask?._id) {
+      const updated = tasks.find((t) => t._id === selectedTask._id);
+      if (updated && (updated.progress !== selectedTask.progress || updated.status !== selectedTask.status)) {
+        setSelectedTask((prev) => (prev ? { ...prev, ...updated } : null));
+      }
+    }
+  }, [tasks]);
+
+  useEffect(() => {
     const hasRunningTimer = Object.values(timeTracking).some((timer) => timer?.isRunning);
     if (!hasRunningTimer) return undefined;
 
@@ -186,10 +195,18 @@ const EmployeeTasks = () => {
 
   // Handle task progress update
   const updateTaskProgress = async (taskId, progress) => {
+    const validProgress = Math.max(0, Math.min(100, Math.round(progress)));
+    if (selectedTask && selectedTask._id === taskId) {
+      setSelectedTask((prev) => (prev ? { ...prev, progress: validProgress } : prev));
+    }
     try {
-      await updateProgress(taskId, Math.max(0, Math.min(100, progress)));
+      const response = await updateProgress(taskId, validProgress);
+      if (response?.task && selectedTask?._id === taskId) {
+        setSelectedTask(response.task);
+      }
     } catch (error) {
       toast.error('Failed to update task progress');
+      await fetchTasks();
     }
   };
 
@@ -823,16 +840,29 @@ const EmployeeTasks = () => {
                   </span>
                 </div>
 
-                <div className="min-w-0">
+                <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
                   <div className="mb-1.5 flex items-center justify-between gap-2">
                     <span className="text-[11px] font-medium uppercase text-slate-400 xl:hidden">Progress</span>
                     <span className="text-[12px] font-semibold text-indigo-600">{task.progress}%</span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-slate-200">
-                    <div
-                      className="h-2 rounded-full bg-indigo-600 transition-all duration-300"
-                      style={{ width: `${task.progress}%` }}
-                    ></div>
+                  <div className="relative flex items-center">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={task.progress || 0}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        updateTaskProgress(task._id, parseInt(e.target.value, 10));
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      disabled={task.status === 'Completed'}
+                      className="h-2 w-full cursor-pointer appearance-none rounded-full accent-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{
+                        background: `linear-gradient(to right, #4f46e5 ${task.progress || 0}%, #e2e8f0 ${task.progress || 0}%)`
+                      }}
+                      title={task.status === 'Completed' ? 'Completed' : `Click or drag to set progress (${task.progress}%)`}
+                    />
                   </div>
                 </div>
 
@@ -997,10 +1027,14 @@ const EmployeeTasks = () => {
                           type="range"
                           min="0"
                           max="100"
-                          value={selectedTask.progress}
-                          onChange={(e) => updateTaskProgress(selectedTask._id, parseInt(e.target.value))}
-                          className="h-1.5 w-full cursor-pointer accent-indigo-600"
+                          value={selectedTask.progress || 0}
+                          onChange={(e) => updateTaskProgress(selectedTask._id, parseInt(e.target.value, 10))}
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full accent-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                          style={{
+                            background: `linear-gradient(to right, #4f46e5 ${selectedTask.progress || 0}%, #e2e8f0 ${selectedTask.progress || 0}%)`
+                          }}
                           disabled={selectedTask.status === 'Completed'}
+                          title={selectedTask.status === 'Completed' ? 'Completed' : `Click or drag to set progress (${selectedTask.progress}%)`}
                         />
                       </div>
                     </div>
