@@ -308,8 +308,11 @@ const EmployeeAttendance = () => {
   const fetchAttendanceHistory = async (month = selectedMonth) => {
     try {
       setLoading(true);
-      const startDate = new Date(month + '-01');
-      const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+      const [yearStr, monthStr] = month.split('-');
+      const year = parseInt(yearStr, 10);
+      const monthNum = parseInt(monthStr, 10);
+      const startDate = new Date(year, monthNum - 1, 1, 0, 0, 0, 0);
+      const endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
       const response = await attendanceAPI.getAttendanceHistory({
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
@@ -696,8 +699,8 @@ const EmployeeAttendance = () => {
                     {attendanceHistory.map((record) => (
                       <tr key={record._id || record.id || record.date} className="transition-colors hover:bg-slate-50">
                         <td className="px-4 py-3">
-                          <p className="text-[13px] font-semibold text-slate-900">{formatDate(record.date)}</p>
-                          <p className="text-[11px] text-slate-400">{record.date ? new Date(record.date).toLocaleDateString('en-US', { year: 'numeric' }) : ''}</p>
+                          <p className="text-[13px] font-semibold text-slate-900">{formatDate(record.date || record.checkInTime)}</p>
+                          <p className="text-[11px] text-slate-400">{(record.date || record.checkInTime) ? new Date(record.date || record.checkInTime).toLocaleDateString('en-US', { year: 'numeric' }) : ''}</p>
                         </td>
                         <td className="px-4 py-3 text-[13px] font-medium text-slate-700">{formatTime(record.checkInTime)}</td>
                         <td className="px-4 py-3 text-[13px] font-medium text-slate-700">{formatTime(record.checkOutTime)}</td>
@@ -718,8 +721,8 @@ const EmployeeAttendance = () => {
                   <div key={record._id || record.id || record.date} className="attendance-soft-row rounded-lg border border-slate-200/80 bg-slate-50 p-3 transition-colors duration-150 hover:bg-slate-100">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-[14px] font-semibold leading-snug text-slate-900">{formatDate(record.date)}</p>
-                        <p className="mt-0.5 text-[11px] text-slate-400">{record.date ? new Date(record.date).toLocaleDateString('en-US', { year: 'numeric' }) : ''}</p>
+                        <p className="text-[14px] font-semibold leading-snug text-slate-900">{formatDate(record.date || record.checkInTime)}</p>
+                        <p className="mt-0.5 text-[11px] text-slate-400">{(record.date || record.checkInTime) ? new Date(record.date || record.checkInTime).toLocaleDateString('en-US', { year: 'numeric' }) : ''}</p>
                       </div>
                       <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${getStatusColor(record.status)}`}>
                         {record.status || 'Present'}

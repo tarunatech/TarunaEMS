@@ -852,20 +852,23 @@ export const getTodayAttendance = async (req, res) => {
     console.log('Getting today attendance for employee:', employee._id);
 
     const { startOfDay, endOfDay } = getTodayDateRange();
-    console.log('Date range for today:', { startOfDay, endOfDay });
+    console.log('Date range for today (IST):', { startOfDay, endOfDay });
 
-    // Try multiple query strategies
+    // Strategy 1: Try finding by date in today's IST range
     let attendance = await Attendance.findOne({
       employee: employee._id,
       date: {
         $gte: startOfDay,
         $lte: endOfDay
       }
-    }).populate([
-      { path: 'employee', select: 'personalInfo workInfo' },
-      { path: 'user', select: 'name email employeeId' }
-    ]);
+    })
+      .sort({ checkInTime: -1 })
+      .populate([
+        { path: 'employee', select: 'personalInfo workInfo' },
+        { path: 'user', select: 'name email employeeId' }
+      ]);
 
+    // Strategy 2: Try finding by checkInTime in today's IST range
     if (!attendance) {
       attendance = await Attendance.findOne({
         employee: employee._id,
@@ -873,10 +876,46 @@ export const getTodayAttendance = async (req, res) => {
           $gte: startOfDay,
           $lte: endOfDay
         }
-      }).populate([
-        { path: 'employee', select: 'personalInfo workInfo' },
-        { path: 'user', select: 'name email employeeId' }
-      ]);
+      })
+        .sort({ checkInTime: -1 })
+        .populate([
+          { path: 'employee', select: 'personalInfo workInfo' },
+          { path: 'user', select: 'name email employeeId' }
+        ]);
+    }
+
+    // Strategy 3: Try finding in UTC today range
+    if (!attendance) {
+      const now = new Date();
+      const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+      const endOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+
+      attendance = await Attendance.findOne({
+        employee: employee._id,
+        $or: [
+          { date: { $gte: startOfTodayUTC, $lte: endOfTodayUTC } },
+          { checkInTime: { $gte: startOfTodayUTC, $lte: endOfTodayUTC } }
+        ]
+      })
+        .sort({ checkInTime: -1 })
+        .populate([
+          { path: 'employee', select: 'personalInfo workInfo' },
+          { path: 'user', select: 'name email employeeId' }
+        ]);
+    }
+
+    // Strategy 4: Try finding most recent check-in within last 24 hours
+    if (!attendance) {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      attendance = await Attendance.findOne({
+        employee: employee._id,
+        checkInTime: { $gte: twentyFourHoursAgo }
+      })
+        .sort({ checkInTime: -1 })
+        .populate([
+          { path: 'employee', select: 'personalInfo workInfo' },
+          { path: 'user', select: 'name email employeeId' }
+        ]);
     }
 
     console.log('Found attendance:', attendance ? attendance._id : 'none');
@@ -917,15 +956,20 @@ export const getAttendanceHistory = async (req, res) => {
     let dateFilter = { employee: employee._id };
 
     if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+
       dateFilter.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
+        $gte: start,
+        $lte: end
       };
     } else {
       // Default to current month
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      endOfMonth.setHours(23, 59, 59, 999);
       dateFilter.date = { $gte: startOfMonth, $lte: endOfMonth };
     }
 
@@ -935,7 +979,7 @@ export const getAttendanceHistory = async (req, res) => {
     const attendance = await Attendance.find(dateFilter)
       .populate('employee', 'personalInfo workInfo')
       .populate('user', 'name email employeeId')
-      .sort({ date: -1 })
+      .sort({ date: -1, checkInTime: -1 })
       .limit(parseInt(limit))
       .skip(skip);
 
@@ -943,14 +987,13 @@ export const getAttendanceHistory = async (req, res) => {
     const total = await Attendance.countDocuments(dateFilter);
 
     // Get attendance summary
-    const summaryDateRange = startDate && endDate ?
-      { $gte: new Date(startDate), $lte: new Date(endDate) } :
-      dateFilter.date;
+    const summaryStartDate = startDate ? new Date(startDate) : dateFilter.date.$gte;
+    const summaryEndDate = endDate ? new Date(new Date(endDate).setHours(23, 59, 59, 999)) : dateFilter.date.$lte;
 
     const summary = await Attendance.getAttendanceSummary(
       employee._id,
-      summaryDateRange.$gte,
-      summaryDateRange.$lte
+      summaryStartDate,
+      summaryEndDate
     );
 
     res.json({

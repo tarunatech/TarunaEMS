@@ -488,10 +488,19 @@ const sortRows = (rows, sortSpec) => {
 const applyQueryOptions = (builder, { sortSpec, limitValue, skipValue }) => {
   let query = builder;
   if (sortSpec) {
-    const [[field, direction]] = Object.entries(sortSpec);
-    const column = columnByField[field];
-    if (!column) unsupported(`sort field "${field}"`);
-    query = query.orderBy(direction === -1 ? desc(column) : asc(column));
+    const entries = Object.entries(sortSpec);
+    const orderClauses = [];
+    for (const [field, direction] of entries) {
+      const column = columnByField[field];
+      if (column) {
+        orderClauses.push(direction === -1 ? desc(column) : asc(column));
+      } else {
+        unsupported(`sort field "${field}"`);
+      }
+    }
+    if (orderClauses.length > 0) {
+      query = query.orderBy(...orderClauses);
+    }
   }
   if (skipValue) query = query.offset(skipValue);
   if (limitValue) query = query.limit(limitValue);
