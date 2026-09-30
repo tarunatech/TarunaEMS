@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarClock, Download, Edit3, FileText, Loader2, Plus, Save, Trash2, Upload, UserRound, X } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, CalendarClock, Download, Edit3, FileCheck, FileText, Loader2, Plus, Save, Trash2, Upload, UserRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
@@ -261,9 +261,20 @@ const CandidateProfile = ({ mode = 'hr' }) => {
                     <p><span className="font-semibold text-slate-700">Status:</span> {candidate.status}</p>
                   </div>
                 </div>
-                <div className="rounded-xl border border-blue-100 bg-blue-50 px-3.5 py-2.5 sm:px-4 sm:py-3 text-blue-700 shrink-0 self-start">
-                  <p className="text-[10px] sm:text-xs font-semibold uppercase">Profile Completion</p>
-                  <p className="text-xl sm:text-2xl font-bold">{completion}%</p>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0 self-start">
+                  {!readOnly && (
+                    <Link
+                      to={`/employee/offer-letters?name=${encodeURIComponent(candidate.candidateName || '')}&role=${encodeURIComponent(candidate.position || '')}&candidateId=${candidate._id || candidate.id}`}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-semibold shadow-sm transition"
+                    >
+                      <FileCheck className="w-4 h-4" />
+                      Generate Offer Letter
+                    </Link>
+                  )}
+                  <div className="rounded-xl border border-blue-100 bg-blue-50 px-3.5 py-2.5 sm:px-4 sm:py-3 text-blue-700">
+                    <p className="text-[10px] sm:text-xs font-semibold uppercase">Profile Completion</p>
+                    <p className="text-xl sm:text-2xl font-bold">{completion}%</p>
+                  </div>
                 </div>
               </div>
             </section>

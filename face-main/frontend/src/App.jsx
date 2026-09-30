@@ -40,6 +40,7 @@ import HRInterviewSchedule from './pages/Employee/HRInterviewSchedule';
 import AdminInterviews from './pages/Admin/AdminInterviews';
 import AdminProblemStatements from './pages/Admin/AdminProblemStatements';
 import CandidateProfile from './pages/Candidate/CandidateProfile';
+import OfferLetterGenerator from './pages/Employee/OfferLetterGenerator';
 
 function App() {
   return (
@@ -206,6 +207,11 @@ function App() {
                 <Route path="hr-interviews" element={
                   <ProtectedRoute role="employee">
                     <HRInterviewSchedule />
+                  </ProtectedRoute>
+                } />
+                <Route path="offer-letters" element={
+                  <ProtectedRoute role="employee">
+                    <OfferLetterGenerator />
                   </ProtectedRoute>
                 } />
                 <Route path="candidates/:candidateId" element={

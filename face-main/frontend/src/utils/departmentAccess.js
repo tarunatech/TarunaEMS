@@ -14,6 +14,7 @@ const MODULE_PATH_MAP = {
   salesPipeline: ['/employee/sales-pipeline'],
   salesMeetings: ['/employee/sales-meetings'],
   hrInterviews: ['/employee/hr-interviews'],
+  offerLetters: ['/employee/offer-letters'],
 };
 
 const DEPARTMENT_RULES = {
@@ -22,8 +23,8 @@ const DEPARTMENT_RULES = {
   businessdevelopmentexecutive: ['dashboard', 'attendance', 'sales', 'salesPipeline', 'salesMeetings', 'tasks', 'expenses', 'leaves', 'holidays'],
   developer: [...COMMON_MODULE_KEYS, 'tasks', 'problems'],
   development: [...COMMON_MODULE_KEYS, 'tasks', 'problems'],
-  hr: [...COMMON_MODULE_KEYS, 'tasks', 'hrInterviews'],
-  humanresources: [...COMMON_MODULE_KEYS, 'tasks', 'hrInterviews'],
+  hr: [...COMMON_MODULE_KEYS, 'tasks', 'hrInterviews', 'offerLetters'],
+  humanresources: [...COMMON_MODULE_KEYS, 'tasks', 'hrInterviews', 'offerLetters'],
   designing: [...COMMON_MODULE_KEYS, 'tasks'],
   design: [...COMMON_MODULE_KEYS, 'tasks'],
 };

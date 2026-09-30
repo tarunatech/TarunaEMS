@@ -25,6 +25,7 @@ import {
   Sun,
   GitBranch,
   ClipboardList,
+  FileCheck,
   Loader2,
   Download,
 } from "lucide-react";
@@ -454,6 +455,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     salesPipeline: { name: "Sales Pipeline", icon: GitBranch, path: "/employee/sales-pipeline" },
     salesMeetings: { name: "Meetings", icon: Phone, path: "/employee/sales-meetings" },
     hrInterviews: { name: "Interview Schedule", icon: ClipboardList, path: "/employee/hr-interviews" },
+    offerLetters: { name: "Offer Letters", icon: FileCheck, path: "/employee/offer-letters" },
     payslip: { name: "View Payslip", icon: CreditCard, isAction: true },
   };
 

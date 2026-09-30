@@ -674,5 +674,15 @@ export const bankingAPI = {
   getEmployeeBankingDetails: (employeeId) => API.get(`/employees/${employeeId}/banking`)
 };
 
+// Offer Letter API calls
+export const offerLetterAPI = {
+  getAll: (params = {}) => API.get('/offer-letters', { params }),
+  getById: (id) => API.get(`/offer-letters/${id}`),
+  generate: (data) => API.post('/offer-letters/generate', data),
+  download: (id) => API.get(`/offer-letters/${id}/download`, { responseType: 'blob' }),
+  delete: (id) => API.delete(`/offer-letters/${id}`),
+  getCandidatesAndEmployees: () => API.get('/offer-letters/candidates-and-employees'),
+};
+
 // Export the configured axios instance
 export default API;

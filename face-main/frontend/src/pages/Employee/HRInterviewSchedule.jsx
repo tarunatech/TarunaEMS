@@ -169,14 +169,23 @@ const HRInterviewSchedule = () => {
             <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Interview Schedule</h1>
             <p className="text-xs text-slate-500 sm:text-sm">Add candidate interview details for admin review</p>
           </div>
-          <button
-            type="button"
-            onClick={fetchInterviews}
-            className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/employee/offer-letters"
+              className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm transition"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Offer Letters
+            </Link>
+            <button
+              type="button"
+              onClick={fetchInterviews}
+              className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">

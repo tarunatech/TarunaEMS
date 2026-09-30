@@ -23,6 +23,7 @@ import * as groupSchema from './schema/group.js';
 import * as groupMessageSchema from './schema/groupMessage.js';
 import * as messageSchema from './schema/message.js';
 import * as faceDataSchema from './schema/faceData.js';
+import * as offerLetterSchema from './schema/offerLetter.js';
 
 const { Pool } = pg;
 
@@ -54,11 +55,33 @@ export const db = drizzle(pool, {
     ...groupMessageSchema,
     ...messageSchema,
     ...faceDataSchema,
+    ...offerLetterSchema,
   },
 });
 
 export const ensurePostgresExtensions = async () => {
   await pool.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "offer_letters" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "employeeName" varchar(255) NOT NULL,
+      "role" varchar(255) NOT NULL,
+      "joiningDate" varchar(128) NOT NULL,
+      "companyName" varchar(255) NOT NULL DEFAULT 'Taruna Technology',
+      "location" varchar(255) NOT NULL DEFAULT 'Vadodara',
+      "duration" varchar(128) NOT NULL DEFAULT 'three (3) months',
+      "workingHours" varchar(255) NOT NULL DEFAULT '10:00 AM to 7:00 PM, Monday to Saturday',
+      "signatoryName" varchar(255) NOT NULL DEFAULT 'MIHIR MAKWANA',
+      "signatoryRole" varchar(255) NOT NULL DEFAULT 'Operational Manager',
+      "employeeId" varchar(128),
+      "candidateId" varchar(128),
+      "pdfPath" varchar(1024),
+      "status" varchar(64) NOT NULL DEFAULT 'Generated',
+      "createdBy" uuid NOT NULL,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
   await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "isHalfDay" boolean DEFAULT false');
   await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "halfDayType" varchar(32) DEFAULT \'full\'');
   await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "includeBreak" boolean DEFAULT true');

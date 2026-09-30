@@ -35,6 +35,7 @@ const EmployeeAttendance = () => {
   const [realTimeWorkingTime, setRealTimeWorkingTime] = useState(0);
 
   const [showFaceVerification, setShowFaceVerification] = useState(false);
+  const [showCheckOutConfirm, setShowCheckOutConfirm] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState(null);
@@ -550,7 +551,7 @@ const EmployeeAttendance = () => {
                   </>
                 ) : !hasCheckedOut ? (
                   <button
-                    onClick={handleCheckOut}
+                    onClick={() => setShowCheckOutConfirm(true)}
                     disabled={!currentLocation || loading}
                     className="w-full px-4 md:px-6 py-3 md:py-4 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-50 text-[13px] md:text-[13.5px] min-h-[48px] touch-manipulation"
                   >
@@ -852,6 +853,61 @@ const EmployeeAttendance = () => {
           </div>
         </div>
       )}
+    
+      {/* Check-Out Confirmation Modal */}
+      {showCheckOutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-amber-600" strokeWidth={1.75} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">Confirm Check Out</h3>
+                <p className="text-xs sm:text-sm text-slate-500">End your work session for today</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5 mb-5 space-y-2">
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span className="text-slate-500">Check In Time:</span>
+                <span className="font-semibold text-slate-800">{todayAttendance ? formatTime(todayAttendance.checkInTime) : '--:--'}</span>
+              </div>
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span className="text-slate-500">Total Working Time:</span>
+                <span className="font-semibold text-indigo-600">{formatWorkingTime(realTimeWorkingTime)}</span>
+              </div>
+              <p className="text-[12px] text-amber-700 bg-amber-50/80 px-2.5 py-1.5 rounded-lg border border-amber-200/50 mt-2">
+                Are you sure you want to mark your check out? Once checked out, your attendance for today will be recorded.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowCheckOutConfirm(false)}
+                disabled={loading}
+                className="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCheckOutConfirm(false);
+                  handleCheckOut();
+                }}
+                disabled={loading}
+                className="px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center space-x-1.5 cursor-pointer"
+              >
+                <XCircle strokeWidth={1.75} className="w-4 h-4" />
+                <span>Yes, Check Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </EmployeeLayout>
   );
 };

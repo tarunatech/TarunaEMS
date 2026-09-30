@@ -293,6 +293,7 @@ const EmployeeDashboard = () => {
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
   const [hasCheckedOut, setHasCheckedOut] = useState(false);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [showCheckOutConfirm, setShowCheckOutConfirm] = useState(false);
   const [workingTime, setWorkingTime] = useState(null);
   const [realTimeWorkingTime, setRealTimeWorkingTime] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -629,27 +630,35 @@ const EmployeeDashboard = () => {
     }
   };
 
+  const getValidLocation = async () => {
+    if (location && location.latitude && location.longitude) {
+      return location;
+    }
+    try {
+      const position = await geolocationUtils.getCurrentPosition({ enableHighAccuracy: true, timeout: 8000 }).catch(async () => {
+        return await geolocationUtils.getCurrentPosition({ enableHighAccuracy: false, timeout: 8000 });
+      });
+      let addressString = '';
+      try {
+        const addressData = await geolocationUtils.getAddressFromCoords(position.latitude, position.longitude);
+        addressString = typeof addressData === 'object' ? addressData.address : addressData;
+      } catch {
+        addressString = `${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)}`;
+      }
+      const locObj = { ...position, address: addressString };
+      setLocation(locObj);
+      return locObj;
+    } catch (err) {
+      console.error('Error obtaining location:', err);
+      throw new Error(err.message || 'Location access is required. Please allow location permissions in your browser.');
+    }
+  };
+
   const handleDashboardCheckInWithoutFace = async () => {
     try {
       setAttendanceLoading(true);
-      let currentLoc = location;
-      if (!currentLoc) {
-        toast.loading('Getting location...', { id: 'dashboard-attendance' });
-        try {
-          const position = await geolocationUtils.getCurrentPosition();
-          const addressData = await geolocationUtils.getAddressFromCoords(position.latitude, position.longitude);
-          const addressString = typeof addressData === 'object' ? addressData.address : addressData;
-          currentLoc = { ...position, address: addressString };
-          setLocation(currentLoc);
-        } catch {
-          // ignore
-        }
-      }
-
-      if (!currentLoc) {
-        toast.error('Location is required for check-in. Please enable location services.', { id: 'dashboard-attendance' });
-        return;
-      }
+      toast.loading('Getting location...', { id: 'dashboard-attendance' });
+      const currentLoc = await getValidLocation();
 
       const locationCheck = typeof geolocationUtils?.isWithinOfficeRadius === 'function'
         ? geolocationUtils.isWithinOfficeRadius(currentLoc.latitude, currentLoc.longitude)
@@ -657,13 +666,14 @@ const EmployeeDashboard = () => {
 
       if (locationCheck && !locationCheck.isWithin) {
         toast.error(`You are not within office premises. Distance: ${locationCheck.distance}m`, { id: 'dashboard-attendance' });
+        setAttendanceLoading(false);
         return;
       }
 
       toast.loading('Marking check-in...', { id: 'dashboard-attendance' });
       const response = await attendanceAPI.checkIn({
         location: currentLoc,
-        deviceInfo: geolocationUtils.getDeviceInfo(),
+        deviceInfo: typeof geolocationUtils?.getDeviceInfo === 'function' ? geolocationUtils.getDeviceInfo() : {},
         notes: 'Check-in via Dashboard without face verification'
       });
 
@@ -672,10 +682,12 @@ const EmployeeDashboard = () => {
         setTodayAttendance(response.data.data);
         setHasCheckedIn(true);
         setLastUpdated(new Date());
+      } else {
+        toast.error(response.data?.message || 'Failed to mark check-in', { id: 'dashboard-attendance' });
       }
     } catch (error) {
       console.error('Dashboard check-in error:', error);
-      toast.error(error.response?.data?.message || 'Failed to mark check-in', { id: 'dashboard-attendance' });
+      toast.error(error.response?.data?.message || error.message || 'Failed to mark check-in', { id: 'dashboard-attendance' });
     } finally {
       setAttendanceLoading(false);
     }
@@ -684,23 +696,23 @@ const EmployeeDashboard = () => {
   const handleDashboardCheckOut = async () => {
     try {
       setAttendanceLoading(true);
-      let currentLoc = location;
-      if (!currentLoc) {
-        try {
-          const position = await geolocationUtils.getCurrentPosition();
-          const addressData = await geolocationUtils.getAddressFromCoords(position.latitude, position.longitude);
-          const addressString = typeof addressData === 'object' ? addressData.address : addressData;
-          currentLoc = { ...position, address: addressString };
-          setLocation(currentLoc);
-        } catch {
-          // ignore
-        }
+      toast.loading('Checking location...', { id: 'dashboard-attendance' });
+      const currentLoc = await getValidLocation();
+
+      const locationCheck = typeof geolocationUtils?.isWithinOfficeRadius === 'function'
+        ? geolocationUtils.isWithinOfficeRadius(currentLoc.latitude, currentLoc.longitude)
+        : { isWithin: true, distance: 0 };
+
+      if (locationCheck && !locationCheck.isWithin) {
+        toast.error(`You are not within office premises. Distance: ${locationCheck.distance}m`, { id: 'dashboard-attendance' });
+        setAttendanceLoading(false);
+        return;
       }
 
       toast.loading('Marking check-out...', { id: 'dashboard-attendance' });
       const response = await attendanceAPI.checkOut({
-        location: currentLoc || {},
-        deviceInfo: geolocationUtils.getDeviceInfo(),
+        location: currentLoc,
+        deviceInfo: typeof geolocationUtils?.getDeviceInfo === 'function' ? geolocationUtils.getDeviceInfo() : {},
         notes: 'Check-out via Dashboard'
       });
 
@@ -709,10 +721,12 @@ const EmployeeDashboard = () => {
         setTodayAttendance(response.data.data);
         setHasCheckedOut(true);
         setLastUpdated(new Date());
+      } else {
+        toast.error(response.data?.message || 'Failed to check out', { id: 'dashboard-attendance' });
       }
     } catch (error) {
       console.error('Dashboard check-out error:', error);
-      toast.error(error.response?.data?.message || 'Failed to check out', { id: 'dashboard-attendance' });
+      toast.error(error.response?.data?.message || error.message || 'Failed to check out', { id: 'dashboard-attendance' });
     } finally {
       setAttendanceLoading(false);
     }
@@ -1350,7 +1364,66 @@ const EmployeeDashboard = () => {
             </div>
           </div>
         </div>
-      </EmployeeLayout>
+      
+      {/* Check-Out Confirmation Modal */}
+      {showCheckOutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-amber-600" strokeWidth={1.75} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">Confirm Check Out</h3>
+                <p className="text-xs sm:text-sm text-slate-500">End your work session for today</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5 mb-5 space-y-2">
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span className="text-slate-500">Check In Time:</span>
+                <span className="font-semibold text-slate-800">
+                  {todayAttendance?.checkInTime ? new Date(todayAttendance.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span className="text-slate-500">Working Time:</span>
+                <span className="font-semibold text-indigo-600">
+                  {realTimeWorkingTime > 0 ? `${Math.floor(realTimeWorkingTime / 60)}h ${realTimeWorkingTime % 60}m` : '0h 0m'}
+                </span>
+              </div>
+              <p className="text-[12px] text-amber-700 bg-amber-50/80 px-2.5 py-1.5 rounded-lg border border-amber-200/50 mt-2">
+                Are you sure you want to mark your check out? Once checked out, your attendance for today will be recorded.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowCheckOutConfirm(false)}
+                disabled={attendanceLoading}
+                className="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCheckOutConfirm(false);
+                  handleDashboardCheckOut();
+                }}
+                disabled={attendanceLoading}
+                className="px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center space-x-1.5 cursor-pointer"
+              >
+                <X strokeWidth={1.75} className="w-4 h-4" />
+                <span>Yes, Check Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </EmployeeLayout>
     );
   }
 
@@ -1911,7 +1984,7 @@ const EmployeeDashboard = () => {
               ) : !hasCheckedOut ? (
                 <button
                   type="button"
-                  onClick={handleDashboardCheckOut}
+                  onClick={() => setShowCheckOutConfirm(true)}
                   disabled={attendanceLoading}
                   className="px-5 py-2.5 bg-red-500 text-white text-[13px] font-semibold rounded-xl hover:bg-red-600 transition-all duration-150 flex items-center justify-center gap-2 shadow-2xs disabled:opacity-60"
                 >
@@ -2436,6 +2509,64 @@ const EmployeeDashboard = () => {
             </div>
           </div>
         )}
+
+      {/* Check-Out Confirmation Modal */}
+      {showCheckOutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all animate-scaleUp">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-amber-600" strokeWidth={1.75} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">Confirm Check Out</h3>
+                <p className="text-xs sm:text-sm text-slate-500">End your work session for today</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5 mb-5 space-y-2">
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span className="text-slate-500">Check In Time:</span>
+                <span className="font-semibold text-slate-800">
+                  {todayAttendance?.checkInTime ? new Date(todayAttendance.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span className="text-slate-500">Working Time:</span>
+                <span className="font-semibold text-indigo-600">
+                  {realTimeWorkingTime > 0 ? `${Math.floor(realTimeWorkingTime / 60)}h ${realTimeWorkingTime % 60}m` : '0h 0m'}
+                </span>
+              </div>
+              <p className="text-[12px] text-amber-700 bg-amber-50/80 px-2.5 py-1.5 rounded-lg border border-amber-200/50 mt-2">
+                Are you sure you want to mark your check out? Once checked out, your attendance for today will be completed.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowCheckOutConfirm(false)}
+                disabled={attendanceLoading}
+                className="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCheckOutConfirm(false);
+                  handleDashboardCheckOut();
+                }}
+                disabled={attendanceLoading}
+                className="px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center space-x-1.5 cursor-pointer"
+              >
+                <X strokeWidth={1.75} className="w-4 h-4" />
+                <span>Yes, Check Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </EmployeeLayout>
   );

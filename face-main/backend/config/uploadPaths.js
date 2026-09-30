@@ -13,9 +13,10 @@ export const profilePicsDir = path.join(uploadsDir, 'profile-pics');
 export const resumesDir = path.join(uploadsDir, 'resumes');
 export const candidateDocumentsDir = path.join(uploadsDir, 'candidate-documents');
 export const facesDir = path.join(uploadsDir, 'faces');
+export const offerLettersDir = path.join(uploadsDir, 'offer-letters');
 
 export const ensureUploadDirs = () => {
-  [uploadsDir, profilePicsDir, resumesDir, candidateDocumentsDir, facesDir].forEach((dir) => {
+  [uploadsDir, profilePicsDir, resumesDir, candidateDocumentsDir, facesDir, offerLettersDir].forEach((dir) => {
     fs.mkdirSync(dir, { recursive: true });
   });
 };
