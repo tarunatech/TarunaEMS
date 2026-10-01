@@ -1226,6 +1226,14 @@ const EmployeeManagement = () => {
       item.employee?.employeeId,
       item.employee?.user?._id,
       item.employee?.user?.employeeId,
+      item.employeeData?._id,
+      item.employeeData?.id,
+      item.employeeData?.employeeId,
+      item.employeeData?.user?._id,
+      item.employeeData?.user?.employeeId,
+      item.userData?._id,
+      item.userData?.id,
+      item.userData?.employeeId,
       item.assignedTo?._id,
       item.assignedTo?.id,
       item.assignedTo?.employeeId,
@@ -1241,6 +1249,9 @@ const EmployeeManagement = () => {
       item.email,
       item.employee?.contactInfo?.personalEmail,
       item.employee?.user?.email,
+      item.employeeData?.contactInfo?.personalEmail,
+      item.employeeData?.user?.email,
+      item.userData?.email,
       item.assignedTo?.contactInfo?.personalEmail,
       item.assignedTo?.user?.email
     ].filter(Boolean).map(value => String(value).toLowerCase());
@@ -1259,7 +1270,12 @@ const EmployeeManagement = () => {
       const [leavesRes, tasksRes, attendanceRes, leadsRes, problemsRes, interviewsRes, daybooksRes] = await Promise.allSettled([
         api.get('/leaves', { params: { search: employee.employeeId || employee.user?.employeeId || employee.fullName || employeeEmail } }),
         api.get('/tasks', { params: { assignedTo: employee._id || employeeId } }),
-        attendanceAPI.getAllAttendance({ employee: employee._id || employeeId, limit: 200 }),
+        attendanceAPI.getAllAttendance({
+          employeeId: employee._id || employeeId,
+          employee: employee._id || employeeId,
+          allTime: true,
+          limit: 10000
+        }),
         leadAPI.getLeads({ includeAll: true, assignedTo: employeeEmail || employee._id || employeeId, limit: 200 }),
         isDeveloperEmployee(employee) ? api.get('/problems') : Promise.resolve({ data: { data: [] } }),
         isHrEmployee(employee) ? api.get('/interviews/admin') : Promise.resolve({ data: { data: [] } }),
@@ -1273,7 +1289,7 @@ const EmployeeManagement = () => {
         ? normalizeList(tasksRes.value, ['tasks']).filter(item => matchesEmployee(item, employee))
         : [];
       const attendance = attendanceRes.status === 'fulfilled'
-        ? normalizeList(attendanceRes.value, ['attendanceRecords', 'records', 'attendance']).filter(item => matchesEmployee(item, employee))
+        ? normalizeList(attendanceRes.value, ['attendanceRecords', 'records', 'attendance', 'data']).filter(item => matchesEmployee(item, employee))
         : [];
       const leads = leadsRes.status === 'fulfilled'
         ? normalizeList(leadsRes.value, ['leads']).filter(item => matchesEmployee(item, employee))
@@ -1315,10 +1331,12 @@ const EmployeeManagement = () => {
           leadStatus: lead.status
         })))
         .filter(meeting => statusOf(meeting) !== 'cancelled');
-      const presentDays = attendance.filter(record => ['present', 'checked-in', 'checked out', 'checked-out'].includes(statusOf(record))).length;
+      const presentDays = attendance.filter(record => ['present', 'checked-in', 'checked out', 'checked-out', 'work from home', 'wfh'].includes(statusOf(record))).length;
       const absentDays = attendance.filter(record => statusOf(record) === 'absent').length;
       const lateDays = attendance.filter(record => statusOf(record).includes('late')).length;
       const halfDays = attendance.filter(record => statusOf(record).includes('half')).length;
+      const attendedUnits = presentDays + lateDays + (halfDays * 0.5);
+      const totalAttendanceRecords = attendance.length;
       const approvedLeaves = leaves.filter(item => statusOf(item) === 'approved').length;
       const rejectedLeaves = leaves.filter(item => statusOf(item) === 'rejected').length;
       const leaveDaysTaken = leaves
@@ -1383,12 +1401,14 @@ const EmployeeManagement = () => {
           rejected: rejectedDaybooks
         },
         attendance: {
-          total: attendance.length,
+          total: totalAttendanceRecords,
           present: presentDays,
           absent: absentDays,
           late: lateDays,
           halfDay: halfDays,
-          rate: attendance.length ? Math.round((presentDays / attendance.length) * 100) : 0
+          rate: totalAttendanceRecords
+            ? Math.min(100, Math.round((attendedUnits / totalAttendanceRecords) * 100))
+            : 0
         },
         sales: {
           total: leads.length,
@@ -1547,22 +1567,16 @@ const EmployeeManagement = () => {
     setShowViewModal(false);
 
     if (path === '/admin/attendance') {
-      const d = new Date();
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const firstDay = `${year}-${month}-01`;
-      const lastDayNum = new Date(year, d.getMonth() + 1, 0).getDate();
-      const lastDay = `${year}-${month}-${String(lastDayNum).padStart(2, '0')}`;
-
       navigate(path, {
         state: {
           employeeFilter: fullName,
           fromSnapshot: true,
+          allTime: true,
           returnToEmployeeId: empId,
           employeeIdCode: empCode,
-          startDate: firstDay,
-          endDate: lastDay,
-          selectedMonth: `${year}-${month}`,
+          startDate: '',
+          endDate: '',
+          selectedMonth: '',
           ...extraState
         }
       });
@@ -2242,7 +2256,7 @@ const EmployeeManagement = () => {
                   icon={Calendar}
                   title="Attendance"
                   value={overviewLoading ? '...' : `${employeeOverview?.attendance?.rate || 0}%`}
-                  subtitle="Attendance rate"
+                  subtitle={employeeOverview?.attendance?.total ? `All-time rate (${employeeOverview.attendance.total} days)` : "All-time attendance rate"}
                   breakdown={[
                     { label: 'Present', value: employeeOverview?.attendance?.present || 0 },
                     { label: 'Absent', value: employeeOverview?.attendance?.absent || 0 },

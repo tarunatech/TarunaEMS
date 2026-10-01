@@ -37,9 +37,10 @@ const AdminAttendance = () => {
   const initialDateRange = getMonthDateRange(currentMonthDefault);
 
   const isFromSnapshot = Boolean(location.state?.fromSnapshot);
-  const initialStartDate = location.state?.startDate || (isFromSnapshot ? initialDateRange.startDate : today);
-  const initialEndDate = location.state?.endDate || (isFromSnapshot ? initialDateRange.endDate : today);
-  const initialMonth = location.state?.selectedMonth || currentMonthDefault;
+  const isAllTime = Boolean(location.state?.allTime);
+  const initialStartDate = isAllTime ? '' : (location.state?.startDate || (isFromSnapshot ? initialDateRange.startDate : today));
+  const initialEndDate = isAllTime ? '' : (location.state?.endDate || (isFromSnapshot ? initialDateRange.endDate : today));
+  const initialMonth = isAllTime ? '' : (location.state?.selectedMonth || currentMonthDefault);
 
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [attendanceSummary, setAttendanceSummary] = useState(null);
@@ -82,10 +83,11 @@ const AdminAttendance = () => {
     const navSearch = location.state?.employeeFilter || location.state?.search || '';
     if (navSearch) {
       const fromSnap = Boolean(location.state?.fromSnapshot);
+      const isAllTimeNav = Boolean(location.state?.allTime);
       const defaultRange = getMonthDateRange(getCurrentMonthStr());
-      const navStartDate = location.state?.startDate || (fromSnap ? defaultRange.startDate : today);
-      const navEndDate = location.state?.endDate || (fromSnap ? defaultRange.endDate : today);
-      const navMonth = location.state?.selectedMonth || (fromSnap ? getCurrentMonthStr() : '');
+      const navStartDate = isAllTimeNav ? '' : (location.state?.startDate !== undefined ? location.state.startDate : (fromSnap ? defaultRange.startDate : today));
+      const navEndDate = isAllTimeNav ? '' : (location.state?.endDate !== undefined ? location.state.endDate : (fromSnap ? defaultRange.endDate : today));
+      const navMonth = isAllTimeNav ? '' : (location.state?.selectedMonth !== undefined ? location.state.selectedMonth : (fromSnap ? getCurrentMonthStr() : ''));
 
       setFilters(prev => ({
         ...prev,
@@ -110,6 +112,9 @@ const AdminAttendance = () => {
         limit: 20,
         ...filters
       };
+      if (location.state?.allTime || (!filters.startDate && !filters.endDate)) {
+        params.allTime = true;
+      }
 
       const response = await attendanceAPI.getAllAttendance(params);
       if (response.data.success) {

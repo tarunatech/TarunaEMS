@@ -1039,8 +1039,11 @@ export const getAllAttendance = async (req, res) => {
       status,
       page = 1,
       limit = 20,
-      search
+      search,
+      allTime
     } = req.query;
+
+    const isAllTime = allTime === 'true' || allTime === true || req.query.includeAllTime === 'true';
 
     // Build filter
     let filter = {};
@@ -1055,8 +1058,15 @@ export const getAllAttendance = async (req, res) => {
         $gte: start,
         $lte: end
       };
-    } else {
-      // Default to current month
+    } else if (startDate) {
+      const start = new Date(startDate);
+      filter.date = { $gte: start };
+    } else if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      filter.date = { $lte: end };
+    } else if (!isAllTime) {
+      // Default to current month only when not requesting all-time data
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -1065,15 +1075,28 @@ export const getAllAttendance = async (req, res) => {
       filter.date = { $gte: startOfMonth, $lte: endOfMonth };
     }
 
-    // Employee filter
-    if (employeeId) {
-      if (!isUuid(employeeId)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid employee ID format'
+    // Employee filter - support both employeeId and employee query param
+    const targetEmployeeId = employeeId || req.query.employee;
+    if (targetEmployeeId) {
+      if (isUuid(targetEmployeeId)) {
+        filter.$or = [
+          { employee: targetEmployeeId },
+          { user: targetEmployeeId }
+        ];
+      } else {
+        const matchedEmp = await Employee.findOne({
+          $or: [
+            { employeeId: targetEmployeeId },
+            { 'personalInfo.employeeId': targetEmployeeId }
+          ]
         });
+        if (matchedEmp) {
+          filter.$or = [
+            { employee: matchedEmp._id },
+            { user: matchedEmp.user }
+          ].filter(Boolean);
+        }
       }
-      filter.employee = employeeId;
     }
 
     // Status filter
@@ -1176,10 +1199,11 @@ export const getAllAttendance = async (req, res) => {
     const total = countResult[0]?.total || 0;
 
     // Add pagination
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const parsedLimit = isAllTime || limit === 'all' ? (parseInt(limit) || 10000) : (parseInt(limit) || 20);
+    const skip = (parseInt(page) - 1) * parsedLimit;
     pipeline.push(
       { $skip: skip },
-      { $limit: parseInt(limit) }
+      { $limit: parsedLimit }
     );
 
     // Execute aggregation
@@ -1205,7 +1229,7 @@ export const getAllAttendance = async (req, res) => {
       data: attendance,
       pagination: {
         current: parseInt(page),
-        pages: Math.ceil(total / parseInt(limit)),
+        pages: Math.ceil(total / parsedLimit),
         total
       },
       statistics: stats[0] || {
