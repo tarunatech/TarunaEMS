@@ -474,6 +474,16 @@ const EmployeeDashboard = () => {
     setShowGroupChatModal(true);
   }, []);
 
+  const openBotModal = useCallback(() => {
+    setShowChatModal(false);
+    setShowGroupChatModal(false);
+    setShowBotModal(true);
+  }, []);
+
+  const handleCloseBotModal = useCallback(() => {
+    setShowBotModal(false);
+  }, []);
+
   const handleBotMessageChange = useCallback((e) => {
     setNewBotMessage(e.target.value);
   }, []);
@@ -2139,7 +2149,7 @@ const EmployeeDashboard = () => {
               <p className="text-[12px] text-slate-500 group-hover:text-slate-900 transition-colors duration-150">Group Chats</p>
             </button>
             <button
-              onClick={() => setShowBotModal(true)}
+              onClick={openBotModal}
               className="dashboard-sub-card p-4 rounded-lg border border-slate-200/70 bg-slate-50/40 hover:border-indigo-200 hover:bg-indigo-50/60 transition-colors duration-150 group"
             >
               <Bot className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors duration-150" strokeWidth={1.75} />
@@ -2154,8 +2164,8 @@ const EmployeeDashboard = () => {
         {showBotModal && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={handleCloseBotModal} />
-            <div className="relative bg-white border border-slate-200 rounded-2xl w-full max-w-md h-[70vh] flex flex-col shadow-2xl shadow-slate-900/10 animate-enter" style={{ animationDuration: '0.2s' }}>
-              <div className="flex items-center justify-between p-4 border-b border-slate-100">
+            <div className="hr-bot-modal relative bg-white border border-slate-200 rounded-2xl w-full max-w-md h-[70vh] flex flex-col shadow-2xl shadow-slate-900/10 animate-enter" style={{ animationDuration: '0.2s' }}>
+              <div className="hr-bot-header flex items-center justify-between p-4 border-b border-slate-100">
                 <h2 className="text-[15px] font-semibold text-slate-900 flex items-center">
                   <Bot className="w-4 h-4 mr-2 text-indigo-600" strokeWidth={1.75} />
                   HR Assistant
@@ -2166,7 +2176,7 @@ const EmployeeDashboard = () => {
               </div>
               <div
                 ref={botMessagesContainerRef}
-                className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/40 relative"
+                className="hr-bot-messages flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/40 relative"
                 onScroll={() => {
                   if (botMessagesContainerRef.current) {
                     const { scrollTop, clientHeight, scrollHeight } = botMessagesContainerRef.current;
@@ -2188,14 +2198,14 @@ const EmployeeDashboard = () => {
                         className={`max-w-xs px-3.5 py-2.5 rounded-xl ${msg.self
                           ? 'ml-auto bg-indigo-600 text-white'
                           : msg.fromBot
-                            ? 'mr-auto bg-indigo-50 border border-indigo-100 text-slate-900'
-                            : 'mr-auto bg-white border border-slate-200 text-slate-900'
+                            ? 'hr-bot-bubble mr-auto bg-indigo-50 border border-indigo-100 text-slate-900'
+                            : 'hr-bot-bubble mr-auto bg-white border border-slate-200 text-slate-900'
                           }`}
                       >
                         <div className="text-[13px]">
                           {renderMessageText(msg.text)}
                         </div>
-                        <div className={`text-[10.5px] mt-1 ${msg.self ? 'text-indigo-200' : 'text-indigo-500'}`}>
+                        <div className={`hr-bot-time text-[10.5px] mt-1 ${msg.self ? 'text-indigo-200' : 'text-indigo-500'}`}>
                           {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
@@ -2210,7 +2220,7 @@ const EmployeeDashboard = () => {
                   </div>
                 )}
               </div>
-              <div className="p-3 border-t border-slate-100">
+              <div className="hr-bot-footer p-3 border-t border-slate-100">
                 <div className="flex">
                   <input
                     type="text"
@@ -2223,7 +2233,7 @@ const EmployeeDashboard = () => {
                       }
                     }}
                     placeholder="Ask HR Assistant…"
-                    className="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-l-lg text-[13px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors duration-150"
+                    className="hr-bot-input flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-l-lg text-[13px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors duration-150"
                     disabled={loadingBot}
                   />
                   <button

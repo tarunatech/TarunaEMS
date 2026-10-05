@@ -378,6 +378,95 @@ const SalesPage = () => {
     }
   };
 
+      const formatLeadNotes = (notes) => {
+    if (!notes) return '—';
+    if (typeof notes === 'string') return notes.replace(/[\r\n]+/g, ' ').trim() || '—';
+    if (Array.isArray(notes)) {
+      if (notes.length === 0) return '—';
+      return notes
+        .map(item => {
+          if (typeof item === 'string') return item;
+          if (item && typeof item === 'object') return item.text || item.note || item.content || item.message || '';
+          return String(item || '');
+        })
+        .filter(Boolean)
+        .join('; ')
+        .replace(/[\r\n]+/g, ' ')
+        .trim() || '—';
+    }
+    if (typeof notes === 'object') {
+      return (notes.text || notes.note || notes.content || '').replace(/[\r\n]+/g, ' ').trim() || '—';
+    }
+    return String(notes);
+  };
+
+  const handleExportReport = () => {
+    const targetLeads = filteredLeads.length > 0 ? filteredLeads : leads;
+    if (!targetLeads || targetLeads.length === 0) {
+      toast.error('No leads available to export');
+      return;
+    }
+
+    const headers = [
+      'Lead Name',
+      'Email',
+      'Phone',
+      'Company',
+      'Position',
+      'Status',
+      'Priority',
+      'Value (INR)',
+      'Source',
+      'Expected Close Date',
+      'Next Follow-up Date',
+      'Upcoming Meeting',
+      'Total Meetings',
+      'Notes',
+      'Created Date'
+    ];
+
+    const rows = targetLeads.map(lead => {
+      const upcoming = getLeadUpcomingMeetings(lead);
+      const nextMeetingStr = upcoming.length > 0 ? formatDateTime(upcoming[0].scheduledDate) : '—';
+      const cleanNotes = formatLeadNotes(lead.notes);
+      const leadValue = getLeadStageValue(lead);
+
+      return [
+        `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || '—',
+        lead.email || '—',
+        lead.phone || '—',
+        lead.company || '—',
+        lead.position || '—',
+        lead.status || 'New',
+        lead.priority || 'Medium',
+        leadValue,
+        lead.source || 'Referral',
+        lead.expectedCloseDate ? formatDate(lead.expectedCloseDate) : '—',
+        lead.nextFollowUpDate ? formatDate(lead.nextFollowUpDate) : '—',
+        nextMeetingStr,
+        (lead.meetings || []).length,
+        cleanNotes || '—',
+        lead.createdAt ? formatDate(lead.createdAt) : '—'
+      ];
+    });
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(field => `"${String(field ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.download = `Sales_Leads_Report_${dateStr}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    toast.success(`Exported ${targetLeads.length} leads successfully!`);
+  };
+
   // Format helpers
   const formatCurrency = (value) => `₹${(value || 0).toLocaleString()}`;
   const formatDate = (date) => date ? new Date(date).toLocaleDateString() : '—';
@@ -465,7 +554,7 @@ const SalesPage = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <ActionButton icon={Plus} label="Add New Lead" onClick={() => setShowAddModal(true)} />
           <ActionButton icon={Calendar} label="Schedule Meeting" onClick={() => {
             if (leads.length === 0) {
@@ -481,7 +570,7 @@ const SalesPage = () => {
             }));
             setShowMeetingModal(true);
           }} />
-          <ActionButton icon={Download} label="Export Report" onClick={() => toast.success('Report exported')} />
+          <ActionButton icon={Download} label="Export Report" onClick={handleExportReport} />
         </div>
 
         {/* Leads Table */}
@@ -494,53 +583,57 @@ const SalesPage = () => {
           </div>
 
           {/* Filters & Search Bar */}
-          <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50/80 border border-slate-200/80 rounded-xl p-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Search Leads</label>
-              <SearchWithSuggestions
-                value={filters.search}
-                onChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
-                onSelect={handleLeadSuggestionSelect}
-                items={leads}
-                getSuggestionValue={getLeadSearchValue}
-                getSuggestionTitle={(lead) => getLeadSearchValue(lead)}
-                getSuggestionSubtitle={(lead) => [lead.email, lead.company].filter(Boolean).join(' • ')}
-                placeholder="Lead name, email, company..."
-                inputClassName="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 text-xs sm:text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-150 shadow-2xs"
-                maxSuggestions={8}
-              />
-            </div>
+          <div className="mb-3 sm:mb-4 bg-slate-50/80 border border-slate-200/80 rounded-xl p-2 sm:p-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+              <div className="sm:col-span-1">
+                <label className="block text-[11px] sm:text-xs font-semibold text-slate-700 mb-0.5 sm:mb-1">Search Leads</label>
+                <SearchWithSuggestions
+                  value={filters.search}
+                  onChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
+                  onSelect={handleLeadSuggestionSelect}
+                  items={leads}
+                  getSuggestionValue={getLeadSearchValue}
+                  getSuggestionTitle={(lead) => getLeadSearchValue(lead)}
+                  getSuggestionSubtitle={(lead) => [lead.email, lead.company].filter(Boolean).join(' • ')}
+                  placeholder="Lead name, email, company..."
+                  inputClassName="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 text-xs sm:text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-150 shadow-2xs"
+                  maxSuggestions={8}
+                />
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Status Filter</label>
-              <select
-                value={filters.status}
-                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 text-xs sm:text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-150 shadow-2xs"
-              >
-                <option value="all">All Statuses</option>
-                <option value="New">New</option>
-                <option value="Contacted">Contacted</option>
-                <option value="Qualified">Qualified</option>
-                <option value="Proposal">Proposal</option>
-                <option value="Negotiation">Negotiation</option>
-                <option value="Won">Won</option>
-                <option value="Lost">Lost</option>
-              </select>
-            </div>
+              <div className="grid grid-cols-2 gap-2 sm:contents">
+                <div>
+                  <label className="block text-[11px] sm:text-xs font-semibold text-slate-700 mb-0.5 sm:mb-1">Status Filter</label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 text-xs sm:text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-150 shadow-2xs"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="New">New</option>
+                    <option value="Contacted">Contacted</option>
+                    <option value="Qualified">Qualified</option>
+                    <option value="Proposal">Proposal</option>
+                    <option value="Negotiation">Negotiation</option>
+                    <option value="Won">Won</option>
+                    <option value="Lost">Lost</option>
+                  </select>
+                </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Priority Filter</label>
-              <select
-                value={filters.priority}
-                onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
-                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 text-xs sm:text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-150 shadow-2xs"
-              >
-                <option value="all">All Priorities</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-              </select>
+                <div>
+                  <label className="block text-[11px] sm:text-xs font-semibold text-slate-700 mb-0.5 sm:mb-1">Priority Filter</label>
+                  <select
+                    value={filters.priority}
+                    onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
+                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-900 text-xs sm:text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-150 shadow-2xs"
+                  >
+                    <option value="all">All Priorities</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -679,7 +772,7 @@ const SalesPage = () => {
                                 event.stopPropagation();
                                 navigate(`/employee/sales-pipeline?leadId=${lead._id}`);
                               }}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-lg transition-all duration-150 shadow-2xs whitespace-nowrap ml-1"
+                              className="view-pipeline-btn inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-indigo-600 dark:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 border border-indigo-200/80 dark:border-indigo-800/60 rounded-lg transition-all duration-150 shadow-2xs whitespace-nowrap ml-1"
                             >
                               <GitBranch className="w-3.5 h-3.5" />
                               <span>View Pipeline</span>
@@ -693,7 +786,7 @@ const SalesPage = () => {
               </div>
 
               {/* Mobile Cards */}
-              <div className="block sm:hidden space-y-4">
+              <div className="block sm:hidden space-y-3">
                 {filteredLeads.map(lead => (
                   <div
                     key={lead._id}
@@ -707,25 +800,71 @@ const SalesPage = () => {
                     }}
                     tabIndex={0}
                     role="button"
-                    className="employee-sales-card cursor-pointer bg-white border border-slate-200 rounded-lg p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                    className="employee-sales-card cursor-pointer bg-white border border-slate-200 rounded-xl p-3 shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                   >
-                    <div className="mb-3 space-y-2">
-                      <div>
-                        <p className="text-slate-900 font-medium text-base leading-snug break-words">{lead.firstName} {lead.lastName}</p>
-                        <p className="text-sm text-slate-500 break-words">{lead.company || '—'}</p>
+                    <div className="flex items-start justify-between gap-2 mb-2 pb-2 border-b border-slate-100">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-slate-900 font-bold text-sm leading-snug truncate">{lead.firstName} {lead.lastName}</p>
+                        <p className="text-xs text-slate-500 truncate">{lead.company || '—'}</p>
                       </div>
-                      <div className="flex flex-wrap items-center gap-1">
+                      <span className={`employee-sales-chip shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold ${getStatusColor(lead.status)}`}>
+                        {lead.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs py-1">
+                      <div>
+                        <p className="text-[10.5px] text-slate-500 font-medium">Value</p>
+                        <p className="text-blue-600 font-bold text-xs mt-0.5">{formatCurrency(getLeadStageValue(lead))}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10.5px] text-slate-500 font-medium">Priority</p>
+                        <span className={`employee-sales-chip inline-block px-1.5 py-0.5 rounded-full text-[10.5px] font-semibold mt-0.5 ${getPriorityColor(lead.priority)}`}>
+                          {lead.priority}
+                        </span>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-[10.5px] text-slate-500 font-medium">Next Meeting / Follow-up</p>
+                        {getLeadUpcomingMeetings(lead).length > 0 ? (
+                          <div className="mt-0.5">
+                            <p className="text-slate-800 font-medium text-xs truncate">{formatDateTime(getLeadUpcomingMeetings(lead)[0].scheduledDate)}</p>
+                            {getLeadUpcomingMeetings(lead).length > 1 && (
+                              <p className="text-[10px] text-indigo-600">+{getLeadUpcomingMeetings(lead).length - 1} more scheduled</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-slate-800 font-medium text-xs mt-0.5">{formatDate(lead.nextFollowUpDate)}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 pt-2 mt-2 border-t border-slate-100 dark:border-slate-800/80">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/employee/sales-pipeline?leadId=${lead._id}`);
+                        }}
+                        className="view-pipeline-btn flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-300 bg-indigo-50/90 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200/80 dark:border-indigo-800/60 rounded-lg transition-all duration-150 shadow-2xs whitespace-nowrap min-w-0"
+                      >
+                        <GitBranch className="w-3.5 h-3.5 shrink-0" />
+                        <span className="whitespace-nowrap font-semibold">Pipeline</span>
+                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
                         <button
+                          type="button"
                           onClick={(event) => {
                             event.stopPropagation();
                             openLead(lead);
                           }}
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                          className="card-action-icon-btn h-6 w-6 p-0 flex items-center justify-center text-slate-400 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-slate-200 dark:border-slate-800/80 rounded-md transition-colors"
+                          title="View Details"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3 h-3" />
                         </button>
                         {lead.status !== 'Won' && (
                           <button
+                            type="button"
                             onClick={(event) => {
                               event.stopPropagation();
                               setSelectedLead(lead);
@@ -742,61 +881,23 @@ const SalesPage = () => {
                               });
                               setShowWonModal(true);
                             }}
-                            className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200"
+                            className="card-action-icon-btn h-6 w-6 p-0 flex items-center justify-center text-slate-400 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/40 border border-slate-200 dark:border-slate-800/80 rounded-md transition-colors"
+                            title="Mark Won"
                           >
-                            <CheckCircle className="w-4 h-4" />
+                            <CheckCircle className="w-3 h-3" />
                           </button>
                         )}
                         <button
+                          type="button"
                           onClick={(event) => {
                             event.stopPropagation();
                             handleDeleteLead(lead._id);
                           }}
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                          className="card-action-icon-btn h-6 w-6 p-0 flex items-center justify-center text-slate-400 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 border border-slate-200 dark:border-slate-800/80 rounded-md transition-colors"
+                          title="Delete"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3 h-3" />
                         </button>
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            navigate(`/employee/sales-pipeline?leadId=${lead._id}`);
-                          }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-lg transition-all duration-150 shadow-2xs whitespace-nowrap ml-1"
-                        >
-                          <GitBranch className="w-3.5 h-3.5" />
-                          <span>View Pipeline</span>
-                        </button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-slate-500">Value</p>
-                        <p className="text-blue-600 font-medium">{formatCurrency(getLeadStageValue(lead))}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-500">Status</p>
-                        <span className={`employee-sales-chip px-2 py-1 rounded-full text-xs ${getStatusColor(lead.status)}`}>
-                          {lead.status}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-slate-500">Priority</p>
-                        <span className={`employee-sales-chip px-2 py-1 rounded-full text-xs ${getPriorityColor(lead.priority)}`}>
-                          {lead.priority}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-slate-500">Next Meeting</p>
-                        {getLeadUpcomingMeetings(lead).length > 0 ? (
-                          <div>
-                            <p className="text-slate-900">{formatDateTime(getLeadUpcomingMeetings(lead)[0].scheduledDate)}</p>
-                            {getLeadUpcomingMeetings(lead).length > 1 && (
-                              <p className="text-xs text-indigo-600">+{getLeadUpcomingMeetings(lead).length - 1} more</p>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-slate-900">{formatDate(lead.nextFollowUpDate)}</p>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -811,22 +912,20 @@ const SalesPage = () => {
       {/* Add Lead Modal */}
       {showAddModal && (
         <Modal title="Add New Lead" onClose={() => setShowAddModal(false)} size="wide">
-          <form onSubmit={handleAddLead} className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Input label="First Name *" value={newLead.firstName} onChange={(v) => setNewLead({ ...newLead, firstName: v })} />
-            <Input label="Last Name *" value={newLead.lastName} onChange={(v) => setNewLead({ ...newLead, lastName: v })} />
-            <Input label="Email *" type="email" value={newLead.email} onChange={(v) => setNewLead({ ...newLead, email: v })} />
-            <Input label="Phone *" value={newLead.phone} onChange={(v) => setNewLead({ ...newLead, phone: v })} />
-            <Input label="Company" value={newLead.company} onChange={(v) => setNewLead({ ...newLead, company: v })} />
-            <Input label="Estimated Value (₹)" type="number" value={newLead.estimatedValue} onChange={(v) => setNewLead({ ...newLead, estimatedValue: v })} />
-            <div className="contents">
+          <form onSubmit={handleAddLead} className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
+              <Input label="First Name *" value={newLead.firstName} onChange={(v) => setNewLead({ ...newLead, firstName: v })} required />
+              <Input label="Last Name *" value={newLead.lastName} onChange={(v) => setNewLead({ ...newLead, lastName: v })} required />
+              <Input label="Email *" type="email" value={newLead.email} onChange={(v) => setNewLead({ ...newLead, email: v })} required />
+              <Input label="Phone *" value={newLead.phone} onChange={(v) => setNewLead({ ...newLead, phone: v })} required />
+              <Input label="Company" value={newLead.company} onChange={(v) => setNewLead({ ...newLead, company: v })} />
+              <Input label="Estimated Value (₹)" type="number" value={newLead.estimatedValue} onChange={(v) => setNewLead({ ...newLead, estimatedValue: v })} />
               <Input label="Expected Close Date" type="date" value={newLead.expectedCloseDate} onChange={(v) => setNewLead({ ...newLead, expectedCloseDate: v })} />
               <Input label="Next Follow-up" type="date" value={newLead.nextFollowUpDate} onChange={(v) => setNewLead({ ...newLead, nextFollowUpDate: v })} />
             </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all duration-200">Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200">Add Lead</button>
+            <div className="flex justify-end gap-2 pt-3 sm:pt-4 border-t border-slate-100">
+              <button type="button" onClick={() => setShowAddModal(false)} className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all duration-200">Cancel</button>
+              <button type="submit" className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200">Add Lead</button>
             </div>
           </form>
         </Modal>
@@ -1011,66 +1110,70 @@ const StatCard = ({ title, value, progress, color = 'blue', subtitle }) => (
 const ActionButton = ({ icon, label, onClick }) => (
   <button
     onClick={onClick}
-    className="employee-sales-action p-4 rounded-lg border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 group text-left"
+    className="employee-sales-action flex items-center justify-center sm:block p-2 sm:p-4 rounded-lg sm:rounded-xl border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 group text-center sm:text-left min-w-0 w-full"
   >
-    {React.createElement(icon, { className: 'w-6 h-6 text-slate-400 group-hover:text-blue-600 mb-2' })}
-    <p className="text-sm text-slate-500 group-hover:text-slate-900">{label}</p>
+    <div className="flex items-center justify-center gap-1 sm:block min-w-0">
+      {React.createElement(icon, { className: 'w-3.5 h-3.5 sm:w-6 sm:h-6 text-slate-400 group-hover:text-blue-600 shrink-0 sm:mb-2' })}
+      <p className="text-[10px] xs:text-[11px] sm:text-sm text-slate-500 group-hover:text-slate-900 font-medium whitespace-nowrap truncate min-w-0">{label}</p>
+    </div>
   </button>
 );
 
 const Modal = ({ title, children, onClose, size = 'default' }) => (
-  <div className={`fixed inset-y-0 right-0 z-50 flex items-start justify-center overflow-y-auto px-5 py-10 sm:items-center sm:p-4 ${
+  <div className={`fixed inset-0 z-[10000] flex items-start sm:items-center justify-center overflow-y-auto p-2.5 pt-16 pb-10 sm:p-4 ${
     size === 'wide' ? 'left-0 lg:left-[248px]' : 'left-0'
   }`}>
     <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
-    <div className={`employee-sales-modal relative flex max-h-[76dvh] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:max-h-[90vh] ${
-      size === 'wide' ? 'max-w-[340px] sm:max-w-[min(72rem,calc(100vw-1rem))] lg:max-w-[min(72rem,calc(100vw-280px))]' : 'max-w-sm sm:max-w-md'
+    <div className={`employee-sales-modal relative flex max-h-[calc(100dvh-5.5rem)] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl sm:max-h-[90vh] ${
+      size === 'wide' ? 'max-w-[calc(100vw-1.25rem)] sm:max-w-[min(72rem,calc(100vw-1rem))] lg:max-w-[min(72rem,calc(100vw-280px))]' : 'max-w-sm sm:max-w-md'
     }`}>
-      <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-2.5 py-1.5 sm:static sm:border-b-0 sm:px-4 sm:pb-0 sm:pt-4">
+      <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-3 py-2 sm:static sm:border-b-0 sm:px-4 sm:pb-0 sm:pt-4">
         <h3 className="truncate pr-2 text-sm font-bold text-slate-900 sm:text-lg">{title}</h3>
         <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200 sm:p-1.5">
           <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2 sm:px-4 sm:py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2.5 sm:px-4 sm:py-4">
         {children}
       </div>
     </div>
   </div>
 );
 
-const Input = ({ label, value, onChange, type = 'text', ...props }) => (
-  <div>
-    <label className="block text-xs text-slate-500 mb-1">{label}</label>
+const Input = ({ label, value, onChange, type = 'text', className = '', ...props }) => (
+  <div className="min-w-0">
+    <label className="block text-[11px] sm:text-xs font-medium text-slate-500 mb-1 truncate">{label}</label>
     <input
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all duration-200"
+      className={`w-full min-w-0 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all duration-200 ${className}`}
       {...props}
     />
   </div>
 );
 
-const Textarea = ({ label, value, onChange, rows = 3 }) => (
-  <div>
-    <label className="block text-xs text-slate-500 mb-1">{label}</label>
+const Textarea = ({ label, value, onChange, rows = 3, className = '', ...props }) => (
+  <div className="min-w-0">
+    <label className="block text-[11px] sm:text-xs font-medium text-slate-500 mb-1 truncate">{label}</label>
     <textarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
       rows={rows}
-      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all duration-200"
+      className={`w-full min-w-0 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all duration-200 ${className}`}
+      {...props}
     />
   </div>
 );
 
-const Select = ({ label, value, onChange, options }) => (
-  <div>
-    <label className="block text-xs text-slate-500 mb-1">{label}</label>
+const Select = ({ label, value, onChange, options, className = '', ...props }) => (
+  <div className="min-w-0">
+    <label className="block text-[11px] sm:text-xs font-medium text-slate-500 mb-1 truncate">{label}</label>
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all duration-200"
+      className={`w-full min-w-0 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all duration-200 ${className}`}
+      {...props}
     >
       {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
     </select>

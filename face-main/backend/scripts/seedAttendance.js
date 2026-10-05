@@ -43,14 +43,19 @@ const seedAttendance = async () => {
           let lateMinutes = 0;
 
           const standardTime = new Date(date);
-          standardTime.setHours(9, 0, 0, 0);
+          standardTime.setHours(10, 15, 0, 0);
 
-          if (checkInTime > standardTime) {
+          const halfDayTime = new Date(date);
+          halfDayTime.setHours(14, 0, 0, 0);
+
+          if (checkInTime > halfDayTime) {
             isLate = true;
             lateMinutes = Math.round((checkInTime - standardTime) / (1000 * 60));
-
-            if (lateMinutes > 240) status = 'Half Day';
-            else if (lateMinutes > 30) status = 'Late';
+            status = 'Half Day';
+          } else if (checkInTime > standardTime) {
+            isLate = true;
+            lateMinutes = Math.round((checkInTime - standardTime) / (1000 * 60));
+            status = 'Late';
           }
 
           attendanceRecords.push({

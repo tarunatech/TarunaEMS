@@ -174,7 +174,29 @@ const LeadOverviewSection = () => {
               const name = `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.fullName || 'Lead Contact';
               const company = lead.company || 'Direct Inquiry';
               const pipeline = pipelineByLeadId.get(String(lead._id || lead.id));
-              const reqText = pipeline?.clientDetails?.requirements || lead.notes || lead.position || lead.source || 'General Sales Lead';
+
+              // Extract requirement text safely without showing '[]', '{}', or placeholders
+              let rawReq = '';
+              const pipelineReq = pipeline?.clientDetails?.requirements;
+              if (typeof pipelineReq === 'string' && pipelineReq.trim()) {
+                rawReq = pipelineReq.trim();
+              } else if (Array.isArray(pipelineReq) && pipelineReq.length > 0) {
+                rawReq = pipelineReq.map(item => (typeof item === 'string' ? item : item?.text || item?.requirement || '')).filter(Boolean).join(', ').trim();
+              }
+
+              if (!rawReq) {
+                const notes = lead.notes;
+                if (typeof notes === 'string' && notes.trim() && notes.trim() !== '[]' && notes.trim() !== '{}') {
+                  rawReq = notes.trim();
+                } else if (Array.isArray(notes) && notes.length > 0) {
+                  rawReq = notes.map(n => (typeof n === 'string' ? n : n?.note || n?.text || n?.content || '')).filter(Boolean).join(', ').trim();
+                } else if (typeof lead.position === 'string' && lead.position.trim()) {
+                  rawReq = lead.position.trim();
+                }
+              }
+
+              const cleanReq = (rawReq === '[]' || rawReq === '{}') ? '' : rawReq;
+              const displayedReq = cleanReq.length > 80 ? `${cleanReq.slice(0, 80).trim()}...` : cleanReq;
               const stageStyle = STAGE_COLORS[lead.status] || STAGE_COLORS.New;
 
               return (
@@ -200,10 +222,12 @@ const LeadOverviewSection = () => {
                   </div>
 
                   {/* Requirement / Notes summary */}
-                  <p className="text-[12px] sm:text-[12.5px] text-slate-600 line-clamp-2 mb-2.5 bg-slate-50 p-2 rounded-lg border border-slate-100 leading-snug">
-                    <span className="font-bold text-slate-700">Requirement: </span>
-                    {reqText}
-                  </p>
+                  <div className="mb-2.5 bg-slate-50 p-2 rounded-lg border border-slate-100 text-[12px] sm:text-[12.5px] text-slate-600 overflow-hidden">
+                    <p className="leading-snug break-words">
+                      <span className="font-bold text-slate-700">Requirement:&nbsp;</span>
+                      <span title={cleanReq}>{displayedReq}</span>
+                    </p>
+                  </div>
 
                   {/* Bottom Row: Assigned To & Value */}
                   <div className="flex items-center justify-between text-[12px] text-slate-500 pt-2 border-t border-slate-100">

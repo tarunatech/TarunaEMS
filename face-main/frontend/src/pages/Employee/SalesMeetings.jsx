@@ -185,12 +185,12 @@ const SalesMeetings = () => {
         </div>
 
         {nextMeeting && (
-          <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-white via-indigo-50/70 to-blue-50 p-4 shadow-sm sm:p-5">
+          <div className="upcoming-schedule-panel next-upcoming-banner rounded-2xl border border-indigo-200 dark:border-indigo-900/50 bg-gradient-to-br from-white via-indigo-50/70 to-blue-50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 p-4 shadow-sm sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Next Upcoming</p>
-                <h2 className="mt-1 text-lg font-bold text-slate-950">{nextMeeting.leadName}</h2>
-                <p className="text-sm text-slate-500">{nextMeeting.company}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">Next Upcoming</p>
+                <h2 className="mt-1 text-lg font-bold text-slate-950 dark:text-white">{nextMeeting.leadName}</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{nextMeeting.company || 'No company'}</p>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm sm:min-w-64">
                 <InfoPill label="Date" value={formatDate(nextMeeting.scheduledDate)} />
@@ -450,9 +450,9 @@ const SummaryCard = ({ title, value, icon, tone }) => {
 };
 
 const InfoPill = ({ label, value }) => (
-  <div className="rounded-xl border border-white/80 bg-white/80 p-3">
-    <p className="text-xs text-slate-500">{label}</p>
-    <p className="mt-1 font-semibold text-slate-900">{value}</p>
+  <div className="info-pill rounded-xl border border-white/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-800/80 p-3">
+    <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+    <p className="mt-1 font-semibold text-slate-900 dark:text-white">{value}</p>
   </div>
 );
 

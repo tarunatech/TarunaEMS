@@ -1046,7 +1046,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
   };
 
   const content = (
-    <div className={`${embedded ? 'w-full h-full flex flex-col' : `flex flex-col h-[92vh] sm:h-[95vh] max-h-[96vh] w-full ${isAdmin ? 'max-w-7xl' : 'max-w-5xl'} overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-6 shadow-xl`} employee-sales-pipeline-modal`}>
+    <div className={`${embedded ? 'w-full min-w-0 max-w-full flex flex-col bg-transparent border-0 p-0 shadow-none' : `flex flex-col h-[92vh] sm:h-[95vh] max-h-[96vh] w-full ${isAdmin ? 'max-w-7xl' : 'max-w-5xl'} overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-6 shadow-xl`} employee-sales-pipeline-modal`}>
       <style>{`
           @keyframes pipelineStageIn {
             from { opacity: 0; transform: translateY(10px) scale(0.99); }
@@ -1081,10 +1081,10 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
           Loading pipeline...
         </div>
       ) : (
-        <div ref={modalScrollRef} className={`pipeline-modal-scroll flex-1 ${embedded ? 'min-h-0' : 'overflow-y-auto overscroll-contain'} space-y-3 sm:space-y-5 pr-0.5`}>
+        <div ref={modalScrollRef} className={`pipeline-modal-scroll flex-1 min-w-0 max-w-full ${embedded ? 'min-h-0' : 'overflow-y-auto overscroll-y-contain'} space-y-3 sm:space-y-5 pr-0.5 touch-pan-y`}>
           <StageStepper currentStage={pipeline?.currentStage} activeStage={activeStage} onSelect={setActiveStage} />
 
-          <div key={activeStage} className="pipeline-stage-panel rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm sm:p-5">
+          <div key={activeStage} className="pipeline-stage-panel rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3.5 sm:p-5 shadow-sm min-w-0 w-full max-w-full overflow-hidden sm:overflow-visible">
             {activeStage === 'client_details' && (
               <section>
                 <StageHeading title="Client Details" subtitle="Core lead information and qualification notes" />
@@ -1210,95 +1210,95 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                     </>
                   }
                 />
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,0.75fr)_minmax(420px,1.25fr)] xl:items-start">
-                    <div className="space-y-4 xl:max-h-[84vh] xl:overflow-y-auto pr-1 xl:pr-2">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <Input label="Company Name" value={forms.proposal.companyName} onChange={v => updateProposal('companyName', v)} />
-                        <Input label="Customer Name" value={forms.proposal.customerName} onChange={v => updateProposal('customerName', v)} />
-                        <Select label="Proposal Type" value={forms.proposal.proposalType} onChange={updateProposalType} options={proposalTypeOptions} />
-                        <Input label="Proposal Title" value={forms.proposal.title} onChange={v => updateProposal('title', v)} />
-                        <Input label="Proposal Subtitle" value={forms.proposal.subtitle} onChange={v => updateProposal('subtitle', v)} />
-                        <Input label="Valid Until" type="date" value={forms.proposal.validity?.validUntil} onChange={v => updateProposalNested('validity', 'validUntil', v)} />
-                        <Input label="Total Price" type="number" value={forms.proposal.pricing?.totalPrice} onChange={v => updateProposalNested('pricing', 'totalPrice', v)} />
-                        <Input label="Discounted Price" type="number" value={forms.proposal.pricing?.discountedPrice} onChange={v => updateProposalNested('pricing', 'discountedPrice', v)} />
-                        <Input label="AMC Cost" type="number" value={forms.proposal.pricing?.amcCost} onChange={v => updateProposalNested('pricing', 'amcCost', v)} />
-                        <Input label="Currency" value={forms.proposal.pricing?.currency} onChange={v => updateProposalNested('pricing', 'currency', v)} />
-                      </div>
-                      <Textarea label="Additional Instructions for AI" value={forms.proposal.aiInstructions} onChange={v => updateProposal('aiInstructions', v)} />
-                      <div className="space-y-3">
-                        {proposalEditableSections.map(([key, label, type]) => (
-                          <EditableAiSection
-                            key={key}
-                            label={label}
-                            value={proposalSectionText(key)}
-                            onChange={v => updateProposalSectionFromText(key, type, v)}
-                            onImprove={() => improveProposalSection(key)}
-                            disabled={saving}
-                            helper={type === 'modules' ? 'Use blank lines between modules. Add features as lines starting with "-".' : type === 'list' ? 'One item per line.' : type === 'pairs' ? 'One item per line, use "Title - Description".' : ''}
-                          />
-                        ))}
-                        <ProposalRowsEditor
-                          title="Project Cost Breakdown"
-                          rows={forms.proposal.sections?.projectCostBreakdown}
-                          fields={[['component', 'Component'], ['cost', 'Cost']]}
-                          compact
-                          onChange={(index, field, value) => updateProposalSectionRow('projectCostBreakdown', index, field, value)}
-                          onAdd={() => addProposalSectionRow('projectCostBreakdown', { component: '', cost: '' })}
-                          onRemove={(index) => removeProposalSectionRow('projectCostBreakdown', index)}
-                        />
-                        <ProposalRowsEditor
-                          title="Project Timeline"
-                          rows={forms.proposal.sections?.projectTimeline}
-                          fields={[['phase', 'Phase'], ['duration', 'Duration'], ['notes', 'Notes']]}
-                          compact
-                          onChange={(index, field, value) => updateProposalSectionRow('projectTimeline', index, field, value)}
-                          onAdd={() => addProposalSectionRow('projectTimeline', { phase: '', duration: '', notes: '' })}
-                          onRemove={(index) => removeProposalSectionRow('projectTimeline', index)}
-                        />
-                        <ProposalRowsEditor
-                          title="Payment Terms"
-                          rows={forms.proposal.sections?.paymentTerms}
-                          fields={[['milestone', 'Milestone'], ['description', 'Description'], ['percentage', 'Percent']]}
-                          compact
-                          onChange={(index, field, value) => updateProposalSectionRow('paymentTerms', index, field, value)}
-                          onAdd={() => addProposalSectionRow('paymentTerms', { milestone: '', description: '', percentage: '' })}
-                          onRemove={(index) => removeProposalSectionRow('paymentTerms', index)}
-                        />
-                        <div className="rounded-xl border border-slate-200 bg-white p-3">
-                          <h4 className="mb-3 text-sm font-bold text-slate-900">For Inquiries Contact Us</h4>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            {Object.entries(defaultContactDetails).map(([key, value]) => (
-                              <Input key={key} label={key.replace(/([A-Z])/g, ' $1')} value={value} disabled />
-                            ))}
-                          </div>
-                        </div>
-                        <div className="rounded-xl border border-slate-200 bg-white p-3">
-                          <h4 className="mb-3 text-sm font-bold text-slate-900">Agreement & Signatures</h4>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            {Object.entries(defaultSignatureDetails).map(([key]) => (
-                              <Input key={key} label={key.replace(/([A-Z])/g, ' $1')} value={forms.proposal.signatureDetails?.[key]} onChange={v => updateProposalObject('signatureDetails', key, v)} />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,0.75fr)_minmax(420px,1.25fr)] xl:items-start min-w-0 w-full max-w-full">
+                  <div className="space-y-4 xl:max-h-[84vh] xl:overflow-y-auto pr-1 xl:pr-2">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Input label="Company Name" value={forms.proposal.companyName} onChange={v => updateProposal('companyName', v)} />
+                      <Input label="Customer Name" value={forms.proposal.customerName} onChange={v => updateProposal('customerName', v)} />
+                      <Select label="Proposal Type" value={forms.proposal.proposalType} onChange={updateProposalType} options={proposalTypeOptions} />
+                      <Input label="Proposal Title" value={forms.proposal.title} onChange={v => updateProposal('title', v)} />
+                      <Input label="Proposal Subtitle" value={forms.proposal.subtitle} onChange={v => updateProposal('subtitle', v)} />
+                      <Input label="Valid Until" type="date" value={forms.proposal.validity?.validUntil} onChange={v => updateProposalNested('validity', 'validUntil', v)} />
+                      <Input label="Total Price" type="number" value={forms.proposal.pricing?.totalPrice} onChange={v => updateProposalNested('pricing', 'totalPrice', v)} />
+                      <Input label="Discounted Price" type="number" value={forms.proposal.pricing?.discountedPrice} onChange={v => updateProposalNested('pricing', 'discountedPrice', v)} />
+                      <Input label="AMC Cost" type="number" value={forms.proposal.pricing?.amcCost} onChange={v => updateProposalNested('pricing', 'amcCost', v)} />
+                      <Input label="Currency" value={forms.proposal.pricing?.currency} onChange={v => updateProposalNested('pricing', 'currency', v)} />
                     </div>
-
-                    <div className="flex flex-col gap-3 pl-0 xl:max-h-[84vh] xl:overflow-y-auto xl:sticky xl:top-4 xl:pl-2">
-                      <ProposalPreview
-                        proposal={forms.proposal}
-                        onProposalChange={updateProposal}
-                        onNestedChange={updateProposalNested}
-                        onSectionChange={updateProposalSectionFromText}
-                        onSectionRowChange={updateProposalSectionRow}
-                        onAddSectionRow={addProposalSectionRow}
-                        onRemoveSectionRow={removeProposalSectionRow}
-                        onObjectChange={updateProposalObject}
-                        onTitleChange={(key, title) => updateProposalObject('sectionTitles', key, title)}
-                        embedded={embedded}
+                    <Textarea label="Additional Instructions for AI" value={forms.proposal.aiInstructions} onChange={v => updateProposal('aiInstructions', v)} />
+                    <div className="space-y-3">
+                      {proposalEditableSections.map(([key, label, type]) => (
+                        <EditableAiSection
+                          key={key}
+                          label={label}
+                          value={proposalSectionText(key)}
+                          onChange={v => updateProposalSectionFromText(key, type, v)}
+                          onImprove={() => improveProposalSection(key)}
+                          disabled={saving}
+                          helper={type === 'modules' ? 'Use blank lines between modules. Add features as lines starting with "-".' : type === 'list' ? 'One item per line.' : type === 'pairs' ? 'One item per line, use "Title - Description".' : ''}
+                        />
+                      ))}
+                      <ProposalRowsEditor
+                        title="Project Cost Breakdown"
+                        rows={forms.proposal.sections?.projectCostBreakdown}
+                        fields={[['component', 'Component'], ['cost', 'Cost']]}
+                        compact
+                        onChange={(index, field, value) => updateProposalSectionRow('projectCostBreakdown', index, field, value)}
+                        onAdd={() => addProposalSectionRow('projectCostBreakdown', { component: '', cost: '' })}
+                        onRemove={(index) => removeProposalSectionRow('projectCostBreakdown', index)}
                       />
+                      <ProposalRowsEditor
+                        title="Project Timeline"
+                        rows={forms.proposal.sections?.projectTimeline}
+                        fields={[['phase', 'Phase'], ['duration', 'Duration'], ['notes', 'Notes']]}
+                        compact
+                        onChange={(index, field, value) => updateProposalSectionRow('projectTimeline', index, field, value)}
+                        onAdd={() => addProposalSectionRow('projectTimeline', { phase: '', duration: '', notes: '' })}
+                        onRemove={(index) => removeProposalSectionRow('projectTimeline', index)}
+                      />
+                      <ProposalRowsEditor
+                        title="Payment Terms"
+                        rows={forms.proposal.sections?.paymentTerms}
+                        fields={[['milestone', 'Milestone'], ['description', 'Description'], ['percentage', 'Percent']]}
+                        compact
+                        onChange={(index, field, value) => updateProposalSectionRow('paymentTerms', index, field, value)}
+                        onAdd={() => addProposalSectionRow('paymentTerms', { milestone: '', description: '', percentage: '' })}
+                        onRemove={(index) => removeProposalSectionRow('paymentTerms', index)}
+                      />
+                      <div className="rounded-xl border border-slate-200 bg-white p-3">
+                        <h4 className="mb-3 text-sm font-bold text-slate-900">For Inquiries Contact Us</h4>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {Object.entries(defaultContactDetails).map(([key, value]) => (
+                            <Input key={key} label={key.replace(/([A-Z])/g, ' $1')} value={value} disabled />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 bg-white p-3">
+                        <h4 className="mb-3 text-sm font-bold text-slate-900">Agreement & Signatures</h4>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {Object.entries(defaultSignatureDetails).map(([key]) => (
+                            <Input key={key} label={key.replace(/([A-Z])/g, ' $1')} value={forms.proposal.signatureDetails?.[key]} onChange={v => updateProposalObject('signatureDetails', key, v)} />
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </section>
+
+                  <div className="flex flex-col gap-3 pl-0 xl:max-h-[84vh] xl:overflow-y-auto xl:sticky xl:top-4 xl:pl-2">
+                    <ProposalPreview
+                      proposal={forms.proposal}
+                      onProposalChange={updateProposal}
+                      onNestedChange={updateProposalNested}
+                      onSectionChange={updateProposalSectionFromText}
+                      onSectionRowChange={updateProposalSectionRow}
+                      onAddSectionRow={addProposalSectionRow}
+                      onRemoveSectionRow={removeProposalSectionRow}
+                      onObjectChange={updateProposalObject}
+                      onTitleChange={(key, title) => updateProposalObject('sectionTitles', key, title)}
+                      embedded={embedded}
+                    />
+                  </div>
+                </div>
+              </section>
             )}
 
             {activeStage === 'sent_to_client' && (
@@ -1386,8 +1386,8 @@ const labelForStage = (stage) => stages.find(([value]) => value === stage)?.[1] 
 const StageStepper = ({ currentStage, activeStage, onSelect }) => {
   const currentIndex = stages.findIndex(([value]) => value === currentStage);
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-1.5 sm:p-2 shadow-inner">
-      <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1">
+    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80 p-1.5 sm:p-2 shadow-inner">
+      <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 touch-pan-x scrollbar-none w-full min-w-0">
         {stages.map(([value, label], index) => {
           const isActive = activeStage === value;
           const isReached = currentIndex >= 0 && index <= currentIndex;
@@ -1444,15 +1444,15 @@ const Badge = ({ status }) => {
 const Info = ({ label, value }) => {
   const isEmail = String(label || '').toLowerCase() === 'email';
   return (
-  <div className="min-w-0">
-    <p className="text-xs text-slate-500">{label}</p>
-    <p
-      title={isEmail && value ? String(value) : undefined}
-      className={`min-w-0 font-medium leading-snug text-slate-900 ${isEmail ? 'truncate text-[13px]' : 'break-words [overflow-wrap:anywhere]'}`}
-    >
-      {value || '-'}
-    </p>
-  </div>
+    <div className="min-w-0">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p
+        title={isEmail && value ? String(value) : undefined}
+        className={`min-w-0 font-medium leading-snug text-slate-900 ${isEmail ? 'truncate text-[13px]' : 'break-words [overflow-wrap:anywhere]'}`}
+      >
+        {value || '-'}
+      </p>
+    </div>
   );
 };
 

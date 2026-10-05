@@ -1110,8 +1110,8 @@ html.theme-dark .border-slate-200\/80,
 html.theme-dark .border-slate-200\/70,
 html.theme-dark .border-slate-200\/60,
 html.theme-dark .border-slate-300,
-html.theme-dark .divide-slate-100 > * + *,
-html.theme-dark .divide-slate-200 > * + *,
+html.theme-dark .divide-slate-100>*+*,
+html.theme-dark .divide-slate-200>*+*,
 html.theme-dark .border-blue-100,
 html.theme-dark .border-blue-200,
 html.theme-dark .border-emerald-100,
@@ -1227,26 +1227,31 @@ html.theme-dark .premium-page-title {
 
 html.theme-dark .admin-quick-actions {
   background: rgba(15, 23, 42, 0.94) !important;
-  border-color: rgba(236, 242, 252, 0.24) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32) !important;
 }
 
+html.theme-dark .admin-quick-actions h2 {
+  color: #f8fafc !important;
+}
+
 html.theme-dark .admin-quick-actions-badge {
-  background: rgba(79, 70, 229, 0.14) !important;
-  border-color: rgba(129, 140, 248, 0.36) !important;
-  color: #a5b4fc !important;
+  background: rgba(99, 102, 241, 0.18) !important;
+  border: 1px solid rgba(129, 140, 248, 0.42) !important;
+  color: #c7d2fe !important;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.15) !important;
 }
 
 html.theme-dark .admin-quick-action-card {
-  background: rgba(15, 23, 42, 0.72) !important;
-  border-color: rgba(148, 163, 184, 0.22) !important;
+  background: rgba(30, 41, 59, 0.55) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
   color: #e2e8f0 !important;
 }
 
 html.theme-dark .admin-quick-action-card:hover {
-  background: rgba(30, 41, 59, 0.92) !important;
-  border-color: rgba(129, 140, 248, 0.52) !important;
-  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(129, 140, 248, 0.10) !important;
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(129, 140, 248, 0.55) !important;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(129, 140, 248, 0.15) !important;
 }
 
 html.theme-dark .admin-quick-action-sheen {
@@ -1254,19 +1259,79 @@ html.theme-dark .admin-quick-action-sheen {
 }
 
 html.theme-dark .admin-quick-action-label {
-  color: #dbe4f0 !important;
+  color: #f1f5f9 !important;
 }
 
 html.theme-dark .admin-quick-action-card:hover .admin-quick-action-label {
   color: #ffffff !important;
 }
 
+/* Quick Action Icon Badges in Dark Mode */
+html.theme-dark .admin-quick-actions .bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.18) !important;
+  border-color: rgba(129, 140, 248, 0.35) !important;
+  color: #a5b4fc !important;
+}
+
+html.theme-dark .admin-quick-actions .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+  color: #6ee7b7 !important;
+}
+
+html.theme-dark .admin-quick-actions .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(251, 191, 36, 0.35) !important;
+  color: #fde68a !important;
+}
+
+html.theme-dark .admin-quick-actions .bg-pink-50 {
+  background-color: rgba(236, 72, 153, 0.18) !important;
+  border-color: rgba(244, 114, 182, 0.35) !important;
+  color: #fbcfe8 !important;
+}
+
+html.theme-dark .admin-quick-actions .bg-cyan-50 {
+  background-color: rgba(6, 182, 212, 0.18) !important;
+  border-color: rgba(34, 211, 238, 0.35) !important;
+  color: #a5f3fc !important;
+}
+
+html.theme-dark .admin-quick-actions .bg-violet-50 {
+  background-color: rgba(139, 92, 246, 0.18) !important;
+  border-color: rgba(167, 139, 250, 0.35) !important;
+  color: #ddd6fe !important;
+}
+
+html.theme-dark .admin-quick-actions .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+  border-color: rgba(251, 113, 133, 0.35) !important;
+  color: #fecdd3 !important;
+}
+
 html.theme-dark .employee-sales-pipeline-page .sales-pipeline-leads,
-html.theme-dark .employee-sales-pipeline-page .sales-pipeline-main,
-html.theme-dark .employee-sales-pipeline-modal,
+html.theme-dark .employee-sales-pipeline-page .sales-pipeline-main {
+  background: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  color: #e5eefb !important;
+}
+
+html.theme-dark .employee-sales-pipeline-modal {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .sales-pipeline-main .employee-sales-pipeline-modal {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 html.theme-dark .employee-sales-pipeline-preview {
-  background: rgba(15, 23, 42, 0.96) !important;
-  border-color: rgba(148, 163, 184, 0.22) !important;
+  background: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
   color: #e5eefb !important;
 }
 
@@ -1287,20 +1352,41 @@ html.theme-dark .employee-sales-pipeline-page .sales-pipeline-leads .bg-slate-50
   color: #f8fafc !important;
 }
 
+html.theme-dark .view-pipeline-btn {
+  background-color: rgba(99, 102, 241, 0.18) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  color: #a5b4fc !important;
+}
+
+html.theme-dark .view-pipeline-btn:hover {
+  background-color: rgba(99, 102, 241, 0.30) !important;
+  color: #c7d2fe !important;
+}
+
+html.theme-dark .card-action-icon-btn {
+  background-color: rgba(15, 23, 42, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .card-action-icon-btn:hover {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+}
+
+
 html.theme-dark .employee-sales-pipeline-page .sales-pipeline-main>div,
 html.theme-dark .employee-sales-pipeline-modal .pipeline-stage-panel,
-html.theme-dark .employee-sales-pipeline-modal .rounded-2xl.border.border-slate-200.bg-slate-50\/80,
 html.theme-dark .employee-sales-pipeline-preview .proposal-page {
-  background: rgba(15, 23, 42, 0.96) !important;
-  border-color: rgba(148, 163, 184, 0.2) !important;
+  background: rgba(15, 23, 42, 0.6) !important;
+  background-image: none !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
 }
 
-html.theme-dark .employee-sales-pipeline-modal .pipeline-stage-panel {
-  background-image: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.92)) !important;
-}
-
-html.theme-dark .employee-sales-pipeline-modal .rounded-2xl.border.border-slate-200.bg-slate-50\/80 {
-  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.08) !important;
+html.theme-dark .employee-sales-pipeline-modal .rounded-2xl.border.border-slate-200.bg-slate-50\/80,
+html.theme-dark .employee-sales-pipeline-modal .bg-slate-50\/80 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+  box-shadow: none !important;
 }
 
 html.theme-dark .employee-sales-pipeline-modal .text-slate-500,
@@ -1388,6 +1474,7 @@ html.theme-dark .employee-details-view .bg-slate-100 {
 html.theme-dark .employee-details-view .bg-blue-100\/60 {
   background-color: rgba(59, 130, 246, 0.12) !important;
 }
+
 html.theme-dark .employee-details-view .bg-indigo-100\/50 {
   background-color: rgba(99, 102, 241, 0.12) !important;
 }
@@ -1405,6 +1492,7 @@ html.theme-dark .employee-details-view button.border-blue-200 {
   border-color: rgba(59, 130, 246, 0.35) !important;
   color: #60a5fa !important;
 }
+
 html.theme-dark .employee-details-view button.bg-blue-50:hover,
 html.theme-dark .employee-details-view button.border-blue-200:hover {
   background-color: rgba(37, 99, 235, 0.32) !important;
@@ -1416,6 +1504,7 @@ html.theme-dark .employee-details-view button.bg-white {
   border-color: rgba(148, 163, 184, 0.25) !important;
   color: #e2e8f0 !important;
 }
+
 html.theme-dark .employee-details-view button.bg-white:hover {
   background-color: rgba(51, 65, 85, 0.95) !important;
   color: #ffffff !important;
@@ -1427,6 +1516,7 @@ html.theme-dark .employee-details-view .bg-emerald-50 {
   border-color: rgba(16, 185, 129, 0.3) !important;
   color: #34d399 !important;
 }
+
 html.theme-dark .employee-details-view .bg-emerald-50 span,
 html.theme-dark .employee-details-view .bg-emerald-50 svg {
   color: #34d399 !important;
@@ -1437,6 +1527,7 @@ html.theme-dark .employee-details-view .bg-blue-50 {
   border-color: rgba(59, 130, 246, 0.25) !important;
   color: #93c5fd !important;
 }
+
 html.theme-dark .employee-details-view .bg-blue-50 span,
 html.theme-dark .employee-details-view .bg-blue-50 svg {
   color: #93c5fd !important;
@@ -1447,6 +1538,7 @@ html.theme-dark .employee-details-view .bg-indigo-50 {
   border-color: rgba(99, 102, 241, 0.25) !important;
   color: #c7d2fe !important;
 }
+
 html.theme-dark .employee-details-view .bg-indigo-50 span,
 html.theme-dark .employee-details-view .bg-indigo-50 svg {
   color: #c7d2fe !important;
@@ -1457,6 +1549,7 @@ html.theme-dark .employee-details-view .bg-violet-50 {
   border-color: rgba(167, 139, 250, 0.25) !important;
   color: #ddd6fe !important;
 }
+
 html.theme-dark .employee-details-view .bg-violet-50 span,
 html.theme-dark .employee-details-view .bg-violet-50 svg {
   color: #ddd6fe !important;
@@ -1467,6 +1560,7 @@ html.theme-dark .employee-details-view .bg-amber-50 {
   border-color: rgba(245, 158, 11, 0.25) !important;
   color: #fde68a !important;
 }
+
 html.theme-dark .employee-details-view .bg-amber-50 span,
 html.theme-dark .employee-details-view .bg-amber-50 svg {
   color: #fde68a !important;
@@ -1477,6 +1571,7 @@ html.theme-dark .employee-details-view .bg-rose-50 {
   border-color: rgba(244, 63, 94, 0.25) !important;
   color: #fecdd3 !important;
 }
+
 html.theme-dark .employee-details-view .bg-rose-50 span,
 html.theme-dark .employee-details-view .bg-rose-50 svg {
   color: #fecdd3 !important;
@@ -1486,18 +1581,23 @@ html.theme-dark .employee-details-view .bg-rose-50 svg {
 html.theme-dark .employee-details-view .text-blue-600 {
   color: #60a5fa !important;
 }
+
 html.theme-dark .employee-details-view .text-amber-600 {
   color: #fbbf24 !important;
 }
+
 html.theme-dark .employee-details-view .text-violet-600 {
   color: #c084fc !important;
 }
+
 html.theme-dark .employee-details-view .text-emerald-600 {
   color: #34d399 !important;
 }
+
 html.theme-dark .employee-details-view .text-slate-600 {
   color: #cbd5e1 !important;
 }
+
 html.theme-dark .employee-details-view .text-rose-600 {
   color: #fb7185 !important;
 }
@@ -1506,18 +1606,23 @@ html.theme-dark .employee-details-view .text-rose-600 {
 html.theme-dark .employee-details-view .border-blue-100 {
   border-color: rgba(59, 130, 246, 0.3) !important;
 }
+
 html.theme-dark .employee-details-view .border-amber-100 {
   border-color: rgba(245, 158, 11, 0.3) !important;
 }
+
 html.theme-dark .employee-details-view .border-violet-100 {
   border-color: rgba(139, 92, 246, 0.3) !important;
 }
+
 html.theme-dark .employee-details-view .border-emerald-100 {
   border-color: rgba(16, 185, 129, 0.3) !important;
 }
+
 html.theme-dark .employee-details-view .border-slate-200 {
   border-color: rgba(148, 163, 184, 0.22) !important;
 }
+
 html.theme-dark .employee-details-view .border-rose-100 {
   border-color: rgba(244, 63, 94, 0.3) !important;
 }
@@ -1526,15 +1631,19 @@ html.theme-dark .employee-details-view .border-rose-100 {
 html.theme-dark .employee-details-view .grid.border-slate-100 {
   border-color: rgba(148, 163, 184, 0.16) !important;
 }
+
 html.theme-dark .employee-details-view .grid .bg-slate-50 {
   background-color: rgba(30, 41, 59, 0.9) !important;
 }
+
 html.theme-dark .employee-details-view .grid .bg-white {
   background-color: rgba(15, 23, 42, 0.9) !important;
 }
+
 html.theme-dark .employee-details-view .grid .text-slate-800 {
   color: #f8fafc !important;
 }
+
 html.theme-dark .employee-details-view .grid .text-slate-400 {
   color: #94a3b8 !important;
 }
@@ -1549,15 +1658,19 @@ html.theme-dark .employee-details-view .bg-gradient-to-r.from-slate-50.to-white 
   background-image: linear-gradient(to right, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)) !important;
   border-color: rgba(148, 163, 184, 0.16) !important;
 }
-html.theme-dark .employee-details-view .divide-slate-50 > * + * {
+
+html.theme-dark .employee-details-view .divide-slate-50>*+* {
   border-color: rgba(148, 163, 184, 0.1) !important;
 }
+
 html.theme-dark .employee-details-view .ring-white {
   --tw-ring-color: #0f172a !important;
 }
+
 html.theme-dark .employee-details-view .text-slate-300 {
   color: #94a3b8 !important;
 }
+
 html.theme-dark .employee-details-view .hover\:bg-slate-50\/60:hover,
 html.theme-dark .employee-details-view .hover\:bg-slate-50:hover {
   background-color: rgba(37, 99, 235, 0.14) !important;
@@ -2939,8 +3052,22 @@ html.theme-dark .employee-attendance-page .attendance-soft-row {
 }
 
 html.theme-dark .employee-attendance-page .attendance-note-panel {
-  background-color: rgba(99, 102, 241, 0.14) !important;
-  border-color: rgba(129, 140, 248, 0.28) !important;
+  background-color: rgba(99, 102, 241, 0.12) !important;
+  border-color: rgba(129, 140, 248, 0.3) !important;
+}
+
+html.theme-dark .employee-attendance-page .attendance-note-panel svg {
+  color: #818cf8 !important;
+}
+
+html.theme-dark .employee-attendance-page .attendance-note-panel .font-medium,
+html.theme-dark .employee-attendance-page .attendance-note-panel .font-semibold {
+  color: #c7d2fe !important;
+}
+
+html.theme-dark .employee-attendance-page .attendance-note-panel div,
+html.theme-dark .employee-attendance-page .attendance-note-panel p {
+  color: #e0e7ff !important;
 }
 
 html.theme-dark .employee-attendance-page h1,
@@ -2996,6 +3123,37 @@ html.theme-dark .employee-attendance-page table tbody tr {
 
 html.theme-dark .employee-attendance-page table tbody tr:hover {
   background-color: rgba(30, 41, 59, 0.6) !important;
+}
+
+/* Attendance Status Badge Colors in Dark Mode */
+html.theme-dark .employee-attendance-page .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.16) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #fbbf24 !important;
+}
+
+html.theme-dark .employee-attendance-page .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.16) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #34d399 !important;
+}
+
+html.theme-dark .employee-attendance-page .bg-red-100 {
+  background-color: rgba(244, 63, 94, 0.16) !important;
+  border-color: rgba(244, 63, 94, 0.35) !important;
+  color: #f87171 !important;
+}
+
+html.theme-dark .employee-attendance-page .bg-indigo-100 {
+  background-color: rgba(99, 102, 241, 0.16) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  color: #818cf8 !important;
+}
+
+html.theme-dark .employee-attendance-page .bg-slate-100 {
+  background-color: rgba(51, 65, 85, 0.45) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #cbd5e1 !important;
 }
 
 /* Employee Sales Page - Upcoming Schedule & Status / Priority Pills Dark Theme Rules */
@@ -3082,6 +3240,23 @@ html.theme-dark .employee-sales-page .bg-purple-50 {
 }
 
 /* Employee Sales Meetings Page Dark Theme & Outline Fixes */
+html.theme-dark .employee-sales-meetings-page .next-upcoming-banner,
+html.theme-dark .employee-sales-meetings-page .upcoming-schedule-panel {
+  background-color: #0f172a !important;
+  background-image: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95)) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.theme-dark .employee-sales-meetings-page .info-pill,
+html.theme-dark .employee-sales-meetings-page .next-upcoming-banner .rounded-xl {
+  background-color: rgba(30, 41, 59, 0.7) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #f8fafc !important;
+}
+
+
 html.theme-dark .employee-sales-meetings-page {
   background-color: transparent !important;
 }
@@ -3230,7 +3405,7 @@ html.theme-dark .employee-tasks-page .employee-task-row:hover {
   background-color: rgba(30, 41, 59, 0.6) !important;
 }
 
-html.theme-dark .employee-tasks-page .divide-y > * + * {
+html.theme-dark .employee-tasks-page .divide-y>*+* {
   border-color: rgba(148, 163, 184, 0.14) !important;
 }
 
@@ -3408,6 +3583,154 @@ html.theme-dark .employee-tasks-modal .text-indigo-700 {
 html.theme-dark .employee-task-card .text-emerald-700,
 html.theme-dark .employee-tasks-modal .text-emerald-700 {
   color: #a7f3d0 !important;
+}
+
+/* Achieved So Far in Employee Task Details Modal - Dark Mode */
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-card,
+html.theme-dark .employee-tasks-modal .border-emerald-200\/80,
+html.theme-dark .employee-tasks-modal .from-emerald-50\/60 {
+  background-image: linear-gradient(135deg, rgba(6, 78, 59, 0.35), rgba(15, 23, 42, 0.95)) !important;
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-card h4,
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-card .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-card p.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-card .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+  color: #34d399 !important;
+}
+
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-card .text-emerald-700 {
+  color: #34d399 !important;
+}
+
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-card textarea,
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-textarea {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-card textarea::placeholder,
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-textarea::placeholder {
+  color: #64748b !important;
+}
+
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-card textarea:focus,
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-textarea:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+}
+
+html.theme-dark .employee-tasks-modal .employee-tasks-achieved-static {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #f8fafc !important;
+}
+
+/* Also Admin Task Management Achieved Card in Dark Mode */
+html.theme-dark .task-details-modal .border-emerald-200.bg-emerald-50,
+html.theme-dark .border-emerald-200.bg-emerald-50 {
+  background-color: rgba(6, 78, 59, 0.28) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .task-details-modal .text-emerald-800,
+html.theme-dark .text-emerald-800 {
+  color: #a7f3d0 !important;
+}
+
+html.theme-dark .task-details-modal .text-emerald-600,
+html.theme-dark .text-emerald-600 {
+  color: #34d399 !important;
+}
+
+/* HR Assistant Bot Modal Dark Theme Rules */
+html.theme-dark .hr-bot-modal {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.theme-dark .hr-bot-header {
+  background-color: rgba(15, 23, 42, 0.98) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .hr-bot-modal h2 {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .hr-bot-modal button.hover\:bg-slate-100:hover {
+  background-color: rgba(51, 65, 85, 0.8) !important;
+  color: #ffffff !important;
+}
+
+html.theme-dark .hr-bot-messages {
+  background-color: #0b1120 !important;
+}
+
+html.theme-dark .hr-bot-bubble,
+html.theme-dark .hr-bot-modal .mr-auto.bg-indigo-50,
+html.theme-dark .hr-bot-modal .mr-auto.bg-white {
+  background-color: #1e293b !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.theme-dark .hr-bot-bubble span,
+html.theme-dark .hr-bot-bubble p,
+html.theme-dark .hr-bot-modal .mr-auto.bg-indigo-50 *,
+html.theme-dark .hr-bot-modal .mr-auto.bg-white * {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .hr-bot-modal .text-indigo-500,
+html.theme-dark .hr-bot-time {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .hr-bot-modal .ml-auto.bg-indigo-600 {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35) !important;
+}
+
+html.theme-dark .hr-bot-footer {
+  background-color: rgba(15, 23, 42, 0.98) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .hr-bot-input {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .hr-bot-input::placeholder {
+  color: #64748b !important;
+}
+
+html.theme-dark .hr-bot-input:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4) !important;
+}
+
+html.theme-dark .hr-bot-modal .text-slate-400 {
+  color: #94a3b8 !important;
 }
 
 /* My EOD Report History Modal Dark Theme Rules */
@@ -3592,6 +3915,22 @@ html.theme-dark .day-book-entry-page .bg-blue-100 {
 /* Omitted for Half Day Badge */
 html.theme-dark .day-book-entry-page .bg-slate-200 {
   background-color: rgba(51, 65, 85, 0.6) !important;
+  color: #cbd5e1 !important;
+}
+
+/* Omitted for Half Day Notice & Box in Dark Mode */
+html.theme-dark .day-book-entry-page .omitted-half-notice,
+html.theme-dark .day-book-entry-page .border-dashed.border-slate-300\/80,
+html.theme-dark .day-book-entry-page .bg-white\/50 {
+  background-color: rgba(15, 23, 42, 0.65) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .day-book-entry-page .no-slots-notice,
+html.theme-dark .day-book-entry-page .border-dashed.border-slate-300 {
+  background-color: rgba(15, 23, 42, 0.65) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
   color: #94a3b8 !important;
 }
 
@@ -4148,19 +4487,63 @@ html.theme-dark .employee-chat-compose input:focus {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16) !important;
 }
 
-/* Employee HR bot dark-mode header contrast */
+/* Employee HR bot dark-mode */
 html.theme-dark .employee-hr-bot-modal {
   background: #0f172a !important;
-  border-color: rgba(148, 163, 184, 0.24) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6) !important;
 }
 
 html.theme-dark .employee-hr-bot-header {
-  background: #eaf1fb !important;
-  border-color: rgba(148, 163, 184, 0.28) !important;
+  background: rgba(15, 23, 42, 0.98) !important;
+  background-image: none !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
 }
 
 html.theme-dark .employee-hr-bot-title {
-  color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-hr-bot-header button {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .employee-hr-bot-header button:hover {
+  background-color: rgba(51, 65, 85, 0.8) !important;
+  color: #ffffff !important;
+}
+
+html.theme-dark .employee-hr-bot-modal .bg-slate-50 {
+  background-color: #0b1120 !important;
+}
+
+html.theme-dark .employee-hr-bot-modal .bg-blue-50 {
+  background-color: #1e293b !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-hr-bot-modal .bg-blue-50 * {
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-hr-bot-modal .text-blue-500 {
+  color: #94a3b8 !important;
+}
+
+html.theme-dark .employee-hr-bot-modal .border-t {
+  background-color: rgba(15, 23, 42, 0.98) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html.theme-dark .employee-hr-bot-modal input[type="text"] {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  color: #f8fafc !important;
+}
+
+html.theme-dark .employee-hr-bot-modal input[type="text"]::placeholder {
+  color: #64748b !important;
 }
 
 /* Employee EOD History Modal Dark Theme */
@@ -4190,4 +4573,4 @@ html.theme-dark .eod-history-modal .hover\:border-blue-300:hover {
 html.theme-dark .eod-history-modal .hover\:bg-blue-50\/40:hover,
 html.theme-dark .eod-history-modal .hover\:bg-blue-50\/30:hover {
   background-color: rgba(30, 41, 59, 0.75) !important;
-}
+}

@@ -94,7 +94,14 @@ const applyDerivedFields = (values, { isNew = false, checkInChanged = false, che
     const standardTimeIST = new Date(values.checkInTime.getTime() + IST_OFFSET);
     standardTimeIST.setUTCHours(10, 15, 0, 0);
 
-    if (checkInIST > standardTimeIST) {
+    const halfDayTimeIST = new Date(values.checkInTime.getTime() + IST_OFFSET);
+    halfDayTimeIST.setUTCHours(14, 0, 0, 0);
+
+    if (checkInIST > halfDayTimeIST) {
+      values.isLate = true;
+      values.lateMinutes = Math.round((checkInIST - standardTimeIST) / (1000 * 60));
+      values.status = 'Half Day';
+    } else if (checkInIST > standardTimeIST) {
       values.isLate = true;
       values.lateMinutes = Math.round((checkInIST - standardTimeIST) / (1000 * 60));
       if (values.status !== 'Half Day') {

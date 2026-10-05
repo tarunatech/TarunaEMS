@@ -745,13 +745,13 @@ const DayBookEntry = ({ embedded = false, onClose }) => {
                         {slotsForHalf.length ? (
                             slotsForHalf.map(({ slot, index }) => renderSlotCard(slot, index, embedded))
                         ) : (
-                            <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-5 text-center text-sm text-slate-500">
+                            <div className="no-slots-notice rounded-lg border border-dashed border-slate-300 bg-white px-4 py-5 text-center text-sm text-slate-500">
                                 No slots added for this half.
                             </div>
                         )}
                     </div>
                 ) : (
-                    <div className="rounded-lg border border-dashed border-slate-300/80 bg-white/50 px-4 py-3 text-center text-xs text-slate-400 font-medium">
+                    <div className="omitted-half-notice rounded-lg border border-dashed border-slate-300/80 bg-white/50 px-4 py-3 text-center text-xs text-slate-400 font-medium">
                         This half is omitted because you selected {halfDayType === 'first' ? 'First half' : 'Second half'} for Half Day EOD.
                     </div>
                 )}

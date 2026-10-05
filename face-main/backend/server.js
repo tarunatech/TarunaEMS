@@ -42,6 +42,7 @@ import schedulerRoutes from "./routes/schedulerRoutes.js";
 import { initializeEmailService } from "./services/emailService.js";
 import { startTaskStatusScheduler } from "./services/taskSchedulerService.js";
 import { startEodReportScheduler } from "./services/eodReportSchedulerService.js";
+import { startAutoCheckoutScheduler } from "./services/autoCheckoutSchedulerService.js";
 import holidayRoutes from "./routes/holidayRoutes.js";
 import dayBookRoutes from "./routes/dayBookRoutes.js";
 import expenseTrackerRoutes from "./routes/expenseTrackerRoutes.js";
@@ -230,6 +231,7 @@ const startServer = async () => {
     }
 
     startEodReportScheduler();
+    startAutoCheckoutScheduler();
 
     // Setup chat socket handlers
     setupChatSocket(io);

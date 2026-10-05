@@ -376,12 +376,12 @@ const EmployeeAttendance = () => {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'present': return 'text-emerald-700 bg-emerald-100';
-      case 'late': return 'text-amber-700 bg-amber-100';
-      case 'half day': return 'text-amber-700 bg-amber-100';
-      case 'absent': return 'text-red-700 bg-red-100';
-      case 'work from home': return 'text-indigo-700 bg-indigo-100';
-      default: return 'text-slate-600 bg-slate-100';
+      case 'present': return 'text-emerald-700 bg-emerald-100 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/60 dark:border-emerald-800/60';
+      case 'late': return 'text-amber-700 bg-amber-100 border border-amber-200 dark:text-amber-300 dark:bg-amber-950/60 dark:border-amber-800/60';
+      case 'half day': return 'text-amber-700 bg-amber-100 border border-amber-200 dark:text-amber-300 dark:bg-amber-950/60 dark:border-amber-800/60';
+      case 'absent': return 'text-red-700 bg-red-100 border border-red-200 dark:text-red-400 dark:bg-red-950/60 dark:border-red-800/60';
+      case 'work from home': return 'text-indigo-700 bg-indigo-100 border border-indigo-200 dark:text-indigo-300 dark:bg-indigo-950/60 dark:border-indigo-800/60';
+      default: return 'text-slate-600 bg-slate-100 border border-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:border-slate-700';
     }
   };
 
@@ -569,12 +569,12 @@ const EmployeeAttendance = () => {
                 )}
               </div>
 
-              <div className="attendance-note-panel p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+              <div className="attendance-note-panel p-3 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/60 rounded-lg">
                 <div className="flex items-start space-x-2">
-                  <ShieldCheck strokeWidth={1.75} className="w-4 h-4 text-indigo-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-[12px] text-indigo-700">
-                    <p className="font-medium mb-1">Video Verification with Liveness Detection</p>
-                    <p>Your live video is analyzed to ensure you are physically present. Static images and spoofing attempts are blocked.</p>
+                  <ShieldCheck strokeWidth={1.75} className="w-4 h-4 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-[12px] text-indigo-700 dark:text-indigo-200">
+                    <p className="font-semibold mb-0.5 text-indigo-900 dark:text-indigo-300">Video Verification with Liveness Detection</p>
+                    <p className="text-indigo-700 dark:text-indigo-200/90 leading-relaxed">Your live video is analyzed to ensure you are physically present. Static images and spoofing attempts are blocked.</p>
                   </div>
                 </div>
               </div>
@@ -702,9 +702,9 @@ const EmployeeAttendance = () => {
                           <p className="text-[13px] font-semibold text-slate-900">{formatDate(record.date || record.checkInTime)}</p>
                           <p className="text-[11px] text-slate-400">{(record.date || record.checkInTime) ? new Date(record.date || record.checkInTime).toLocaleDateString('en-US', { year: 'numeric' }) : ''}</p>
                         </td>
-                        <td className="px-4 py-3 text-[13px] font-medium text-slate-700">{formatTime(record.checkInTime)}</td>
-                        <td className="px-4 py-3 text-[13px] font-medium text-slate-700">{formatTime(record.checkOutTime)}</td>
-                        <td className="px-4 py-3 text-[13px] font-semibold text-indigo-600">{getRecordWorkingTime(record)}</td>
+                        <td className="px-4 py-3 text-[13px] font-medium text-slate-700 dark:text-slate-200">{formatTime(record.checkInTime)}</td>
+                        <td className="px-4 py-3 text-[13px] font-medium text-slate-700 dark:text-slate-200">{formatTime(record.checkOutTime)}</td>
+                        <td className="px-4 py-3 text-[13px] font-semibold text-indigo-600 dark:text-indigo-400">{getRecordWorkingTime(record)}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusColor(record.status)}`}>
                             {record.status || 'Present'}
