@@ -587,7 +587,10 @@ Attendance.getTodayAttendance = async (employeeId) => {
 
   return Attendance.findOne({
     employee: employeeId,
-    date: { $gte: startOfDayUTC, $lt: endOfDayUTC },
+    $or: [
+      { date: { $gte: startOfDayUTC, $lt: endOfDayUTC } },
+      { checkInTime: { $gte: startOfDayUTC, $lt: endOfDayUTC } },
+    ],
   }).populate([
     { path: 'employee', select: 'personalInfo workInfo' },
     { path: 'user', select: 'name email employeeId' },

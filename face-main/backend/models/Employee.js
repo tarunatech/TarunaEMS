@@ -117,6 +117,11 @@ const normalizeEmployeeInput = (data = {}, existing = null) => {
       ...normalized.workInfo,
       joiningDate: normalizeDate(normalized.workInfo.joiningDate).toISOString(),
     };
+  } else if (!existing) {
+    normalized.workInfo = {
+      ...(normalized.workInfo || {}),
+      joiningDate: new Date().toISOString(),
+    };
   }
 
   if (normalized.faceRegistrationDate !== undefined) {

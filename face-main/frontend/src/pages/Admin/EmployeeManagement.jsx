@@ -1331,12 +1331,99 @@ const EmployeeManagement = () => {
           leadStatus: lead.status
         })))
         .filter(meeting => statusOf(meeting) !== 'cancelled');
-      const presentDays = attendance.filter(record => ['present', 'checked-in', 'checked out', 'checked-out', 'work from home', 'wfh'].includes(statusOf(record))).length;
-      const absentDays = attendance.filter(record => statusOf(record) === 'absent').length;
-      const lateDays = attendance.filter(record => statusOf(record).includes('late')).length;
-      const halfDays = attendance.filter(record => statusOf(record).includes('half')).length;
+      // Group attendance by unique day and determine the status for each day
+      const dayStatusMap = new Map();
+      const validAttendanceDates = [];
+
+      attendance.forEach(record => {
+        const rawDate = record.date || record.checkInTime || record.createdAt;
+        if (!rawDate) return;
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) return;
+
+        validAttendanceDates.push(d);
+        const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const st = statusOf(record);
+
+        if (!dayStatusMap.has(dayKey)) {
+          dayStatusMap.set(dayKey, st);
+        } else {
+          const existing = dayStatusMap.get(dayKey);
+          if (['present', 'checked-in', 'checked out', 'checked-out', 'work from home', 'wfh'].includes(st)) {
+            dayStatusMap.set(dayKey, st);
+          } else if (st.includes('late') && !['present', 'checked-in', 'checked out', 'checked-out', 'work from home', 'wfh'].includes(existing)) {
+            dayStatusMap.set(dayKey, st);
+          } else if (st.includes('half') && !['present', 'checked-in', 'checked out', 'checked-out', 'work from home', 'wfh', 'late'].some(x => existing.includes(x))) {
+            dayStatusMap.set(dayKey, st);
+          }
+        }
+      });
+
+      // Determine starting date: employee's joiningDate (1st Sept 2026 for existing employees, creation date for new employees), fallback to createdAt or first attendance date
+      let startAttendanceDate = null;
+      if (employee.workInfo?.joiningDate) {
+        const jd = new Date(employee.workInfo.joiningDate);
+        if (!isNaN(jd.getTime())) {
+          startAttendanceDate = jd;
+        }
+      } else if (employee.createdAt) {
+        const cd = new Date(employee.createdAt);
+        if (!isNaN(cd.getTime())) {
+          startAttendanceDate = cd;
+        }
+      } else if (validAttendanceDates.length > 0) {
+        startAttendanceDate = new Date(Math.min(...validAttendanceDates.map(d => d.getTime())));
+      } else {
+        startAttendanceDate = new Date('2026-09-01T00:00:00.000Z');
+      }
+
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      let totalWorkingDays = 0;
+      let presentDays = 0;
+      let lateDays = 0;
+      let halfDays = 0;
+      let calculatedAbsentDays = 0;
+
+      if (startAttendanceDate) {
+        const cursor = new Date(startAttendanceDate.getFullYear(), startAttendanceDate.getMonth(), startAttendanceDate.getDate());
+        while (cursor <= todayStart) {
+          const isSunday = cursor.getDay() === 0;
+          const dayKey = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
+          const st = dayStatusMap.get(dayKey);
+
+          if (st) {
+            // Recorded day (including any work on Sunday)
+            totalWorkingDays++;
+            if (['present', 'checked-in', 'checked out', 'checked-out', 'work from home', 'wfh'].includes(st)) {
+              presentDays++;
+            } else if (st.includes('late')) {
+              lateDays++;
+            } else if (st.includes('half')) {
+              halfDays++;
+            } else if (st === 'absent') {
+              calculatedAbsentDays++;
+            }
+          } else {
+            // No record for this day: only non-Sundays count as absent working days
+            if (!isSunday) {
+              totalWorkingDays++;
+              calculatedAbsentDays++;
+            }
+            // Sundays without check-in are excluded completely
+          }
+
+          cursor.setDate(cursor.getDate() + 1);
+        }
+      }
+
       const attendedUnits = presentDays + lateDays + (halfDays * 0.5);
-      const totalAttendanceRecords = attendance.length;
+
+      const attendanceRate = totalWorkingDays > 0
+        ? Math.min(100, Math.max(0, Math.round((attendedUnits / totalWorkingDays) * 100)))
+        : 0;
+
       const approvedLeaves = leaves.filter(item => statusOf(item) === 'approved').length;
       const rejectedLeaves = leaves.filter(item => statusOf(item) === 'rejected').length;
       const leaveDaysTaken = leaves
@@ -1401,14 +1488,12 @@ const EmployeeManagement = () => {
           rejected: rejectedDaybooks
         },
         attendance: {
-          total: totalAttendanceRecords,
+          total: totalWorkingDays,
           present: presentDays,
-          absent: absentDays,
+          absent: calculatedAbsentDays,
           late: lateDays,
           halfDay: halfDays,
-          rate: totalAttendanceRecords
-            ? Math.min(100, Math.round((attendedUnits / totalAttendanceRecords) * 100))
-            : 0
+          rate: attendanceRate
         },
         sales: {
           total: leads.length,

@@ -111,13 +111,13 @@ export const checkIn = async (req, res) => {
         {
           date: {
             $gte: startOfDay,
-            $lte: endOfDay
+            $lt: endOfDay
           }
         },
         {
           checkInTime: {
             $gte: startOfDay,
-            $lte: endOfDay
+            $lt: endOfDay
           }
         }
       ]
@@ -303,9 +303,9 @@ export const checkOut = async (req, res) => {
       console.log(`ID: ${r._id}, CheckIn: ${r.checkInTime}, CheckOut: ${r.checkOutTime}, Date: ${r.date}`);
     });
 
-    console.log('=== TRYING MULTIPLE STRATEGIES TO FIND ATTENDANCE ===');
+    console.log('=== TRYING TO FIND ACTIVE ATTENDANCE FOR CHECKOUT ===');
 
-    // Strategy 1: Find most recent attendance without checkout (simplest approach)
+    // Strategy 1: Find most recent attendance without checkout
     let attendance = await Attendance.findOne({
       employee: employee._id,
       $or: [
@@ -316,31 +316,28 @@ export const checkOut = async (req, res) => {
 
     console.log('Strategy 1 (Most recent without checkout):', attendance ? attendance._id : 'NOT FOUND');
 
-    // Strategy 2: Find by today's date if Strategy 1 fails
+    // Strategy 2: Find by today's date range if Strategy 1 fails
     if (!attendance) {
-      const { startOfDay, endOfDay } = getTodayDateRange(); // ✅ Use consistent UTC range
+      const { startOfDay, endOfDay } = getTodayDateRange();
 
       attendance = await Attendance.findOne({
         employee: employee._id,
-        checkInTime: {
-          $gte: startOfDay,
-          $lt: endOfDay
-        },
-        checkOutTime: { $exists: false }
-      });
-    }
-
-    // Strategy 3: Search within last 24 hours if still not found
-    if (!attendance) {
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-      attendance = await Attendance.findOne({
-        employee: employee._id,
-        checkInTime: { $gte: twentyFourHoursAgo },
+        $or: [
+          {
+            date: {
+              $gte: startOfDay,
+              $lt: endOfDay
+            }
+          },
+          {
+            checkInTime: {
+              $gte: startOfDay,
+              $lt: endOfDay
+            }
+          }
+        ],
         checkOutTime: { $exists: false }
       }).sort({ checkInTime: -1 });
-
-      console.log('Strategy 3 (Last 24 hours):', attendance ? attendance._id : 'NOT FOUND');
     }
 
     // If still no attendance found, provide detailed debugging
@@ -641,13 +638,13 @@ export const checkInWithFace = async (req, res) => {
         {
           date: {
             $gte: startOfDay,
-            $lte: endOfDay
+            $lt: endOfDay
           }
         },
         {
           checkInTime: {
             $gte: startOfDay,
-            $lte: endOfDay
+            $lt: endOfDay
           }
         }
       ]
@@ -854,13 +851,23 @@ export const getTodayAttendance = async (req, res) => {
     const { startOfDay, endOfDay } = getTodayDateRange();
     console.log('Date range for today (IST):', { startOfDay, endOfDay });
 
-    // Strategy 1: Try finding by date in today's IST range
-    let attendance = await Attendance.findOne({
+    // Find attendance record for today (IST calendar day: 00:00:00 to 23:59:59)
+    const attendance = await Attendance.findOne({
       employee: employee._id,
-      date: {
-        $gte: startOfDay,
-        $lte: endOfDay
-      }
+      $or: [
+        {
+          date: {
+            $gte: startOfDay,
+            $lt: endOfDay
+          }
+        },
+        {
+          checkInTime: {
+            $gte: startOfDay,
+            $lt: endOfDay
+          }
+        }
+      ]
     })
       .sort({ checkInTime: -1 })
       .populate([
@@ -868,57 +875,7 @@ export const getTodayAttendance = async (req, res) => {
         { path: 'user', select: 'name email employeeId' }
       ]);
 
-    // Strategy 2: Try finding by checkInTime in today's IST range
-    if (!attendance) {
-      attendance = await Attendance.findOne({
-        employee: employee._id,
-        checkInTime: {
-          $gte: startOfDay,
-          $lte: endOfDay
-        }
-      })
-        .sort({ checkInTime: -1 })
-        .populate([
-          { path: 'employee', select: 'personalInfo workInfo' },
-          { path: 'user', select: 'name email employeeId' }
-        ]);
-    }
-
-    // Strategy 3: Try finding in UTC today range
-    if (!attendance) {
-      const now = new Date();
-      const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
-      const endOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
-
-      attendance = await Attendance.findOne({
-        employee: employee._id,
-        $or: [
-          { date: { $gte: startOfTodayUTC, $lte: endOfTodayUTC } },
-          { checkInTime: { $gte: startOfTodayUTC, $lte: endOfTodayUTC } }
-        ]
-      })
-        .sort({ checkInTime: -1 })
-        .populate([
-          { path: 'employee', select: 'personalInfo workInfo' },
-          { path: 'user', select: 'name email employeeId' }
-        ]);
-    }
-
-    // Strategy 4: Try finding most recent check-in within last 24 hours
-    if (!attendance) {
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      attendance = await Attendance.findOne({
-        employee: employee._id,
-        checkInTime: { $gte: twentyFourHoursAgo }
-      })
-        .sort({ checkInTime: -1 })
-        .populate([
-          { path: 'employee', select: 'personalInfo workInfo' },
-          { path: 'user', select: 'name email employeeId' }
-        ]);
-    }
-
-    console.log('Found attendance:', attendance ? attendance._id : 'none');
+    console.log('Found attendance for today:', attendance ? attendance._id : 'none');
 
     res.json({
       success: true,

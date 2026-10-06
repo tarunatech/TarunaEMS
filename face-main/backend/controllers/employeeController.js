@@ -79,9 +79,17 @@ export const createEmployee = async (req, res) => {
       role: 'employee'
     });
 
+    const joiningDate = cleanEmployeeData.workInfo?.joiningDate
+      ? new Date(cleanEmployeeData.workInfo.joiningDate).toISOString()
+      : new Date().toISOString();
+
     // Create employee record with the employeeId from user
     const employee = await Employee.create({
       ...cleanEmployeeData,
+      workInfo: {
+        ...(cleanEmployeeData.workInfo || {}),
+        joiningDate
+      },
       user: user._id,
       employeeId: user.employeeId, // Use the user's generated employeeId
       // Store face data directly in employee model
