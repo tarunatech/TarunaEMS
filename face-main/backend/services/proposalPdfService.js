@@ -460,8 +460,7 @@ export const generateProposalPdf = async ({ proposal }) => {
       { label: `Total Quoted Price ${currSymbol}`, val: (pricing.totalPrice !== undefined && pricing.totalPrice !== null && pricing.totalPrice !== '' && Number(pricing.totalPrice) > 0) ? formatMoney(pricing.totalPrice, pricing.currency) : '-', isAmount: true },
       { label: `Discounted Offer Price ${currSymbol}`, val: Number(pricing.discountedPrice) > 0 ? formatMoney(pricing.discountedPrice, pricing.currency) : '-', isAmount: true, isHighlight: Number(pricing.discountedPrice) > 0 },
       { label: `AMC / Support Cost ${currSymbol}`, val: Number(pricing.amcCost) > 0 ? `${formatMoney(pricing.amcCost, pricing.currency)} / year` : '-', isAmount: true },
-      { label: `Additional One-Time Charges ${currSymbol}`, val: Number(pricing.additionalCharges) > 0 ? formatMoney(pricing.additionalCharges, pricing.currency) : '-', isAmount: true },
-      { label: `Recurring Charges ${currSymbol}`, val: Number(pricing.recurringCharges) > 0 ? formatMoney(pricing.recurringCharges, pricing.currency) : '-', isAmount: true }
+      { label: `Additional One-Time Charges ${currSymbol}`, val: Number(pricing.additionalCharges) > 0 ? formatMoney(pricing.additionalCharges, pricing.currency) : '-', isAmount: true }
     ];
 
     if (hasText(proposal.validity?.validUntil)) {

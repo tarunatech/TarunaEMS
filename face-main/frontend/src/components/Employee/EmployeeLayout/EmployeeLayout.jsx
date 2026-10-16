@@ -652,7 +652,9 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
                       </button>
                     );
                   }
-                  const isActive = location.pathname === item.path;
+                  const isActive = location.pathname === item.path ||
+                    (item.path === '/employee/expenses' && location.pathname === '/employee/expense-tracker') ||
+                    (item.path === '/employee/purchase-orders' && location.pathname === '/employee/purchase');
                   return (
                     <Link
                       key={item.name}
@@ -762,7 +764,10 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
               </button>
 
               <h2 className="block truncate text-[14px] font-semibold text-slate-900 tracking-tight sm:text-[15px] lg:block">
-                {sidebarItems.find((item) => item.path === location.pathname)?.name || "Dashboard"}
+                {sidebarItems.find((item) => item.path === location.pathname ||
+                  (item.path === '/employee/expenses' && location.pathname === '/employee/expense-tracker') ||
+                  (item.path === '/employee/purchase-orders' && location.pathname === '/employee/purchase')
+                )?.name || "Dashboard"}
               </h2>
             </div>
 

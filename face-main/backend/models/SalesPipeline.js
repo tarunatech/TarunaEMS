@@ -135,6 +135,15 @@ const normalizeInput = (data = {}) => {
     if (normalized.negotiation.revisedContractValue !== undefined && normalized.negotiation.revisedContractValue !== null && normalized.negotiation.revisedContractValue !== '') {
       normalized.negotiation.revisedContractValue = Number(normalized.negotiation.revisedContractValue);
     }
+    if (normalized.negotiation.amcCost !== undefined && normalized.negotiation.amcCost !== null && normalized.negotiation.amcCost !== '') {
+      normalized.negotiation.amcCost = Number(normalized.negotiation.amcCost);
+    }
+    if (normalized.negotiation.additionalCharges !== undefined && normalized.negotiation.additionalCharges !== null && normalized.negotiation.additionalCharges !== '') {
+      normalized.negotiation.additionalCharges = Number(normalized.negotiation.additionalCharges);
+    }
+    if (normalized.negotiation.recurringCharges !== undefined && normalized.negotiation.recurringCharges !== null && normalized.negotiation.recurringCharges !== '') {
+      normalized.negotiation.recurringCharges = Number(normalized.negotiation.recurringCharges);
+    }
     for (const field of ['enteredAt', 'lastNegotiationAt', 'expectedCloseDate']) {
       if (normalized.negotiation[field]) normalized.negotiation[field] = normalizeDate(normalized.negotiation[field]);
     }

@@ -9,6 +9,7 @@ const sendTrackerUpdate = (req) => {
   const io = req.app.get('io');
   if (io) {
     io.emit('expense-tracker:updated');
+    io.emit('finance:updated');
   }
 };
 
@@ -156,12 +157,52 @@ export const createExpenseTransaction = async (req, res, next) => {
     const scope = await getSalesEmployeeScope(req.user);
     const payload = { ...req.body, createdBy: req.user._id };
 
-    if (payload.projectId) {
-      if (scope.isScoped && !scope.projectIds.includes(String(payload.projectId))) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied: Target project does not belong to your assigned projects',
+    // Auto-resolve project from leadId or clientName if not explicitly provided
+    if (!payload.projectId && (payload.leadId || payload.clientName)) {
+      let matchedProject = null;
+      if (payload.leadId) {
+        matchedProject = await Project.findOne({ leadId: payload.leadId });
+      }
+      if (!matchedProject && payload.clientName) {
+        const cleanClient = String(payload.clientName).trim();
+        matchedProject = await Project.findOne({
+          $or: [
+            { clientName: cleanClient },
+            { name: cleanClient },
+            { name: `${cleanClient} Project` }
+          ]
         });
+      }
+      if (matchedProject) {
+        const matchedPid = String(matchedProject._id || matchedProject.id);
+        const canLink = !scope.isScoped ||
+          scope.projectIds.includes(matchedPid) ||
+          (payload.leadId && scope.leadIds.includes(String(payload.leadId))) ||
+          (matchedProject.leadId && scope.leadIds.includes(String(matchedProject.leadId))) ||
+          String(matchedProject.createdBy) === String(scope.userId);
+
+        if (canLink) {
+          payload.projectId = matchedPid;
+          if (!payload.leadId && matchedProject.leadId) {
+            payload.leadId = typeof matchedProject.leadId === 'object'
+              ? (matchedProject.leadId._id || matchedProject.leadId.id)
+              : matchedProject.leadId;
+          }
+        }
+      }
+    }
+
+    if (payload.projectId) {
+      if (scope.isScoped) {
+        const pidStr = String(payload.projectId);
+        const isPermitted = scope.projectIds.includes(pidStr) ||
+          (payload.leadId && scope.leadIds.includes(String(payload.leadId)));
+        if (!isPermitted) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied: Target project does not belong to your assigned projects',
+          });
+        }
       }
       const project = await Project.findById(payload.projectId);
       if (!project) {
@@ -239,6 +280,35 @@ export const updateExpenseTransaction = async (req, res, next) => {
     }
 
     const payload = { ...req.body };
+    if (!payload.projectId && (payload.leadId || payload.clientName || existing.leadId || existing.clientName)) {
+      const targetLeadId = payload.leadId || existing.leadId;
+      const targetClient = payload.clientName || existing.clientName;
+      let matchedProject = null;
+      if (targetLeadId) {
+        matchedProject = await Project.findOne({ leadId: targetLeadId });
+      }
+      if (!matchedProject && targetClient) {
+        const cleanClient = String(targetClient).trim();
+        matchedProject = await Project.findOne({
+          $or: [
+            { clientName: cleanClient },
+            { name: cleanClient },
+            { name: `${cleanClient} Project` }
+          ]
+        });
+      }
+      if (matchedProject) {
+        const matchedPid = String(matchedProject._id || matchedProject.id);
+        const canLink = !scope.isScoped ||
+          scope.projectIds.includes(matchedPid) ||
+          (targetLeadId && scope.leadIds.includes(String(targetLeadId))) ||
+          String(matchedProject.createdBy) === String(scope.userId);
+
+        if (canLink) {
+          payload.projectId = matchedPid;
+        }
+      }
+    }
     if (req.user.role !== 'admin' && existing.type === 'expense') {
       delete payload.clientName;
       delete payload.invoiceNumber;

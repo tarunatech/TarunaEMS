@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
-import { expenseTrackerAPI, leadAPI } from '../../utils/api';
+import { expenseTrackerAPI, leadAPI, projectAPI } from '../../utils/api';
 import { RefreshCw, Trash2, Edit3, Eye, Plus, Users, UserPlus, X, List } from 'lucide-react';
 import toast from 'react-hot-toast';
 import io from 'socket.io-client';
@@ -26,6 +26,7 @@ const emptyPayment = {
   date: new Date().toISOString().slice(0, 10),
   clientName: '',
   leadId: null,
+  projectId: null,
   amount: '',
   paymentMethod: '',
   referenceNumber: '',
@@ -51,6 +52,7 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
   // Clients from Leads for Incoming Payments
   const [leads, setLeads] = useState([]);
   const [bdeEmployees, setBdeEmployees] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [isCustomClient, setIsCustomClient] = useState(false);
   const [creatingClient, setCreatingClient] = useState(false);
@@ -68,15 +70,19 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
 
   const fetchLeads = useCallback(async () => {
     try {
-      const [leadsRes, bdeRes] = await Promise.all([
+      const [leadsRes, bdeRes, projectsRes] = await Promise.all([
         leadAPI.getLeads({ includeAll: true, limit: 1000 }).catch(() => ({ data: { success: false } })),
-        leadAPI.getBDEEmployees().catch(() => ({ data: { success: false } }))
+        leadAPI.getBDEEmployees().catch(() => ({ data: { success: false } })),
+        projectAPI.getProjects({ limit: 1000 }).catch(() => ({ data: { success: false } }))
       ]);
       if (leadsRes.data?.success) {
         setLeads(leadsRes.data.data?.leads || leadsRes.data.leads || []);
       }
       if (bdeRes.data?.success) {
         setBdeEmployees(bdeRes.data.data || []);
+      }
+      if (projectsRes.data?.success) {
+        setProjects(projectsRes.data.data?.projects || projectsRes.data.projects || []);
       }
     } catch (err) {
       console.warn('Failed to load leads for client dropdown:', err);
@@ -91,6 +97,22 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
     const list = [];
     const seen = new Set();
 
+    const projectByLeadId = {};
+    const projectByClientName = {};
+    (projects || []).forEach((prj) => {
+      const pid = prj._id || prj.id;
+      if (prj.leadId) {
+        const lid = typeof prj.leadId === 'object' ? (prj.leadId._id || prj.leadId.id) : prj.leadId;
+        if (lid) projectByLeadId[String(lid)] = pid;
+      }
+      if (prj.clientName) {
+        projectByClientName[String(prj.clientName).trim().toLowerCase()] = pid;
+      }
+      if (prj.name) {
+        projectByClientName[String(prj.name).trim().toLowerCase()] = pid;
+      }
+    });
+
     (leads || []).forEach((lead) => {
       const company = lead.company?.trim();
       const personName = `${lead.firstName || ''} ${lead.lastName || ''}`.trim();
@@ -102,11 +124,17 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
         ? `${company} (${personName})`
         : primaryName;
 
+      const leadIdStr = String(lead._id || lead.id);
+      const matchedProjectId = projectByLeadId[leadIdStr] ||
+        (company && projectByClientName[company.toLowerCase()]) ||
+        (personName && projectByClientName[personName.toLowerCase()]) || null;
+
       list.push({
         id: lead._id || lead.id,
         name: primaryName,
         displayName,
         leadId: lead._id || lead.id,
+        projectId: matchedProjectId,
         email: lead.email,
         phone: lead.phone,
         company,
@@ -117,17 +145,23 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
       const name = p.clientName?.trim();
       if (name && !seen.has(name.toLowerCase())) {
         seen.add(name.toLowerCase());
+        const leadIdStr = p.leadId ? String(p.leadId) : null;
+        const matchedProjectId = p.projectId ||
+          (leadIdStr && projectByLeadId[leadIdStr]) ||
+          projectByClientName[name.toLowerCase()] || null;
+
         list.push({
           id: p.leadId || name,
           name,
           displayName: name,
           leadId: p.leadId || null,
+          projectId: matchedProjectId,
         });
       }
     });
 
     return list.sort((a, b) => a.displayName.localeCompare(b.displayName));
-  }, [leads, payments]);
+  }, [leads, payments, projects]);
 
   const handleCreateClient = async (e) => {
     e.preventDefault();
@@ -213,6 +247,7 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
     });
 
     socket.on('expense-tracker:updated', loadData);
+    socket.on('finance:updated', loadData);
     return () => socket.disconnect();
   }, [loadData]);
 
@@ -245,6 +280,9 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
       const payload = { ...form, amount: Number(form.amount) };
       if (!payload.leadId) {
         delete payload.leadId;
+      }
+      if (!payload.projectId) {
+        delete payload.projectId;
       }
       if (editing) {
         await expenseTrackerAPI.updateTransaction(editing._id, payload);
@@ -295,11 +333,13 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
       setActiveView('add-expense');
     } else {
       const itemLeadId = item.leadId?._id || item.leadId?.id || item.leadId || null;
+      const itemProjectId = item.projectId?._id || item.projectId?.id || item.projectId || null;
       setPaymentForm({
         type: 'payment',
         date: item.date?.slice(0, 10),
         clientName: item.clientName || '',
         leadId: itemLeadId,
+        projectId: itemProjectId,
         amount: item.amount || '',
         paymentMethod: item.paymentMethod || '',
         referenceNumber: item.referenceNumber || '',
@@ -929,7 +969,7 @@ const ClientSelectWithAdd = ({
                 return;
               }
               const selected = clientOptions.find((c) => c.name === val);
-              onChange(val, selected?.leadId || null);
+              onChange(val, selected?.leadId || null, selected?.projectId || null);
             }}
             className="premium-input w-full rounded-xl px-4 py-3 text-sm text-slate-900 bg-white"
             required={required}
@@ -983,7 +1023,12 @@ const PaymentForm = ({
     <ClientSelectWithAdd
       value={form.clientName}
       leadId={form.leadId}
-      onChange={(name, leadId) => setForm(prev => ({ ...prev, clientName: name, leadId }))}
+      onChange={(name, leadId, projectId) => setForm(prev => ({
+        ...prev,
+        clientName: name,
+        leadId,
+        projectId: projectId || null
+      }))}
       clientOptions={clientOptions}
       onOpenAddClientModal={onOpenAddClientModal}
       isCustomClient={isCustomClient}

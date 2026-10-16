@@ -287,7 +287,15 @@ export const getProjectFinanceList = async (req, res) => {
       const validPids = scope.projectIds.length > 0 ? scope.projectIds : ['__none__'];
       poQuery.projectId = { $in: validPids };
       expQuery.projectId = { $in: validPids };
-      payQuery.projectId = { $in: validPids };
+
+      const payOr = [{ projectId: { $in: validPids } }];
+      if (scope.leadIds && scope.leadIds.length > 0) {
+        payOr.push({ leadId: { $in: scope.leadIds } });
+      }
+      if (scope.userId) {
+        payOr.push({ createdBy: scope.userId });
+      }
+      payQuery.$or = payOr;
     }
 
     const allPurchases = await PurchaseOrder.find(poQuery).lean();
@@ -317,12 +325,37 @@ export const getProjectFinanceList = async (req, res) => {
       }
     }
 
+    // Lookup maps from project docs to match payments by leadId or clientName as fallback
+    const projectLeadMap = {};
+    const projectClientMap = {};
+    for (const prj of projectDocs) {
+      const pid = String(prj.id || prj._id);
+      if (prj.leadId) {
+        const lid = typeof prj.leadId === 'object' ? (prj.leadId.id || prj.leadId._id) : prj.leadId;
+        if (lid) projectLeadMap[String(lid)] = pid;
+      }
+      if (prj.clientName) {
+        projectClientMap[String(prj.clientName).trim().toLowerCase()] = pid;
+      }
+      if (prj.name) {
+        projectClientMap[String(prj.name).trim().toLowerCase()] = pid;
+      }
+    }
+
     const paymentsByProject = {};
     let unallocatedPaymentsCount = 0;
     for (const pay of allPayments) {
-      if (pay.projectId) {
-        paymentsByProject[pay.projectId] = paymentsByProject[pay.projectId] || [];
-        paymentsByProject[pay.projectId].push(pay);
+      let targetPid = pay.projectId ? String(pay.projectId) : null;
+      if (!targetPid && pay.leadId && projectLeadMap[String(pay.leadId)]) {
+        targetPid = projectLeadMap[String(pay.leadId)];
+      }
+      if (!targetPid && pay.clientName && projectClientMap[String(pay.clientName).trim().toLowerCase()]) {
+        targetPid = projectClientMap[String(pay.clientName).trim().toLowerCase()];
+      }
+
+      if (targetPid) {
+        paymentsByProject[targetPid] = paymentsByProject[targetPid] || [];
+        paymentsByProject[targetPid].push(pay);
       } else {
         unallocatedPaymentsCount++;
       }
@@ -428,8 +461,15 @@ export const getProjectFinanceDetails = async (req, res) => {
       .sort({ date: -1 })
       .lean();
 
-    // Linked incoming payments
-    const payments = await ExpenseTransaction.find({ projectId, type: 'payment' })
+    // Linked incoming payments (by projectId or project leadId fallback)
+    const projectLeadId = typeof project.leadId === 'object'
+      ? (project.leadId?._id || project.leadId?.id)
+      : project.leadId;
+    const payConditions = [{ projectId, type: 'payment' }];
+    if (projectLeadId) {
+      payConditions.push({ leadId: String(projectLeadId), type: 'payment' });
+    }
+    const payments = await ExpenseTransaction.find({ $or: payConditions })
       .sort({ date: -1 })
       .lean();
 
@@ -499,13 +539,27 @@ export const getBudgets = async (req, res) => {
     if (status && status !== 'all') query.status = status;
 
     if (scope.isScoped) {
+      const scopedConditions = [];
+      if (scope.projectIds && scope.projectIds.length > 0) {
+        scopedConditions.push({ projectId: { $in: scope.projectIds } });
+      }
+      if (scope.userId) {
+        scopedConditions.push({ createdBy: scope.userId });
+      }
+
       if (projectId) {
         if (!scope.projectIds.includes(String(projectId))) {
-          return res.json({ success: true, data: [] });
+          query.projectId = projectId;
+          query.createdBy = scope.userId;
+        } else {
+          query.projectId = projectId;
         }
-        query.projectId = projectId;
       } else {
-        query.projectId = { $in: scope.projectIds.length > 0 ? scope.projectIds : ['__none__'] };
+        if (scopedConditions.length > 0) {
+          query.$or = scopedConditions;
+        } else {
+          query.projectId = '__none__';
+        }
       }
     } else {
       if (projectId) query.projectId = projectId;
@@ -652,7 +706,8 @@ export const approveBudget = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Only administrators can approve budgets' });
     }
 
-    const budget = await ProjectBudget.approveBudget(req.params.id, req.user._id);
+    const userId = req.user.id || req.user._id;
+    const budget = await ProjectBudget.approveBudget(req.params.id, userId);
     return res.json({
       success: true,
       message: 'Budget approved successfully. Project approved budget updated.',
@@ -671,7 +726,8 @@ export const rejectBudget = async (req, res) => {
     }
 
     const { reason } = req.body;
-    const budget = await ProjectBudget.rejectBudget(req.params.id, req.user._id, reason);
+    const userId = req.user.id || req.user._id;
+    const budget = await ProjectBudget.rejectBudget(req.params.id, userId, reason);
     return res.json({ success: true, message: 'Budget rejected', data: budget });
   } catch (error) {
     console.error('rejectBudget error:', error);

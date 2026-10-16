@@ -288,7 +288,6 @@ const emptyForms = {
       discountedPrice: '',
       amcCost: '',
       additionalCharges: '',
-      recurringCharges: '',
       currency: 'INR'
     },
     validity: { validUntil: '' },
@@ -345,6 +344,8 @@ const emptyForms = {
     notes: '',
     originalQuotationValue: '',
     currentProposedValue: '',
+    amcCost: '',
+    additionalCharges: '',
     negotiatedDiscount: '',
     revisedContractValue: '',
     discountReason: '',
@@ -473,7 +474,6 @@ const getProposalDefaults = (lead, clientDetails, quotation, proposal = {}) => {
       discountedPrice: proposal.pricing?.discountedPrice ?? '',
       amcCost: proposal.pricing?.amcCost ?? '',
       additionalCharges: proposal.pricing?.additionalCharges ?? '',
-      recurringCharges: proposal.pricing?.recurringCharges ?? '',
       currency: proposal.pricing?.currency || quotation?.currency || 'INR'
     },
     validity: {
@@ -537,6 +537,78 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
 
   // Negotiation revision helper state
   const [revisionNote, setRevisionNote] = useState('');
+  const lastProposalPricingRef = useRef({
+    totalPrice: '',
+    discountedPrice: '',
+    amcCost: '',
+    additionalCharges: '',
+  });
+
+  const syncNegotiationFromProposal = (manual = false) => {
+    const propPricing = forms.proposal?.pricing || {};
+    const proposedBase = propPricing.discountedPrice || propPricing.totalPrice || forms.quotation?.totalQuotationValue || forms.quotation?.amount || '';
+    const propAmc = propPricing.amcCost !== undefined && propPricing.amcCost !== null ? propPricing.amcCost : '';
+    const propAddl = propPricing.additionalCharges !== undefined && propPricing.additionalCharges !== null ? propPricing.additionalCharges : '';
+
+    setForms(prev => ({
+      ...prev,
+      negotiation: {
+        ...prev.negotiation,
+        currentProposedValue: proposedBase,
+        amcCost: propAmc,
+        additionalCharges: propAddl,
+      }
+    }));
+
+    lastProposalPricingRef.current = {
+      totalPrice: propPricing.totalPrice ?? '',
+      discountedPrice: propPricing.discountedPrice ?? '',
+      amcCost: propPricing.amcCost ?? '',
+      additionalCharges: propPricing.additionalCharges ?? '',
+    };
+
+    if (manual) {
+      toast.success('Commercial details refreshed from latest Proposal');
+    }
+  };
+
+  // Automatically sync proposal commercial changes into negotiation
+  useEffect(() => {
+    const propPricing = forms.proposal?.pricing || {};
+    const curr = {
+      totalPrice: propPricing.totalPrice ?? '',
+      discountedPrice: propPricing.discountedPrice ?? '',
+      amcCost: propPricing.amcCost ?? '',
+      additionalCharges: propPricing.additionalCharges ?? '',
+    };
+    const last = lastProposalPricingRef.current;
+    const hasChanged =
+      curr.totalPrice !== last.totalPrice ||
+      curr.discountedPrice !== last.discountedPrice ||
+      curr.amcCost !== last.amcCost ||
+      curr.additionalCharges !== last.additionalCharges;
+
+    if (hasChanged) {
+      lastProposalPricingRef.current = curr;
+      const proposedBase = curr.discountedPrice || curr.totalPrice || forms.quotation?.totalQuotationValue || forms.quotation?.amount || '';
+      setForms(prev => ({
+        ...prev,
+        negotiation: {
+          ...prev.negotiation,
+          currentProposedValue: proposedBase,
+          amcCost: curr.amcCost,
+          additionalCharges: curr.additionalCharges,
+        }
+      }));
+    }
+  }, [
+    forms.proposal?.pricing?.totalPrice,
+    forms.proposal?.pricing?.discountedPrice,
+    forms.proposal?.pricing?.amcCost,
+    forms.proposal?.pricing?.additionalCharges,
+    forms.quotation?.totalQuotationValue,
+    forms.quotation?.amount
+  ]);
 
   const isAdmin = role === 'admin';
 
@@ -592,6 +664,12 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
     const currPropVal = neg.currentProposedValue !== undefined && neg.currentProposedValue !== null && neg.currentProposedValue !== ''
       ? neg.currentProposedValue
       : (prop.pricing?.discountedPrice || prop.pricing?.totalPrice || totQuotVal || quot.amount || '');
+
+    const propAmc = prop.pricing?.amcCost !== undefined && prop.pricing?.amcCost !== null && prop.pricing?.amcCost !== '' ? prop.pricing.amcCost : '';
+    const propAddl = prop.pricing?.additionalCharges !== undefined && prop.pricing?.additionalCharges !== null && prop.pricing?.additionalCharges !== '' ? prop.pricing.additionalCharges : '';
+
+    const negAmc = neg.amcCost !== undefined && neg.amcCost !== null && neg.amcCost !== '' ? neg.amcCost : propAmc;
+    const negAddl = neg.additionalCharges !== undefined && neg.additionalCharges !== null && neg.additionalCharges !== '' ? neg.additionalCharges : propAddl;
 
     const finalVal = out.finalContractValue !== undefined && out.finalContractValue !== null && out.finalContractValue !== ''
       ? out.finalContractValue
@@ -656,6 +734,8 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
         expectedCloseDate: toInputDate(neg.expectedCloseDate),
         originalQuotationValue: origQuotVal,
         currentProposedValue: currPropVal,
+        amcCost: negAmc,
+        additionalCharges: negAddl,
         negotiatedDiscount: neg.negotiatedDiscount ?? '',
         revisedContractValue: neg.revisedContractValue ?? '',
         discountReason: neg.discountReason || 'Scope Adjustment',
@@ -690,6 +770,13 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
         projectCode: out.projectCode || ''
       }
     });
+
+    lastProposalPricingRef.current = {
+      totalPrice: prop.pricing?.totalPrice ?? '',
+      discountedPrice: prop.pricing?.discountedPrice ?? '',
+      amcCost: prop.pricing?.amcCost ?? '',
+      additionalCharges: prop.pricing?.additionalCharges ?? '',
+    };
   };
 
   useEffect(() => {
@@ -781,6 +868,8 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
       date: new Date().toISOString(),
       revisedContractValue: revised,
       negotiatedDiscount: Number(forms.negotiation.negotiatedDiscount || 0),
+      amcCost: Number(forms.negotiation.amcCost || 0),
+      additionalCharges: Number(forms.negotiation.additionalCharges || 0),
       discountReason: forms.negotiation.discountReason || 'Negotiation',
       notes: revisionNote || forms.negotiation.notes || '',
       managerApprovalStatus: forms.negotiation.managerApprovalStatus || 'Not Required'
@@ -1110,8 +1199,12 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
       if (res.data.success) {
         hydrate(res.data.data);
         onUpdated?.();
-        if (res.data.project) {
+        if (res.data.project && res.data.budget) {
+          toast.success(`Project ${res.data.project.projectCode} established! Delivery budget submitted to Finance for approval.`);
+        } else if (res.data.project) {
           toast.success(`Project ${res.data.project.projectCode} established!`);
+        } else if (res.data.budget) {
+          toast.success('Pipeline updated & Delivery budget submitted to Finance for approval.');
         } else {
           toast.success('Pipeline updated');
         }
@@ -1738,14 +1831,11 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                         <Input label="Project Start Date" type="date" value={forms.proposal.projectStartDate} onChange={v => updateProposal('projectStartDate', v)} />
                         <Input label="Project End Date" type="date" value={forms.proposal.projectEndDate} onChange={v => updateProposal('projectEndDate', v)} />
                       </div>
-                      <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <Input label="Total Quoted Price (₹)" type="number" value={forms.proposal.pricing?.totalPrice} onChange={v => updateProposalNested('pricing', 'totalPrice', v)} />
                         <Input label="Discounted Offer Price (₹)" type="number" value={forms.proposal.pricing?.discountedPrice} onChange={v => updateProposalNested('pricing', 'discountedPrice', v)} />
                         <Input label="AMC / Support Cost (₹)" type="number" value={forms.proposal.pricing?.amcCost} onChange={v => updateProposalNested('pricing', 'amcCost', v)} />
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
                         <Input label="Additional One-Time Charges (₹)" type="number" value={forms.proposal.pricing?.additionalCharges} onChange={v => updateProposalNested('pricing', 'additionalCharges', v)} />
-                        <Input label="Recurring Charges (₹)" type="number" value={forms.proposal.pricing?.recurringCharges} onChange={v => updateProposalNested('pricing', 'recurringCharges', v)} />
                       </div>
                     </div>
 
@@ -1882,10 +1972,107 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                 <StageHeading title="Negotiation" subtitle="Commercial revisions, discount tracking, and closing date" />
                 
                 <div className="space-y-4">
+                  {/* Proposal Commercial Baseline & Terms Card */}
+                  <div className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/50 p-4 shadow-xs space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-100 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-md bg-indigo-600 text-white flex items-center justify-center font-bold text-[10px]">
+                          PRP
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">
+                            Proposal Commercial Baseline {forms.proposal.version ? `(v${forms.proposal.version})` : ''}
+                          </h4>
+                          <p className="text-[11px] text-slate-500">Live details fetched from Proposal stage</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-700">
+                          Auto-Synced
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => syncNegotiationFromProposal(true)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-indigo-200 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-medium transition shadow-2xs"
+                          title="Re-fetch all commercial details directly from Proposal stage"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                          Fetch from Proposal
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4 Key Proposal Figures */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="rounded-lg bg-white/90 p-2.5 border border-indigo-100 shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Proposed Project Price</span>
+                        <div className="text-sm font-bold text-slate-900 mt-0.5">
+                          ₹{Number(forms.proposal.pricing?.discountedPrice || forms.proposal.pricing?.totalPrice || 0).toLocaleString('en-IN')}
+                        </div>
+                        {forms.proposal.pricing?.discountedPrice && (
+                          <span className="text-[10px] text-emerald-600 font-medium">
+                            (Base: ₹{Number(forms.proposal.pricing?.totalPrice || 0).toLocaleString('en-IN')})
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="rounded-lg bg-white/90 p-2.5 border border-indigo-100 shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">AMC / Support Cost</span>
+                        <div className="text-sm font-bold text-indigo-700 mt-0.5">
+                          ₹{Number(forms.proposal.pricing?.amcCost || 0).toLocaleString('en-IN')}
+                        </div>
+                        <span className="text-[10px] text-slate-400">Annual maintenance</span>
+                      </div>
+
+                      <div className="rounded-lg bg-white/90 p-2.5 border border-indigo-100 shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Additional One-Time</span>
+                        <div className="text-sm font-bold text-violet-700 mt-0.5">
+                          ₹{Number(forms.proposal.pricing?.additionalCharges || 0).toLocaleString('en-IN')}
+                        </div>
+                        <span className="text-[10px] text-slate-400">Setup / custom scope</span>
+                      </div>
+
+                      <div className="rounded-lg bg-white/90 p-2.5 border border-indigo-100 shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Total Proposed Package</span>
+                        <div className="text-sm font-bold text-emerald-700 mt-0.5">
+                          ₹{(
+                            Number(forms.proposal.pricing?.discountedPrice || forms.proposal.pricing?.totalPrice || 0) +
+                            Number(forms.proposal.pricing?.additionalCharges || 0) +
+                            Number(forms.proposal.pricing?.amcCost || 0)
+                          ).toLocaleString('en-IN')}
+                        </div>
+                        <span className="text-[10px] text-slate-400">Project + Add-ons + AMC</span>
+                      </div>
+                    </div>
+
+                    {/* Proposal Agreement & Timeline Details */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-indigo-100/70 text-xs">
+                      <div>
+                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Contract Duration</span>
+                        <span className="font-medium text-slate-800">{forms.proposal.contractDuration || 'Not specified'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Project Timeline</span>
+                        <span className="font-medium text-slate-800">
+                          {forms.proposal.projectStartDate ? `${forms.proposal.projectStartDate} → ${forms.proposal.projectEndDate || 'TBD'}` : 'Timeline not set'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Payment Terms</span>
+                        <span className="font-medium text-slate-800">{forms.proposal.commercialPaymentTerms || 'Milestone Based'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Proposal Valid Until</span>
+                        <span className="font-medium text-slate-800">{forms.proposal.validity?.validUntil || 'Not specified'}</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Financial Change Tracking Card */}
                   <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
                     <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Commercial Change Tracking</h4>
                     
+                    {/* Row 1: Base Project Values */}
                     <div className="grid gap-3 sm:grid-cols-3">
                       <Input
                         label="Original Quotation Value (₹)"
@@ -1907,6 +2094,23 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                       />
                     </div>
 
+                    {/* Row 2: AMC & Additional Charges fetched from Proposal, adjustable during negotiation */}
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Input
+                        label="AMC / Support Cost (₹)"
+                        type="number"
+                        value={forms.negotiation.amcCost}
+                        onChange={v => updateForm('negotiation', 'amcCost', v)}
+                      />
+                      <Input
+                        label="Additional One-Time Charges (₹)"
+                        type="number"
+                        value={forms.negotiation.additionalCharges}
+                        onChange={v => updateForm('negotiation', 'additionalCharges', v)}
+                      />
+                    </div>
+
+                    {/* Row 3: Discount & Dates */}
                     <div className="grid gap-3 sm:grid-cols-3">
                       <Input
                         label="Negotiated Discount (₹)"
@@ -1926,6 +2130,39 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                         value={forms.negotiation.expectedCloseDate}
                         onChange={v => updateForm('negotiation', 'expectedCloseDate', v)}
                       />
+                    </div>
+
+                    {/* Commercial Package Summary Strip */}
+                    <div className="rounded-lg bg-slate-50 border border-slate-200/80 p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div>
+                        <span className="text-slate-500 font-medium">Proposed Total Package: </span>
+                        <span className="font-bold text-slate-800">
+                          ₹{(
+                            Number(forms.negotiation.currentProposedValue || forms.proposal.pricing?.discountedPrice || forms.proposal.pricing?.totalPrice || 0) +
+                            Number(forms.negotiation.additionalCharges || 0) +
+                            Number(forms.negotiation.amcCost || 0)
+                          ).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+
+                      {Number(forms.negotiation.revisedContractValue || 0) > 0 && (
+                        <div>
+                          <span className="text-slate-500 font-medium">Revised Total Package: </span>
+                          <span className="font-bold text-emerald-700">
+                            ₹{(
+                              Number(forms.negotiation.revisedContractValue || 0) +
+                              Number(forms.negotiation.additionalCharges || 0) +
+                              Number(forms.negotiation.amcCost || 0)
+                            ).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      )}
+
+                      {Number(forms.negotiation.negotiatedDiscount || 0) > 0 && (
+                        <div className="inline-flex items-center gap-1 font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                          Discount Given: ₹{Number(forms.negotiation.negotiatedDiscount).toLocaleString('en-IN')}
+                        </div>
+                      )}
                     </div>
 
                     <Textarea label="Negotiation Notes" value={forms.negotiation.notes} onChange={v => updateForm('negotiation', 'notes', v)} />
@@ -1960,6 +2197,8 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                             <div>
                               <span className="font-semibold text-slate-900">₹{Number(rev.revisedContractValue || 0).toLocaleString('en-IN')}</span>
                               {rev.negotiatedDiscount > 0 && <span className="text-red-600"> (Discount: ₹{Number(rev.negotiatedDiscount).toLocaleString('en-IN')})</span>}
+                              {rev.amcCost > 0 && <span className="text-indigo-600"> • AMC: ₹{Number(rev.amcCost).toLocaleString('en-IN')}</span>}
+                              {rev.additionalCharges > 0 && <span className="text-violet-600"> • Addl: ₹{Number(rev.additionalCharges).toLocaleString('en-IN')}</span>}
                               <span className="text-slate-400"> • {rev.discountReason || 'Revision'}</span>
                               {rev.notes && <span className="text-slate-600"> • "{rev.notes}"</span>}
                             </div>
@@ -1981,17 +2220,20 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                 <StageHeading title="Won / Closed" subtitle="Final commercial handoff, contract terms, billing schedule, and internal delivery budget" icon={<CheckCircle className="h-4 w-4 text-emerald-600" />} />
                 
                 <div className="space-y-4">
-                  {(forms.outcome.status === 'won' || forms.outcome.projectId) && (
+                  {Boolean(
+                    forms.outcome.status === 'won' &&
+                    (forms.outcome.projectId || pipeline?.outcome?.projectId || pipeline?.outcome?.status === 'won')
+                  ) && (
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50/90 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-start sm:items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                          {forms.outcome.projectCode || 'PRJ'}
+                        <div className="h-10 w-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                          <FolderKanban className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span className="text-xs font-bold text-emerald-950 uppercase tracking-wider">Relational Project Established</span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              {forms.outcome.projectCode || 'Active Project'}
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              {forms.outcome.projectCode || pipeline?.outcome?.projectCode || 'Active Project'}
                             </span>
                           </div>
                           <p className="text-xs text-emerald-700 mt-0.5">
@@ -2005,8 +2247,10 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                           const isAdminUser = role === 'admin' || userRole === 'admin' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin'));
                           const basePath = isAdminUser ? '/admin/projects' : '/employee/projects';
                           const q = new URLSearchParams();
-                          if (forms.outcome.projectId) q.set('projectId', forms.outcome.projectId);
-                          if (forms.outcome.projectCode) q.set('projectCode', forms.outcome.projectCode);
+                          const targetProjectId = forms.outcome.projectId || pipeline?.outcome?.projectId;
+                          const targetProjectCode = forms.outcome.projectCode || pipeline?.outcome?.projectCode;
+                          if (targetProjectId) q.set('projectId', targetProjectId);
+                          if (targetProjectCode) q.set('projectCode', targetProjectCode);
                           if (lead?._id) q.set('leadId', lead._id);
                           const qs = q.toString();
                           return qs ? `${basePath}?${qs}` : basePath;
@@ -2157,12 +2401,19 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
 
                   {/* Distinct Internal Approved Project Budget */}
                   <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50/30 p-4 shadow-xs space-y-3">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="h-5 w-5 text-amber-600 shrink-0" />
-                      <div>
-                        <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">Internal Approved Delivery Budget</h4>
-                        <p className="text-[11px] text-amber-700">Company's authorized internal execution budget (Strictly distinct from client stated budget and contract revenue)</p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-5 w-5 text-amber-600 shrink-0" />
+                        <div>
+                          <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">Internal Approved Delivery Budget</h4>
+                          <p className="text-[11px] text-amber-700">Company's authorized internal execution budget (Synced to Finance Management &gt; Budget Management for approval)</p>
+                        </div>
                       </div>
+                      {Number(forms.outcome.internalApprovedBudget || 0) > 0 && forms.outcome.status === 'won' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                          Synced to Finance for Approval
+                        </span>
+                      )}
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Input
@@ -2500,8 +2751,7 @@ const ProposalPreview = ({
     { label: `Total Quoted Price ${currSymbol}`, val: pricing.totalPrice !== '' && pricing.totalPrice !== undefined && pricing.totalPrice !== null && Number(pricing.totalPrice) > 0 ? formatProposalMoney(pricing.totalPrice, pricing.currency) : '-', isAmount: true },
     { label: `Discounted Offer Price ${currSymbol}`, val: Number(pricing.discountedPrice) > 0 ? formatProposalMoney(pricing.discountedPrice, pricing.currency) : '-', isAmount: true, isHighlight: Number(pricing.discountedPrice) > 0 },
     { label: `AMC / Support Cost ${currSymbol}`, val: Number(pricing.amcCost) > 0 ? `${formatProposalMoney(pricing.amcCost, pricing.currency)} / year` : '-', isAmount: true },
-    { label: `Additional One-Time Charges ${currSymbol}`, val: Number(pricing.additionalCharges) > 0 ? formatProposalMoney(pricing.additionalCharges, pricing.currency) : '-', isAmount: true },
-    { label: `Recurring Charges ${currSymbol}`, val: Number(pricing.recurringCharges) > 0 ? formatProposalMoney(pricing.recurringCharges, pricing.currency) : '-', isAmount: true }
+    { label: `Additional One-Time Charges ${currSymbol}`, val: Number(pricing.additionalCharges) > 0 ? formatProposalMoney(pricing.additionalCharges, pricing.currency) : '-', isAmount: true }
   ];
 
   if (proposal.validity?.validUntil) {

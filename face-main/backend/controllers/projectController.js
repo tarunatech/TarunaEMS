@@ -166,7 +166,12 @@ export const getProjectById = async (req, res) => {
         .sort({ date: -1 })
         .lean(),
 
-      ExpenseTransaction.find({ projectId: pId, type: 'payment' })
+      ExpenseTransaction.find({
+        $or: [
+          { projectId: pId, type: 'payment' },
+          ...(leadId ? [{ leadId, type: 'payment' }] : [])
+        ]
+      })
         .sort({ date: -1 })
         .lean(),
 

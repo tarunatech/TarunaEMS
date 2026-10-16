@@ -32,7 +32,7 @@ import {
   Briefcase
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { financeAPI, projectAPI } from '../../utils/api';
 import CustomerInvoicesTab from '../../components/Finance/CustomerInvoicesTab';
 import AccountsReceivableTab from '../../components/Finance/AccountsReceivableTab';
@@ -72,6 +72,8 @@ const BUDGET_STATUS_COLORS = {
 
 const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isEmployee = location.pathname.startsWith('/employee') || Layout !== AdminLayout;
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'projects' | 'budgets' | 'transactions' | 'analysis'
   const [loading, setLoading] = useState(false);
 
@@ -502,8 +504,8 @@ const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
             { id: 'overview', label: 'Overview', icon: Landmark },
             { id: 'invoices', label: 'Customer Invoices', icon: FileText },
             { id: 'receivables', label: 'Customer Payments / Collections', icon: CreditCard },
-            { id: 'expense-tracker', label: 'Expense Tracker', icon: DollarSign, route: '/admin/expense-tracker' },
-            { id: 'purchase-orders', label: 'Purchase Orders', icon: Briefcase, route: '/admin/purchase-orders' },
+            { id: 'expense-tracker', label: 'Expense Tracker', icon: DollarSign, route: isEmployee ? '/employee/expenses' : '/admin/expense-tracker' },
+            { id: 'purchase-orders', label: 'Purchase Orders', icon: Briefcase, route: isEmployee ? '/employee/purchase-orders' : '/admin/purchase-orders' },
             { id: 'projects', label: 'Project Finance', icon: FolderKanban },
             { id: 'budgets', label: 'Budget Management', icon: ShieldCheck },
             { id: 'transactions', label: 'Consolidated Transactions', icon: Layers },
@@ -1083,28 +1085,44 @@ const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
 
                               {b.status === 'Pending Approval' && (
                                 <>
-                                  <button
-                                    onClick={() => handleApproveBudget(b.id || b._id)}
-                                    className="px-2 py-0.5 text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 hover:bg-emerald-100 rounded border border-emerald-200"
-                                  >
-                                    Approve
-                                  </button>
-                                  <button
-                                    onClick={() => handleRejectBudget(b.id || b._id)}
-                                    className="px-2 py-0.5 text-[11px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 hover:bg-rose-100 rounded border border-rose-200"
-                                  >
-                                    Reject
-                                  </button>
+                                  {!isEmployee ? (
+                                    <>
+                                      <button
+                                        onClick={() => handleApproveBudget(b.id || b._id)}
+                                        className="px-2 py-0.5 text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 hover:bg-emerald-100 rounded border border-emerald-200"
+                                      >
+                                        Approve
+                                      </button>
+                                      <button
+                                        onClick={() => handleRejectBudget(b.id || b._id)}
+                                        className="px-2 py-0.5 text-[11px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 hover:bg-rose-100 rounded border border-rose-200"
+                                      >
+                                        Reject
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <span className="px-2 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 rounded border border-amber-200">
+                                      Awaiting Admin Approval
+                                    </span>
+                                  )}
                                 </>
                               )}
 
                               {b.status === 'Approved' && (
-                                <button
-                                  onClick={() => handleReviseBudget(b.id || b._id)}
-                                  className="px-2 py-0.5 text-[11px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400 hover:bg-purple-100 rounded border border-purple-200"
-                                >
-                                  Revise
-                                </button>
+                                <>
+                                  {!isEmployee ? (
+                                    <button
+                                      onClick={() => handleReviseBudget(b.id || b._id)}
+                                      className="px-2 py-0.5 text-[11px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400 hover:bg-purple-100 rounded border border-purple-200"
+                                    >
+                                      Revise
+                                    </button>
+                                  ) : (
+                                    <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 rounded border border-emerald-200">
+                                      Active / Approved
+                                    </span>
+                                  )}
+                                </>
                               )}
                             </div>
                           </td>

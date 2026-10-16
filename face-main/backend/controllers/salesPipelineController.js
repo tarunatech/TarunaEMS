@@ -2,6 +2,7 @@ import Lead from '../models/Lead.js';
 import Employee from '../models/Employee.js';
 import SalesPipeline from '../models/SalesPipeline.js';
 import Project, { generateProjectCode } from '../models/Project.js';
+import ProjectBudget from '../models/ProjectBudget.js';
 import { buildProposalDefaults, generateProposalContent, generateProposalSectionContent } from '../services/proposalAIService.js';
 import { generateProposalPdf } from '../services/proposalPdfService.js';
 import { extractProposalFromPdf as extractFromPdf } from '../services/proposalPdfExtractService.js';
@@ -145,7 +146,18 @@ export const getPipelineByLead = async (req, res) => {
       project = await Project.findOne({ pipelineId: pipeline._id }) || await Project.findOne({ leadId: lead._id });
     }
 
-    res.json({ success: true, data: populated, project });
+    let budget = null;
+    const targetProjectId = project?._id || project?.id || pipeline.outcome?.projectId;
+    if (targetProjectId) {
+      try {
+        const budgets = await ProjectBudget.find({ projectId: targetProjectId }).sort({ createdAt: -1 });
+        if (budgets && budgets.length > 0) budget = budgets[0];
+      } catch (bErr) {
+        // non-blocking
+      }
+    }
+
+    res.json({ success: true, data: populated, project, budget });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
@@ -232,6 +244,15 @@ export const updatePipelineSection = async (req, res) => {
       }
       if (payload.revisedContractValue !== undefined && payload.revisedContractValue !== null && payload.revisedContractValue !== '') {
         payload.revisedContractValue = Number(payload.revisedContractValue) || 0;
+      }
+      if (payload.amcCost !== undefined && payload.amcCost !== null && payload.amcCost !== '') {
+        payload.amcCost = Number(payload.amcCost) || 0;
+      }
+      if (payload.additionalCharges !== undefined && payload.additionalCharges !== null && payload.additionalCharges !== '') {
+        payload.additionalCharges = Number(payload.additionalCharges) || 0;
+      }
+      if (payload.recurringCharges !== undefined && payload.recurringCharges !== null && payload.recurringCharges !== '') {
+        payload.recurringCharges = Number(payload.recurringCharges) || 0;
       }
       payload.lastNegotiationAt = new Date();
       payload.enteredAt = pipeline.negotiation?.enteredAt || new Date();
@@ -323,6 +344,9 @@ export const updatePipelineSection = async (req, res) => {
 
         // Check if project already exists for this pipeline or lead
         let existingProject = await Project.findOne({ pipelineId: pipeline._id });
+        if (!existingProject && pipeline.outcome?.projectId) {
+          existingProject = await Project.findById(pipeline.outcome.projectId);
+        }
         if (!existingProject && lead._id) {
           existingProject = await Project.findOne({ leadId: lead._id });
         }
@@ -354,7 +378,7 @@ export const updatePipelineSection = async (req, res) => {
               pipelineId: pipeline._id,
               status: 'Active',
               contractValue: finalVal,
-              approvedBudget: approvedBud,
+              approvedBudget: 0,
               currency: pipeline.quotation?.currency || 'INR',
               startDate: pipeline.outcome.contractStartDate || pipeline.clientDetails?.expectedProjectStartDate || null,
               endDate: pipeline.outcome.contractEndDate || pipeline.clientDetails?.expectedProjectEndDate || null,
@@ -379,6 +403,83 @@ export const updatePipelineSection = async (req, res) => {
             }
           }
         }
+
+        // ProjectBudget integration: Route Internal Delivery Budget to Finance Budget Management
+        if (approvedBud > 0 && linkedProject) {
+          try {
+            const projectId = linkedProject._id || linkedProject.id;
+            const userId = req.user.id || req.user._id;
+
+            const pendingBudgets = await ProjectBudget.find({
+              projectId,
+              status: { $in: ['Pending Approval', 'Draft'] }
+            }).sort({ createdAt: -1 });
+
+            const budgetNotes = pipeline.outcome.internalBudgetNotes
+              ? `Internal Delivery Budget: ${pipeline.outcome.internalBudgetNotes}`
+              : `Internal Delivery Budget submitted from Sales Pipeline for Won deal (${linkedProject.projectCode || 'Project'})`;
+
+            const budgetItems = [
+              {
+                category: 'Project Delivery',
+                description: pipeline.outcome.internalBudgetNotes || 'Internal Delivery Budget submitted from Sales Pipeline',
+                plannedAmount: approvedBud,
+                approvedAmount: 0
+              }
+            ];
+
+            let budgetRecord = null;
+            if (pendingBudgets && pendingBudgets.length > 0) {
+              const currentPending = pendingBudgets[0];
+              budgetRecord = await ProjectBudget.findByIdAndUpdate(currentPending._id || currentPending.id, {
+                totalPlannedAmount: approvedBud,
+                notes: budgetNotes,
+                status: 'Pending Approval',
+                currency: pipeline.quotation?.currency || linkedProject.currency || 'INR',
+                items: budgetItems
+              });
+            } else {
+              const approvedBudgets = await ProjectBudget.find({
+                projectId,
+                status: 'Approved'
+              });
+
+              if (!approvedBudgets || approvedBudgets.length === 0) {
+                budgetRecord = await ProjectBudget.create({
+                  projectId,
+                  notes: budgetNotes,
+                  currency: pipeline.quotation?.currency || linkedProject.currency || 'INR',
+                  totalPlannedAmount: approvedBud,
+                  totalApprovedAmount: 0,
+                  createdBy: userId,
+                  status: 'Pending Approval',
+                  items: budgetItems
+                });
+              } else {
+                const currentApproved = approvedBudgets[0];
+                if (Number(currentApproved.totalApprovedAmount) !== approvedBud) {
+                  budgetRecord = await ProjectBudget.create({
+                    projectId,
+                    notes: `Revision: ${budgetNotes}`,
+                    currency: pipeline.quotation?.currency || linkedProject.currency || 'INR',
+                    totalPlannedAmount: approvedBud,
+                    totalApprovedAmount: 0,
+                    createdBy: userId,
+                    status: 'Pending Approval',
+                    items: budgetItems
+                  });
+                } else {
+                  budgetRecord = currentApproved;
+                }
+              }
+            }
+            if (budgetRecord) {
+              pipeline.outcome.budgetId = budgetRecord._id || budgetRecord.id;
+            }
+          } catch (budgetErr) {
+            console.error('Error establishing project budget from pipeline outcome:', budgetErr);
+          }
+        }
       } else {
         await Lead.findByIdAndUpdate(lead._id, { status: 'Lost' });
       }
@@ -390,7 +491,17 @@ export const updatePipelineSection = async (req, res) => {
     if (pipeline.outcome?.projectId) {
       project = await Project.findById(pipeline.outcome.projectId);
     }
-    res.json({ success: true, data: populated, project });
+    let budget = null;
+    const targetProjectId = project?._id || project?.id || pipeline.outcome?.projectId;
+    if (targetProjectId) {
+      try {
+        const budgets = await ProjectBudget.find({ projectId: targetProjectId }).sort({ createdAt: -1 });
+        if (budgets && budgets.length > 0) budget = budgets[0];
+      } catch (bErr) {
+        // non-blocking
+      }
+    }
+    res.json({ success: true, data: populated, project, budget });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
@@ -418,8 +529,16 @@ export const transitionPipelineStage = async (req, res) => {
     }
 
     if (stage === 'negotiation') {
-      pipeline.negotiation.enteredAt = pipeline.negotiation.enteredAt || new Date();
-      pipeline.negotiation.lastNegotiationAt = new Date();
+      const propPricing = pipeline.proposal?.pricing || {};
+      pipeline.negotiation = {
+        ...(pipeline.negotiation || {}),
+        enteredAt: pipeline.negotiation?.enteredAt || new Date(),
+        lastNegotiationAt: new Date(),
+        currentProposedValue: pipeline.negotiation?.currentProposedValue ?? propPricing.discountedPrice ?? propPricing.totalPrice ?? pipeline.quotation?.totalQuotationValue ?? pipeline.quotation?.amount,
+        amcCost: pipeline.negotiation?.amcCost ?? propPricing.amcCost,
+        additionalCharges: pipeline.negotiation?.additionalCharges ?? propPricing.additionalCharges,
+        recurringCharges: pipeline.negotiation?.recurringCharges ?? propPricing.recurringCharges
+      };
     }
 
     if (stage === 'proposal') {

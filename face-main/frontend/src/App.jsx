@@ -212,6 +212,11 @@ function App() {
                     <EmployeeExpenses />
                   </ProtectedRoute>
                 } />
+                <Route path="expense-tracker" element={
+                  <ProtectedRoute role="employee">
+                    <EmployeeExpenses />
+                  </ProtectedRoute>
+                } />
                 <Route path="holidays" element={
                   <ProtectedRoute role="employee">
                     <EmployeeHolidayCalendar />
