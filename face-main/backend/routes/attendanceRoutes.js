@@ -1,6 +1,6 @@
 // routes/attendanceRoutes.js
 import express from 'express';
-import { protect, adminOnly, employeeOnly } from '../middleware/authMiddleware.js';
+import { protect, adminOnly, employeeOnly, adminOrHr } from '../middleware/authMiddleware.js';
 import {
   checkIn,
   checkOut,
@@ -29,8 +29,8 @@ router.get('/today', employeeOnly, getTodayAttendance);            // Get today'
 router.get('/history', employeeOnly, getAttendanceHistory);        // Get employee attendance history
 router.get('/employee-stats', employeeOnly, getEmployeeAttendanceStats); // Get real stats
 
-// Admin routes
-router.get('/all', adminOnly, getAllAttendance);     // Get all attendance records
+// Admin/HR routes
+router.get('/all', adminOrHr, getAllAttendance);     // Get all attendance records
 router.get('/summary', adminOnly, getAttendanceSummary); // Get attendance summary for dashboard
 router.put('/:id', adminOnly, updateAttendance);     // Update attendance record
 router.delete('/:id', adminOnly, deleteAttendance);

@@ -1,6 +1,9 @@
 import { validationResult } from 'express-validator';
 import ExpenseTransaction from '../models/ExpenseTransaction.js';
 import Employee from '../models/Employee.js';
+import Project from '../models/Project.js';
+import Lead from '../models/Lead.js';
+import { getSalesEmployeeScope } from '../utils/salesScope.js';
 
 const sendTrackerUpdate = (req) => {
   const io = req.app.get('io');
@@ -39,16 +42,28 @@ const buildFilters = (query) => {
     ];
   }
 
+  if (query.projectId) {
+    filters.projectId = query.projectId;
+  }
+
+  if (query.leadId) {
+    filters.leadId = query.leadId;
+  }
+
   return filters;
 };
 
 export const getExpenseTrackerSummary = async (req, res, next) => {
   try {
+    const scope = await getSalesEmployeeScope(req.user);
     const match = {};
-    if (req.user.role !== 'admin') {
-      const employee = await Employee.findOne({ user: req.user._id }).select('_id');
-      match.employee = employee?._id || null;
-      match.type = 'expense';
+
+    if (scope.isScoped) {
+      const scopeOr = [{ createdBy: scope.userId }];
+      if (scope.employeeId) scopeOr.push({ employee: scope.employeeId });
+      if (scope.projectIds.length > 0) scopeOr.push({ projectId: { $in: scope.projectIds } });
+      if (scope.leadIds.length > 0) scopeOr.push({ leadId: { $in: scope.leadIds } });
+      match.$or = scopeOr;
     }
 
     const totals = await ExpenseTransaction.aggregate([
@@ -89,14 +104,35 @@ export const getExpenseTrackerSummary = async (req, res, next) => {
 
 export const getExpenseTransactions = async (req, res, next) => {
   try {
+    const scope = await getSalesEmployeeScope(req.user);
     const filters = buildFilters(req.query);
-    if (req.user.role !== 'admin') {
-      const employee = await Employee.findOne({ user: req.user._id }).select('_id');
-      filters.employee = employee?._id || null;
-      filters.type = 'expense';
+
+    if (scope.isScoped) {
+      if (req.query.projectId && !scope.projectIds.includes(String(req.query.projectId))) {
+        return res.json({ success: true, data: [] });
+      }
+      if (req.query.leadId && !scope.leadIds.includes(String(req.query.leadId))) {
+        return res.json({ success: true, data: [] });
+      }
+
+      const scopeOr = [{ createdBy: scope.userId }];
+      if (scope.employeeId) scopeOr.push({ employee: scope.employeeId });
+      if (scope.projectIds.length > 0) scopeOr.push({ projectId: { $in: scope.projectIds } });
+      if (scope.leadIds.length > 0) scopeOr.push({ leadId: { $in: scope.leadIds } });
+
+      if (filters.$or) {
+        const baseOr = filters.$or;
+        delete filters.$or;
+        filters.$and = [{ $or: baseOr }, { $or: scopeOr }];
+      } else {
+        filters.$or = scopeOr;
+      }
     }
+
     const transactions = await ExpenseTransaction.find(filters)
       .populate('createdBy', 'name email')
+      .populate('projectId', 'id projectCode name')
+      .populate('leadId', 'id company firstName lastName email')
       .populate({
         path: 'employee',
         select: 'employeeId personalInfo workInfo',
@@ -117,23 +153,56 @@ export const createExpenseTransaction = async (req, res, next) => {
       return res.status(400).json({ success: false, errors: errors.array() });
     }
 
+    const scope = await getSalesEmployeeScope(req.user);
     const payload = { ...req.body, createdBy: req.user._id };
+
+    if (payload.projectId) {
+      if (scope.isScoped && !scope.projectIds.includes(String(payload.projectId))) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: Target project does not belong to your assigned projects',
+        });
+      }
+      const project = await Project.findById(payload.projectId);
+      if (!project) {
+        return res.status(400).json({ success: false, message: 'Invalid projectId' });
+      }
+    }
+
+    if (payload.leadId) {
+      if (scope.isScoped && !scope.leadIds.includes(String(payload.leadId))) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: Target client does not belong to your assigned clients',
+        });
+      }
+      const lead = await Lead.findById(payload.leadId);
+      if (!lead) {
+        return res.status(400).json({ success: false, message: 'Invalid leadId' });
+      }
+    }
 
     if (req.user.role === 'admin') {
       payload.source = 'admin';
     } else {
-      if (!req.body.paidTo?.trim() || !req.body.category?.trim()) {
-        return res.status(400).json({ success: false, message: 'Paid to and category are required' });
-      }
       const employee = await Employee.findOne({ user: req.user._id }).select('_id');
       if (!employee) {
         return res.status(404).json({ success: false, message: 'Employee profile not found' });
       }
-      payload.type = 'expense';
       payload.employee = employee._id;
       payload.source = 'employee';
-      delete payload.clientName;
-      delete payload.invoiceNumber;
+
+      if (payload.type === 'expense') {
+        if (!req.body.paidTo?.trim() || !req.body.category?.trim()) {
+          return res.status(400).json({ success: false, message: 'Paid to and category are required' });
+        }
+        delete payload.clientName;
+        delete payload.invoiceNumber;
+      } else if (payload.type === 'payment') {
+        if (!req.body.clientName?.trim()) {
+          return res.status(400).json({ success: false, message: 'Client name is required for payments' });
+        }
+      }
     }
 
     const transaction = await ExpenseTransaction.create(payload);
@@ -152,22 +221,30 @@ export const updateExpenseTransaction = async (req, res, next) => {
       return res.status(400).json({ success: false, errors: errors.array() });
     }
 
-    const filters = { _id: req.params.id };
+    const scope = await getSalesEmployeeScope(req.user);
+    const existing = await ExpenseTransaction.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Transaction not found' });
+    }
+
+    if (scope.isScoped) {
+      const isOwner = String(existing.createdBy) === String(scope.userId);
+      const isAssignedEmployee = scope.employeeId && String(existing.employee) === String(scope.employeeId);
+      const isLinkedProject = existing.projectId && scope.projectIds.includes(String(existing.projectId));
+      const isLinkedLead = existing.leadId && scope.leadIds.includes(String(existing.leadId));
+
+      if (!isOwner && !isAssignedEmployee && !isLinkedProject && !isLinkedLead) {
+        return res.status(403).json({ success: false, message: 'Access denied to this transaction' });
+      }
+    }
+
     const payload = { ...req.body };
-    if (req.user.role !== 'admin') {
-      const employee = await Employee.findOne({ user: req.user._id }).select('_id');
-      filters.employee = employee?._id || null;
-      filters.type = 'expense';
-      payload.type = 'expense';
+    if (req.user.role !== 'admin' && existing.type === 'expense') {
       delete payload.clientName;
       delete payload.invoiceNumber;
     }
 
-    const transaction = await ExpenseTransaction.findOneAndUpdate(filters, payload, { new: true, runValidators: true });
-
-    if (!transaction) {
-      return res.status(404).json({ success: false, message: 'Transaction not found' });
-    }
+    const transaction = await ExpenseTransaction.findByIdAndUpdate(req.params.id, payload, { new: true });
 
     sendTrackerUpdate(req);
     res.json({ success: true, data: transaction });
@@ -178,17 +255,24 @@ export const updateExpenseTransaction = async (req, res, next) => {
 
 export const deleteExpenseTransaction = async (req, res, next) => {
   try {
-    const filters = { _id: req.params.id };
-    if (req.user.role !== 'admin') {
-      const employee = await Employee.findOne({ user: req.user._id }).select('_id');
-      filters.employee = employee?._id || null;
-      filters.type = 'expense';
-    }
-    const transaction = await ExpenseTransaction.findOneAndDelete(filters);
-
-    if (!transaction) {
+    const scope = await getSalesEmployeeScope(req.user);
+    const existing = await ExpenseTransaction.findById(req.params.id);
+    if (!existing) {
       return res.status(404).json({ success: false, message: 'Transaction not found' });
     }
+
+    if (scope.isScoped) {
+      const isOwner = String(existing.createdBy) === String(scope.userId);
+      const isAssignedEmployee = scope.employeeId && String(existing.employee) === String(scope.employeeId);
+      const isLinkedProject = existing.projectId && scope.projectIds.includes(String(existing.projectId));
+      const isLinkedLead = existing.leadId && scope.leadIds.includes(String(existing.leadId));
+
+      if (!isOwner && !isAssignedEmployee && !isLinkedProject && !isLinkedLead) {
+        return res.status(403).json({ success: false, message: 'Access denied to this transaction' });
+      }
+    }
+
+    await ExpenseTransaction.findByIdAndDelete(req.params.id);
 
     sendTrackerUpdate(req);
     res.json({ success: true, message: 'Transaction deleted successfully' });

@@ -64,11 +64,26 @@ const normalizeInput = (data = {}) => {
 
   if (normalized.clientDetails !== undefined) {
     normalized.clientDetails = { ...(normalized.clientDetails || {}) };
+    if (normalized.clientDetails.clientBudgetAmount !== undefined && normalized.clientDetails.clientBudgetAmount !== null && normalized.clientDetails.clientBudgetAmount !== '') {
+      normalized.clientDetails.clientBudgetAmount = Number(normalized.clientDetails.clientBudgetAmount);
+    }
+    if (normalized.clientDetails.expectedClosingDate) normalized.clientDetails.expectedClosingDate = normalizeDate(normalized.clientDetails.expectedClosingDate);
+    if (normalized.clientDetails.expectedProjectStartDate) normalized.clientDetails.expectedProjectStartDate = normalizeDate(normalized.clientDetails.expectedProjectStartDate);
+    if (normalized.clientDetails.expectedProjectEndDate) normalized.clientDetails.expectedProjectEndDate = normalizeDate(normalized.clientDetails.expectedProjectEndDate);
     if (normalized.clientDetails.updatedAt) normalized.clientDetails.updatedAt = normalizeDate(normalized.clientDetails.updatedAt);
   }
   if (normalized.quotation !== undefined) {
     normalized.quotation = { ...(normalized.quotation || {}) };
-    if (normalized.quotation.amount !== undefined) normalized.quotation.amount = Number(normalized.quotation.amount);
+    if (normalized.quotation.amount !== undefined && normalized.quotation.amount !== null && normalized.quotation.amount !== '') normalized.quotation.amount = Number(normalized.quotation.amount);
+    if (normalized.quotation.baseAmount !== undefined && normalized.quotation.baseAmount !== null && normalized.quotation.baseAmount !== '') normalized.quotation.baseAmount = Number(normalized.quotation.baseAmount);
+    if (normalized.quotation.discountValue !== undefined && normalized.quotation.discountValue !== null && normalized.quotation.discountValue !== '') normalized.quotation.discountValue = Number(normalized.quotation.discountValue);
+    if (normalized.quotation.taxableAmount !== undefined && normalized.quotation.taxableAmount !== null && normalized.quotation.taxableAmount !== '') normalized.quotation.taxableAmount = Number(normalized.quotation.taxableAmount);
+    if (normalized.quotation.taxRate !== undefined && normalized.quotation.taxRate !== null && normalized.quotation.taxRate !== '') normalized.quotation.taxRate = Number(normalized.quotation.taxRate);
+    if (normalized.quotation.cgstAmount !== undefined && normalized.quotation.cgstAmount !== null && normalized.quotation.cgstAmount !== '') normalized.quotation.cgstAmount = Number(normalized.quotation.cgstAmount);
+    if (normalized.quotation.sgstAmount !== undefined && normalized.quotation.sgstAmount !== null && normalized.quotation.sgstAmount !== '') normalized.quotation.sgstAmount = Number(normalized.quotation.sgstAmount);
+    if (normalized.quotation.igstAmount !== undefined && normalized.quotation.igstAmount !== null && normalized.quotation.igstAmount !== '') normalized.quotation.igstAmount = Number(normalized.quotation.igstAmount);
+    if (normalized.quotation.otherCharges !== undefined && normalized.quotation.otherCharges !== null && normalized.quotation.otherCharges !== '') normalized.quotation.otherCharges = Number(normalized.quotation.otherCharges);
+    if (normalized.quotation.totalQuotationValue !== undefined && normalized.quotation.totalQuotationValue !== null && normalized.quotation.totalQuotationValue !== '') normalized.quotation.totalQuotationValue = Number(normalized.quotation.totalQuotationValue);
     if (normalized.quotation.validUntil) normalized.quotation.validUntil = normalizeDate(normalized.quotation.validUntil);
     if (normalized.quotation.updatedAt) normalized.quotation.updatedAt = normalizeDate(normalized.quotation.updatedAt);
     normalized.quotation.lineItems = asArray(normalized.quotation.lineItems);
@@ -83,32 +98,70 @@ const normalizeInput = (data = {}) => {
   if (normalized.proposal !== undefined) {
     normalized.proposal = { ...defaultProposal(), ...(normalized.proposal || {}) };
     if (!['draft', 'generated', 'finalized'].includes(normalized.proposal.status)) unsupported(`proposal.status value "${normalized.proposal.status}"`);
-    for (const field of ['generatedAt', 'updatedAt', 'aiGeneratedAt', 'lastEditedAt']) {
+    for (const field of ['generatedAt', 'updatedAt', 'aiGeneratedAt', 'lastEditedAt', 'projectStartDate', 'projectEndDate']) {
       if (normalized.proposal[field]) normalized.proposal[field] = normalizeDate(normalized.proposal[field]);
     }
     normalized.proposal.version = Number(normalized.proposal.version || 0);
     normalized.proposal.contentVersion = Number(normalized.proposal.contentVersion || normalized.proposal.version || 0);
     normalized.proposal.sections = { ...(normalized.proposal.sections || {}) };
     normalized.proposal.pricing = { currency: 'INR', ...(normalized.proposal.pricing || {}) };
+    if (normalized.proposal.pricing.additionalCharges !== undefined && normalized.proposal.pricing.additionalCharges !== null && normalized.proposal.pricing.additionalCharges !== '') {
+      normalized.proposal.pricing.additionalCharges = Number(normalized.proposal.pricing.additionalCharges);
+    }
+    if (normalized.proposal.pricing.recurringCharges !== undefined && normalized.proposal.pricing.recurringCharges !== null && normalized.proposal.pricing.recurringCharges !== '') {
+      normalized.proposal.pricing.recurringCharges = Number(normalized.proposal.pricing.recurringCharges);
+    }
     normalized.proposal.validity = { ...(normalized.proposal.validity || {}) };
     normalized.proposal.versions = asArray(normalized.proposal.versions);
   }
   if (normalized.sentToClient !== undefined) {
     normalized.sentToClient = { ...(normalized.sentToClient || {}) };
     if (normalized.sentToClient.sentAt) normalized.sentToClient.sentAt = normalizeDate(normalized.sentToClient.sentAt);
+    if (normalized.sentToClient.expectedClientResponseDate) normalized.sentToClient.expectedClientResponseDate = normalizeDate(normalized.sentToClient.expectedClientResponseDate);
+    if (normalized.sentToClient.clientAcceptanceDate) normalized.sentToClient.clientAcceptanceDate = normalizeDate(normalized.sentToClient.clientAcceptanceDate);
     if (normalized.sentToClient.method && !CLIENT_METHODS.has(normalized.sentToClient.method)) unsupported(`sentToClient.method value "${normalized.sentToClient.method}"`);
   }
   if (normalized.negotiation !== undefined) {
     normalized.negotiation = { ...(normalized.negotiation || {}) };
+    if (normalized.negotiation.originalQuotationValue !== undefined && normalized.negotiation.originalQuotationValue !== null && normalized.negotiation.originalQuotationValue !== '') {
+      normalized.negotiation.originalQuotationValue = Number(normalized.negotiation.originalQuotationValue);
+    }
+    if (normalized.negotiation.currentProposedValue !== undefined && normalized.negotiation.currentProposedValue !== null && normalized.negotiation.currentProposedValue !== '') {
+      normalized.negotiation.currentProposedValue = Number(normalized.negotiation.currentProposedValue);
+    }
+    if (normalized.negotiation.negotiatedDiscount !== undefined && normalized.negotiation.negotiatedDiscount !== null && normalized.negotiation.negotiatedDiscount !== '') {
+      normalized.negotiation.negotiatedDiscount = Number(normalized.negotiation.negotiatedDiscount);
+    }
+    if (normalized.negotiation.revisedContractValue !== undefined && normalized.negotiation.revisedContractValue !== null && normalized.negotiation.revisedContractValue !== '') {
+      normalized.negotiation.revisedContractValue = Number(normalized.negotiation.revisedContractValue);
+    }
     for (const field of ['enteredAt', 'lastNegotiationAt', 'expectedCloseDate']) {
       if (normalized.negotiation[field]) normalized.negotiation[field] = normalizeDate(normalized.negotiation[field]);
     }
+    normalized.negotiation.revisionHistory = asArray(normalized.negotiation.revisionHistory).map(item => ({
+      ...item,
+      date: item.date ? normalizeDate(item.date) : undefined
+    }));
   }
   if (normalized.outcome !== undefined) {
     normalized.outcome = { ...defaultOutcome(), ...(normalized.outcome || {}) };
     if (!OUTCOME_STATUSES.has(normalized.outcome.status)) unsupported(`outcome.status value "${normalized.outcome.status}"`);
-    if (normalized.outcome.finalValue !== undefined) normalized.outcome.finalValue = Number(normalized.outcome.finalValue);
+    if (normalized.outcome.finalValue !== undefined && normalized.outcome.finalValue !== null && normalized.outcome.finalValue !== '') {
+      normalized.outcome.finalValue = Number(normalized.outcome.finalValue);
+    }
+    if (normalized.outcome.finalContractValue !== undefined && normalized.outcome.finalContractValue !== null && normalized.outcome.finalContractValue !== '') {
+      normalized.outcome.finalContractValue = Number(normalized.outcome.finalContractValue);
+    }
+    if (normalized.outcome.initialAdvanceAmount !== undefined && normalized.outcome.initialAdvanceAmount !== null && normalized.outcome.initialAdvanceAmount !== '') {
+      normalized.outcome.initialAdvanceAmount = Number(normalized.outcome.initialAdvanceAmount);
+    }
+    if (normalized.outcome.internalApprovedBudget !== undefined && normalized.outcome.internalApprovedBudget !== null && normalized.outcome.internalApprovedBudget !== '') {
+      normalized.outcome.internalApprovedBudget = Number(normalized.outcome.internalApprovedBudget);
+    }
     if (normalized.outcome.closedAt) normalized.outcome.closedAt = normalizeDate(normalized.outcome.closedAt);
+    if (normalized.outcome.contractStartDate) normalized.outcome.contractStartDate = normalizeDate(normalized.outcome.contractStartDate);
+    if (normalized.outcome.contractEndDate) normalized.outcome.contractEndDate = normalizeDate(normalized.outcome.contractEndDate);
+    normalized.outcome.billingSchedule = asArray(normalized.outcome.billingSchedule);
   }
   if (normalized.stageHistory !== undefined) normalized.stageHistory = normalizeHistory(normalized.stageHistory);
   if (normalized.createdAt !== undefined) normalized.createdAt = normalizeDate(normalized.createdAt);

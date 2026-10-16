@@ -28,6 +28,10 @@ import {
   FileCheck,
   Loader2,
   Download,
+  FolderKanban,
+  ShieldCheck,
+  Landmark,
+  ShoppingCart,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
@@ -263,7 +267,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
         setUserGroups(res.data.data);
         userGroupsRef.current = res.data.data;
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -297,7 +301,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
           const u = JSON.parse(uStr);
           if (u?._id || u?.id) return String(u._id || u.id);
         }
-      } catch (e) {}
+      } catch (e) { }
       return String(
         localStorage.getItem('userId') ||
         sessionStorage.getItem('userId') ||
@@ -445,8 +449,9 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
   // Navigation catalog keyed for reuse in department-based filtering
   const NAV_CATALOG = {
     dashboard: { name: "Dashboard", icon: LayoutDashboard, path: "/employee/dashboard" },
+    employees: { name: "Employee Management", icon: Users, path: "/employee/employees" },
     attendance: { name: "Attendance", icon: Clock, path: "/employee/attendance" },
-    expenses: { name: "Expenses", icon: WalletCards, path: "/employee/expenses" },
+    expenses: { name: "Expense Tracker", icon: WalletCards, path: "/employee/expenses" },
     leaves: { name: "Leave Requests", icon: Calendar, path: "/employee/leaves" },
     holidays: { name: "Holiday Calendar", icon: Calendar, path: "/employee/holidays" },
     tasks: { name: "Tasks", icon: FileText, path: "/employee/tasks" },
@@ -454,6 +459,10 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     sales: { name: "Sales", icon: TrendingUp, path: "/employee/sales" },
     salesPipeline: { name: "Sales Pipeline", icon: GitBranch, path: "/employee/sales-pipeline" },
     salesMeetings: { name: "Meetings", icon: Phone, path: "/employee/sales-meetings" },
+    projects: { name: "Projects", icon: FolderKanban, path: "/employee/projects" },
+    amcContracts: { name: "AMC Management", icon: ShieldCheck, path: "/employee/amc" },
+    purchaseOrders: { name: "Purchase Orders", icon: ShoppingCart, path: "/employee/purchase-orders" },
+    finance: { name: "Finance Management", icon: Landmark, path: "/employee/finance" },
     hrInterviews: { name: "Interview Schedule", icon: ClipboardList, path: "/employee/hr-interviews" },
     offerLetters: { name: "Offer Letters", icon: FileCheck, path: "/employee/offer-letters" },
     payslip: { name: "View Payslip", icon: CreditCard, isAction: true },
@@ -512,7 +521,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     readIds.add(id);
     writeNotificationSet('read', readIds);
     setNotifications(prev => prev.filter(n => n.id !== id));
-    dashboardAPI.markNotificationAsRead(id).catch(() => {});
+    dashboardAPI.markNotificationAsRead(id).catch(() => { });
   };
 
   const markAllAsRead = () => {
@@ -520,7 +529,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     notifications.forEach(notification => readIds.add(String(notification.id)));
     writeNotificationSet('read', readIds);
     setNotifications([]);
-    dashboardAPI.markAllNotificationsAsRead().catch(() => {});
+    dashboardAPI.markAllNotificationsAsRead().catch(() => { });
     toast.success('All notifications marked as read');
   };
 
@@ -539,51 +548,80 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     <div className="relative flex h-dvh min-h-dvh overflow-hidden bg-slate-50">
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 transform ${
-          isCollapsed ? "w-[76px]" : "w-[248px]"
-        } ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } transition-[width,transform] duration-200 ease-out lg:translate-x-0`}
+        className={`fixed inset-y-0 left-0 z-50 transform ${isCollapsed ? "w-[76px]" : "w-[248px]"
+          } ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } transition-[width,transform] duration-200 ease-out lg:translate-x-0`}
       >
         <div className="relative h-full bg-[#0C0F17] flex flex-col justify-between overflow-hidden">
           {/* single, quiet accent — no glow blobs */}
           <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-transparent" />
 
           <div className="relative flex-1 overflow-y-auto scrollbar-none">
-            {/* Logo */}
-            <div className={`flex items-center h-16 ${
-              isCollapsed ? "justify-center px-2" : "justify-between px-5"
-            }`}>
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="relative w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0 ring-1 ring-white/10">
+            {/* Logo Section */}
+            <div className={`flex items-center h-16 ${isCollapsed ? "justify-center px-3" : "justify-between px-4"
+              }`}>
+              {isCollapsed ? (
+                <button
+                  type="button"
+                  onClick={handleToggleCollapse}
+                  className="w-10 h-10 relative rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0 ring-1 ring-white/10 hover:ring-2 hover:ring-indigo-400/70 hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer group"
+                  title="Click logo to expand sidebar"
+                  aria-label="Expand sidebar"
+                >
                   <img
                     src={logo}
                     alt="Taruna Technology"
-                    className="w- h- object-contain"
+                    className="h-full w-full object-cover"
                   />
-                </div>
+                </button>
+              ) : (
+                <>
+                  <div className="flex items-center min-w-0 gap-2.5">
+                    <div className="w-8 h-8 relative rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0 ring-1 ring-white/10">
+                      <img
+                        src={logo}
+                        alt="Taruna Technology"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
 
-                {!isCollapsed && (
-                  <div className="flex flex-col justify-center min-w-0">
-                    <h1 className="text-[13.5px] font-semibold text-white leading-tight tracking-tight truncate">
-                      Taruna Technology
-                    </h1>
-                    <p className="text-[10px] text-slate-500 leading-tight mt-0.5 font-medium truncate">
-                      Employee Portal
-                    </p>
+                    <div className="flex flex-col justify-center min-w-0">
+                      <h1 className="text-[13.5px] font-semibold text-white leading-tight tracking-tight truncate">
+                        Taruna Technology
+                      </h1>
+                      <p className="text-[10px] text-slate-500 leading-tight mt-0.5 font-medium truncate">
+                        Employee Portal
+                      </p>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden text-slate-500 hover:text-white transition-colors duration-150 flex-shrink-0"
-                aria-label="Close sidebar"
-              >
-                <X className="w-5 h-5" />
-              </button>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {/* Desktop collapse button beside logo and text */}
+                    <button
+                      type="button"
+                      onClick={handleToggleCollapse}
+                      className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors duration-150"
+                      aria-label="Collapse sidebar"
+                      title="Collapse sidebar"
+                    >
+                      <ChevronLeft strokeWidth={1.75} className="w-4 h-4" />
+                    </button>
+
+                    {/* Close button for mobile */}
+                    <button
+                      type="button"
+                      onClick={() => setSidebarOpen(false)}
+                      className="lg:hidden text-slate-500 hover:text-white transition-colors duration-150 p-1"
+                      aria-label="Close sidebar"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="h-px bg-white/[0.06] mx-5 mb-3" />
+            <div className="h-px bg-white/[0.06] mx-4 mb-3" />
 
             {/* Navigation */}
             <nav className={isCollapsed ? "px-3" : "px-3"}>
@@ -599,9 +637,8 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
                           handleViewPayslip();
                         }}
                         title={isCollapsed ? item.name : undefined}
-                        className={`group relative flex w-full items-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400/60 ${
-                          isCollapsed ? "justify-center h-10 w-10 mx-auto" : "gap-2.5 px-2.5 h-9"
-                        } text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]`}
+                        className={`group relative flex w-full items-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400/60 ${isCollapsed ? "justify-center h-10 w-10 mx-auto" : "gap-2.5 px-2.5 h-9"
+                          } text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]`}
                       >
                         <item.icon
                           strokeWidth={1.75}
@@ -621,21 +658,19 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
                       key={item.name}
                       to={item.path}
                       title={isCollapsed ? item.name : undefined}
-                      className={`group relative flex items-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400/60 ${
-                        isCollapsed ? "justify-center h-10 w-10 mx-auto" : "gap-2.5 px-2.5 h-9"
-                      } ${isActive
-                        ? "bg-white/[0.08] text-white"
-                        : "text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
-                      }`}
+                      className={`group relative flex items-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400/60 ${isCollapsed ? "justify-center h-10 w-10 mx-auto" : "gap-2.5 px-2.5 h-9"
+                        } ${isActive
+                          ? "bg-white/[0.08] text-white"
+                          : "text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]"
+                        }`}
                     >
                       {isActive && !isCollapsed && (
                         <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2.5px] rounded-full bg-indigo-400" />
                       )}
                       <item.icon
                         strokeWidth={1.75}
-                        className={`w-[18px] h-[18px] flex-shrink-0 ${
-                          isActive ? "text-indigo-300" : "text-slate-500 group-hover:text-slate-300"
-                        }`}
+                        className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "text-indigo-300" : "text-slate-500 group-hover:text-slate-300"
+                          }`}
                       />
                       {!isCollapsed && (
                         <span className={`text-[13.5px] font-medium truncate ${isActive ? "text-white" : ""}`}>
@@ -661,9 +696,8 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
                   onClick={handleOpenTeamChat}
                   title={isCollapsed ? "Chat with Team" : undefined}
                   aria-label="Open chat with team"
-                  className={`group relative flex w-full items-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400/60 ${
-                    isCollapsed ? "justify-center h-10 w-10 mx-auto" : "gap-2.5 px-2.5 h-9"
-                  } text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]`}
+                  className={`group relative flex w-full items-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400/60 ${isCollapsed ? "justify-center h-10 w-10 mx-auto" : "gap-2.5 px-2.5 h-9"
+                    } text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]`}
                 >
                   <MessageCircle strokeWidth={1.75} className="w-[18px] h-[18px] flex-shrink-0 text-slate-500 group-hover:text-slate-300" />
                   {!isCollapsed && (
@@ -675,9 +709,8 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
                   onClick={handleOpenGroupChats}
                   title={isCollapsed ? "Group Chats" : undefined}
                   aria-label="Open group chats"
-                  className={`group relative flex w-full items-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400/60 ${
-                    isCollapsed ? "justify-center h-10 w-10 mx-auto" : "gap-2.5 px-2.5 h-9"
-                  } text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]`}
+                  className={`group relative flex w-full items-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400/60 ${isCollapsed ? "justify-center h-10 w-10 mx-auto" : "gap-2.5 px-2.5 h-9"
+                    } text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]`}
                 >
                   <Users strokeWidth={1.75} className="w-[18px] h-[18px] flex-shrink-0 text-slate-500 group-hover:text-slate-300" />
                   {!isCollapsed && (
@@ -696,9 +729,8 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
               onClick={toggleTheme}
               title={isDark ? "Switch to light theme" : "Switch to dark theme"}
               aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-              className={`flex w-full items-center rounded-lg text-slate-300 transition-colors duration-150 hover:bg-white/[0.05] ${
-                isCollapsed ? "justify-center h-10 w-10 mx-auto" : "justify-between px-2.5 h-9"
-              }`}
+              className={`flex w-full items-center rounded-lg text-slate-300 transition-colors duration-150 hover:bg-white/[0.05] ${isCollapsed ? "justify-center h-10 w-10 mx-auto" : "justify-between px-2.5 h-9"
+                }`}
             >
               <span className={`flex items-center ${isCollapsed ? "" : "gap-2.5"}`}>
                 {isDark ? <Sun strokeWidth={1.75} className="h-[18px] w-[18px] text-amber-300" /> : <Moon strokeWidth={1.75} className="h-[18px] w-[18px] text-indigo-300" />}
@@ -710,13 +742,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
                 </span>
               )}
             </button>
-            <button
-              onClick={handleToggleCollapse}
-              className="hidden lg:flex w-full items-center justify-center h-9 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150"
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {isCollapsed ? <ChevronRight strokeWidth={1.75} className="w-[18px] h-[18px]" /> : <ChevronLeft strokeWidth={1.75} className="w-[18px] h-[18px]" />}
-            </button>
+
           </div>
         </div>
       </div>
@@ -724,9 +750,8 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
       {/* Main Content */}
       <div className={`min-w-0 flex-1 flex flex-col transition-[margin] duration-200 ${isCollapsed ? "lg:ml-[76px]" : "lg:ml-[248px]"}`}>
         {/* Header */}
-        <header className={`sticky top-0 z-40 h-14 shrink-0 border-b bg-white/95 backdrop-blur-sm transition-shadow duration-150 ${
-          scrolled ? "border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04)]" : "border-slate-100"
-        }`}>
+        <header className={`sticky top-0 z-40 h-14 shrink-0 border-b bg-white/95 backdrop-blur-sm transition-shadow duration-150 ${scrolled ? "border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04)]" : "border-slate-100"
+          }`}>
           <div className="flex items-center justify-between h-full gap-2 px-3 sm:px-5">
             <div className="flex min-w-0 items-center gap-3">
               <button

@@ -34,7 +34,7 @@ import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions
 // Import API services
 import { useTasks } from '../../hooks/useTasks';
 import { useAuth } from '../../hooks/useAuth';
-import { employeeAPI } from '../../utils/api'; // Use the same API as employee management
+import { employeeAPI, projectAPI } from '../../utils/api'; // Use the same API as employee management
 import { taskService } from '../../services/taskService';
 
 const AdminTaskManagement = () => {
@@ -217,8 +217,21 @@ const AdminTaskManagement = () => {
     assignedTo: [],
     priority: 'Medium',
     dueDate: '',
-    estimatedHours: 0
+    estimatedHours: 0,
+    projectId: ''
   });
+  const [projectsList, setProjectsList] = useState([]);
+
+  useEffect(() => {
+    projectAPI.getProjects({ limit: 100 })
+      .then((res) => {
+        if (res.data?.success) {
+          setProjectsList(res.data.data || []);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [taskAssignSearch, setTaskAssignSearch] = useState('');
   const [taskHistory, setTaskHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -381,7 +394,8 @@ const AdminTaskManagement = () => {
           assignedTo: empId,
           priority: newTask.priority || 'Medium',
           dueDate: newTask.dueDate,
-          estimatedHours: parseInt(newTask.estimatedHours) || 0
+          estimatedHours: parseInt(newTask.estimatedHours) || 0,
+          projectId: newTask.projectId || null
         };
 
         await createTask(taskPayload);
@@ -399,7 +413,8 @@ const AdminTaskManagement = () => {
         assignedTo: [],
         priority: 'Medium',
         dueDate: '',
-        estimatedHours: 0
+        estimatedHours: 0,
+        projectId: ''
       });
       setTaskAssignSearch('');
       await fetchTasks();
@@ -435,7 +450,8 @@ const AdminTaskManagement = () => {
         assignedTo: selectedTask.assignedTo._id || selectedTask.assignedTo,
         priority: selectedTask.priority,
         dueDate: selectedTask.dueDate,
-        estimatedHours: parseInt(selectedTask.estimatedHours) || 0
+        estimatedHours: parseInt(selectedTask.estimatedHours) || 0,
+        projectId: selectedTask.projectId || null
       });
 
       setShowEditModal(false);
@@ -1051,7 +1067,11 @@ const AdminTaskManagement = () => {
                                     const existingDescs = task.description
                                       ? task.description.split('\n\n').filter(d => d.trim()).map(d => d.trim())
                                       : [''];
-                                    setSelectedTask({ ...task, descriptions: existingDescs.length > 0 ? existingDescs : [''] });
+                                    setSelectedTask({
+                                      ...task,
+                                      descriptions: existingDescs.length > 0 ? existingDescs : [''],
+                                      projectId: task.projectId?._id || task.projectId?.id || task.projectId || ''
+                                    });
                                     setShowEditModal(true);
                                   }}
                                   className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-amber-200"
@@ -1198,7 +1218,11 @@ const AdminTaskManagement = () => {
                                 const existingDescs = task.description
                                   ? task.description.split('\n\n').filter(d => d.trim()).map(d => d.trim())
                                   : [''];
-                                setSelectedTask({ ...task, descriptions: existingDescs.length > 0 ? existingDescs : [''] });
+                                setSelectedTask({
+                                  ...task,
+                                  descriptions: existingDescs.length > 0 ? existingDescs : [''],
+                                  projectId: task.projectId?._id || task.projectId?.id || task.projectId || ''
+                                });
                                 setShowEditModal(true);
                               }}
                               className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-amber-200"
@@ -1561,6 +1585,21 @@ const AdminTaskManagement = () => {
                               required
                             />
                           </div>
+                          <div>
+                            <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Project (Optional)</label>
+                            <select
+                              value={newTask.projectId || ''}
+                              onChange={(e) => setNewTask({ ...newTask, projectId: e.target.value })}
+                              className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            >
+                              <option value="">No Project Linked</option>
+                              {projectsList.map((p) => (
+                                <option key={p.id || p._id} value={p.id || p._id}>
+                                  [{p.projectCode}] {p.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                       </div>
                       <div className="sticky bottom-0 z-10 flex shrink-0 justify-end space-x-2 sm:space-x-4 border-t border-slate-100 bg-white pt-2.5 pb-1 sm:pt-4 sm:pb-0">
@@ -1721,6 +1760,22 @@ const AdminTaskManagement = () => {
                               required
                             />
                           </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] sm:text-sm font-semibold text-slate-600 mb-0.5 sm:mb-2">Project (Optional)</label>
+                          <select
+                            value={selectedTask?.projectId || ''}
+                            onChange={(e) => setSelectedTask({ ...selectedTask, projectId: e.target.value })}
+                            className="w-full px-2.5 sm:px-4 py-1.5 sm:py-3 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                          >
+                            <option value="">No Project Linked</option>
+                            {projectsList.map((p) => (
+                              <option key={p.id || p._id} value={p.id || p._id}>
+                                [{p.projectCode}] {p.name}
+                              </option>
+                            ))}
+                          </select>
                         </div>
 
                         <div>

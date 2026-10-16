@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { getDepartmentName, isModulePathAllowed, normalizeDepartment, COMMON_MODULE_KEYS, moduleKeyFromPath } from '../utils/departmentAccess';
 
-const ProtectedRoute = ({ children, role, requiredRole }) => {
+const ProtectedRoute = ({ children, role, requiredRole, allowHR = false }) => {
   const location = useLocation();
   const effectiveRole = role || requiredRole;
   
@@ -17,9 +17,34 @@ const ProtectedRoute = ({ children, role, requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
+  // Check if employee belongs to HR
+  const isHrEmployee = () => {
+    let department = getDepartmentName(
+      localStorage.getItem('userDepartment'),
+      sessionStorage.getItem('userDepartment')
+    );
+    if (!department) {
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        department = getDepartmentName(storedUser?.department);
+      } catch (err) {
+        department = '';
+      }
+    }
+    const normalizedDept = normalizeDepartment(department);
+    return ['hr', 'humanresources', 'humanresource', 'hrdepartment'].includes(normalizedDept) || normalizedDept.includes('hr');
+  };
+
+  // If an HR employee navigates to /admin/employees, route smoothly to /employee/employees
+  if (userRole === 'employee' && location.pathname === '/admin/employees' && isHrEmployee()) {
+    return <Navigate to="/employee/employees" replace />;
+  }
+
   // Check role first before department-based access
   if (effectiveRole && userRole !== effectiveRole) {
-    if (userRole === 'admin') {
+    if (allowHR && userRole === 'employee' && isHrEmployee()) {
+      // Allowed
+    } else if (userRole === 'admin') {
       return <Navigate to="/admin/dashboard" replace />;
     } else if (userRole === 'employee') {
       return <Navigate to="/employee/dashboard" replace />;

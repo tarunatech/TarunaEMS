@@ -24,6 +24,11 @@ import * as groupMessageSchema from './schema/groupMessage.js';
 import * as messageSchema from './schema/message.js';
 import * as faceDataSchema from './schema/faceData.js';
 import * as offerLetterSchema from './schema/offerLetter.js';
+import * as projectSchema from './schema/project.js';
+import * as budgetSchema from './schema/budget.js';
+import * as customerInvoiceSchema from './schema/customerInvoice.js';
+import * as customerEquipmentSchema from './schema/customerEquipment.js';
+import * as amcContractSchema from './schema/amcContract.js';
 
 const { Pool } = pg;
 
@@ -56,6 +61,11 @@ export const db = drizzle(pool, {
     ...messageSchema,
     ...faceDataSchema,
     ...offerLetterSchema,
+    ...projectSchema,
+    ...budgetSchema,
+    ...customerInvoiceSchema,
+    ...customerEquipmentSchema,
+    ...amcContractSchema,
   },
 });
 
@@ -86,6 +96,302 @@ export const ensurePostgresExtensions = async () => {
   await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "halfDayType" varchar(32) DEFAULT \'full\'');
   await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "includeBreak" boolean DEFAULT true');
   await pool.query('ALTER TABLE "tasks" ADD COLUMN IF NOT EXISTS "achievedSoFar" text DEFAULT \'\'');
+
+  // Projects table & Task linkage initialization
+  await pool.query(`
+    DO $$ BEGIN
+      CREATE TYPE "project_status" AS ENUM ('Planning', 'Active', 'On Hold', 'Completed', 'Cancelled');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "projects" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "projectCode" varchar(64) NOT NULL,
+      "name" varchar(255) NOT NULL,
+      "description" text,
+      "leadId" uuid,
+      "pipelineId" uuid,
+      "status" "project_status" NOT NULL DEFAULT 'Planning',
+      "contractValue" numeric NOT NULL DEFAULT 0,
+      "approvedBudget" numeric NOT NULL DEFAULT 0,
+      "billingSchedule" jsonb NOT NULL DEFAULT '[]'::jsonb,
+      "currency" varchar(10) NOT NULL DEFAULT 'INR',
+      "startDate" timestamptz,
+      "endDate" timestamptz,
+      "projectManager" uuid,
+      "clientName" varchar(255),
+      "createdBy" uuid,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS "projects_projectCode_unique_idx" ON "projects" ("projectCode")');
+  await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS "projects_pipelineId_unique_idx" ON "projects" ("pipelineId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "projects_leadId_idx" ON "projects" ("leadId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "projects_status_idx" ON "projects" ("status")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "projects_projectManager_idx" ON "projects" ("projectManager")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "projects_createdAt_idx" ON "projects" ("createdAt")');
+
+  await pool.query('ALTER TABLE "tasks" ADD COLUMN IF NOT EXISTS "projectId" uuid');
+  await pool.query('CREATE INDEX IF NOT EXISTS "tasks_projectId_idx" ON "tasks" ("projectId")');
+
+  // Phase 2: Budgets and Linkages
+  await pool.query(`
+    DO $$ BEGIN
+      CREATE TYPE "budget_status" AS ENUM ('Draft', 'Pending Approval', 'Approved', 'Rejected', 'Superseded');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "project_budgets" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "projectId" uuid NOT NULL,
+      "budgetNumber" varchar(64) NOT NULL,
+      "version" integer NOT NULL DEFAULT 1,
+      "status" "budget_status" NOT NULL DEFAULT 'Draft',
+      "totalPlannedAmount" numeric NOT NULL DEFAULT 0,
+      "totalApprovedAmount" numeric NOT NULL DEFAULT 0,
+      "currency" varchar(10) NOT NULL DEFAULT 'INR',
+      "notes" text,
+      "createdBy" uuid NOT NULL,
+      "approvedBy" uuid,
+      "approvedAt" timestamptz,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  await pool.query('CREATE INDEX IF NOT EXISTS "project_budgets_projectId_idx" ON "project_budgets" ("projectId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "project_budgets_status_idx" ON "project_budgets" ("status")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "project_budgets_budgetNumber_idx" ON "project_budgets" ("budgetNumber")');
+  await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS "project_budgets_project_version_unique_idx" ON "project_budgets" ("projectId", "version")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "project_budgets_createdAt_idx" ON "project_budgets" ("createdAt")');
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "project_budget_items" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "budgetId" uuid NOT NULL,
+      "category" varchar(255) NOT NULL,
+      "description" text,
+      "plannedAmount" numeric NOT NULL DEFAULT 0,
+      "approvedAmount" numeric NOT NULL DEFAULT 0,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  await pool.query('CREATE INDEX IF NOT EXISTS "project_budget_items_budgetId_idx" ON "project_budget_items" ("budgetId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "project_budget_items_category_idx" ON "project_budget_items" ("category")');
+
+  // Purchase Order & Expense Transaction project linkages
+  await pool.query('ALTER TABLE "purchaseOrders" ADD COLUMN IF NOT EXISTS "projectId" uuid');
+  await pool.query('CREATE INDEX IF NOT EXISTS "purchaseOrders_projectId_idx" ON "purchaseOrders" ("projectId")');
+
+  await pool.query('ALTER TABLE "expenseTransactions" ADD COLUMN IF NOT EXISTS "projectId" uuid');
+  await pool.query('ALTER TABLE "expenseTransactions" ADD COLUMN IF NOT EXISTS "leadId" uuid');
+  await pool.query('CREATE INDEX IF NOT EXISTS "expenseTransactions_projectId_idx" ON "expenseTransactions" ("projectId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "expenseTransactions_leadId_idx" ON "expenseTransactions" ("leadId")');
+
+  // Phase 3: Customer Invoicing and Payment Allocations
+  await pool.query(`
+    DO $$ BEGIN
+      CREATE TYPE "customer_invoice_status" AS ENUM ('draft', 'issued', 'partially_paid', 'paid', 'cancelled');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+  `);
+
+  await pool.query(`
+    DO $$ BEGIN
+      CREATE TYPE "customer_invoice_tax_type" AS ENUM ('CGST_SGST', 'IGST', 'None');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+  `);
+
+  await pool.query('CREATE SEQUENCE IF NOT EXISTS "customer_invoice_number_seq" START WITH 1001 INCREMENT BY 1');
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "customer_invoices" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "invoiceNumber" varchar(64) UNIQUE,
+      "clientId" uuid,
+      "leadId" uuid,
+      "projectId" uuid,
+      "milestoneName" varchar(255),
+      "invoiceDate" varchar(32) NOT NULL,
+      "dueDate" varchar(32) NOT NULL,
+      "status" "customer_invoice_status" NOT NULL DEFAULT 'draft',
+      "currency" varchar(10) NOT NULL DEFAULT 'INR',
+      "subtotal" numeric NOT NULL DEFAULT 0,
+      "discountAmount" numeric NOT NULL DEFAULT 0,
+      "taxableAmount" numeric NOT NULL DEFAULT 0,
+      "taxType" "customer_invoice_tax_type" NOT NULL DEFAULT 'CGST_SGST',
+      "taxRate" numeric NOT NULL DEFAULT 18,
+      "cgstRate" numeric NOT NULL DEFAULT 9,
+      "sgstRate" numeric NOT NULL DEFAULT 9,
+      "igstRate" numeric NOT NULL DEFAULT 0,
+      "cgstAmount" numeric NOT NULL DEFAULT 0,
+      "sgstAmount" numeric NOT NULL DEFAULT 0,
+      "igstAmount" numeric NOT NULL DEFAULT 0,
+      "taxAmount" numeric NOT NULL DEFAULT 0,
+      "totalAmount" numeric NOT NULL DEFAULT 0,
+      "paidAmount" numeric NOT NULL DEFAULT 0,
+      "outstandingAmount" numeric NOT NULL DEFAULT 0,
+      "notes" text,
+      "terms" text,
+      "cancellationReason" text,
+      "cancelledAt" timestamptz,
+      "cancelledBy" uuid,
+      "issuedAt" timestamptz,
+      "issuedBy" uuid,
+      "createdBy" uuid,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  await pool.query('CREATE INDEX IF NOT EXISTS "customer_invoices_invoiceNumber_idx" ON "customer_invoices" ("invoiceNumber")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "customer_invoices_clientId_idx" ON "customer_invoices" ("clientId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "customer_invoices_leadId_idx" ON "customer_invoices" ("leadId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "customer_invoices_projectId_idx" ON "customer_invoices" ("projectId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "customer_invoices_status_idx" ON "customer_invoices" ("status")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "customer_invoices_dueDate_idx" ON "customer_invoices" ("dueDate")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "customer_invoices_createdAt_idx" ON "customer_invoices" ("createdAt")');
+
+  await pool.query('ALTER TABLE "customer_invoices" ADD COLUMN IF NOT EXISTS "clientName" varchar(255)');
+  await pool.query('ALTER TABLE "customer_invoices" ADD COLUMN IF NOT EXISTS "milestoneIndex" integer');
+  await pool.query('ALTER TABLE "customer_invoices" ADD COLUMN IF NOT EXISTS "cancelReason" text');
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "customer_invoice_items" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "invoiceId" uuid NOT NULL,
+      "description" text NOT NULL,
+      "quantity" numeric NOT NULL DEFAULT 1,
+      "unitPrice" numeric NOT NULL DEFAULT 0,
+      "taxableAmount" numeric NOT NULL DEFAULT 0,
+      "taxRate" numeric NOT NULL DEFAULT 0,
+      "taxAmount" numeric NOT NULL DEFAULT 0,
+      "lineTotal" numeric NOT NULL DEFAULT 0,
+      "sortOrder" integer NOT NULL DEFAULT 0,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  await pool.query('CREATE INDEX IF NOT EXISTS "customer_invoice_items_invoiceId_idx" ON "customer_invoice_items" ("invoiceId")');
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "invoice_payment_allocations" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "paymentTransactionId" uuid NOT NULL,
+      "invoiceId" uuid NOT NULL,
+      "allocatedAmount" numeric NOT NULL DEFAULT 0,
+      "allocatedAt" timestamptz NOT NULL DEFAULT now(),
+      "allocatedBy" uuid,
+      "notes" text,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  await pool.query('CREATE INDEX IF NOT EXISTS "invoice_payment_allocations_paymentId_idx" ON "invoice_payment_allocations" ("paymentTransactionId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "invoice_payment_allocations_invoiceId_idx" ON "invoice_payment_allocations" ("invoiceId")');
+
+  // Phase 5: AMC Contracts & Customer Equipment
+  await pool.query(`
+    DO $$ BEGIN
+      CREATE TYPE "amc_contract_status" AS ENUM ('Draft', 'Pending Approval', 'Active', 'Expired', 'Cancelled', 'Renewed');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
+  `);
+
+  await pool.query('CREATE SEQUENCE IF NOT EXISTS "amc_contract_number_seq" START WITH 1001 INCREMENT BY 1');
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "customer_equipment" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "clientId" uuid NOT NULL,
+      "clientName" varchar(255),
+      "projectId" uuid,
+      "equipmentName" varchar(255) NOT NULL,
+      "modelNumber" varchar(255),
+      "serialNumber" varchar(255),
+      "category" varchar(128),
+      "location" varchar(255),
+      "installationDate" varchar(32),
+      "warrantyStartDate" varchar(32),
+      "warrantyEndDate" varchar(32),
+      "status" varchar(64) NOT NULL DEFAULT 'Operational',
+      "notes" text,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  await pool.query('CREATE INDEX IF NOT EXISTS "customer_equipment_clientId_idx" ON "customer_equipment" ("clientId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "customer_equipment_projectId_idx" ON "customer_equipment" ("projectId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "customer_equipment_serialNumber_idx" ON "customer_equipment" ("serialNumber")');
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "amc_contracts" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "contractNumber" varchar(64) NOT NULL,
+      "title" varchar(255) NOT NULL,
+      "clientId" uuid NOT NULL,
+      "clientName" varchar(255) NOT NULL,
+      "projectId" uuid,
+      "projectCode" varchar(64),
+      "projectName" varchar(255),
+      "contractType" varchar(32) NOT NULL DEFAULT 'New',
+      "previousContractId" uuid,
+      "status" "amc_contract_status" NOT NULL DEFAULT 'Draft',
+      "startDate" varchar(32) NOT NULL,
+      "endDate" varchar(32) NOT NULL,
+      "durationMonths" integer NOT NULL DEFAULT 12,
+      "signingDate" varchar(32),
+      "coverageType" varchar(64) NOT NULL DEFAULT 'Comprehensive',
+      "coveredEquipment" jsonb NOT NULL DEFAULT '[]'::jsonb,
+      "coveredServices" jsonb NOT NULL DEFAULT '[]'::jsonb,
+      "excludedServices" jsonb NOT NULL DEFAULT '[]'::jsonb,
+      "preventiveVisitCount" integer NOT NULL DEFAULT 4,
+      "coverageNotes" text,
+      "contractValue" numeric NOT NULL DEFAULT 0,
+      "currency" varchar(10) NOT NULL DEFAULT 'INR',
+      "billingFrequency" varchar(32) NOT NULL DEFAULT 'Annual',
+      "billingStartDate" varchar(32),
+      "paymentTerms" varchar(255),
+      "renewalTerms" text,
+      "commercialNotes" text,
+      "plannedInstallments" jsonb NOT NULL DEFAULT '[]'::jsonb,
+      "documentPath" varchar(1024),
+      "documentOriginalName" varchar(255),
+      "documentSize" integer,
+      "documentMimeType" varchar(128),
+      "internalNotes" text,
+      "approvedBy" uuid,
+      "approvedAt" timestamptz,
+      "createdBy" uuid,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS "amc_contracts_contractNumber_unique_idx" ON "amc_contracts" ("contractNumber")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "amc_contracts_clientId_idx" ON "amc_contracts" ("clientId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "amc_contracts_projectId_idx" ON "amc_contracts" ("projectId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "amc_contracts_status_idx" ON "amc_contracts" ("status")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "amc_contracts_endDate_idx" ON "amc_contracts" ("endDate")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "amc_contracts_previousContractId_idx" ON "amc_contracts" ("previousContractId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "amc_contracts_createdAt_idx" ON "amc_contracts" ("createdAt")');
 };
 
 export default db;

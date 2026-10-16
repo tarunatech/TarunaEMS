@@ -25,18 +25,29 @@ const hasContent = (input) => Array.isArray(input)
     : Object.values(item || {}).some(val => Array.isArray(val) ? val.length : hasText(val)))
   : hasText(input);
 
-const formatMoney = (amount, currency = 'INR') => {
-  const number = Number(amount || 0);
-  if (!number) return '-';
+const formatMoney = (amount, currency = 'INR', allowZero = false) => {
+  if (amount === undefined || amount === null || amount === '') return '-';
+  const number = Number(amount);
+  if (isNaN(number)) return '-';
+  if (number === 0 && !allowZero) return '-';
   const prefix = currency === 'INR' ? 'Rs. ' : `${currency} `;
   return `${prefix}${number.toLocaleString('en-IN')}`;
 };
 
 const formatDateDisplay = (dateVal) => {
   if (!dateVal) return '-';
+  if (typeof dateVal === 'string') {
+    const s = dateVal.trim();
+    if (!s) return '-';
+    const dmy = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (dmy) {
+      const [, day, month, year] = dmy;
+      return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+    }
+  }
   const d = new Date(dateVal);
   if (isNaN(d.getTime())) return String(dateVal);
-  return d.toLocaleDateString('en-IN');
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
 const drawDotGrid = (doc, startX, startY, cols = 8, rows = 6) => {
@@ -441,19 +452,74 @@ export const generateProposalPdf = async ({ proposal }) => {
     doc.y = 64;
 
     const pricing = proposal.pricing || {};
+    const currSymbol = pricing.currency === 'INR' ? '(₹)' : `(${pricing.currency || 'INR'})`;
     const commercialRows = [
-      ['Total Price', formatMoney(pricing.totalPrice, pricing.currency)],
-      ['Discounted Price', formatMoney(pricing.discountedPrice, pricing.currency)],
-      ['AMC Cost', pricing.amcCost ? `${formatMoney(pricing.amcCost, pricing.currency)} / year` : '-'],
-      ['Valid Until', formatDateDisplay(proposal.validity?.validUntil)]
-    ].filter(([, val]) => val !== '-');
-    if (commercialRows.length) sectionTitle(doc, 'Commercial Summary', proposal);
-    commercialRows.forEach(([label, val]) => {
-      ensureSpace(doc, 28, proposal);
-      doc.fillColor('#64748b').font('Helvetica-Bold').fontSize(9).text(label, 54, doc.y, { width: 160 });
-      doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(11).text(val, 220, doc.y, { width: 260 });
-      doc.moveDown(0.7);
-    });
+      { label: 'Contract Duration', val: hasText(proposal.contractDuration) ? String(proposal.contractDuration).trim() : '-', isAmount: false },
+      { label: 'Project Start Date', val: formatDateDisplay(proposal.projectStartDate), isAmount: false },
+      { label: 'Project End Date', val: formatDateDisplay(proposal.projectEndDate), isAmount: false },
+      { label: `Total Quoted Price ${currSymbol}`, val: (pricing.totalPrice !== undefined && pricing.totalPrice !== null && pricing.totalPrice !== '' && Number(pricing.totalPrice) > 0) ? formatMoney(pricing.totalPrice, pricing.currency) : '-', isAmount: true },
+      { label: `Discounted Offer Price ${currSymbol}`, val: Number(pricing.discountedPrice) > 0 ? formatMoney(pricing.discountedPrice, pricing.currency) : '-', isAmount: true, isHighlight: Number(pricing.discountedPrice) > 0 },
+      { label: `AMC / Support Cost ${currSymbol}`, val: Number(pricing.amcCost) > 0 ? `${formatMoney(pricing.amcCost, pricing.currency)} / year` : '-', isAmount: true },
+      { label: `Additional One-Time Charges ${currSymbol}`, val: Number(pricing.additionalCharges) > 0 ? formatMoney(pricing.additionalCharges, pricing.currency) : '-', isAmount: true },
+      { label: `Recurring Charges ${currSymbol}`, val: Number(pricing.recurringCharges) > 0 ? formatMoney(pricing.recurringCharges, pricing.currency) : '-', isAmount: true }
+    ];
+
+    if (hasText(proposal.validity?.validUntil)) {
+      commercialRows.push({
+        label: 'Valid Until',
+        val: formatDateDisplay(proposal.validity?.validUntil),
+        isAmount: false
+      });
+    }
+
+    // Only show fields that have been inputted by the user
+    const visibleCommercialRows = commercialRows.filter(r => r.val && r.val !== '-');
+
+    if (visibleCommercialRows.length) {
+      sectionTitle(doc, 'Commercial Summary', proposal);
+      const startX = 48;
+      const width = doc.page.width - 96;
+      const headerH = 26;
+      const rowH = 25;
+
+      ensureSpace(doc, headerH + (visibleCommercialRows.length * rowH) + 16, proposal);
+
+      const headerY = doc.y;
+      doc.fillColor('#0f172a').roundedRect(startX, headerY, width, headerH, 4).fill();
+      doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(9.5).text('Commercial Agreement & Charges', startX + 12, headerY + 8);
+      doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(9.5).text('Details / Amount', startX + 240, headerY + 8);
+
+      doc.y = headerY + headerH + 2;
+
+      visibleCommercialRows.forEach((row, idx) => {
+        ensureSpace(doc, rowH + 4, proposal);
+        const rY = doc.y;
+
+        if (idx % 2 === 0) {
+          doc.fillColor('#f8fafc').rect(startX, rY, width, rowH).fill();
+        } else {
+          doc.fillColor('#ffffff').rect(startX, rY, width, rowH).fill();
+        }
+
+        doc.save();
+        doc.strokeColor('#e2e8f0').lineWidth(0.5).moveTo(startX, rY + rowH).lineTo(startX + width, rY + rowH).stroke();
+        doc.restore();
+
+        doc.fillColor('#475569').font('Helvetica-Bold').fontSize(9.5).text(row.label, startX + 12, rY + 7, { width: 220, lineBreak: false });
+
+        if (row.isHighlight) {
+          doc.fillColor('#059669').font('Helvetica-Bold').fontSize(10.5).text(row.val, startX + 240, rY + 6.5, { width: width - 252, lineBreak: false });
+        } else if (row.isAmount) {
+          doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(10.5).text(row.val, startX + 240, rY + 6.5, { width: width - 252, lineBreak: false });
+        } else {
+          doc.fillColor('#1e293b').font('Helvetica').fontSize(10).text(row.val, startX + 240, rY + 7, { width: width - 252, lineBreak: false });
+        }
+
+        doc.y = rY + rowH;
+      });
+
+      doc.moveDown(0.9);
+    }
 
     const sections = proposal.sections || {};
     [

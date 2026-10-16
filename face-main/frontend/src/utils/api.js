@@ -131,6 +131,9 @@ export const dashboardAPI = {
 // Employee API calls
 export const employeeAPI = {
   createEmployee: (employeeData) => API.post('/employees', employeeData),
+  uploadDocument: (formData) => API.post('/employees/upload-document', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   getEmployees: (params = {}) => API.get('/employees', { params }),
   getEmployeeById: (id) => {
     console.log('employeeAPI.getEmployeeById called with id:', id);
@@ -684,5 +687,82 @@ export const offerLetterAPI = {
   getCandidatesAndEmployees: () => API.get('/offer-letters/candidates-and-employees'),
 };
 
+// Projects API calls
+export const projectAPI = {
+  getProjects: (params = {}) => API.get('/projects', { params }),
+  getProjectById: (id) => API.get(`/projects/${id}`),
+  getProjectByLead: (leadId) => API.get(`/projects/by-lead/${leadId}`),
+  createProject: (data) => API.post('/projects', data),
+  updateProject: (id, data) => API.patch(`/projects/${id}`, data)
+};
+
+// Tasks API calls
+export const taskAPI = {
+  getTasks: (params = {}) => API.get('/tasks', { params }),
+  getTaskById: (id) => API.get(`/tasks/${id}`),
+  createTask: (data) => API.post('/tasks', data),
+  updateTask: (id, data) => API.put(`/tasks/${id}`, data),
+  deleteTask: (id) => API.delete(`/tasks/${id}`)
+};
+
+// Finance Management API calls
+export const financeAPI = {
+  getOverview: (params = {}) => API.get('/finance/overview', { params }),
+  getProjects: (params = {}) => API.get('/finance/projects', { params }),
+  getProjectDetails: (projectId) => API.get(`/finance/projects/${projectId}`),
+  getBudgets: (params = {}) => API.get('/finance/budgets', { params }),
+  createBudget: (data) => API.post('/finance/budgets', data),
+  getBudgetById: (id) => API.get(`/finance/budgets/${id}`),
+  updateBudget: (id, data) => API.patch(`/finance/budgets/${id}`, data),
+  submitBudget: (id) => API.post(`/finance/budgets/${id}/submit`),
+  approveBudget: (id) => API.post(`/finance/budgets/${id}/approve`),
+  rejectBudget: (id, data) => API.post(`/finance/budgets/${id}/reject`, data),
+  reviseBudget: (id, data) => API.post(`/finance/budgets/${id}/revise`, data),
+  getTransactions: (params = {}) => API.get('/finance/transactions', { params }),
+  linkTransaction: (data) => API.post('/finance/transactions/link-project', data),
+  getSpendingAnalysis: (params = {}) => API.get('/finance/spending-analysis', { params }),
+  // Phase 3: Customer Invoices & Receivables
+  getInvoices: (params = {}) => API.get('/finance/invoices', { params }),
+  getInvoiceById: (id) => API.get(`/finance/invoices/${id}`),
+  createInvoice: (data) => API.post('/finance/invoices', data),
+  updateInvoice: (id, data) => API.put(`/finance/invoices/${id}`, data),
+  issueInvoice: (id) => API.post(`/finance/invoices/${id}/issue`),
+  cancelInvoice: (id, data) => API.post(`/finance/invoices/${id}/cancel`, data),
+  downloadInvoicePdf: (id) => API.get(`/finance/invoices/${id}/pdf`, { responseType: 'blob' }),
+  allocatePayment: (data) => API.post('/finance/invoices/allocations', data),
+  deallocatePayment: (id) => API.delete(`/finance/invoices/allocations/${id}`),
+  getUnallocatedPayments: (params = {}) => API.get('/finance/payments/unallocated', { params }),
+  getReceivablesSummary: () => API.get('/finance/receivables/summary'),
+};
+
+// AMC Contract Management API calls
+export const amcAPI = {
+  getDashboard: () => API.get('/amc/dashboard'),
+  getContracts: (params = {}) => API.get('/amc/contracts', { params }),
+  getContractById: (id) => API.get(`/amc/contracts/${id}`),
+  createContract: (data) => {
+    if (data instanceof FormData) {
+      return API.post('/amc/contracts', data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    }
+    return API.post('/amc/contracts', data);
+  },
+  updateContract: (id, data) => {
+    if (data instanceof FormData) {
+      return API.put(`/amc/contracts/${id}`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    }
+    return API.put(`/amc/contracts/${id}`, data);
+  },
+  updateContractStatus: (id, status) => API.patch(`/amc/contracts/${id}/status`, { status }),
+  renewContract: (id, data) => API.post(`/amc/contracts/${id}/renew`, data),
+  calculateInstallments: (data) => API.post('/amc/contracts/calculate-installments', data),
+  getEquipment: (params = {}) => API.get('/amc/equipment', { params }),
+  createEquipment: (data) => API.post('/amc/equipment', data),
+};
+
 // Export the configured axios instance
 export default API;
+

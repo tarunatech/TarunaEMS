@@ -83,19 +83,39 @@ export const fallbackExtractFromText = (rawText) => {
   };
 
   let totalPrice = 0;
-  const totalMatch = rawText.match(/(?:Total Price|Total Project Cost|Total Cost|Total Amount)\s*[:\n]?\s*(?:Rs\.?|INR|\$)?\s*([\d,]+(?:\.\d+)?)/i);
+  const totalMatch = rawText.match(/(?:Total Quoted Price|Total Price|Total Project Cost|Total Cost|Total Amount)\s*[:\n]?\s*(?:Rs\.?|INR|\$)?\s*([\d,]+(?:\.\d+)?)/i);
   if (totalMatch) totalPrice = parseNum(totalMatch[1]);
 
   let discountedPrice = 0;
-  const discMatch = rawText.match(/(?:Discounted Price|Special Price)\s*[:\n]?\s*(?:Rs\.?|INR|\$)?\s*([\d,]+(?:\.\d+)?)/i);
+  const discMatch = rawText.match(/(?:Discounted Offer Price|Discounted Price|Special Price)\s*[:\n]?\s*(?:Rs\.?|INR|\$)?\s*([\d,]+(?:\.\d+)?)/i);
   if (discMatch) discountedPrice = parseNum(discMatch[1]);
 
   let amcCost = 0;
-  const amcMatch = rawText.match(/(?:AMC Cost|AMC|Annual Maintenance)\s*[:\n]?\s*(?:Rs\.?|INR|\$)?\s*([\d,]+(?:\.\d+)?)/i);
+  const amcMatch = rawText.match(/(?:AMC \/ Support Cost|AMC Support Cost|AMC Cost|AMC|Annual Maintenance)\s*[:\n]?\s*(?:Rs\.?|INR|\$)?\s*([\d,]+(?:\.\d+)?)/i);
   if (amcMatch) amcCost = parseNum(amcMatch[1]);
 
+  let additionalCharges = 0;
+  const addMatch = rawText.match(/(?:Additional One-Time Charges|Additional Charges)\s*[:\n]?\s*(?:Rs\.?|INR|\$)?\s*([\d,]+(?:\.\d+)?)/i);
+  if (addMatch) additionalCharges = parseNum(addMatch[1]);
+
+  let recurringCharges = 0;
+  const recMatch = rawText.match(/(?:Recurring Charges)\s*[:\n]?\s*(?:Rs\.?|INR|\$)?\s*([\d,]+(?:\.\d+)?)/i);
+  if (recMatch) recurringCharges = parseNum(recMatch[1]);
+
+  let contractDuration = '';
+  const cdMatch = rawText.match(/(?:Contract Duration)\s*[:\n]?\s*([^\n]+)/i);
+  if (cdMatch) contractDuration = cdMatch[1].trim();
+
+  let projectStartDate = '';
+  const psdMatch = rawText.match(/(?:Project Start Date)\s*[:\n]?\s*([^\n]+)/i);
+  if (psdMatch) projectStartDate = psdMatch[1].trim();
+
+  let projectEndDate = '';
+  const pedMatch = rawText.match(/(?:Project End Date)\s*[:\n]?\s*([^\n]+)/i);
+  if (pedMatch) projectEndDate = pedMatch[1].trim();
+
   let validUntil = '';
-  const valMatch = rawText.match(/(?:Valid Until|Validity)\s*[:\n]?\s*([^\n]+)/i);
+  const valMatch = rawText.match(/(?:Valid Until|Validity|Proposal Validity)\s*[:\n]?\s*([^\n]+)/i);
   if (valMatch) validUntil = valMatch[1].trim();
 
   const emailMatch = rawText.match(/[\w.-]+@[\w.-]+\.\w+/);
@@ -141,10 +161,15 @@ export const fallbackExtractFromText = (rawText) => {
     companyName: companyName || '',
     customerName: customerName || '',
     proposalType: proposalType || 'ERP Software',
+    contractDuration: contractDuration || '',
+    projectStartDate: projectStartDate || '',
+    projectEndDate: projectEndDate || '',
     pricing: {
       totalPrice,
       discountedPrice,
       amcCost,
+      additionalCharges,
+      recurringCharges,
       currency: rawText.includes('Rs') || rawText.includes('INR') || rawText.includes('₹') ? 'INR' : 'USD'
     },
     validity: { validUntil },

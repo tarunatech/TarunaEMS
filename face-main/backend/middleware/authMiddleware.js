@@ -91,6 +91,42 @@ export const adminOnly = (req, res, next) => {
   next();
 };
 
+// Helper function to check if user is Admin or HR
+export const isHrOrAdmin = async (user) => {
+  if (!user) return false;
+  if (user.role === 'admin' || user.role === 'hr') return true;
+
+  try {
+    const employee = await Employee.findOne({ user: user._id || user.id }).populate('workInfo.department', 'name code');
+    if (!employee) return false;
+    const dept = employee.workInfo?.department?.name || employee.workInfo?.department?.code || '';
+    const normDept = String(dept).replace(/\s+/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+    return ['hr', 'humanresources', 'humanresource', 'hrdepartment'].some(k => normDept.includes(k));
+  } catch (error) {
+    console.error('isHrOrAdmin helper error:', error);
+    return false;
+  }
+};
+
+// Admin or HR middleware
+export const adminOrHr = async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Not authorized, user not found"
+    });
+  }
+
+  if (await isHrOrAdmin(req.user)) {
+    return next();
+  }
+
+  return res.status(403).json({
+    success: false,
+    message: "Access denied. Admin or HR privileges required."
+  });
+};
+
 // Employee or Admin middleware (for routes accessible to both)
 export const employeeOrAdmin = (req, res, next) => {
   if (!req.user) {

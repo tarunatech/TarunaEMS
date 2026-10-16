@@ -3,6 +3,7 @@ import FaceData from '../models/FaceData.js';
 import Employee from '../models/Employee.js';
 import { sendEmail } from '../utils/email.js';
 import Department from '../models/Department.js';
+import { isHrOrAdmin } from '../middleware/authMiddleware.js';
 
 const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -11,10 +12,11 @@ const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a
 // Updated createEmployee function in employeeController.js
 export const createEmployee = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    const isHr = await isHrOrAdmin(req.user);
+    if (req.user.role !== 'admin' && !isHr) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied. Admin only.'
+        message: 'Access denied. Admin or HR privileges required.'
       });
     }
 
@@ -324,7 +326,8 @@ export const getEmployeeById = async (req, res) => {
         });
       }
 
-      if (req.user.role !== 'admin' && employee.user._id.toString() !== req.user.id.toString()) {
+      const isHr = await isHrOrAdmin(req.user);
+      if (req.user.role !== 'admin' && !isHr && employee.user._id.toString() !== req.user.id.toString()) {
         return res.status(403).json({
           success: false,
           message: 'Access denied. You can only view your own employee record.'
@@ -383,12 +386,30 @@ export const updateEmployee = async (req, res) => {
     }
 
     if (req.user.role !== 'admin') {
-      const employee = await Employee.findById(targetEmployeeId);
-      if (!employee || employee.user.toString() !== req.user.id.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied. You can only update your own profile.'
-        });
+      let isHrUser = false;
+      if (req.user.role === 'hr') {
+        isHrUser = true;
+      } else {
+        try {
+          const callerEmployee = await Employee.findOne({ user: req.user.id }).populate('workInfo.department', 'name code');
+          const dept = callerEmployee?.workInfo?.department?.name || callerEmployee?.workInfo?.department?.code || '';
+          const normDept = String(dept).replace(/\s+/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+          if (['hr', 'humanresources', 'humanresource', 'hrdepartment'].some(k => normDept.includes(k))) {
+            isHrUser = true;
+          }
+        } catch (checkErr) {
+          console.error('Error checking HR status in updateEmployee:', checkErr);
+        }
+      }
+
+      if (!isHrUser) {
+        const employee = await Employee.findById(targetEmployeeId);
+        if (!employee || employee.user.toString() !== req.user.id.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied. You can only update your own profile.'
+          });
+        }
       }
     }
 

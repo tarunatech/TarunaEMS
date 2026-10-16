@@ -4,6 +4,7 @@ export const COMMON_MODULE_KEYS = ['dashboard', 'attendance', 'leaves', 'holiday
 
 const MODULE_PATH_MAP = {
   dashboard: ['/employee/dashboard'],
+  employees: ['/employee/employees'],
   attendance: ['/employee/attendance'],
   leaves: ['/employee/leaves'],
   holidays: ['/employee/holidays'],
@@ -13,18 +14,43 @@ const MODULE_PATH_MAP = {
   sales: ['/employee/sales', '/employee/leads'],
   salesPipeline: ['/employee/sales-pipeline'],
   salesMeetings: ['/employee/sales-meetings'],
+  projects: ['/employee/projects'],
+  amcContracts: ['/employee/amc-contracts', '/employee/amc'],
+  finance: ['/employee/finance'],
+  purchaseOrders: ['/employee/purchase-orders'],
   hrInterviews: ['/employee/hr-interviews'],
   offerLetters: ['/employee/offer-letters'],
 };
 
+const SALES_KEYS = [
+  'dashboard',
+  'attendance',
+  'sales',
+  'salesPipeline',
+  'salesMeetings',
+  'projects',
+  'amcContracts',
+  'purchaseOrders',
+  'finance',
+  'expenses',
+  'tasks',
+  'leaves',
+  'holidays',
+];
+
 const DEPARTMENT_RULES = {
-  bde: ['dashboard', 'attendance', 'sales', 'salesPipeline', 'salesMeetings', 'tasks', 'expenses', 'leaves', 'holidays'],
-  businessdevelopment: ['dashboard', 'attendance', 'sales', 'salesPipeline', 'salesMeetings', 'tasks', 'expenses', 'leaves', 'holidays'],
-  businessdevelopmentexecutive: ['dashboard', 'attendance', 'sales', 'salesPipeline', 'salesMeetings', 'tasks', 'expenses', 'leaves', 'holidays'],
+  bde: SALES_KEYS,
+  businessdevelopment: SALES_KEYS,
+  businessdevelopmentexecutive: SALES_KEYS,
+  sales: SALES_KEYS,
+  salesdepartment: SALES_KEYS,
+  salesexecutive: SALES_KEYS,
   developer: [...COMMON_MODULE_KEYS, 'tasks', 'problems'],
   development: [...COMMON_MODULE_KEYS, 'tasks', 'problems'],
-  hr: [...COMMON_MODULE_KEYS, 'tasks', 'hrInterviews', 'offerLetters'],
-  humanresources: [...COMMON_MODULE_KEYS, 'tasks', 'hrInterviews', 'offerLetters'],
+  hr: ['dashboard', 'employees', 'attendance', 'leaves', 'holidays', 'expenses', 'tasks', 'hrInterviews', 'offerLetters'],
+  humanresources: ['dashboard', 'employees', 'attendance', 'leaves', 'holidays', 'expenses', 'tasks', 'hrInterviews', 'offerLetters'],
+  humanresource: ['dashboard', 'employees', 'attendance', 'leaves', 'holidays', 'expenses', 'tasks', 'hrInterviews', 'offerLetters'],
+  hrdepartment: ['dashboard', 'employees', 'attendance', 'leaves', 'holidays', 'expenses', 'tasks', 'hrInterviews', 'offerLetters'],
   designing: [...COMMON_MODULE_KEYS, 'tasks'],
   design: [...COMMON_MODULE_KEYS, 'tasks'],
 };
@@ -66,6 +92,12 @@ export const getDepartmentName = (...candidates) => {
 
 export const allowedKeysForDepartment = (department) => {
   const key = normalizeDepartment(department);
+  if (['hr', 'humanresources', 'humanresource', 'hrdepartment'].includes(key) || key.includes('hr') || key.includes('humanresource')) {
+    return ['dashboard', 'employees', 'attendance', 'leaves', 'holidays', 'expenses', 'tasks', 'hrInterviews', 'offerLetters'];
+  }
+  if (['bde', 'businessdevelopment', 'businessdevelopmentexecutive', 'sales', 'salesdepartment', 'salesexecutive'].includes(key) || key.includes('sales') || key.includes('bde') || key.includes('businessdevelopment')) {
+    return SALES_KEYS;
+  }
   return DEPARTMENT_RULES[key] || [...COMMON_MODULE_KEYS, 'tasks'];
 };
 

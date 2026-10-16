@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import {
   FileText, Plus, Search, Download, Edit3, Trash2, Eye,
   XCircle, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { leadAPI, purchaseAPI } from '../../utils/api';
+import { leadAPI, purchaseAPI, projectAPI } from '../../utils/api';
 
 const SERVICE_TYPES = [
   'Domain',
@@ -52,6 +53,7 @@ const serviceMeta = {
 const defaultForm = () => ({
   client: '',
   clientName: '',
+  projectId: '',
   project: '',
   serviceType: 'Domain',
   vendor: 'GoDaddy',
@@ -75,18 +77,24 @@ const getStoredOptions = (key) => {
 
 const mergeOptions = (...groups) => [...new Set(groups.flat().filter(Boolean).map(option => String(option).trim()).filter(Boolean))];
 
-const PurchaseOrders = () => {
+const PurchaseOrders = ({ Layout = AdminLayout }) => {
+  const [searchParams] = useSearchParams();
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [clients, setClients] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    status: 'all',
-    vendor: '',
-    serviceType: 'all',
-    renewalMonth: '',
-    startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().slice(0, 10),
-    endDate: new Date().toISOString().slice(0, 10),
-    search: ''
+  const [filters, setFilters] = useState(() => {
+    const qProject = searchParams.get('project') || '';
+    const qSearch = searchParams.get('search') || qProject;
+    return {
+      status: 'all',
+      vendor: '',
+      serviceType: 'all',
+      renewalMonth: '',
+      startDate: qProject ? '' : new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().slice(0, 10),
+      endDate: new Date().toISOString().slice(0, 10),
+      search: qSearch
+    };
   });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -101,13 +109,15 @@ const PurchaseOrders = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [poRes, leadRes] = await Promise.all([
+      const [poRes, leadRes, projectRes] = await Promise.all([
         purchaseAPI.getPurchaseOrders(filters),
-        leadAPI.getLeads({ includeAll: true, status: 'Won', limit: 200 })
+        leadAPI.getLeads({ includeAll: true, limit: 1000 }),
+        projectAPI.getProjects({ limit: 1000 })
       ]);
 
       if (poRes.data.success) setPurchaseOrders(poRes.data.data.purchaseOrders || []);
       if (leadRes.data.success) setClients(leadRes.data.data.leads || []);
+      if (projectRes.data.success) setProjects(projectRes.data.data?.projects || projectRes.data.data || []);
     } catch (err) {
       console.error('Failed to load service purchases:', err);
       toast.error('Failed to load service purchases');
@@ -120,27 +130,65 @@ const PurchaseOrders = () => {
     fetchData();
   }, [fetchData]);
 
-  const getClientName = (client) => client?.company || `${client?.firstName || ''} ${client?.lastName || ''}`.trim() || client?.email || 'Client';
+  const getClientName = (client) => {
+    if (!client) return '';
+    const fullName = `${client.firstName || ''} ${client.lastName || ''}`.trim();
+    if (client.company && fullName) {
+      return `${client.company} (${fullName})`;
+    }
+    return client.company || fullName || client.email || 'Client';
+  };
 
   const selectedClient = useMemo(
-    () => clients.find(client => client._id === formData.client),
-    [clients, formData.client]
+    () => clients.find(client => client._id === formData.client || getClientName(client).toLowerCase() === (formData.clientName || '').trim().toLowerCase()),
+    [clients, formData.client, formData.clientName]
   );
 
   const projectOptions = useMemo(() => {
-    if (!selectedClient) return customProjects;
-    const options = [
-      selectedClient.company,
-      ...(selectedClient.interestedProducts || []),
-      ...customProjects
-    ].filter(Boolean);
-    return [...new Set(options)];
-  }, [selectedClient, customProjects]);
+    const formatted = projects.map(p => ({
+      label: p.projectCode ? `${p.projectCode} - ${p.name}` : p.name,
+      name: p.name,
+      code: p.projectCode,
+      leadId: p.leadId?._id || p.leadId?.id || p.leadId,
+      clientName: p.clientName
+    }));
 
-  const clientOptions = useMemo(
-    () => mergeOptions(clients.map(client => getClientName(client)), customClients),
-    [clients, customClients]
-  );
+    const currentLeadId = formData.client;
+    const currentClientName = (formData.clientName || '').trim().toLowerCase();
+
+    let primary = [];
+    let others = [];
+
+    if (currentLeadId || currentClientName) {
+      formatted.forEach(p => {
+        const matchesClient = (currentLeadId && p.leadId === currentLeadId) ||
+          (currentClientName && p.clientName && p.clientName.toLowerCase() === currentClientName);
+        if (matchesClient) primary.push(p.label);
+        else others.push(p.label);
+      });
+    } else {
+      primary = formatted.map(p => p.label);
+    }
+
+    return mergeOptions(primary, others, customProjects);
+  }, [projects, formData.client, formData.clientName, customProjects]);
+
+  const clientOptions = useMemo(() => {
+    const leadNames = [];
+    clients.forEach(c => {
+      const company = c.company?.trim();
+      const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim();
+      if (company && fullName) {
+        leadNames.push(`${company} (${fullName})`);
+        leadNames.push(company);
+      } else if (company) {
+        leadNames.push(company);
+      } else if (fullName) {
+        leadNames.push(fullName);
+      }
+    });
+    return mergeOptions(leadNames, customClients);
+  }, [clients, customClients]);
   const serviceTypeOptions = useMemo(() => mergeOptions(SERVICE_TYPES, customServiceTypes), [customServiceTypes]);
   const vendorOptions = useMemo(() => mergeOptions(VENDORS, customVendors), [customVendors]);
 
@@ -187,17 +235,95 @@ const PurchaseOrders = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'clientName') {
-      const client = clients.find(item => getClientName(item).toLowerCase() === value.trim().toLowerCase());
-      const firstProject = client?.company || client?.interestedProducts?.[0] || '';
+      const trimmed = value.trim().toLowerCase();
+      const client = clients.find(item => {
+        const comp = (item.company || '').trim().toLowerCase();
+        const full = `${item.firstName || ''} ${item.lastName || ''}`.trim().toLowerCase();
+        const combined = `${comp} (${full})`.toLowerCase();
+        return comp === trimmed || full === trimmed || combined === trimmed || getClientName(item).toLowerCase() === trimmed;
+      });
+
+      const clientLeadId = client?._id || client?.id;
+      const matchingProj = projects.find(p => {
+        const pLeadId = p.leadId?._id || p.leadId?.id || p.leadId;
+        return (clientLeadId && pLeadId === clientLeadId) ||
+          (client?.company && p.clientName?.toLowerCase() === client.company.toLowerCase()) ||
+          (client && p.clientName?.toLowerCase() === getClientName(client).toLowerCase());
+      });
+
       setFormData(prev => ({
         ...prev,
         client: client?._id || '',
         clientName: value,
-        project: client && !prev.project ? firstProject : prev.project
+        projectId: matchingProj ? (matchingProj.id || matchingProj._id) : prev.projectId,
+        project: matchingProj
+          ? (matchingProj.projectCode ? `${matchingProj.projectCode} - ${matchingProj.name}` : matchingProj.name)
+          : (client?.company || prev.project)
       }));
       return;
     }
+
+    if (name === 'project') {
+      const val = value.trim();
+      const foundProject = projects.find(p => {
+        const label = p.projectCode ? `${p.projectCode} - ${p.name}` : p.name;
+        return label === val || p.name === val || p.projectCode === val || (p.id || p._id) === val;
+      });
+
+      if (foundProject) {
+        const foundProjId = foundProject.id || foundProject._id;
+        const foundLeadId = foundProject.leadId?._id || foundProject.leadId?.id || foundProject.leadId;
+        const clientObj = foundLeadId ? clients.find(c => (c._id || c.id) === foundLeadId) : null;
+        const autoClientName = clientObj ? getClientName(clientObj) : (foundProject.clientName || '');
+
+        setFormData(prev => ({
+          ...prev,
+          projectId: foundProjId,
+          project: foundProject.projectCode ? `${foundProject.projectCode} - ${foundProject.name}` : foundProject.name,
+          client: prev.client || (clientObj ? (clientObj._id || clientObj.id) : prev.client),
+          clientName: prev.clientName || autoClientName || prev.clientName
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          projectId: '',
+          project: val
+        }));
+      }
+      return;
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddNewCustomOption = (fieldName, newValue) => {
+    if (!newValue || !newValue.trim()) return;
+    const cleanValue = newValue.trim();
+    if (fieldName === 'clientName') {
+      setCustomClients(prev => {
+        const updated = mergeOptions(prev, cleanValue);
+        localStorage.setItem('itPurchaseClients', JSON.stringify(updated));
+        return updated;
+      });
+    } else if (fieldName === 'project') {
+      setCustomProjects(prev => {
+        const updated = mergeOptions(prev, cleanValue);
+        localStorage.setItem('itPurchaseProjects', JSON.stringify(updated));
+        return updated;
+      });
+    } else if (fieldName === 'serviceType') {
+      setCustomServiceTypes(prev => {
+        const updated = mergeOptions(prev, cleanValue);
+        localStorage.setItem('itPurchaseServiceTypes', JSON.stringify(updated));
+        return updated;
+      });
+    } else if (fieldName === 'vendor') {
+      setCustomVendors(prev => {
+        const updated = mergeOptions(prev, cleanValue);
+        localStorage.setItem('itPurchaseVendors', JSON.stringify(updated));
+        return updated;
+      });
+    }
   };
 
   const rememberCustomOptions = () => {
@@ -230,6 +356,11 @@ const PurchaseOrders = () => {
 
     if (!payload.client) {
       delete payload.client;
+    }
+    if (formData.projectId) {
+      payload.projectId = formData.projectId;
+    } else {
+      delete payload.projectId;
     }
 
     return payload;
@@ -279,10 +410,16 @@ const PurchaseOrders = () => {
 
   const openEditModal = (po) => {
     setSelectedPO(po);
+    const poProjectId = po.projectId?._id || po.projectId?.id || po.projectId || '';
+    const poProjectName = po.projectId?.projectCode && po.projectId?.name
+      ? `${po.projectId.projectCode} - ${po.projectId.name}`
+      : (po.projectId?.name || po.project || '');
+
     setFormData({
       client: po.client?._id || po.client || '',
       clientName: getPOClientName(po),
-      project: po.project || '',
+      projectId: poProjectId,
+      project: poProjectName,
       serviceType: po.serviceType || 'Domain',
       vendor: po.vendor || 'GoDaddy',
       serviceName: po.serviceName || '',
@@ -562,7 +699,7 @@ const PurchaseOrders = () => {
   };
 
   return (
-    <AdminLayout>
+    <Layout>
       <div className="w-full min-h-[calc(100vh-7rem)] space-y-6">
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 md:p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -657,7 +794,18 @@ const PurchaseOrders = () => {
                       <tr key={po._id} onClick={(event) => openPODetails(event, po)} className="hover:bg-blue-50 transition-all duration-200 cursor-pointer">
                         <td className="p-2 sm:p-3 text-slate-900 font-medium text-xs sm:text-sm">{po.poNumber || '—'}</td>
                         <td className="p-2 sm:p-3 text-slate-700 text-xs sm:text-sm">{getPOClientName(po)}</td>
-                        <td className="p-2 sm:p-3 text-slate-700 text-xs sm:text-sm">{po.project || '—'}</td>
+                        <td className="p-2 sm:p-3 text-slate-700 text-xs sm:text-sm">
+                          {po.projectId?.projectCode ? (
+                            <span className="inline-flex items-center gap-1.5 font-medium">
+                              <span className="font-mono text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200/80 px-1.5 py-0.5 rounded font-bold">
+                                {po.projectId.projectCode}
+                              </span>
+                              <span>{po.projectId.name || po.project}</span>
+                            </span>
+                          ) : (
+                            po.project || '—'
+                          )}
+                        </td>
                         <td className="p-2 sm:p-3"><ServiceBadge type={po.serviceType} /></td>
                         <td className="p-2 sm:p-3 text-slate-700 text-xs sm:text-sm">{po.vendor || '—'}</td>
                         <td className="p-2 sm:p-3 text-slate-500 text-xs sm:text-sm">{formatDate(po.renewalDate)}</td>
@@ -686,7 +834,14 @@ const PurchaseOrders = () => {
                     <ActionButtons po={po} onView={openViewModal} onEdit={openEditModal} onDelete={handleDeletePO} onGenerateInvoice={handleGenerateInvoicePDF} />
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <InfoBlock label="Project" value={po.project || '—'} />
+                    <InfoBlock
+                      label="Project"
+                      value={
+                        po.projectId?.projectCode
+                          ? `${po.projectId.projectCode} - ${po.projectId.name || po.project}`
+                          : (po.project || '—')
+                      }
+                    />
                     <InfoBlock label="Vendor" value={po.vendor || '—'} />
                     <InfoBlock label="Renewal" value={formatDate(po.renewalDate)} />
                     <InfoBlock label="Amount" value={formatCurrency(po.amount || po.grandTotal)} accent />
@@ -711,6 +866,7 @@ const PurchaseOrders = () => {
           serviceTypeOptions={serviceTypeOptions}
           vendorOptions={vendorOptions}
           onChange={handleInputChange}
+          onAddNewCustomOption={handleAddNewCustomOption}
           onSubmit={showCreateModal ? handleCreatePO : handleUpdatePO}
           onClose={() => { setShowCreateModal(false); setShowEditModal(false); }}
           submitLabel={showCreateModal ? 'Create Purchase' : 'Update Purchase'}
@@ -730,7 +886,7 @@ const PurchaseOrders = () => {
           onClose={() => setShowViewModal(false)}
         />
       )}
-    </AdminLayout>
+    </Layout>
   );
 };
 
@@ -751,27 +907,117 @@ const ActionButtons = ({ po, onView, onEdit, onDelete, onGenerateInvoice }) => (
   </div>
 );
 
-const EditableDropdown = ({ name, value, options, onChange, placeholder, listId, required = false }) => (
-  <>
-    <input
-      name={name}
-      value={value}
-      onChange={onChange}
-      list={listId}
-      placeholder={placeholder}
-      className={modalInputClass}
-      required={required}
-      autoComplete="off"
-    />
-    <datalist id={listId}>
-      {options.map(option => (
-        <option key={option} value={option} />
-      ))}
-    </datalist>
-  </>
-);
+const SelectWithAddNew = ({
+  label,
+  name,
+  value,
+  options = [],
+  onChange,
+  onAddNewCustomOption,
+  placeholder = 'Select option',
+  required = false
+}) => {
+  const [isCustomMode, setIsCustomMode] = useState(false);
 
-const PurchaseModal = ({ title, formData, clientOptions, projectOptions, serviceTypeOptions, vendorOptions, onChange, onSubmit, onClose, submitLabel, formatCurrency }) => (
+  // If the incoming value is present and not in options, make sure it's in the dropdown options
+  const allOptions = useMemo(() => {
+    const opts = [...options];
+    if (value && !opts.includes(value)) {
+      opts.unshift(value);
+    }
+    return opts;
+  }, [options, value]);
+
+  const handleSelectChange = (e) => {
+    const val = e.target.value;
+    if (val === '__add_new__') {
+      setIsCustomMode(true);
+      return;
+    }
+    onChange({ target: { name, value: val } });
+  };
+
+  const handleCustomInputChange = (e) => {
+    const val = e.target.value;
+    onChange({ target: { name, value: val } });
+  };
+
+  const handleCustomBlur = (e) => {
+    const val = (e.target.value || '').trim();
+    if (val && typeof onAddNewCustomOption === 'function') {
+      onAddNewCustomOption(name, val);
+    }
+  };
+
+  return (
+    <div className="flex flex-col min-w-0">
+      <div className="flex items-center justify-between mb-1 gap-1">
+        <label className="block text-xs font-semibold text-slate-700 truncate" title={label}>
+          {label}
+        </label>
+        <button
+          type="button"
+          onClick={() => setIsCustomMode(prev => !prev)}
+          className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-0.5 transition-colors shrink-0"
+        >
+          {isCustomMode ? (
+            <span className="text-slate-500 hover:text-slate-700">Choose from list</span>
+          ) : (
+            <>
+              <Plus className="w-3 h-3" />
+              <span>Add New</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {isCustomMode ? (
+        <input
+          type="text"
+          name={name}
+          value={value}
+          onChange={handleCustomInputChange}
+          onBlur={handleCustomBlur}
+          placeholder={`Enter new ${label.replace('*', '').trim()}...`}
+          className={modalInputClass}
+          required={required}
+          autoFocus
+        />
+      ) : (
+        <select
+          name={name}
+          value={value}
+          onChange={handleSelectChange}
+          className={modalInputClass}
+          required={required}
+        >
+          <option value="">{placeholder}</option>
+          {allOptions.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+          <option value="__add_new__">+ Add New...</option>
+        </select>
+      )}
+    </div>
+  );
+};
+
+const PurchaseModal = ({
+  title,
+  formData,
+  clientOptions,
+  projectOptions,
+  serviceTypeOptions,
+  vendorOptions,
+  onChange,
+  onAddNewCustomOption,
+  onSubmit,
+  onClose,
+  submitLabel,
+  formatCurrency
+}) => (
   <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-2.5 pt-14 sm:p-4">
     <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
     <div className="purchase-order-modal relative flex max-h-[40dvh] sm:max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-5 shadow-xl">
@@ -790,50 +1036,46 @@ const PurchaseModal = ({ title, formData, clientOptions, projectOptions, service
       <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
         <div className="task-details-modal-scroll min-h-0 flex-1 space-y-2.5 overflow-y-auto py-2.5 sm:space-y-4 sm:py-4">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 md:grid-cols-2 md:gap-4">
-            <Field label="Client *">
-              <EditableDropdown
-                name="clientName"
-                value={formData.clientName}
-                options={clientOptions}
-                onChange={onChange}
-                placeholder="Select or type client"
-                listId="it-purchase-client-options"
-                required
-              />
-            </Field>
-            <Field label="Project *">
-              <EditableDropdown
-                name="project"
-                value={formData.project}
-                options={projectOptions}
-                onChange={onChange}
-                placeholder="Select or type project"
-                listId="it-purchase-project-options"
-                required
-              />
-            </Field>
-            <Field label="Service Type *">
-              <EditableDropdown
-                name="serviceType"
-                value={formData.serviceType}
-                options={serviceTypeOptions}
-                onChange={onChange}
-                placeholder="Select or type service type"
-                listId="it-purchase-service-type-options"
-                required
-              />
-            </Field>
-            <Field label="Vendor *">
-              <EditableDropdown
-                name="vendor"
-                value={formData.vendor}
-                options={vendorOptions}
-                onChange={onChange}
-                placeholder="Select or type vendor"
-                listId="it-purchase-vendor-options"
-                required
-              />
-            </Field>
+            <SelectWithAddNew
+              label="Client *"
+              name="clientName"
+              value={formData.clientName}
+              options={clientOptions}
+              onChange={onChange}
+              onAddNewCustomOption={onAddNewCustomOption}
+              placeholder="Select client"
+              required
+            />
+            <SelectWithAddNew
+              label="Project *"
+              name="project"
+              value={formData.project}
+              options={projectOptions}
+              onChange={onChange}
+              onAddNewCustomOption={onAddNewCustomOption}
+              placeholder="Select project"
+              required
+            />
+            <SelectWithAddNew
+              label="Service Type *"
+              name="serviceType"
+              value={formData.serviceType}
+              options={serviceTypeOptions}
+              onChange={onChange}
+              onAddNewCustomOption={onAddNewCustomOption}
+              placeholder="Select service type"
+              required
+            />
+            <SelectWithAddNew
+              label="Vendor *"
+              name="vendor"
+              value={formData.vendor}
+              options={vendorOptions}
+              onChange={onChange}
+              onAddNewCustomOption={onAddNewCustomOption}
+              placeholder="Select vendor"
+              required
+            />
             <Field label="Service Name *">
               <input name="serviceName" value={formData.serviceName} onChange={onChange} placeholder="example.com, OpenAI API, AWS EC2" className={modalInputClass} required />
             </Field>
@@ -925,7 +1167,21 @@ const ViewModal = ({ po, getClientName, getStatusColor, formatCurrency, formatDa
           <div className="space-y-2.5 sm:space-y-4">
             <Section title="Client">
               <InfoRow label="Client" value={getClientName(po)} />
-              <InfoRow label="Project" value={po.project || '—'} />
+              <InfoRow
+                label="Project"
+                value={
+                  po.projectId?.projectCode ? (
+                    <span className="inline-flex items-center gap-1.5 font-medium">
+                      <span className="font-mono text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200 font-semibold">
+                        {po.projectId.projectCode}
+                      </span>
+                      <span>{po.projectId.name || po.project}</span>
+                    </span>
+                  ) : (
+                    po.project || '—'
+                  )
+                }
+              />
             </Section>
             <Section title="Service">
               <InfoRow label="Service Type" value={ServiceBadgeComponent({ type: po.serviceType })} />
@@ -996,4 +1252,5 @@ const Loader2AsSpinner = () => (
   <div className="animate-spin rounded-full h-6 w-6 border-2 border-slate-200 border-t-blue-600 mx-auto"></div>
 );
 
+export { PurchaseOrders as PurchaseOrdersView };
 export default PurchaseOrders;

@@ -25,6 +25,10 @@ import SalesPage from './pages/Employee/Sales';
 import SalesPipelinePage from './pages/Employee/SalesPipelinePage';
 import SalesMeetings from './pages/Employee/SalesMeetings';
 import AdminSalesDashboard from './pages/Admin/AdminSalesDashboard';
+import AdminSalesPipeline from './pages/Admin/AdminSalesPipeline';
+import AdminProjects from './pages/Admin/AdminProjects';
+import AdminAMCManagement from './pages/Admin/AdminAMCManagement';
+import AdminFinanceManagement from './pages/Admin/AdminFinanceManagement';
 import PurchaseOrders from './pages/Admin/PurchaseOrders';
 import AdminPayslips from './pages/Admin/AdminPayslips';
 import AdminProfile from './pages/Admin/AdminProfile';
@@ -41,6 +45,10 @@ import AdminInterviews from './pages/Admin/AdminInterviews';
 import AdminProblemStatements from './pages/Admin/AdminProblemStatements';
 import CandidateProfile from './pages/Candidate/CandidateProfile';
 import OfferLetterGenerator from './pages/Employee/OfferLetterGenerator';
+import EmployeeProjects from './pages/Employee/EmployeeProjects';
+import EmployeeAMCManagement from './pages/Employee/EmployeeAMCManagement';
+import EmployeeFinanceManagement from './pages/Employee/EmployeeFinanceManagement';
+import EmployeePurchaseOrders from './pages/Employee/EmployeePurchaseOrders';
 
 function App() {
   return (
@@ -60,7 +68,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/employees" element={
-            <ProtectedRoute role="admin">
+            <ProtectedRoute role="admin" allowHR={true}>
               <EmployeeManagement />
             </ProtectedRoute>
           } />
@@ -104,7 +112,37 @@ function App() {
               <AdminSalesDashboard />
             </ProtectedRoute>
           } />
+          <Route path="/admin/sales-pipeline" element={
+            <ProtectedRoute role="admin">
+              <AdminSalesPipeline />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/projects" element={
+            <ProtectedRoute role="admin">
+              <AdminProjects />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/amc" element={
+            <ProtectedRoute role="admin">
+              <AdminAMCManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/amc-contracts" element={
+            <ProtectedRoute role="admin">
+              <AdminAMCManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/finance" element={
+            <ProtectedRoute role="admin">
+              <AdminFinanceManagement />
+            </ProtectedRoute>
+          } />
           <Route path="/admin/purchase-orders" element={
+            <ProtectedRoute role="admin">
+              <PurchaseOrders />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/purchase" element={
             <ProtectedRoute role="admin">
               <PurchaseOrders />
             </ProtectedRoute>
@@ -152,6 +190,11 @@ function App() {
                 <Route path="dashboard" element={
                   <ProtectedRoute role="employee">
                     <EmployeeDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="employees" element={
+                  <ProtectedRoute role="employee">
+                    <EmployeeManagement />
                   </ProtectedRoute>
                 } />
                 <Route path="leaves" element={
@@ -202,6 +245,36 @@ function App() {
                 <Route path="sales-meetings" element={
                   <ProtectedRoute role="employee">
                     <SalesMeetings />
+                  </ProtectedRoute>
+                } />
+                <Route path="projects" element={
+                  <ProtectedRoute role="employee">
+                    <EmployeeProjects />
+                  </ProtectedRoute>
+                } />
+                <Route path="amc" element={
+                  <ProtectedRoute role="employee">
+                    <EmployeeAMCManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="amc-contracts" element={
+                  <ProtectedRoute role="employee">
+                    <EmployeeAMCManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="finance" element={
+                  <ProtectedRoute role="employee">
+                    <EmployeeFinanceManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="purchase-orders" element={
+                  <ProtectedRoute role="employee">
+                    <EmployeePurchaseOrders />
+                  </ProtectedRoute>
+                } />
+                <Route path="purchase" element={
+                  <ProtectedRoute role="employee">
+                    <EmployeePurchaseOrders />
                   </ProtectedRoute>
                 } />
                 <Route path="hr-interviews" element={

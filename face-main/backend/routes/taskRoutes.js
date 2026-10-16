@@ -46,7 +46,11 @@ const taskValidation = [
   body('estimatedHours')
     .isNumeric()
     .isFloat({ min: 0, max: 1000 })
-    .withMessage('Estimated hours must be between 0 and 1000')
+    .withMessage('Estimated hours must be between 0 and 1000'),
+  body('projectId')
+    .optional({ nullable: true })
+    .isUUID()
+    .withMessage('Please provide a valid project ID')
 ];
 
 const commentValidation = [

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
-import { expenseTrackerAPI } from '../../utils/api';
-import { RefreshCw, Trash2, Edit3, Eye } from 'lucide-react';
+import { expenseTrackerAPI, leadAPI } from '../../utils/api';
+import { RefreshCw, Trash2, Edit3, Eye, Plus, Users, UserPlus, X, List } from 'lucide-react';
 import toast from 'react-hot-toast';
 import io from 'socket.io-client';
 import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
@@ -25,6 +25,7 @@ const emptyPayment = {
   type: 'payment',
   date: new Date().toISOString().slice(0, 10),
   clientName: '',
+  leadId: null,
   amount: '',
   paymentMethod: '',
   referenceNumber: '',
@@ -32,7 +33,7 @@ const emptyPayment = {
   remarks: ''
 };
 
-const ExpenseTracker = () => {
+const ExpenseTracker = ({ Layout = AdminLayout }) => {
   const [activeView, setActiveView] = useState('dashboard');
   const [summary, setSummary] = useState({ totalReceived: 0, totalSpent: 0, remainingBalance: 0 });
   const [expenses, setExpenses] = useState([]);
@@ -47,8 +48,139 @@ const ExpenseTracker = () => {
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
 
+  // Clients from Leads for Incoming Payments
+  const [leads, setLeads] = useState([]);
+  const [bdeEmployees, setBdeEmployees] = useState([]);
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [isCustomClient, setIsCustomClient] = useState(false);
+  const [creatingClient, setCreatingClient] = useState(false);
+  const [newClientForm, setNewClientForm] = useState({
+    firstName: '',
+    lastName: '',
+    company: '',
+    phone: '',
+    email: '',
+    source: 'Referral',
+  });
+
   const currency = (value) => Number(value || 0).toLocaleString('en-IN');
   const displayDate = (value) => value ? new Date(value).toLocaleDateString('en-IN') : '-';
+
+  const fetchLeads = useCallback(async () => {
+    try {
+      const [leadsRes, bdeRes] = await Promise.all([
+        leadAPI.getLeads({ includeAll: true, limit: 1000 }).catch(() => ({ data: { success: false } })),
+        leadAPI.getBDEEmployees().catch(() => ({ data: { success: false } }))
+      ]);
+      if (leadsRes.data?.success) {
+        setLeads(leadsRes.data.data?.leads || leadsRes.data.leads || []);
+      }
+      if (bdeRes.data?.success) {
+        setBdeEmployees(bdeRes.data.data || []);
+      }
+    } catch (err) {
+      console.warn('Failed to load leads for client dropdown:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
+
+  const clientOptions = useMemo(() => {
+    const list = [];
+    const seen = new Set();
+
+    (leads || []).forEach((lead) => {
+      const company = lead.company?.trim();
+      const personName = `${lead.firstName || ''} ${lead.lastName || ''}`.trim();
+      const primaryName = company || personName || lead.email;
+      if (!primaryName || seen.has(primaryName.toLowerCase())) return;
+
+      seen.add(primaryName.toLowerCase());
+      const displayName = company && personName && company.toLowerCase() !== personName.toLowerCase()
+        ? `${company} (${personName})`
+        : primaryName;
+
+      list.push({
+        id: lead._id || lead.id,
+        name: primaryName,
+        displayName,
+        leadId: lead._id || lead.id,
+        email: lead.email,
+        phone: lead.phone,
+        company,
+      });
+    });
+
+    (payments || []).forEach((p) => {
+      const name = p.clientName?.trim();
+      if (name && !seen.has(name.toLowerCase())) {
+        seen.add(name.toLowerCase());
+        list.push({
+          id: p.leadId || name,
+          name,
+          displayName: name,
+          leadId: p.leadId || null,
+        });
+      }
+    });
+
+    return list.sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }, [leads, payments]);
+
+  const handleCreateClient = async (e) => {
+    e.preventDefault();
+    if (!newClientForm.firstName.trim() || !newClientForm.lastName.trim() || !newClientForm.email.trim() || !newClientForm.phone.trim()) {
+      toast.error('First name, last name, email, and phone are required');
+      return;
+    }
+    try {
+      setCreatingClient(true);
+      const assignedEmployee = bdeEmployees[0]?._id || bdeEmployees[0]?.id;
+      const leadData = {
+        firstName: newClientForm.firstName.trim(),
+        lastName: newClientForm.lastName.trim(),
+        company: newClientForm.company.trim(),
+        email: newClientForm.email.trim().toLowerCase(),
+        phone: newClientForm.phone.trim(),
+        source: newClientForm.source || 'Referral',
+        status: 'Contacted',
+        priority: 'Medium',
+        ...(assignedEmployee ? { assignedTo: assignedEmployee } : {})
+      };
+      const res = await leadAPI.createLead(leadData);
+      if (res.data?.success) {
+        const created = res.data.data?.lead || res.data.data || res.data.lead;
+        const companyName = created?.company?.trim();
+        const personName = `${created?.firstName || ''} ${created?.lastName || ''}`.trim();
+        const clientName = companyName || personName || created?.email;
+
+        setLeads((prev) => [created, ...prev]);
+        setPaymentForm((prev) => ({
+          ...prev,
+          clientName,
+          leadId: created?._id || created?.id,
+        }));
+        setIsCustomClient(false);
+        setShowAddClientModal(false);
+        setNewClientForm({
+          firstName: '',
+          lastName: '',
+          company: '',
+          phone: '',
+          email: '',
+          source: 'Referral',
+        });
+        toast.success(`Client "${clientName}" added successfully!`);
+      }
+    } catch (err) {
+      console.error('Failed to create client:', err);
+      toast.error(err.response?.data?.errors?.[0]?.msg || err.response?.data?.message || 'Failed to add client');
+    } finally {
+      setCreatingClient(false);
+    }
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -111,6 +243,9 @@ const ExpenseTracker = () => {
     try {
       setSaving(true);
       const payload = { ...form, amount: Number(form.amount) };
+      if (!payload.leadId) {
+        delete payload.leadId;
+      }
       if (editing) {
         await expenseTrackerAPI.updateTransaction(editing._id, payload);
         toast.success('Record updated successfully');
@@ -120,6 +255,7 @@ const ExpenseTracker = () => {
       }
       resetForm();
       setEditing(null);
+      setIsCustomClient(false);
       setActiveView(nextView);
       loadData();
     } catch (error) {
@@ -158,16 +294,19 @@ const ExpenseTracker = () => {
       });
       setActiveView('add-expense');
     } else {
+      const itemLeadId = item.leadId?._id || item.leadId?.id || item.leadId || null;
       setPaymentForm({
         type: 'payment',
         date: item.date?.slice(0, 10),
         clientName: item.clientName || '',
+        leadId: itemLeadId,
         amount: item.amount || '',
         paymentMethod: item.paymentMethod || '',
         referenceNumber: item.referenceNumber || '',
         invoiceNumber: item.invoiceNumber || '',
         remarks: item.remarks || ''
       });
+      setIsCustomClient(false);
       setActiveView('add-payment');
     }
   };
@@ -181,11 +320,12 @@ const ExpenseTracker = () => {
   const openPaymentForm = () => {
     setEditing(null);
     setPaymentForm(emptyPayment);
+    setIsCustomClient(false);
     setActiveView('add-payment');
   };
 
   return (
-    <AdminLayout>
+    <Layout>
       <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-4 sm:space-y-6">
         <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end md:justify-between">
           <div>
@@ -261,6 +401,10 @@ const ExpenseTracker = () => {
                 setForm={setPaymentForm}
                 saving={saving}
                 editing={editing?.type === 'payment'}
+                clientOptions={clientOptions}
+                onOpenAddClientModal={() => setShowAddClientModal(true)}
+                isCustomClient={isCustomClient}
+                setIsCustomClient={setIsCustomClient}
                 onSubmit={(event) => {
                   event.preventDefault();
                   saveTransaction(paymentForm, () => setPaymentForm(emptyPayment), 'payments');
@@ -292,8 +436,150 @@ const ExpenseTracker = () => {
             </div>
           </div>
         )}
+
+        {/* Quick Add Client Modal */}
+        {showAddClientModal && (
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+            <div
+              className="fixed inset-0"
+              onClick={() => !creatingClient && setShowAddClientModal(false)}
+            />
+            <div className="relative w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-2xl p-5 sm:p-6 z-10 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+                    <UserPlus className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Add New Client</h3>
+                    <p className="text-xs text-slate-500">Create client in CRM and auto-select</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddClientModal(false)}
+                  disabled={creatingClient}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateClient} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Company / Organization Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newClientForm.company}
+                    onChange={(e) => setNewClientForm(p => ({ ...p, company: e.target.value }))}
+                    placeholder="e.g. Acme Technologies Ltd"
+                    className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      First Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newClientForm.firstName}
+                      onChange={(e) => setNewClientForm(p => ({ ...p, firstName: e.target.value }))}
+                      placeholder="e.g. Rahul"
+                      className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Last Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newClientForm.lastName}
+                      onChange={(e) => setNewClientForm(p => ({ ...p, lastName: e.target.value }))}
+                      placeholder="e.g. Sharma"
+                      className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Phone Number <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={newClientForm.phone}
+                      onChange={(e) => setNewClientForm(p => ({ ...p, phone: e.target.value }))}
+                      placeholder="+91 9876543210"
+                      className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Email Address <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={newClientForm.email}
+                      onChange={(e) => setNewClientForm(p => ({ ...p, email: e.target.value }))}
+                      placeholder="client@example.com"
+                      className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Lead Source
+                  </label>
+                  <select
+                    value={newClientForm.source}
+                    onChange={(e) => setNewClientForm(p => ({ ...p, source: e.target.value }))}
+                    className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900 bg-white"
+                  >
+                    <option value="Referral">Referral</option>
+                    <option value="Website">Website</option>
+                    <option value="Direct">Direct</option>
+                    <option value="Cold Call">Cold Call</option>
+                    <option value="Trade Show">Trade Show</option>
+                    <option value="Advertisement">Advertisement</option>
+                    <option value="Social Media">Social Media</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddClientModal(false)}
+                    disabled={creatingClient}
+                    className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creatingClient}
+                    className="premium-primary-button px-5 py-2.5 rounded-xl text-xs font-semibold text-white disabled:opacity-50"
+                  >
+                    {creatingClient ? 'Creating Client...' : 'Create & Select Client'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
-    </AdminLayout>
+    </Layout>
   );
 };
 
@@ -564,15 +850,177 @@ const ExpenseForm = ({ form, setForm, saving, editing, onSubmit }) => (
   </FormPanel>
 );
 
-const PaymentForm = ({ form, setForm, saving, editing, onSubmit }) => (
-  <FormPanel title={editing ? 'Edit Incoming Payment' : 'Add Incoming Payment'} subtitle="Record client payments so the dashboard always reflects money received." onSubmit={onSubmit} buttonText={saving ? 'Saving...' : 'Save Incoming Payment'}>
-    <Input label="Payment Date" type="date" value={form.date} onChange={(value) => setForm(prev => ({ ...prev, date: value }))} required />
-    <Input label="Client Name" value={form.clientName} onChange={(value) => setForm(prev => ({ ...prev, clientName: value }))} required />
-    <Input label="Amount" type="number" value={form.amount} onChange={(value) => setForm(prev => ({ ...prev, amount: value }))} required />
-    <Select label="Payment Method" value={form.paymentMethod} onChange={(value) => setForm(prev => ({ ...prev, paymentMethod: value }))} options={paymentMethods} placeholder="Select payment method" required />
-    <Input label="Reference Number" value={form.referenceNumber} onChange={(value) => setForm(prev => ({ ...prev, referenceNumber: value }))} />
-    <Input label="Invoice Number" value={form.invoiceNumber} onChange={(value) => setForm(prev => ({ ...prev, invoiceNumber: value }))} />
-    <TextArea label="Remarks" value={form.remarks} onChange={(value) => setForm(prev => ({ ...prev, remarks: value }))} className="md:col-span-2" />
+const ClientSelectWithAdd = ({
+  value,
+  leadId,
+  onChange,
+  clientOptions = [],
+  onOpenAddClientModal,
+  isCustomClient,
+  setIsCustomClient,
+  className = '',
+  required = true,
+}) => {
+  const hasMatchedOption = clientOptions.some((c) => c.name === value);
+
+  return (
+    <div className={`block ${className}`}>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="block text-sm font-bold text-slate-700">
+          Client Name {required && <span className="text-rose-500">*</span>}
+        </span>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onOpenAddClientModal}
+            className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 shadow-xs hover:bg-indigo-100 transition-colors"
+            title="Add a new client to leads CRM and select"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            <span>+ Add New Client</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsCustomClient(!isCustomClient)}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+            title={isCustomClient ? "Select from available leads" : "Type custom client name directly"}
+          >
+            {isCustomClient ? (
+              <>
+                <List className="h-3.5 w-3.5" />
+                <span>Select from leads</span>
+              </>
+            ) : (
+              <>
+                <Edit3 className="h-3.5 w-3.5" />
+                <span>Type custom</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {isCustomClient ? (
+        <div className="space-y-1">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value, null)}
+            placeholder="Type client name..."
+            className="premium-input w-full rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400"
+            required={required}
+          />
+          <p className="text-[11px] text-slate-500">
+            Entering custom name. Click "Select from leads" above to pick an existing lead.
+          </p>
+        </div>
+      ) : (
+        <div className="relative">
+          <select
+            value={value}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '__ADD_NEW__') {
+                onOpenAddClientModal();
+                return;
+              }
+              if (val === '__CUSTOM__') {
+                setIsCustomClient(true);
+                return;
+              }
+              const selected = clientOptions.find((c) => c.name === val);
+              onChange(val, selected?.leadId || null);
+            }}
+            className="premium-input w-full rounded-xl px-4 py-3 text-sm text-slate-900 bg-white"
+            required={required}
+          >
+            <option value="">-- Select Client from Leads ({clientOptions.length} available) --</option>
+            {value && !hasMatchedOption && (
+              <option value={value}>
+                {value} (Current)
+              </option>
+            )}
+            {clientOptions.map((client) => (
+              <option key={client.id || client.name} value={client.name}>
+                {client.displayName}
+              </option>
+            ))}
+            <optgroup label="Actions">
+              <option value="__ADD_NEW__">+ Add New Client...</option>
+              <option value="__CUSTOM__">✎ Type custom client name...</option>
+            </optgroup>
+          </select>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PaymentForm = ({
+  form,
+  setForm,
+  saving,
+  editing,
+  clientOptions,
+  onOpenAddClientModal,
+  isCustomClient,
+  setIsCustomClient,
+  onSubmit,
+}) => (
+  <FormPanel
+    title={editing ? 'Edit Incoming Payment' : 'Add Incoming Payment'}
+    subtitle="Record client payments so the dashboard always reflects money received."
+    onSubmit={onSubmit}
+    buttonText={saving ? 'Saving...' : 'Save Incoming Payment'}
+  >
+    <Input
+      label="Payment Date"
+      type="date"
+      value={form.date}
+      onChange={(value) => setForm(prev => ({ ...prev, date: value }))}
+      required
+    />
+    <ClientSelectWithAdd
+      value={form.clientName}
+      leadId={form.leadId}
+      onChange={(name, leadId) => setForm(prev => ({ ...prev, clientName: name, leadId }))}
+      clientOptions={clientOptions}
+      onOpenAddClientModal={onOpenAddClientModal}
+      isCustomClient={isCustomClient}
+      setIsCustomClient={setIsCustomClient}
+      required
+    />
+    <Input
+      label="Amount"
+      type="number"
+      value={form.amount}
+      onChange={(value) => setForm(prev => ({ ...prev, amount: value }))}
+      required
+    />
+    <Select
+      label="Payment Method"
+      value={form.paymentMethod}
+      onChange={(value) => setForm(prev => ({ ...prev, paymentMethod: value }))}
+      options={paymentMethods}
+      placeholder="Select payment method"
+      required
+    />
+    <Input
+      label="Reference Number"
+      value={form.referenceNumber}
+      onChange={(value) => setForm(prev => ({ ...prev, referenceNumber: value }))}
+    />
+    <Input
+      label="Invoice Number"
+      value={form.invoiceNumber}
+      onChange={(value) => setForm(prev => ({ ...prev, invoiceNumber: value }))}
+    />
+    <TextArea
+      label="Remarks"
+      value={form.remarks}
+      onChange={(value) => setForm(prev => ({ ...prev, remarks: value }))}
+      className="md:col-span-2"
+    />
   </FormPanel>
 );
 
@@ -627,4 +1075,5 @@ const Info = ({ label, value }) => (
   </div>
 );
 
+export { ExpenseTracker as ExpenseTrackerView };
 export default ExpenseTracker;

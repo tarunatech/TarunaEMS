@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import InterviewSchedule from '../models/InterviewSchedule.js';
-import { adminOnly, protect } from '../middleware/auth.js';
+import { adminOnly, protect, adminOrHr } from '../middleware/auth.js';
 import { requireDepartment } from '../middleware/departmentAccess.js';
 import { candidateDocumentsDir, resumesDir } from '../config/uploadPaths.js';
 
@@ -175,7 +175,7 @@ const withProfileDocument = (interview) => {
   return { ...doc, documents: [...resumeDocument, ...(doc.documents || [])] };
 };
 
-router.get('/admin', adminOnly, async (req, res) => {
+router.get('/admin', adminOrHr, async (req, res) => {
   try {
     const interviews = await InterviewSchedule.find()
       .populate('createdBy', 'name email personalInfo')

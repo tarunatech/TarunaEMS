@@ -3,6 +3,7 @@ import Task from '../models/Task.js';
 import Employee from '../models/Employee.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
+import { isHrOrAdmin } from '../middleware/authMiddleware.js';
 // import { sendDayBookReportEmail } from '../utils/email.js';
 
 // @desc    Get or create day book for today
@@ -135,13 +136,20 @@ export const getDayBooks = async (req, res) => {
     try {
         const { status, employeeId, date } = req.query;
         let query = {};
+        const isHr = await isHrOrAdmin(req.user);
 
-        if (req.user && req.user.role !== 'admin') {
+        if (req.user && req.user.role === 'employee') {
             const employee = await Employee.findOne({ user: req.user.id });
             if (!employee) {
                 return res.status(404).json({ success: false, message: 'Employee record not found' });
             }
-            query.employee = employee._id;
+            if (isHr && employeeId) {
+                // HR viewing specific employee's daybooks in the Employee Management modal
+                query.employee = employeeId;
+            } else {
+                // Regular employees or HR viewing their own Day Book / EOD history
+                query.employee = employee._id;
+            }
         } else if (employeeId) {
             query.employee = employeeId;
         }

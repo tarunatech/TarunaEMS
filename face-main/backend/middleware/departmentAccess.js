@@ -78,3 +78,19 @@ export const requireDepartment = (allowedDepartments = []) => async (req, res, n
 export const normalizeDepartmentValue = normalizeDept;
 export const isDepartmentAllowed = matchesDeptFlexible;
 
+export const isHrOrAdmin = async (user) => {
+  if (!user) return false;
+  if (user.role === 'admin' || user.role === 'hr') return true;
+  try {
+    const employee = await Employee.findOne({ user: user._id || user.id }).populate(
+      'workInfo.department',
+      'name code'
+    );
+    if (!employee) return false;
+    const dept = employee.workInfo?.department;
+    return matchesDeptFlexible(dept, ['hr', 'human resources', 'humanresources']);
+  } catch (err) {
+    return false;
+  }
+};
+

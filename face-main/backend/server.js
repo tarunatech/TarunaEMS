@@ -48,6 +48,9 @@ import dayBookRoutes from "./routes/dayBookRoutes.js";
 import expenseTrackerRoutes from "./routes/expenseTrackerRoutes.js";
 import interviewScheduleRoutes from "./routes/interviewScheduleRoutes.js";
 import offerLetterRoutes from "./routes/offerLetterRoutes.js";
+import projectRoutes from "./routes/projectRoutes.js";
+import financeRoutes from "./routes/financeRoutes.js";
+import amcRoutes from "./routes/amcRoutes.js";
 
 // import { createAdminIfNotExists } from './controllers/initAdmin.js';
 
@@ -158,6 +161,9 @@ app.use("/api/daybooks", dayBookRoutes);
 app.use("/api/expense-tracker", expenseTrackerRoutes);
 app.use("/api/interviews", interviewScheduleRoutes);
 app.use("/api/offer-letters", offerLetterRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/finance", financeRoutes);
+app.use("/api/amc", amcRoutes);
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   res.status(200).json({

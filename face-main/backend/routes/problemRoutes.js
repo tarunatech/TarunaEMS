@@ -9,8 +9,8 @@ const problemPopulateFields = 'personalInfo fullName name email employeeId';
 
 // Apply auth middleware to all routes
 router.use(protect);
-// Only Developer department employees can access problem statements
-router.use(requireDepartment(['developer', 'development']));
+// Developer department or HR employees can access problem statements
+router.use(requireDepartment(['developer', 'development', 'hr', 'human resources', 'humanresources', 'humanresource', 'hrdepartment']));
 
 // GET all problems
 router.get('/', async (req, res) => {

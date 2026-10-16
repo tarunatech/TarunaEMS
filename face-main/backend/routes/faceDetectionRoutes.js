@@ -15,7 +15,7 @@ import {
   checkLiveness,
   upload
 } from '../controllers/faceDetectionController.js';
-import { protect, adminOnly } from '../middleware/authMiddleware.js';
+import { protect, adminOnly, adminOrHr } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -28,8 +28,8 @@ router.post('/register-continuous-video', adminOnly, registerContinuousVideo);
 router.post('/register-multi-angle', adminOnly, registerMultiAngleFace);
 
 // Frame analysis for real-time feedback
-router.post('/analyze-frame', adminOnly, upload.single('file'), analyzeFrame);
-router.post('/analyze-frame-base64', adminOnly, analyzeFrameBase64);
+router.post('/analyze-frame', adminOrHr, upload.single('file'), analyzeFrame);
+router.post('/analyze-frame-base64', adminOrHr, analyzeFrameBase64);
 
 // Live video verification with enhanced liveness detection (new primary method)
 router.post('/verify-live-video', verifyLiveVideo);

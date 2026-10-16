@@ -11,7 +11,7 @@ const CATEGORIES = new Set(['Development', 'Design', 'Testing', 'Documentation',
 const RECURRING_PATTERNS = new Set(['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Quarterly']);
 
 const WRITABLE_FIELDS = [
-  'title', 'description', 'assignedTo', 'assignedBy', 'project', 'priority', 'status', 'dueDate',
+  'title', 'description', 'assignedTo', 'assignedBy', 'project', 'projectId', 'priority', 'status', 'dueDate',
   'startDate', 'completedDate', 'estimatedHours', 'actualHours', 'category', 'tags', 'attachments',
   'comments', 'subtasks', 'dependencies', 'progress', 'isRecurring', 'recurringPattern',
   'lastRecurringDate', 'nextRecurringDate', 'isSelfAssigned', 'achievedSoFar', 'createdAt', 'updatedAt',
@@ -25,6 +25,7 @@ const columnByField = {
   assignedTo: tasks.assignedTo,
   assignedBy: tasks.assignedBy,
   project: tasks.project,
+  projectId: tasks.projectId,
   priority: tasks.priority,
   status: tasks.status,
   dueDate: tasks.dueDate,
@@ -304,20 +305,35 @@ const loadEmployee = async (id, select) => {
 
 const populateOne = async (doc, spec) => {
   const path = spec.path || spec;
-  if (path === 'assignedTo' && doc.assignedTo) {
-    doc.assignedTo = await loadEmployee(doc.assignedTo, spec.select);
-    if (spec.populate?.path === 'user' && doc.assignedTo) doc.assignedTo.user = await loadUser(doc.assignedTo.user, spec.populate.select);
+  if (path === 'assignedTo') {
+    if (doc.assignedTo) {
+      doc.assignedTo = await loadEmployee(doc.assignedTo, spec.select);
+      if (spec.populate?.path === 'user' && doc.assignedTo) doc.assignedTo.user = await loadUser(doc.assignedTo.user, spec.populate.select);
+    }
     return doc;
   }
-  if (path === 'assignedBy' && doc.assignedBy) {
-    doc.assignedBy = await loadUser(doc.assignedBy, spec.select);
+  if (path === 'assignedBy') {
+    if (doc.assignedBy) {
+      doc.assignedBy = await loadUser(doc.assignedBy, spec.select);
+    }
     return doc;
   }
   if (path === 'comments.user') {
-    doc.comments = await Promise.all(normalizeArray(doc.comments).map(async (comment) => ({
-      ...comment,
-      user: await loadUser(comment.user, spec.select),
-    })));
+    if (doc.comments) {
+      doc.comments = await Promise.all(normalizeArray(doc.comments).map(async (comment) => ({
+        ...comment,
+        user: await loadUser(comment.user, spec.select),
+      })));
+    }
+    return doc;
+  }
+  if (path === 'projectId' || path === 'projectRef') {
+    if (doc.projectId) {
+      const Project = (await import('./Project.js')).default;
+      doc.projectId = await Project.findById(doc.projectId).lean();
+    } else {
+      doc.projectId = null;
+    }
     return doc;
   }
   unsupported(`populate path "${path}"`);

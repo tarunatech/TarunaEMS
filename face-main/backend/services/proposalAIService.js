@@ -203,10 +203,15 @@ export const buildProposalDefaults = ({ lead = {}, clientDetails = {}, quotation
     title: proposal.title || template.title,
     subtitle: proposal.subtitle || template.subtitle || clientDetails.businessNeed || '',
     description: proposal.description || template.description || '',
+    contractDuration: proposal.contractDuration || clientDetails.timeline || '',
+    projectStartDate: proposal.projectStartDate || clientDetails.expectedProjectStartDate || '',
+    projectEndDate: proposal.projectEndDate || clientDetails.expectedProjectEndDate || '',
     pricing: {
       totalPrice: Number(proposal.pricing?.totalPrice || quotation.amount || lead.estimatedValue || 0),
       discountedPrice: Number(proposal.pricing?.discountedPrice || 0),
       amcCost: Number(proposal.pricing?.amcCost || 0),
+      additionalCharges: Number(proposal.pricing?.additionalCharges || 0),
+      recurringCharges: Number(proposal.pricing?.recurringCharges || 0),
       currency
     },
     validity: {

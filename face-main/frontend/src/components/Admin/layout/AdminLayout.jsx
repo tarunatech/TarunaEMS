@@ -18,13 +18,21 @@ const AdminLayout = ({ children }) => {
   const sidebarItems = [
     { name: "Dashboard", path: "/admin/dashboard" },
     { name: "Employee Management", path: "/admin/employees" },
+    { name: "Task Management", path: "/admin/tasks" },
+    { name: "Sales", path: "/admin/sales" },
+    { name: "Sales Pipeline", path: "/admin/sales-pipeline" },
+    { name: "Projects", path: "/admin/projects" },
+    { name: "AMC Management", path: "/admin/amc" },
+    { name: "Finance Management", path: "/admin/finance" },
+    { name: "Purchase Orders", path: "/admin/purchase-orders" },
+    { name: "Expense Tracker", path: "/admin/expense-tracker" },
     { name: "Leave Management", path: "/admin/leaves" },
     { name: "Attendance", path: "/admin/attendance" },
-    { name: "Holiday Calendar", path: "/admin/holidays" },
     { name: "Department", path: "/admin/department" },
-    { name: "Task Management", path: "/admin/tasks" },
     { name: "Problem Statements", path: "/admin/problems" },
+    { name: "Holiday Calendar", path: "/admin/holidays" },
     { name: "Interviews", path: "/admin/interviews" },
+    { name: "Payslips", path: "/admin/payslips" },
   ];
 
   return (

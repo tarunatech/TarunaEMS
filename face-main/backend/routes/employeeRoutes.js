@@ -20,9 +20,36 @@ import {
   getEmployeesWithoutFace,
   upload
 } from '../controllers/faceDetectionController.js';
-import { protect, adminOnly } from '../middleware/authMiddleware.js';
+import { protect, adminOnly, adminOrHr } from '../middleware/authMiddleware.js';
+import multer from 'multer';
+import path from 'path';
+import { employeeDocumentsDir } from '../config/uploadPaths.js';
 
 const router = express.Router();
+
+const documentStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, employeeDocumentsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const cleanBase = path.basename(file.originalname, ext).replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
+    cb(null, `doc-${Date.now()}-${cleanBase}${ext}`);
+  }
+});
+
+const uploadDocument = multer({
+  storage: documentStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|webp|pdf/;
+    const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+    const isMimeValid = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
+    if (allowed.test(ext) && isMimeValid) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files (JPG, PNG, WebP) and PDFs are allowed'));
+    }
+  }
+});
 
 // Validation middleware for employee creation
 const employeeValidation = [
@@ -57,11 +84,39 @@ const employeeValidation = [
 // Apply auth middleware to all routes
 router.use(protect);
 
+// Document upload for employee creation and updates (Aadhar Card, PAN Card, etc.)
+router.post('/upload-document', adminOrHr, (req, res) => {
+  uploadDocument.single('document')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'File upload failed'
+      });
+    }
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file provided'
+      });
+    }
+
+    const fileUrl = `/uploads/employee-documents/${req.file.filename}`;
+    return res.status(200).json({
+      success: true,
+      message: 'Document uploaded successfully',
+      fileUrl,
+      url: fileUrl,
+      fileName: req.file.originalname,
+      storedName: req.file.filename
+    });
+  });
+});
+
 // Routes
-router.post('/', adminOnly, employeeValidation, createEmployee);
+router.post('/', adminOrHr, employeeValidation, createEmployee);
 router.get('/', getEmployees);
-router.get('/stats', adminOnly, getEmployeeStats);
-router.get('/:id/banking', adminOnly, getEmployeeBankingDetails);
+router.get('/stats', adminOrHr, getEmployeeStats);
+router.get('/:id/banking', adminOrHr, getEmployeeBankingDetails);
 router.get('/me', getEmployeeById); // Special route for current user
 router.get('/department/:department', getEmployeesByDepartment);
 router.get('/:id', getEmployeeById); // Match any ID, but validate in controller

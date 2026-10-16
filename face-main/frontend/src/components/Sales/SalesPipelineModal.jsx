@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUp, CheckCircle, Download, FileText, Globe, Loader2, Mail, Phone, Save, Send, ShieldCheck, Sparkles, Upload, XCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowUp, CheckCircle, Download, FileText, Globe, Loader2, Mail, Phone, Plus, RefreshCw, Save, Send, ShieldCheck, Sparkles, Trash2, Upload, XCircle, FolderKanban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiFileUrl, salesPipelineAPI } from '../../utils/api';
 
@@ -57,9 +58,9 @@ const defaultTimelineRows = [
 ];
 
 const defaultPaymentRows = [
-  { milestone: 'Project Kickoff', description: 'Advance payment before development starts.', percentage: 40 },
-  { milestone: 'Development Review', description: 'After major modules are ready for review.', percentage: 30 },
-  { milestone: 'Final Deployment', description: 'Before final deployment and handover.', percentage: 30 }
+  { milestone: 'Project Kickoff', description: 'Advance payment before development starts.', percentage: 40, amount: '' },
+  { milestone: 'Development Review', description: 'After major modules are ready for review.', percentage: 30, amount: '' },
+  { milestone: 'Final Deployment', description: 'Before final deployment and handover.', percentage: 30, amount: '' }
 ];
 
 const defaultIntellectualPropertyRights = 'Upon full payment of the agreed project fees, the client will receive a non-exclusive license to use the delivered software for internal business purposes. Taruna Technology retains ownership of its pre-existing tools, frameworks, code snippets, and reusable development components. Any transfer, resale, redistribution, or source-code disclosure beyond the agreed scope must be approved in writing by both parties.';
@@ -68,6 +69,12 @@ const defaultTermination = 'Either party may terminate the project by providing 
 const defaultLimitationOfLiability = 'Taruna Technology shall not be liable for indirect, incidental, special, or consequential damages arising from the use or inability to use the delivered solution. Our total liability for any claim related to the project will be limited to the amount actually paid for the specific services giving rise to the claim, subject to the final signed agreement.';
 
 const proposalTypeOptions = ['ERP Software', 'Website Development', 'Mobile App'];
+const billingTypeOptions = ['Fixed Price', 'Milestone Based', 'Time and Material', 'Recurring', 'Other'];
+const paymentTermsOptions = ['Milestone Based', 'Advance', 'Monthly', 'Quarterly', 'Yearly', 'On Completion', 'Custom'];
+const quotationStatusOptions = ['Draft', 'Submitted', 'Approved', 'Rejected', 'Expired'];
+const acceptanceStatusOptions = ['Pending', 'Accepted', 'Rejected', 'Changes Requested'];
+const managerApprovalOptions = ['Not Required', 'Pending', 'Approved', 'Rejected'];
+const discountReasonOptions = ['Volume Discount', 'Scope Adjustment', 'Competitive Match', 'Budget Constraint', 'Special Promotion', 'Strategic Account', 'Other'];
 
 const proposalTypeTemplates = {
   'ERP Software': {
@@ -228,8 +235,42 @@ const buildDefaultCostRows = (amount = 0) => {
 };
 
 const emptyForms = {
-  clientDetails: { requirements: '', decisionMaker: '', businessNeed: '', budgetRange: '', timeline: '', notes: '' },
-  quotation: { quotationNumber: '', amount: '', currency: 'INR', validUntil: '', notes: '', fileUrl: '' },
+  clientDetails: {
+    requirements: '',
+    decisionMaker: '',
+    businessNeed: '',
+    budgetRange: '',
+    timeline: '',
+    notes: '',
+    clientBudgetAmount: '',
+    expectedClosingDate: '',
+    expectedProjectStartDate: '',
+    expectedProjectEndDate: '',
+    billingType: 'Fixed Price',
+    paymentTerms: 'Milestone Based',
+    customPaymentTerms: ''
+  },
+  quotation: {
+    quotationNumber: '',
+    amount: '',
+    baseAmount: '',
+    discountType: 'Percentage',
+    discountValue: '',
+    taxableAmount: '',
+    taxType: 'GST (CGST + SGST)',
+    taxRate: 18,
+    cgstAmount: '',
+    sgstAmount: '',
+    igstAmount: '',
+    otherCharges: '',
+    totalQuotationValue: '',
+    paymentTerms: 'Milestone Based',
+    quotationStatus: 'Draft',
+    currency: 'INR',
+    validUntil: '',
+    notes: '',
+    fileUrl: ''
+  },
   proposal: {
     status: 'draft',
     version: 0,
@@ -238,7 +279,18 @@ const emptyForms = {
     proposalType: 'ERP Software',
     title: 'ERP Software Proposal',
     subtitle: '',
-    pricing: { totalPrice: '', discountedPrice: '', amcCost: '', currency: 'INR' },
+    contractDuration: '',
+    projectStartDate: '',
+    projectEndDate: '',
+    commercialPaymentTerms: '',
+    pricing: {
+      totalPrice: '',
+      discountedPrice: '',
+      amcCost: '',
+      additionalCharges: '',
+      recurringCharges: '',
+      currency: 'INR'
+    },
     validity: { validUntil: '' },
     sections: {
       executiveSummary: '',
@@ -276,12 +328,66 @@ const emptyForms = {
     sectionTitles: {},
     pdfUrl: ''
   },
-  sentToClient: { sentAt: '', method: 'Email', recipientEmail: '', notes: '' },
-  negotiation: { expectedCloseDate: '', notes: '' },
-  outcome: { status: 'open', finalValue: '', reason: '', notes: '' }
+  sentToClient: {
+    sentAt: '',
+    method: 'Email',
+    recipientEmail: '',
+    notes: '',
+    proposalVersionSent: '',
+    expectedClientResponseDate: '',
+    clientAcceptanceDate: '',
+    acceptanceStatus: 'Pending',
+    acceptanceReference: '',
+    acceptanceNotes: ''
+  },
+  negotiation: {
+    expectedCloseDate: '',
+    notes: '',
+    originalQuotationValue: '',
+    currentProposedValue: '',
+    negotiatedDiscount: '',
+    revisedContractValue: '',
+    discountReason: '',
+    managerApprovalStatus: 'Not Required',
+    managerApprovalNotes: '',
+    revisionHistory: []
+  },
+  outcome: {
+    status: 'open',
+    finalValue: '',
+    finalContractValue: '',
+    taxInclusive: 'Excluding Tax',
+    contractNumber: '',
+    contractStartDate: '',
+    contractEndDate: '',
+    finalPaymentTerms: '',
+    initialAdvanceAmount: '',
+    billingSchedule: [],
+    projectManager: '',
+    financeOwner: '',
+    contractDocumentRef: '',
+    internalApprovedBudget: '',
+    internalBudgetNotes: '',
+    reason: '',
+    notes: '',
+    projectId: '',
+    projectCode: ''
+  }
 };
 
-const toInputDate = (value) => value ? new Date(value).toISOString().slice(0, 10) : '';
+const toInputDate = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  }
+  try {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+  } catch {
+    return '';
+  }
+};
 const toInputDateTime = (value) => value ? new Date(value).toISOString().slice(0, 16) : '';
 const formatDateTime = (value) => value ? new Date(value).toLocaleString() : '-';
 const formatDate = (value) => value ? new Date(value).toLocaleDateString() : '-';
@@ -299,21 +405,10 @@ const hasTemplateValue = (value) => {
   if (value && typeof value === 'object') return Object.values(value).some(hasTemplateValue);
   return value !== undefined && value !== null && String(value).trim() !== '' && String(value).trim() !== '0';
 };
-const mergeAvailable = (base = {}, incoming = {}) => {
-  const next = { ...base };
-  Object.entries(incoming || {}).forEach(([key, value]) => {
-    if (!hasTemplateValue(value)) return;
-    if (!Array.isArray(value) && value && typeof value === 'object') {
-      next[key] = mergeAvailable(base?.[key] || {}, value);
-    } else {
-      next[key] = value;
-    }
-  });
-  return next;
-};
 const getProposalTypeTemplate = (type = 'ERP Software') =>
   proposalTypeTemplates[proposalTypeOptions.find(option => option.toLowerCase() === String(type || '').toLowerCase())] ||
   proposalTypeTemplates['ERP Software'];
+
 const formatSectionToText = (value) => {
   if (value === undefined || value === null) return '';
   if (typeof value === 'string') return value;
@@ -351,8 +446,10 @@ const formatSectionToText = (value) => {
     return String(item);
   }).join(value.some(item => typeof item === 'object' && item?.features) ? '\n\n' : '\n');
 };
+
 const asNonEmptyArray = (value, fallback = []) => Array.isArray(value) && value.length ? value : fallback;
 const leadName = (lead) => `${lead?.firstName || ''} ${lead?.lastName || ''}`.trim();
+
 const getProposalDefaults = (lead, clientDetails, quotation, proposal = {}) => {
   const template = getProposalTypeTemplate(proposal.proposalType || 'ERP Software');
   return {
@@ -365,10 +462,18 @@ const getProposalDefaults = (lead, clientDetails, quotation, proposal = {}) => {
     title: proposal.title || template.title,
     subtitle: proposal.subtitle || template.subtitle || clientDetails?.businessNeed || '',
     description: proposal.description || template.description || '',
+    contractDuration: proposal.contractDuration || clientDetails?.timeline || '',
+    projectStartDate: toInputDate(proposal.projectStartDate || clientDetails?.expectedProjectStartDate),
+    projectEndDate: toInputDate(proposal.projectEndDate || clientDetails?.expectedProjectEndDate),
+    commercialPaymentTerms: proposal.commercialPaymentTerms || clientDetails?.paymentTerms || 'Milestone Based',
     pricing: {
       ...emptyForms.proposal.pricing,
       ...(proposal.pricing || {}),
-      totalPrice: proposal.pricing?.totalPrice ?? quotation?.amount ?? lead?.estimatedValue ?? '',
+      totalPrice: proposal.pricing?.totalPrice ?? quotation?.totalQuotationValue ?? quotation?.amount ?? lead?.estimatedValue ?? '',
+      discountedPrice: proposal.pricing?.discountedPrice ?? '',
+      amcCost: proposal.pricing?.amcCost ?? '',
+      additionalCharges: proposal.pricing?.additionalCharges ?? '',
+      recurringCharges: proposal.pricing?.recurringCharges ?? '',
       currency: proposal.pricing?.currency || quotation?.currency || 'INR'
     },
     validity: {
@@ -421,8 +526,17 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
   const [activeStage, setActiveStage] = useState('client_details');
   const pdfUploadRef = useRef(null);
   const modalScrollRef = useRef(null);
-  const [approvalComments, setApprovalComments] = useState('');
-  const [forms, setForms] = useState(emptyForms);
+  const [forms, setForms] = useState(() => ({
+    ...emptyForms,
+    clientDetails: {
+      ...emptyForms.clientDetails,
+      clientBudgetAmount: lead?.estimatedValue !== undefined && lead?.estimatedValue !== null && lead?.estimatedValue !== '' ? lead.estimatedValue : '',
+      expectedClosingDate: toInputDate(lead?.expectedCloseDate)
+    }
+  }));
+
+  // Negotiation revision helper state
+  const [revisionNote, setRevisionNote] = useState('');
 
   const isAdmin = role === 'admin';
 
@@ -462,43 +576,249 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
     setPipeline(data);
     const initialStage = data.currentStage === 'admin_approval' ? 'proposal' : (data.currentStage || 'client_details');
     setActiveStage(prev => prev === 'admin_approval' ? 'proposal' : (prev || initialStage));
+
+    const quot = data.quotation || {};
+    const baseAmt = quot.baseAmount !== undefined && quot.baseAmount !== null ? quot.baseAmount : (quot.amount || lead.estimatedValue || '');
+    const totQuotVal = quot.totalQuotationValue !== undefined && quot.totalQuotationValue !== null ? quot.totalQuotationValue : (quot.amount || '');
+
+    const prop = data.proposal || {};
+    const neg = data.negotiation || {};
+    const out = data.outcome || {};
+
+    const origQuotVal = neg.originalQuotationValue !== undefined && neg.originalQuotationValue !== null && neg.originalQuotationValue !== ''
+      ? neg.originalQuotationValue
+      : (totQuotVal || quot.amount || lead.estimatedValue || '');
+
+    const currPropVal = neg.currentProposedValue !== undefined && neg.currentProposedValue !== null && neg.currentProposedValue !== ''
+      ? neg.currentProposedValue
+      : (prop.pricing?.discountedPrice || prop.pricing?.totalPrice || totQuotVal || quot.amount || '');
+
+    const finalVal = out.finalContractValue !== undefined && out.finalContractValue !== null && out.finalContractValue !== ''
+      ? out.finalContractValue
+      : (out.finalValue !== undefined && out.finalValue !== null && out.finalValue !== '' ? out.finalValue : (neg.revisedContractValue || currPropVal || origQuotVal || ''));
+
+    const leadExpectedCloseDate = data.clientDetails?.expectedClosingDate || data.lead?.expectedCloseDate || lead?.expectedCloseDate;
+    const leadClientBudget = (data.clientDetails?.clientBudgetAmount !== undefined && data.clientDetails?.clientBudgetAmount !== null && data.clientDetails?.clientBudgetAmount !== '')
+      ? data.clientDetails.clientBudgetAmount
+      : (data.lead?.estimatedValue !== undefined && data.lead?.estimatedValue !== null && data.lead?.estimatedValue !== ''
+        ? data.lead.estimatedValue
+        : (lead?.estimatedValue !== undefined && lead?.estimatedValue !== null && lead?.estimatedValue !== ''
+          ? lead.estimatedValue
+          : ''));
+
     setForms({
       clientDetails: {
         ...emptyForms.clientDetails,
-        ...(data.clientDetails || {})
+        ...(data.clientDetails || {}),
+        clientBudgetAmount: leadClientBudget,
+        expectedClosingDate: toInputDate(leadExpectedCloseDate),
+        expectedProjectStartDate: toInputDate(data.clientDetails?.expectedProjectStartDate),
+        expectedProjectEndDate: toInputDate(data.clientDetails?.expectedProjectEndDate),
+        billingType: data.clientDetails?.billingType || 'Fixed Price',
+        paymentTerms: data.clientDetails?.paymentTerms || 'Milestone Based',
+        customPaymentTerms: data.clientDetails?.customPaymentTerms || ''
       },
       quotation: {
         ...emptyForms.quotation,
-        ...(data.quotation || {}),
-        validUntil: toInputDate(data.quotation?.validUntil),
-        amount: data.quotation?.amount || ''
+        ...quot,
+        validUntil: toInputDate(quot.validUntil),
+        amount: quot.amount ?? totQuotVal ?? '',
+        baseAmount: baseAmt,
+        discountType: quot.discountType || 'Percentage',
+        discountValue: quot.discountValue ?? '',
+        taxableAmount: quot.taxableAmount ?? baseAmt,
+        taxType: quot.taxType || 'GST (CGST + SGST)',
+        taxRate: quot.taxRate ?? 18,
+        cgstAmount: quot.cgstAmount ?? '',
+        sgstAmount: quot.sgstAmount ?? '',
+        igstAmount: quot.igstAmount ?? '',
+        otherCharges: quot.otherCharges ?? '',
+        totalQuotationValue: totQuotVal,
+        paymentTerms: quot.paymentTerms || data.clientDetails?.paymentTerms || 'Milestone Based',
+        quotationStatus: quot.quotationStatus || 'Draft'
       },
-      proposal: getProposalDefaults(lead, data.clientDetails || {}, data.quotation || {}, data.proposal || {}),
+      proposal: getProposalDefaults(lead, data.clientDetails || {}, quot, prop),
       sentToClient: {
         ...emptyForms.sentToClient,
         ...(data.sentToClient || {}),
         sentAt: toInputDateTime(data.sentToClient?.sentAt),
-        recipientEmail: data.sentToClient?.recipientEmail || lead.email || ''
+        recipientEmail: data.sentToClient?.recipientEmail || lead.email || '',
+        proposalVersionSent: data.sentToClient?.proposalVersionSent || `v${prop.version || 1}`,
+        expectedClientResponseDate: toInputDate(data.sentToClient?.expectedClientResponseDate),
+        clientAcceptanceDate: toInputDate(data.sentToClient?.clientAcceptanceDate),
+        acceptanceStatus: data.sentToClient?.acceptanceStatus || 'Pending',
+        acceptanceReference: data.sentToClient?.acceptanceReference || '',
+        acceptanceNotes: data.sentToClient?.acceptanceNotes || ''
       },
       negotiation: {
         ...emptyForms.negotiation,
-        ...(data.negotiation || {}),
-        expectedCloseDate: toInputDate(data.negotiation?.expectedCloseDate)
+        ...neg,
+        expectedCloseDate: toInputDate(neg.expectedCloseDate),
+        originalQuotationValue: origQuotVal,
+        currentProposedValue: currPropVal,
+        negotiatedDiscount: neg.negotiatedDiscount ?? '',
+        revisedContractValue: neg.revisedContractValue ?? '',
+        discountReason: neg.discountReason || 'Scope Adjustment',
+        managerApprovalStatus: neg.managerApprovalStatus || 'Not Required',
+        managerApprovalNotes: neg.managerApprovalNotes || '',
+        revisionHistory: asArray(neg.revisionHistory)
       },
       outcome: {
         ...emptyForms.outcome,
-        ...(data.outcome || {}),
-        finalValue: data.outcome?.finalValue || ''
+        ...out,
+        finalValue: finalVal,
+        finalContractValue: finalVal,
+        taxInclusive: out.taxInclusive || 'Excluding Tax',
+        contractNumber: out.contractNumber || '',
+        contractStartDate: toInputDate(out.contractStartDate || prop.projectStartDate || data.clientDetails?.expectedProjectStartDate),
+        contractEndDate: toInputDate(out.contractEndDate || prop.projectEndDate || data.clientDetails?.expectedProjectEndDate),
+        finalPaymentTerms: out.finalPaymentTerms || prop.commercialPaymentTerms || quot.paymentTerms || 'Milestone Based',
+        initialAdvanceAmount: out.initialAdvanceAmount ?? '',
+        billingSchedule: asArray(out.billingSchedule).length ? out.billingSchedule : (asArray(prop.sections?.paymentTerms).map(p => ({
+          milestone: p.milestone || '',
+          description: p.description || '',
+          percentage: p.percentage || '',
+          amount: finalVal && p.percentage ? Math.round((Number(finalVal) * Number(p.percentage)) / 100) : '',
+          dueDate: ''
+        }))),
+        projectManager: out.projectManager || '',
+        financeOwner: out.financeOwner || '',
+        contractDocumentRef: out.contractDocumentRef || '',
+        internalApprovedBudget: out.internalApprovedBudget ?? '',
+        internalBudgetNotes: out.internalBudgetNotes || '',
+        projectId: out.projectId || '',
+        projectCode: out.projectCode || ''
       }
     });
   };
 
   useEffect(() => {
-    if (lead?._id) loadPipeline();
+    if (lead?._id) {
+      setForms({
+        ...emptyForms,
+        clientDetails: {
+          ...emptyForms.clientDetails,
+          clientBudgetAmount: lead.estimatedValue !== undefined && lead.estimatedValue !== null && lead.estimatedValue !== '' ? lead.estimatedValue : '',
+          expectedClosingDate: toInputDate(lead.expectedCloseDate)
+        }
+      });
+      loadPipeline();
+    }
   }, [lead?._id]);
 
   const updateForm = (section, key, value) => {
     setForms(prev => ({ ...prev, [section]: { ...prev[section], [key]: value } }));
+  };
+
+  // Safe Quotation financial calculations
+  const updateQuotationField = (key, value) => {
+    setForms(prev => {
+      const q = { ...prev.quotation, [key]: value };
+      const base = Number(q.baseAmount || 0);
+      const discVal = Number(q.discountValue || 0);
+      let discAmt = 0;
+      if (q.discountType === 'Percentage') {
+        discAmt = (base * discVal) / 100;
+      } else {
+        discAmt = discVal;
+      }
+      const taxable = Math.max(0, base - discAmt);
+      const rate = Number(q.taxRate ?? 18);
+      let cgst = 0;
+      let sgst = 0;
+      let igst = 0;
+
+      if (q.taxType === 'GST (CGST + SGST)') {
+        cgst = Math.round(((taxable * (rate / 2)) / 100) * 100) / 100;
+        sgst = Math.round(((taxable * (rate / 2)) / 100) * 100) / 100;
+      } else if (q.taxType === 'IGST') {
+        igst = Math.round(((taxable * rate) / 100) * 100) / 100;
+      }
+
+      const other = Number(q.otherCharges || 0);
+      const total = Math.round((taxable + cgst + sgst + igst + other) * 100) / 100;
+
+      return {
+        ...prev,
+        quotation: {
+          ...q,
+          taxableAmount: taxable,
+          cgstAmount: cgst,
+          sgstAmount: sgst,
+          igstAmount: igst,
+          totalQuotationValue: total,
+          amount: total
+        }
+      };
+    });
+  };
+
+  // Safe Negotiation financial updater
+  const updateNegotiationRevisedValue = (value) => {
+    setForms(prev => {
+      const orig = Number(prev.negotiation.originalQuotationValue || prev.quotation.totalQuotationValue || prev.quotation.amount || 0);
+      const revised = Number(value || 0);
+      const discount = orig > revised && revised > 0 ? orig - revised : '';
+      return {
+        ...prev,
+        negotiation: {
+          ...prev.negotiation,
+          revisedContractValue: value,
+          negotiatedDiscount: discount
+        }
+      };
+    });
+  };
+
+  // Log negotiation revision
+  const addNegotiationRevision = () => {
+    const revised = Number(forms.negotiation.revisedContractValue || 0);
+    if (!revised) {
+      toast.error('Please enter a revised contract value first');
+      return;
+    }
+    const revision = {
+      date: new Date().toISOString(),
+      revisedContractValue: revised,
+      negotiatedDiscount: Number(forms.negotiation.negotiatedDiscount || 0),
+      discountReason: forms.negotiation.discountReason || 'Negotiation',
+      notes: revisionNote || forms.negotiation.notes || '',
+      managerApprovalStatus: forms.negotiation.managerApprovalStatus || 'Not Required'
+    };
+    setForms(prev => ({
+      ...prev,
+      negotiation: {
+        ...prev.negotiation,
+        revisionHistory: [revision, ...asArray(prev.negotiation.revisionHistory)]
+      }
+    }));
+    setRevisionNote('');
+    toast.success('Commercial revision logged to history');
+  };
+
+  // Import milestones from proposal into Won / Closed billing schedule
+  const importMilestonesFromProposal = () => {
+    const milestones = asArray(forms.proposal.sections?.paymentTerms);
+    if (!milestones.length) {
+      toast.error('No payment milestones configured in proposal');
+      return;
+    }
+    const contractVal = Number(forms.outcome.finalContractValue || forms.outcome.finalValue || forms.proposal.pricing?.discountedPrice || forms.proposal.pricing?.totalPrice || 0);
+    const schedule = milestones.map(m => ({
+      milestone: m.milestone || 'Milestone',
+      description: m.description || '',
+      percentage: m.percentage || '',
+      amount: contractVal && m.percentage ? Math.round((contractVal * Number(m.percentage)) / 100) : '',
+      dueDate: ''
+    }));
+    setForms(prev => ({
+      ...prev,
+      outcome: {
+        ...prev.outcome,
+        billingSchedule: schedule
+      }
+    }));
+    toast.success('Milestones imported into billing schedule');
   };
 
   const updateProposal = (key, value) => {
@@ -548,7 +868,18 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
   const updateProposalSectionRow = (sectionKey, index, field, value) => {
     setForms(prev => {
       const rows = asArray(prev.proposal.sections?.[sectionKey]);
-      const nextRows = rows.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row);
+      const nextRows = rows.map((row, rowIndex) => {
+        if (rowIndex !== index) return row;
+        const updated = { ...row, [field]: value };
+        // Auto-calculate amount for payment milestones if percentage changes
+        if (sectionKey === 'paymentTerms' && field === 'percentage') {
+          const totalVal = Number(prev.proposal.pricing?.discountedPrice || prev.proposal.pricing?.totalPrice || 0);
+          if (totalVal && value) {
+            updated.amount = Math.round((totalVal * Number(value)) / 100);
+          }
+        }
+        return updated;
+      });
       return {
         ...prev,
         proposal: {
@@ -675,95 +1006,52 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
         toast.success('Proposal generated with AI', { id: 'proposal-ai' });
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to generate proposal', { id: 'proposal-ai' });
+      toast.error(error.response?.data?.message || 'Failed to generate proposal with AI', { id: 'proposal-ai' });
     } finally {
       setSaving(false);
     }
   };
 
   const improveProposalSection = async (section) => {
-    const instruction = window.prompt('How should this section be improved?');
-    if (instruction === null) return;
     try {
       setSaving(true);
-      toast.loading('Improving section...', { id: 'proposal-section-ai' });
-      const res = await salesPipelineAPI.generateProposalSection(lead._id, { section, instruction });
+      toast.loading(`Improving ${section}...`, { id: 'proposal-section' });
+      const res = await salesPipelineAPI.generateProposalSection(lead._id, { section, instruction: forms.proposal.aiInstructions });
       if (res.data.success) {
         hydrate(res.data.data);
         onUpdated?.();
-        toast.success('Section improved', { id: 'proposal-section-ai' });
+        toast.success(`Updated ${section}`, { id: 'proposal-section' });
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to improve section', { id: 'proposal-section-ai' });
+      toast.error(error.response?.data?.message || `Failed to improve ${section}`, { id: 'proposal-section' });
     } finally {
       setSaving(false);
     }
   };
 
-  const downloadFileFromUrl = async (url, filename = 'Proposal.pdf') => {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch {
-      window.open(url, '_blank');
-    }
-  };
-
-  const generateProposalPdf = async (shouldDownloadOnly = false) => {
-    let pdfWindow = null;
-    if (!shouldDownloadOnly) {
-      pdfWindow = window.open('about:blank', '_blank');
-      if (pdfWindow) {
-        try {
-          pdfWindow.document.title = 'Generating Proposal PDF...';
-          pdfWindow.document.body.innerHTML = `
-            <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:#f8fafc;color:#1e293b;">
-              <div style="background:white;padding:32px 48px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);text-align:center;">
-                <h2 style="margin:0 0 12px 0;color:#0f172a;">Generating Proposal PDF...</h2>
-                <p style="margin:0;color:#64748b;font-size:14px;">Please wait while your document is compiled.</p>
-              </div>
-            </div>
-          `;
-        } catch {
-          // ignore
-        }
-      }
-    }
-
+  const generateProposalPdf = async (autoDownload = false) => {
     try {
       setSaving(true);
-      toast.loading('Generating PDF...', { id: 'proposal-pdf' });
-      const pdfRes = await salesPipelineAPI.generateProposalPdf(lead._id, forms.proposal);
-      if (pdfRes.data.success) {
-        hydrate(pdfRes.data.data);
+      toast.loading('Generating proposal PDF...', { id: 'proposal-pdf' });
+      const res = await salesPipelineAPI.generateProposalPdf(lead._id, forms.proposal);
+      if (res.data.success && res.data.pdfUrl) {
+        hydrate(res.data.data);
         onUpdated?.();
-        toast.success('PDF generated successfully', { id: 'proposal-pdf' });
-        const rawPdfUrl = pdfRes.data.data?.proposal?.pdfUrl || pdfRes.data.pdfUrl;
-        const pdfUrl = getApiFileUrl(rawPdfUrl);
-        if (pdfUrl) {
-          if (shouldDownloadOnly) {
-            await downloadFileFromUrl(pdfUrl, `Proposal_${lead.company || lead.firstName || 'Lead'}.pdf`);
-          } else if (pdfWindow && !pdfWindow.closed) {
-            pdfWindow.location.replace(pdfUrl);
-          } else {
-            window.open(pdfUrl, '_blank');
-          }
-        } else if (pdfWindow && !pdfWindow.closed) {
-          pdfWindow.close();
+        const fullUrl = getApiFileUrl(res.data.pdfUrl);
+        toast.success('Proposal PDF ready', { id: 'proposal-pdf' });
+        if (autoDownload) {
+          const a = document.createElement('a');
+          a.href = fullUrl;
+          a.download = `Proposal_${lead.company || lead.lastName || 'document'}.pdf`;
+          a.target = '_blank';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          window.open(fullUrl, '_blank');
         }
-      } else if (pdfWindow && !pdfWindow.closed) {
-        pdfWindow.close();
       }
     } catch (error) {
-      if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
       toast.error(error.response?.data?.message || 'Failed to generate PDF', { id: 'proposal-pdf' });
     } finally {
       setSaving(false);
@@ -781,22 +1069,28 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
     formData.append('pdf', file);
     try {
       setExtractingPdf(true);
-      toast.loading('Extracting proposal from PDF...', { id: 'pdf-extract' });
+      toast.loading('Extracting data from PDF...', { id: 'pdf-extract' });
       const res = await salesPipelineAPI.extractProposalFromPdf(lead._id, formData);
-      if (res.data.success) {
+      if (res.data.success && res.data.data) {
         const extracted = res.data.data;
         setForms(prev => ({
           ...prev,
           proposal: {
             ...prev.proposal,
-            companyName: extracted.companyName || prev.proposal.companyName,
-            customerName: extracted.customerName || prev.proposal.customerName,
-            proposalType: hasTemplateValue(extracted.proposalType) ? extracted.proposalType : prev.proposal.proposalType,
-            pricing: mergeAvailable(prev.proposal.pricing, extracted.pricing),
-            validity: mergeAvailable(prev.proposal.validity, extracted.validity),
-            contactDetails: defaultContactDetails,
-            signatureDetails: mergeAvailable(prev.proposal.signatureDetails, extracted.signatureDetails),
-            sections: mergeAvailable(prev.proposal.sections, extracted.sections)
+            ...(extracted.companyName ? { companyName: extracted.companyName } : {}),
+            ...(extracted.customerName ? { customerName: extracted.customerName } : {}),
+            ...(extracted.proposalType ? { proposalType: extracted.proposalType } : {}),
+            ...(extracted.title ? { title: extracted.title } : {}),
+            ...(extracted.subtitle ? { subtitle: extracted.subtitle } : {}),
+            ...(extracted.description ? { description: extracted.description } : {}),
+            pricing: {
+              ...prev.proposal.pricing,
+              ...(extracted.pricing || {})
+            },
+            sections: {
+              ...prev.proposal.sections,
+              ...(extracted.sections || {})
+            }
           }
         }));
         toast.success('Proposal fields populated from PDF!', { id: 'pdf-extract' });
@@ -816,7 +1110,11 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
       if (res.data.success) {
         hydrate(res.data.data);
         onUpdated?.();
-        toast.success('Pipeline updated');
+        if (res.data.project) {
+          toast.success(`Project ${res.data.project.projectCode} established!`);
+        } else {
+          toast.success('Pipeline updated');
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update pipeline');
@@ -841,48 +1139,12 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
     }
   };
 
-  const approve = async (status) => {
-    try {
-      setSaving(true);
-      const res = await salesPipelineAPI.updateApproval(lead._id, { status, comments: approvalComments });
-      if (res.data.success) {
-        hydrate(res.data.data);
-        setApprovalComments('');
-        onUpdated?.();
-        toast.success('Approval updated');
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update approval');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const generateQuotationPdf = () => {
     const client = forms.clientDetails;
     const quotation = forms.quotation;
     const clientName = `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || 'Client';
-    const amount = quotation.amount
-      ? `${quotation.currency || 'INR'} ${Number(quotation.amount).toLocaleString('en-IN')}`
-      : '-';
-    const rows = [
-      ['Client Name', clientName],
-      ['Company', lead.company || '-'],
-      ['Email', lead.email || '-'],
-      ['Phone', lead.phone || '-'],
-      ['Lead Status', lead.status || '-'],
-      ['Estimated Value', lead.estimatedValue ? `${quotation.currency || 'INR'} ${Number(lead.estimatedValue).toLocaleString('en-IN')}` : '-'],
-      ['Decision Maker', client.decisionMaker || '-'],
-      ['Budget Range', client.budgetRange || '-'],
-      ['Timeline', client.timeline || '-'],
-      ['Business Need', client.businessNeed || '-'],
-      ['Requirements', client.requirements || '-'],
-      ['Client Notes', client.notes || '-'],
-      ['Quotation Number', quotation.quotationNumber || '-'],
-      ['Quotation Amount', amount],
-      ['Valid Until', formatDate(quotation.validUntil)],
-      ['Quotation Notes', quotation.notes || '-']
-    ];
+    const curr = quotation.currency || 'INR';
+    const currSym = curr === 'INR' ? '₹' : `${curr} `;
 
     const printWindow = window.open('', '_blank', 'width=900,height=1000');
     if (!printWindow) {
@@ -897,7 +1159,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
         <head>
           <title>Quotation_${escapeHtml(safeFileName)}</title>
           <style>
-            @page { size: A4; margin: 18mm; }
+            @page { size: A4; margin: 16mm; }
             * { box-sizing: border-box; }
             body {
               margin: 0;
@@ -912,8 +1174,8 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
               justify-content: space-between;
               gap: 24px;
               border-bottom: 2px solid #2563eb;
-              padding-bottom: 18px;
-              margin-bottom: 20px;
+              padding-bottom: 16px;
+              margin-bottom: 18px;
             }
             .eyebrow {
               margin: 0 0 6px;
@@ -925,29 +1187,28 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
             }
             h1 {
               margin: 0;
-              font-size: 28px;
-              letter-spacing: 0;
+              font-size: 26px;
             }
             .meta {
-              min-width: 210px;
+              min-width: 220px;
               border: 1px solid #dbeafe;
               border-radius: 12px;
               background: #f8fafc;
               padding: 12px;
               font-size: 12px;
             }
-            .meta div { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; }
+            .meta div { display: flex; justify-content: space-between; gap: 12px; margin-top: 5px; }
             .section {
-              margin-top: 18px;
+              margin-top: 16px;
               border: 1px solid #e2e8f0;
-              border-radius: 14px;
+              border-radius: 12px;
               overflow: hidden;
             }
             .section h2 {
               margin: 0;
-              padding: 10px 14px;
+              padding: 8px 14px;
               background: #f1f5f9;
-              font-size: 13px;
+              font-size: 12px;
               letter-spacing: 0.04em;
               text-transform: uppercase;
             }
@@ -957,14 +1218,14 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
               gap: 0;
             }
             .field {
-              min-height: 58px;
+              min-height: 52px;
               border-top: 1px solid #e2e8f0;
-              padding: 10px 14px;
+              padding: 8px 14px;
             }
             .field:nth-child(odd) { border-right: 1px solid #e2e8f0; }
             .wide { grid-column: 1 / -1; border-right: 0 !important; }
             .label {
-              margin: 0 0 4px;
+              margin: 0 0 3px;
               color: #64748b;
               font-size: 10px;
               font-weight: 700;
@@ -974,14 +1235,35 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
             .value {
               margin: 0;
               color: #0f172a;
-              font-size: 13px;
+              font-size: 12px;
               font-weight: 600;
               white-space: pre-wrap;
               overflow-wrap: anywhere;
             }
-            .amount {
+            .table-fin {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 12px;
+            }
+            .table-fin th {
+              background: #0f172a;
+              color: #ffffff;
+              padding: 8px 12px;
+              text-align: left;
+            }
+            .table-fin td {
+              padding: 8px 12px;
+              border-bottom: 1px solid #e2e8f0;
+            }
+            .table-fin tr:last-child td {
+              font-weight: bold;
+              background: #f8fafc;
+              border-top: 2px solid #0f172a;
+              border-bottom: 0;
+            }
+            .amount-total {
               color: #047857;
-              font-size: 18px;
+              font-size: 16px;
               font-weight: 800;
             }
             .footer {
@@ -996,42 +1278,104 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
           <main class="sheet">
             <header class="header">
               <div>
-                <p class="eyebrow">Sales Quotation</p>
+                <p class="eyebrow">Commercial Quotation</p>
                 <h1>${escapeHtml(clientName)}</h1>
-                <p style="margin:6px 0 0;color:#64748b;font-size:13px;">${escapeHtml(lead.company || 'No company')}</p>
+                <p style="margin:4px 0 0;color:#64748b;font-size:13px;">${escapeHtml(lead.company || 'No company')}</p>
               </div>
               <div class="meta">
-                <div><strong>Quotation</strong><span>${escapeHtml(quotation.quotationNumber || '-')}</span></div>
+                <div><strong>Quotation #</strong><span>${escapeHtml(quotation.quotationNumber || '-')}</span></div>
                 <div><strong>Date</strong><span>${escapeHtml(formatDate(new Date()))}</span></div>
                 <div><strong>Valid Until</strong><span>${escapeHtml(formatDate(quotation.validUntil))}</span></div>
+                <div><strong>Status</strong><span>${escapeHtml(quotation.quotationStatus || 'Draft')}</span></div>
               </div>
             </header>
 
             <section class="section">
-              <h2>Client Details</h2>
+              <h2>Client & Project Scope</h2>
               <div class="grid">
-                ${rows.slice(0, 12).map(([label, value]) => `
-                  <div class="field ${['Requirements', 'Client Notes'].includes(label) ? 'wide' : ''}">
-                    <p class="label">${escapeHtml(label)}</p>
-                    <p class="value">${escapeHtml(value)}</p>
-                  </div>
-                `).join('')}
+                <div class="field"><p class="label">Email</p><p class="value">${escapeHtml(lead.email || '-')}</p></div>
+                <div class="field"><p class="label">Phone</p><p class="value">${escapeHtml(lead.phone || '-')}</p></div>
+                <div class="field"><p class="label">Decision Maker</p><p class="value">${escapeHtml(client.decisionMaker || '-')}</p></div>
+                <div class="field"><p class="label">Billing Type</p><p class="value">${escapeHtml(client.billingType || '-')}</p></div>
+                <div class="field"><p class="label">Payment Terms</p><p class="value">${escapeHtml(quotation.paymentTerms || client.paymentTerms || '-')}</p></div>
+                <div class="field"><p class="label">Client Budget</p><p class="value">${client.clientBudgetAmount ? `${currSym}${Number(client.clientBudgetAmount).toLocaleString('en-IN')}` : '-'}</p></div>
+                <div class="field wide"><p class="label">Business Need</p><p class="value">${escapeHtml(client.businessNeed || '-')}</p></div>
+                <div class="field wide"><p class="label">Requirements</p><p class="value">${escapeHtml(client.requirements || '-')}</p></div>
               </div>
             </section>
 
             <section class="section">
-              <h2>Quotation Details</h2>
-              <div class="grid">
-                ${rows.slice(12).map(([label, value]) => `
-                  <div class="field ${label === 'Quotation Notes' ? 'wide' : ''}">
-                    <p class="label">${escapeHtml(label)}</p>
-                    <p class="value ${label === 'Quotation Amount' ? 'amount' : ''}">${escapeHtml(value)}</p>
-                  </div>
-                `).join('')}
-              </div>
+              <h2>Commercial & Financial Breakdown</h2>
+              <table class="table-fin">
+                <thead>
+                  <tr>
+                    <th>Component</th>
+                    <th style="text-align: right;">Details</th>
+                    <th style="text-align: right;">Amount (${escapeHtml(curr)})</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Base Amount</td>
+                    <td style="text-align: right;">Initial Quoted Value</td>
+                    <td style="text-align: right;">${quotation.baseAmount ? Number(quotation.baseAmount).toLocaleString('en-IN') : (quotation.amount ? Number(quotation.amount).toLocaleString('en-IN') : '0')}</td>
+                  </tr>
+                  ${quotation.discountValue ? `
+                    <tr>
+                      <td>Discount</td>
+                      <td style="text-align: right;">${escapeHtml(quotation.discountType)} (${quotation.discountValue}${quotation.discountType === 'Percentage' ? '%' : ''})</td>
+                      <td style="text-align: right; color: #dc2626;">- ${(quotation.discountType === 'Percentage' ? (Number(quotation.baseAmount || 0) * Number(quotation.discountValue) / 100) : Number(quotation.discountValue)).toLocaleString('en-IN')}</td>
+                    </tr>
+                  ` : ''}
+                  <tr>
+                    <td>Taxable Amount</td>
+                    <td style="text-align: right;">Net of Discounts</td>
+                    <td style="text-align: right;">${quotation.taxableAmount ? Number(quotation.taxableAmount).toLocaleString('en-IN') : '0'}</td>
+                  </tr>
+                  ${quotation.taxType === 'GST (CGST + SGST)' ? `
+                    <tr>
+                      <td>CGST (${Number(quotation.taxRate || 18) / 2}%)</td>
+                      <td style="text-align: right;">Central GST</td>
+                      <td style="text-align: right;">${quotation.cgstAmount ? Number(quotation.cgstAmount).toLocaleString('en-IN') : '0'}</td>
+                    </tr>
+                    <tr>
+                      <td>SGST (${Number(quotation.taxRate || 18) / 2}%)</td>
+                      <td style="text-align: right;">State GST</td>
+                      <td style="text-align: right;">${quotation.sgstAmount ? Number(quotation.sgstAmount).toLocaleString('en-IN') : '0'}</td>
+                    </tr>
+                  ` : quotation.taxType === 'IGST' ? `
+                    <tr>
+                      <td>IGST (${Number(quotation.taxRate || 18)}%)</td>
+                      <td style="text-align: right;">Integrated GST</td>
+                      <td style="text-align: right;">${quotation.igstAmount ? Number(quotation.igstAmount).toLocaleString('en-IN') : '0'}</td>
+                    </tr>
+                  ` : ''}
+                  ${quotation.otherCharges ? `
+                    <tr>
+                      <td>Other Charges</td>
+                      <td style="text-align: right;">Additional Services</td>
+                      <td style="text-align: right;">${Number(quotation.otherCharges).toLocaleString('en-IN')}</td>
+                    </tr>
+                  ` : ''}
+                  <tr>
+                    <td style="font-size: 14px;">Total Quotation Value</td>
+                    <td style="text-align: right;">${escapeHtml(quotation.paymentTerms || 'As agreed')}</td>
+                    <td style="text-align: right;" class="amount-total">${currSym}${Number(quotation.totalQuotationValue || quotation.amount || 0).toLocaleString('en-IN')}</td>
+                  </tr>
+                </tbody>
+              </table>
             </section>
 
-            <p class="footer">Generated from Sales Pipeline quotation details.</p>
+            ${quotation.notes ? `
+              <section class="section">
+                <h2>Quotation Notes & Terms</h2>
+                <div class="field wide">
+                  <p class="value">${escapeHtml(quotation.notes)}</p>
+                </div>
+              </section>
+            ` : ''}
+
+            <p class="footer">Taruna Technology • Commercial Quotation Document</p>
           </main>
           <script>
             window.onload = () => {
@@ -1044,6 +1388,11 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
     `);
     printWindow.document.close();
   };
+
+  // Milestone percentage check
+  const proposalMilestones = asArray(forms.proposal.sections?.paymentTerms);
+  const totalMilestonePercentage = proposalMilestones.reduce((acc, row) => acc + Number(row.percentage || 0), 0);
+  const isMilestonePercentageValid = totalMilestonePercentage === 100 || proposalMilestones.length === 0;
 
   const content = (
     <div className={`${embedded ? 'w-full min-w-0 max-w-full flex flex-col bg-transparent border-0 p-0 shadow-none' : `flex flex-col h-[92vh] sm:h-[95vh] max-h-[96vh] w-full ${isAdmin ? 'max-w-7xl' : 'max-w-5xl'} overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 sm:p-6 shadow-xl`} employee-sales-pipeline-modal`}>
@@ -1063,13 +1412,15 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
             display: none;
           }
         `}</style>
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 pb-2.5 sm:border-b-0 sm:pb-5 mb-3 sm:mb-5">
-        <div>
-          <h2 className="text-base sm:text-xl font-bold text-slate-900 leading-tight">Sales Pipeline</h2>
-          <p className="text-xs sm:text-sm text-slate-500">{lead.firstName} {lead.lastName} • {lead.company || 'No company'}</p>
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 pb-3 sm:pb-4 mb-3 sm:mb-5">
+        <div className="min-w-0">
+          <h2 className="text-[17px] sm:text-[20px] font-semibold tracking-tight text-slate-900 leading-tight">
+            {lead.firstName} {lead.lastName}
+            <span className="font-normal text-slate-400"> • {lead.company || 'No company'}</span>
+          </h2>
         </div>
         {onClose && (
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors">
             <XCircle className="h-5 w-5" />
           </button>
         )}
@@ -1085,67 +1436,222 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
           <StageStepper currentStage={pipeline?.currentStage} activeStage={activeStage} onSelect={setActiveStage} />
 
           <div key={activeStage} className="pipeline-stage-panel rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3.5 sm:p-5 shadow-sm min-w-0 w-full max-w-full overflow-hidden sm:overflow-visible">
+            
+            {/* STAGE 1: CLIENT DETAILS */}
             {activeStage === 'client_details' && (
               <section>
-                <StageHeading title="Client Details" subtitle="Core lead information and qualification notes" />
-                <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm sm:grid-cols-3">
-                  <Info label="Name" value={`${lead.firstName} ${lead.lastName}`} />
+                <StageHeading title="Client Details" subtitle="Lead profile, qualification, stated client budget, and timeline expectations" />
+                <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm sm:grid-cols-3 rounded-xl border border-slate-200 bg-white p-3 mb-4 shadow-xs">
+                  <Info label="Client Name" value={`${lead.firstName} ${lead.lastName}`} />
                   <Info label="Email" value={lead.email} />
                   <Info label="Phone" value={lead.phone} />
                   <Info label="Company" value={lead.company || '-'} />
-                  <Info label="Estimated Value" value={lead.estimatedValue ? `₹${lead.estimatedValue.toLocaleString()}` : '-'} />
+                  <Info label="Estimated Value" value={lead.estimatedValue ? `₹${Number(lead.estimatedValue).toLocaleString('en-IN')}` : '-'} />
                   <Info label="Lead Status" value={lead.status} />
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3">
-                  <Input label="Decision Maker" value={forms.clientDetails.decisionMaker} onChange={v => updateForm('clientDetails', 'decisionMaker', v)} />
-                  <Input label="Budget Range" value={forms.clientDetails.budgetRange} onChange={v => updateForm('clientDetails', 'budgetRange', v)} />
-                  <Input label="Timeline" value={forms.clientDetails.timeline} onChange={v => updateForm('clientDetails', 'timeline', v)} />
-                  <Input label="Business Need" value={forms.clientDetails.businessNeed} onChange={v => updateForm('clientDetails', 'businessNeed', v)} />
-                  <Textarea label="Requirements" value={forms.clientDetails.requirements} onChange={v => updateForm('clientDetails', 'requirements', v)} />
-                  <Textarea label="Notes" value={forms.clientDetails.notes} onChange={v => updateForm('clientDetails', 'notes', v)} />
+
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3">
+                    <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider mb-2">Commercial & Budget Expectations</h4>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Input
+                        label="Client Stated Budget (₹)"
+                        type="number"
+                        value={forms.clientDetails.clientBudgetAmount}
+                        onChange={v => updateForm('clientDetails', 'clientBudgetAmount', v)}
+                      />
+                      <Select
+                        label="Billing Type"
+                        value={forms.clientDetails.billingType}
+                        onChange={v => updateForm('clientDetails', 'billingType', v)}
+                        options={billingTypeOptions}
+                      />
+                      <Select
+                        label="Proposed Payment Terms"
+                        value={forms.clientDetails.paymentTerms}
+                        onChange={v => updateForm('clientDetails', 'paymentTerms', v)}
+                        options={paymentTermsOptions}
+                      />
+                    </div>
+                    {forms.clientDetails.paymentTerms === 'Custom' && (
+                      <div className="mt-2.5">
+                        <Input
+                          label="Custom Payment Terms Description"
+                          value={forms.clientDetails.customPaymentTerms}
+                          onChange={v => updateForm('clientDetails', 'customPaymentTerms', v)}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <Input label="Expected Closing Date" type="date" value={forms.clientDetails.expectedClosingDate} onChange={v => updateForm('clientDetails', 'expectedClosingDate', v)} />
+                    <Input label="Expected Project Start Date" type="date" value={forms.clientDetails.expectedProjectStartDate} onChange={v => updateForm('clientDetails', 'expectedProjectStartDate', v)} />
+                    <Input label="Expected Project End Date" type="date" value={forms.clientDetails.expectedProjectEndDate} onChange={v => updateForm('clientDetails', 'expectedProjectEndDate', v)} />
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <Input label="Decision Maker" value={forms.clientDetails.decisionMaker} onChange={v => updateForm('clientDetails', 'decisionMaker', v)} />
+                    <Input label="Budget Range (Text)" value={forms.clientDetails.budgetRange} onChange={v => updateForm('clientDetails', 'budgetRange', v)} />
+                    <Input label="Timeline (Text)" value={forms.clientDetails.timeline} onChange={v => updateForm('clientDetails', 'timeline', v)} />
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Textarea label="Business Need" value={forms.clientDetails.businessNeed} onChange={v => updateForm('clientDetails', 'businessNeed', v)} />
+                    <Textarea label="Requirements" value={forms.clientDetails.requirements} onChange={v => updateForm('clientDetails', 'requirements', v)} />
+                  </div>
                 </div>
+
                 <SectionActions onSave={() => saveSection('clientDetails')} disabled={saving} />
               </section>
             )}
 
+            {/* STAGE 2: QUOTATION DETAILS */}
             {activeStage === 'quotation' && (
               <section>
-                <StageHeading title="Quotation Details" subtitle="Prepare pricing, validity, and quotation notes" icon={<FileText className="h-4 w-4 text-blue-600" />} />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Input label="Quotation Number" value={forms.quotation.quotationNumber} onChange={v => updateForm('quotation', 'quotationNumber', v)} />
-                  <Input label="Amount" type="number" value={forms.quotation.amount} onChange={v => updateForm('quotation', 'amount', v)} />
-                  <Input label="Currency" value={forms.quotation.currency} onChange={v => updateForm('quotation', 'currency', v)} />
-                  <Input label="Valid Until" type="date" value={forms.quotation.validUntil} onChange={v => updateForm('quotation', 'validUntil', v)} />
+                <StageHeading title="Quotation Details" subtitle="Comprehensive commercial breakdown, taxes, payment terms, and PDF export" icon={<FileText className="h-4 w-4 text-blue-600" />} />
+                
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <Input label="Quotation Number" value={forms.quotation.quotationNumber} onChange={v => updateQuotationField('quotationNumber', v)} />
+                    <Select label="Quotation Status" value={forms.quotation.quotationStatus} onChange={v => updateQuotationField('quotationStatus', v)} options={quotationStatusOptions} />
+                    <Input label="Valid Until" type="date" value={forms.quotation.validUntil} onChange={v => updateQuotationField('validUntil', v)} />
+                  </div>
+
+                  {/* Commercial Breakdown Card */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Commercial Breakdown & Tax Calculation</h4>
+                    
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Input
+                        label="Base Amount (₹)"
+                        type="number"
+                        value={forms.quotation.baseAmount}
+                        onChange={v => updateQuotationField('baseAmount', v)}
+                      />
+                      <Select
+                        label="Discount Type"
+                        value={forms.quotation.discountType}
+                        onChange={v => updateQuotationField('discountType', v)}
+                        options={['Percentage', 'Fixed Amount']}
+                      />
+                      <Input
+                        label={forms.quotation.discountType === 'Percentage' ? 'Discount Percentage (%)' : 'Discount Amount (₹)'}
+                        type="number"
+                        value={forms.quotation.discountValue}
+                        onChange={v => updateQuotationField('discountValue', v)}
+                      />
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Input
+                        label="Taxable Amount (₹)"
+                        type="number"
+                        value={forms.quotation.taxableAmount}
+                        onChange={v => updateQuotationField('taxableAmount', v)}
+                      />
+                      <Select
+                        label="Tax Type"
+                        value={forms.quotation.taxType}
+                        onChange={v => updateQuotationField('taxType', v)}
+                        options={['GST (CGST + SGST)', 'IGST', 'None']}
+                      />
+                      <Input
+                        label="Tax Rate (%)"
+                        type="number"
+                        value={forms.quotation.taxRate}
+                        onChange={v => updateQuotationField('taxRate', v)}
+                      />
+                    </div>
+
+                    {forms.quotation.taxType === 'GST (CGST + SGST)' && (
+                      <div className="grid gap-3 sm:grid-cols-2 rounded-lg bg-slate-50 p-2.5 border border-slate-100">
+                        <Input
+                          label={`CGST (${Number(forms.quotation.taxRate || 18) / 2}%) (₹)`}
+                          type="number"
+                          value={forms.quotation.cgstAmount}
+                          onChange={v => updateQuotationField('cgstAmount', v)}
+                        />
+                        <Input
+                          label={`SGST (${Number(forms.quotation.taxRate || 18) / 2}%) (₹)`}
+                          type="number"
+                          value={forms.quotation.sgstAmount}
+                          onChange={v => updateQuotationField('sgstAmount', v)}
+                        />
+                      </div>
+                    )}
+
+                    {forms.quotation.taxType === 'IGST' && (
+                      <div className="rounded-lg bg-slate-50 p-2.5 border border-slate-100">
+                        <Input
+                          label={`IGST (${Number(forms.quotation.taxRate || 18)}%) (₹)`}
+                          type="number"
+                          value={forms.quotation.igstAmount}
+                          onChange={v => updateQuotationField('igstAmount', v)}
+                        />
+                      </div>
+                    )}
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Input
+                        label="Other Charges (₹)"
+                        type="number"
+                        value={forms.quotation.otherCharges}
+                        onChange={v => updateQuotationField('otherCharges', v)}
+                      />
+                      <Select
+                        label="Payment Terms"
+                        value={forms.quotation.paymentTerms}
+                        onChange={v => updateQuotationField('paymentTerms', v)}
+                        options={paymentTermsOptions}
+                      />
+                    </div>
+
+                    {/* Total Quotation Highlight */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-emerald-950">
+                      <div>
+                        <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Total Quotation Value (Authoritative)</span>
+                        <p className="text-xs text-emerald-600">Calculated sum of taxable value, applicable GST, and other charges</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xl sm:text-2xl font-black text-emerald-700">
+                          ₹{Number(forms.quotation.totalQuotationValue || forms.quotation.amount || 0).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   <Textarea label="Quotation Notes" value={forms.quotation.notes} onChange={v => updateForm('quotation', 'notes', v)} />
                 </div>
+
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <button onClick={() => saveSection('quotation')} disabled={saving} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60">
+                  <button onClick={() => saveSection('quotation')} disabled={saving} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 shadow-xs">
                     Save Section
                   </button>
                   <button
                     type="button"
                     onClick={generateQuotationPdf}
-                    className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                    className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 shadow-xs"
                   >
                     <Download className="h-4 w-4" />
                     Generate PDF
                   </button>
-                  <button onClick={() => transition('proposal', 'Proceeded to proposal stage')} disabled={saving} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+                  <button onClick={() => transition('proposal', 'Proceeded to proposal stage')} disabled={saving} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 shadow-xs">
                     Proceed to Proposal
                   </button>
                 </div>
               </section>
             )}
 
+            {/* STAGE 3: PROPOSAL */}
             {activeStage === 'proposal' && (
               <section>
                 <StageHeading
                   title="Proposal"
-                  subtitle="Generate, edit, preview, and export the client proposal"
+                  subtitle="Generate, customize, configure commercial milestones, and export proposal document"
                   icon={<FileText className="h-4 w-4 text-indigo-600" />}
                   actions={
                     <>
-                      {/* Hidden PDF file input */}
                       <input
                         ref={pdfUploadRef}
                         type="file"
@@ -1210,8 +1716,11 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                     </>
                   }
                 />
+
                 <div className="grid gap-4 xl:grid-cols-[minmax(0,0.75fr)_minmax(420px,1.25fr)] xl:items-start min-w-0 w-full max-w-full">
                   <div className="space-y-4 xl:max-h-[84vh] xl:overflow-y-auto pr-1 xl:pr-2">
+                    
+                    {/* Core Proposal Metadata */}
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Input label="Company Name" value={forms.proposal.companyName} onChange={v => updateProposal('companyName', v)} />
                       <Input label="Customer Name" value={forms.proposal.customerName} onChange={v => updateProposal('customerName', v)} />
@@ -1219,12 +1728,29 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                       <Input label="Proposal Title" value={forms.proposal.title} onChange={v => updateProposal('title', v)} />
                       <Input label="Proposal Subtitle" value={forms.proposal.subtitle} onChange={v => updateProposal('subtitle', v)} />
                       <Input label="Valid Until" type="date" value={forms.proposal.validity?.validUntil} onChange={v => updateProposalNested('validity', 'validUntil', v)} />
-                      <Input label="Total Price" type="number" value={forms.proposal.pricing?.totalPrice} onChange={v => updateProposalNested('pricing', 'totalPrice', v)} />
-                      <Input label="Discounted Price" type="number" value={forms.proposal.pricing?.discountedPrice} onChange={v => updateProposalNested('pricing', 'discountedPrice', v)} />
-                      <Input label="AMC Cost" type="number" value={forms.proposal.pricing?.amcCost} onChange={v => updateProposalNested('pricing', 'amcCost', v)} />
-                      <Input label="Currency" value={forms.proposal.pricing?.currency} onChange={v => updateProposalNested('pricing', 'currency', v)} />
                     </div>
+
+                    {/* Commercial Agreement & Dates */}
+                    <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 space-y-3">
+                      <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Commercial Agreement & Charges</h4>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <Input label="Contract Duration" value={forms.proposal.contractDuration} onChange={v => updateProposal('contractDuration', v)} />
+                        <Input label="Project Start Date" type="date" value={forms.proposal.projectStartDate} onChange={v => updateProposal('projectStartDate', v)} />
+                        <Input label="Project End Date" type="date" value={forms.proposal.projectEndDate} onChange={v => updateProposal('projectEndDate', v)} />
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <Input label="Total Quoted Price (₹)" type="number" value={forms.proposal.pricing?.totalPrice} onChange={v => updateProposalNested('pricing', 'totalPrice', v)} />
+                        <Input label="Discounted Offer Price (₹)" type="number" value={forms.proposal.pricing?.discountedPrice} onChange={v => updateProposalNested('pricing', 'discountedPrice', v)} />
+                        <Input label="AMC / Support Cost (₹)" type="number" value={forms.proposal.pricing?.amcCost} onChange={v => updateProposalNested('pricing', 'amcCost', v)} />
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <Input label="Additional One-Time Charges (₹)" type="number" value={forms.proposal.pricing?.additionalCharges} onChange={v => updateProposalNested('pricing', 'additionalCharges', v)} />
+                        <Input label="Recurring Charges (₹)" type="number" value={forms.proposal.pricing?.recurringCharges} onChange={v => updateProposalNested('pricing', 'recurringCharges', v)} />
+                      </div>
+                    </div>
+
                     <Textarea label="Additional Instructions for AI" value={forms.proposal.aiInstructions} onChange={v => updateProposal('aiInstructions', v)} />
+
                     <div className="space-y-3">
                       {proposalEditableSections.map(([key, label, type]) => (
                         <EditableAiSection
@@ -1237,6 +1763,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                           helper={type === 'modules' ? 'Use blank lines between modules. Add features as lines starting with "-".' : type === 'list' ? 'One item per line.' : type === 'pairs' ? 'One item per line, use "Title - Description".' : ''}
                         />
                       ))}
+
                       <ProposalRowsEditor
                         title="Project Cost Breakdown"
                         rows={forms.proposal.sections?.projectCostBreakdown}
@@ -1246,6 +1773,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                         onAdd={() => addProposalSectionRow('projectCostBreakdown', { component: '', cost: '' })}
                         onRemove={(index) => removeProposalSectionRow('projectCostBreakdown', index)}
                       />
+
                       <ProposalRowsEditor
                         title="Project Timeline"
                         rows={forms.proposal.sections?.projectTimeline}
@@ -1255,15 +1783,26 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                         onAdd={() => addProposalSectionRow('projectTimeline', { phase: '', duration: '', notes: '' })}
                         onRemove={(index) => removeProposalSectionRow('projectTimeline', index)}
                       />
-                      <ProposalRowsEditor
-                        title="Payment Terms"
-                        rows={forms.proposal.sections?.paymentTerms}
-                        fields={[['milestone', 'Milestone'], ['description', 'Description'], ['percentage', 'Percent']]}
-                        compact
-                        onChange={(index, field, value) => updateProposalSectionRow('paymentTerms', index, field, value)}
-                        onAdd={() => addProposalSectionRow('paymentTerms', { milestone: '', description: '', percentage: '' })}
-                        onRemove={(index) => removeProposalSectionRow('paymentTerms', index)}
-                      />
+
+                      {/* Payment Terms Milestones with % Check */}
+                      <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs sm:text-sm font-bold text-slate-900">Configurable Payment Milestones</h4>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isMilestonePercentageValid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                            Total: {totalMilestonePercentage}% {isMilestonePercentageValid ? '✓' : '(Must equal 100%)'}
+                          </span>
+                        </div>
+                        <ProposalRowsEditor
+                          title=""
+                          rows={forms.proposal.sections?.paymentTerms}
+                          fields={[['milestone', 'Milestone'], ['description', 'Description'], ['percentage', 'Percent %']]}
+                          compact
+                          onChange={(index, field, value) => updateProposalSectionRow('paymentTerms', index, field, value)}
+                          onAdd={() => addProposalSectionRow('paymentTerms', { milestone: '', description: '', percentage: '' })}
+                          onRemove={(index) => removeProposalSectionRow('paymentTerms', index)}
+                        />
+                      </div>
+
                       <div className="rounded-xl border border-slate-200 bg-white p-3">
                         <h4 className="mb-3 text-sm font-bold text-slate-900">For Inquiries Contact Us</h4>
                         <div className="grid gap-3 sm:grid-cols-2">
@@ -1272,6 +1811,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                           ))}
                         </div>
                       </div>
+
                       <div className="rounded-xl border border-slate-200 bg-white p-3">
                         <h4 className="mb-3 text-sm font-bold text-slate-900">Agreement & Signatures</h4>
                         <div className="grid gap-3 sm:grid-cols-2">
@@ -1301,39 +1841,352 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
               </section>
             )}
 
+            {/* STAGE 4: SENT TO CLIENT */}
             {activeStage === 'sent_to_client' && (
               <section>
-                <StageHeading title="Sent to Client" subtitle="Record when and how the quotation was sent" icon={<Send className="h-4 w-4 text-blue-600" />} />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Input label="Sent At" type="datetime-local" value={forms.sentToClient.sentAt} onChange={v => updateForm('sentToClient', 'sentAt', v)} />
-                  <Select label="Method" value={forms.sentToClient.method} onChange={v => updateForm('sentToClient', 'method', v)} options={['Email', 'WhatsApp', 'Portal', 'In-Person', 'Other']} />
-                  <Input label="Recipient Email" value={forms.sentToClient.recipientEmail} onChange={v => updateForm('sentToClient', 'recipientEmail', v)} />
-                  <Textarea label="Send Notes" value={forms.sentToClient.notes} onChange={v => updateForm('sentToClient', 'notes', v)} />
+                <StageHeading title="Sent to Client" subtitle="Track quotation/proposal dispatch and formal commercial acceptance" icon={<Send className="h-4 w-4 text-blue-600" />} />
+                
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-xs space-y-3">
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Dispatch Information</h4>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Input label="Sent At" type="datetime-local" value={forms.sentToClient.sentAt} onChange={v => updateForm('sentToClient', 'sentAt', v)} />
+                      <Select label="Method" value={forms.sentToClient.method} onChange={v => updateForm('sentToClient', 'method', v)} options={['Email', 'WhatsApp', 'Portal', 'In-Person', 'Other']} />
+                      <Input label="Recipient Email" value={forms.sentToClient.recipientEmail} onChange={v => updateForm('sentToClient', 'recipientEmail', v)} />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Input label="Proposal Version Sent" value={forms.sentToClient.proposalVersionSent} onChange={v => updateForm('sentToClient', 'proposalVersionSent', v)} />
+                      <Input label="Expected Client Response Date" type="date" value={forms.sentToClient.expectedClientResponseDate} onChange={v => updateForm('sentToClient', 'expectedClientResponseDate', v)} />
+                    </div>
+                    <Textarea label="Send Notes" value={forms.sentToClient.notes} onChange={v => updateForm('sentToClient', 'notes', v)} />
+                  </div>
+
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 shadow-xs space-y-3">
+                    <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">Commercial Acceptance Tracking</h4>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Select label="Acceptance Status" value={forms.sentToClient.acceptanceStatus} onChange={v => updateForm('sentToClient', 'acceptanceStatus', v)} options={acceptanceStatusOptions} />
+                      <Input label="Client Acceptance Date" type="date" value={forms.sentToClient.clientAcceptanceDate} onChange={v => updateForm('sentToClient', 'clientAcceptanceDate', v)} />
+                      <Input label="Acceptance Reference / Doc URL" value={forms.sentToClient.acceptanceReference} onChange={v => updateForm('sentToClient', 'acceptanceReference', v)} />
+                    </div>
+                    <Textarea label="Acceptance Feedback / Notes" value={forms.sentToClient.acceptanceNotes} onChange={v => updateForm('sentToClient', 'acceptanceNotes', v)} />
+                  </div>
                 </div>
+
                 <SectionActions onSave={() => saveSection('sentToClient')} disabled={saving} />
               </section>
             )}
 
+            {/* STAGE 5: NEGOTIATION */}
             {activeStage === 'negotiation' && (
               <section>
-                <StageHeading title="Negotiation" subtitle="Capture closing date expectations and negotiation notes" />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Input label="Expected Close Date" type="date" value={forms.negotiation.expectedCloseDate} onChange={v => updateForm('negotiation', 'expectedCloseDate', v)} />
-                  <Textarea label="Negotiation Notes" value={forms.negotiation.notes} onChange={v => updateForm('negotiation', 'notes', v)} />
+                <StageHeading title="Negotiation" subtitle="Commercial revisions, discount tracking, and closing date" />
+                
+                <div className="space-y-4">
+                  {/* Financial Change Tracking Card */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Commercial Change Tracking</h4>
+                    
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Input
+                        label="Original Quotation Value (₹)"
+                        type="number"
+                        value={forms.negotiation.originalQuotationValue}
+                        onChange={v => updateForm('negotiation', 'originalQuotationValue', v)}
+                      />
+                      <Input
+                        label="Current Proposed Value (₹)"
+                        type="number"
+                        value={forms.negotiation.currentProposedValue}
+                        onChange={v => updateForm('negotiation', 'currentProposedValue', v)}
+                      />
+                      <Input
+                        label="Revised Contract Value (₹)"
+                        type="number"
+                        value={forms.negotiation.revisedContractValue}
+                        onChange={v => updateNegotiationRevisedValue(v)}
+                      />
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Input
+                        label="Negotiated Discount (₹)"
+                        type="number"
+                        value={forms.negotiation.negotiatedDiscount}
+                        onChange={v => updateForm('negotiation', 'negotiatedDiscount', v)}
+                      />
+                      <Select
+                        label="Discount Reason"
+                        value={forms.negotiation.discountReason}
+                        onChange={v => updateForm('negotiation', 'discountReason', v)}
+                        options={discountReasonOptions}
+                      />
+                      <Input
+                        label="Expected Close Date"
+                        type="date"
+                        value={forms.negotiation.expectedCloseDate}
+                        onChange={v => updateForm('negotiation', 'expectedCloseDate', v)}
+                      />
+                    </div>
+
+                    <Textarea label="Negotiation Notes" value={forms.negotiation.notes} onChange={v => updateForm('negotiation', 'notes', v)} />
+
+                    {/* Quick Revision Logger */}
+                    <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Optional comment to record in revision history..."
+                        value={revisionNote}
+                        onChange={e => setRevisionNote(e.target.value)}
+                        className="flex-1 w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-1.5 focus:ring-blue-500/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={addNegotiationRevision}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition whitespace-nowrap"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Log Commercial Revision
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Revision History Log */}
+                  {asArray(forms.negotiation.revisionHistory).length > 0 && (
+                    <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+                      <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Commercial Revision History</h4>
+                      <div className="divide-y divide-slate-100 max-h-40 overflow-y-auto">
+                        {asArray(forms.negotiation.revisionHistory).map((rev, idx) => (
+                          <div key={idx} className="py-1.5 text-xs flex items-center justify-between gap-2 text-slate-600">
+                            <div>
+                              <span className="font-semibold text-slate-900">₹{Number(rev.revisedContractValue || 0).toLocaleString('en-IN')}</span>
+                              {rev.negotiatedDiscount > 0 && <span className="text-red-600"> (Discount: ₹{Number(rev.negotiatedDiscount).toLocaleString('en-IN')})</span>}
+                              <span className="text-slate-400"> • {rev.discountReason || 'Revision'}</span>
+                              {rev.notes && <span className="text-slate-600"> • "{rev.notes}"</span>}
+                            </div>
+                            <span className="text-[11px] text-slate-400 shrink-0">{formatDate(rev.date)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+
                 <SectionActions onSave={() => saveSection('negotiation')} disabled={saving} />
               </section>
             )}
 
+            {/* STAGE 6: WON / CLOSED */}
             {activeStage === 'won_closed' && (
               <section>
-                <StageHeading title="Won / Closed" subtitle="Finalize the outcome and closure details" icon={<CheckCircle className="h-4 w-4 text-emerald-600" />} />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Select label="Outcome" value={forms.outcome.status} onChange={v => updateForm('outcome', 'status', v)} options={['open', 'won', 'lost']} />
-                  <Input label="Final Value" type="number" value={forms.outcome.finalValue} onChange={v => updateForm('outcome', 'finalValue', v)} />
-                  <Input label="Reason" value={forms.outcome.reason} onChange={v => updateForm('outcome', 'reason', v)} />
-                  <Textarea label="Outcome Notes" value={forms.outcome.notes} onChange={v => updateForm('outcome', 'notes', v)} />
+                <StageHeading title="Won / Closed" subtitle="Final commercial handoff, contract terms, billing schedule, and internal delivery budget" icon={<CheckCircle className="h-4 w-4 text-emerald-600" />} />
+                
+                <div className="space-y-4">
+                  {(forms.outcome.status === 'won' || forms.outcome.projectId) && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/90 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start sm:items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                          {forms.outcome.projectCode || 'PRJ'}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-emerald-950 uppercase tracking-wider">Relational Project Established</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              {forms.outcome.projectCode || 'Active Project'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-emerald-700 mt-0.5">
+                            This won deal is linked to centralized Project Management. Commercial contract terms and delivery budgets are synchronized.
+                          </p>
+                        </div>
+                      </div>
+                      <Link
+                        to={(() => {
+                          const userRole = localStorage.getItem('userRole') || role;
+                          const isAdminUser = role === 'admin' || userRole === 'admin' || (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin'));
+                          const basePath = isAdminUser ? '/admin/projects' : '/employee/projects';
+                          const q = new URLSearchParams();
+                          if (forms.outcome.projectId) q.set('projectId', forms.outcome.projectId);
+                          if (forms.outcome.projectCode) q.set('projectCode', forms.outcome.projectCode);
+                          if (lead?._id) q.set('leadId', lead._id);
+                          const qs = q.toString();
+                          return qs ? `${basePath}?${qs}` : basePath;
+                        })()}
+                        onClick={() => {
+                          if (onClose) onClose();
+                        }}
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs transition shrink-0"
+                      >
+                        <FolderKanban className="h-3.5 w-3.5" />
+                        View in Projects
+                      </Link>
+                    </div>
+                  )}
+
+                  {/* Final Deal Outcome & Contract Terms */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Final Commercial Contract Terms</h4>
+                    
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Select label="Outcome Status" value={forms.outcome.status} onChange={v => updateForm('outcome', 'status', v)} options={['open', 'won', 'lost']} />
+                      <Input
+                        label="Final Commercially Agreed Contract Value (₹)"
+                        type="number"
+                        value={forms.outcome.finalContractValue}
+                        onChange={v => {
+                          updateForm('outcome', 'finalContractValue', v);
+                          updateForm('outcome', 'finalValue', v);
+                        }}
+                      />
+                      <Select
+                        label="Tax Inclusivity"
+                        value={forms.outcome.taxInclusive}
+                        onChange={v => updateForm('outcome', 'taxInclusive', v)}
+                        options={['Excluding Tax', 'Including Tax']}
+                      />
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Input label="Contract Number / Reference" value={forms.outcome.contractNumber} onChange={v => updateForm('outcome', 'contractNumber', v)} />
+                      <Input label="Contract Start Date" type="date" value={forms.outcome.contractStartDate} onChange={v => updateForm('outcome', 'contractStartDate', v)} />
+                      <Input label="Contract End Date" type="date" value={forms.outcome.contractEndDate} onChange={v => updateForm('outcome', 'contractEndDate', v)} />
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Input label="Final Agreed Payment Terms" value={forms.outcome.finalPaymentTerms} onChange={v => updateForm('outcome', 'finalPaymentTerms', v)} />
+                      <Input label="Initial Advance Amount (₹)" type="number" value={forms.outcome.initialAdvanceAmount} onChange={v => updateForm('outcome', 'initialAdvanceAmount', v)} />
+                      <Input label="Contract / Acceptance Doc URL" value={forms.outcome.contractDocumentRef} onChange={v => updateForm('outcome', 'contractDocumentRef', v)} />
+                    </div>
+                  </div>
+
+                  {/* Final Agreed Billing Schedule */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900">Final Agreed Billing Schedule</h4>
+                      <button
+                        type="button"
+                        onClick={importMilestonesFromProposal}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        Import Proposal Milestones
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {asArray(forms.outcome.billingSchedule).map((row, idx) => (
+                        <div key={idx} className="grid grid-cols-[1fr_80px_100px_auto] sm:grid-cols-[1.5fr_80px_120px_110px_auto] items-end gap-1.5 p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+                          <label className="block min-w-0">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">Milestone</span>
+                            <input
+                              value={row.milestone || ''}
+                              onChange={e => {
+                                const list = [...asArray(forms.outcome.billingSchedule)];
+                                list[idx].milestone = e.target.value;
+                                updateForm('outcome', 'billingSchedule', list);
+                              }}
+                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs"
+                            />
+                          </label>
+                          <label className="block min-w-0">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">%</span>
+                            <input
+                              type="number"
+                              value={row.percentage || ''}
+                              onChange={e => {
+                                const list = [...asArray(forms.outcome.billingSchedule)];
+                                list[idx].percentage = e.target.value;
+                                const contractVal = Number(forms.outcome.finalContractValue || forms.outcome.finalValue || 0);
+                                if (contractVal && e.target.value) {
+                                  list[idx].amount = Math.round((contractVal * Number(e.target.value)) / 100);
+                                }
+                                updateForm('outcome', 'billingSchedule', list);
+                              }}
+                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs font-semibold"
+                            />
+                          </label>
+                          <label className="block min-w-0">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">Amount (₹)</span>
+                            <input
+                              type="number"
+                              value={row.amount || ''}
+                              onChange={e => {
+                                const list = [...asArray(forms.outcome.billingSchedule)];
+                                list[idx].amount = e.target.value;
+                                updateForm('outcome', 'billingSchedule', list);
+                              }}
+                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-900"
+                            />
+                          </label>
+                          <label className="hidden sm:block min-w-0">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">Due Date</span>
+                            <input
+                              type="date"
+                              value={row.dueDate || ''}
+                              onChange={e => {
+                                const list = [...asArray(forms.outcome.billingSchedule)];
+                                list[idx].dueDate = e.target.value;
+                                updateForm('outcome', 'billingSchedule', list);
+                              }}
+                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const list = asArray(forms.outcome.billingSchedule).filter((_, i) => i !== idx);
+                              updateForm('outcome', 'billingSchedule', list);
+                            }}
+                            className="p-1 text-slate-400 hover:text-red-600 rounded"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const list = [...asArray(forms.outcome.billingSchedule), { milestone: '', percentage: '', amount: '', dueDate: '' }];
+                          updateForm('outcome', 'billingSchedule', list);
+                        }}
+                        className="rounded border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        + Add Milestone
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Distinct Internal Approved Project Budget */}
+                  <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50/30 p-4 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-5 w-5 text-amber-600 shrink-0" />
+                      <div>
+                        <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">Internal Approved Delivery Budget</h4>
+                        <p className="text-[11px] text-amber-700">Company's authorized internal execution budget (Strictly distinct from client stated budget and contract revenue)</p>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Input
+                        label="Internal Delivery Budget (₹)"
+                        type="number"
+                        value={forms.outcome.internalApprovedBudget}
+                        onChange={v => updateForm('outcome', 'internalApprovedBudget', v)}
+                      />
+                      <Input
+                        label="Outcome Reason"
+                        value={forms.outcome.reason}
+                        onChange={v => updateForm('outcome', 'reason', v)}
+                      />
+                    </div>
+                    <Textarea
+                      label="Internal Budget Notes & Cost Assumptions"
+                      value={forms.outcome.internalBudgetNotes}
+                      onChange={v => updateForm('outcome', 'internalBudgetNotes', v)}
+                    />
+                  </div>
+
+                  <Textarea label="Deal Closure Notes" value={forms.outcome.notes} onChange={v => updateForm('outcome', 'notes', v)} />
                 </div>
+
                 <SectionActions onSave={() => saveSection('outcome')} disabled={saving} />
               </section>
             )}
@@ -1430,17 +2283,6 @@ const StageHeading = ({ title, subtitle, icon, actions }) => (
   </div>
 );
 
-const Badge = ({ status }) => {
-  const classes = {
-    approved: 'bg-emerald-100 text-emerald-700',
-    rejected: 'bg-red-100 text-red-700',
-    revision_requested: 'bg-amber-100 text-amber-700',
-    pending: 'bg-blue-100 text-blue-700',
-    not_submitted: 'bg-slate-100 text-slate-600'
-  };
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${classes[status] || classes.not_submitted}`}>{(status || 'not_submitted').replaceAll('_', ' ')}</span>;
-};
-
 const Info = ({ label, value }) => {
   const isEmail = String(label || '').toLowerCase() === 'email';
   return (
@@ -1458,56 +2300,69 @@ const Info = ({ label, value }) => {
 
 const Input = ({ label, value, onChange, type = 'text', disabled = false }) => (
   <label className="block">
-    <span className="mb-0.5 sm:mb-1 block text-xs font-semibold text-slate-600">{label}</span>
-    <input type={type} value={value || ''} onChange={(e) => onChange?.(e.target.value)} disabled={disabled} className="w-full rounded-lg border border-slate-300 bg-white px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-50 disabled:text-slate-600" />
+    <span className="mb-1 block text-[11px] font-semibold text-slate-600">{label}</span>
+    <input type={type} value={value || ''} onChange={(e) => onChange?.(e.target.value)} disabled={disabled} className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1.5 focus:ring-blue-500/20 disabled:bg-slate-50 disabled:text-slate-600" />
   </label>
 );
 
 const Textarea = ({ label, value, onChange }) => (
   <label className="block">
-    <span className="mb-0.5 sm:mb-1 block text-xs font-semibold text-slate-600">{label}</span>
-    <textarea value={value || ''} onChange={(e) => onChange(e.target.value)} rows="2" className="w-full rounded-lg border border-slate-300 bg-white px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+    <span className="mb-1 block text-[11px] font-semibold text-slate-600">{label}</span>
+    <textarea value={value || ''} onChange={(e) => onChange(e.target.value)} rows="2" className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1.5 focus:ring-blue-500/20" />
   </label>
 );
 
-const ProposalRowsEditor = ({ title, rows = [], fields, onChange, onAdd, onRemove }) => (
-  <div className="rounded-xl border border-slate-200 bg-white p-3">
-    <div className="mb-2.5 flex items-center justify-between gap-2">
-      <h4 className="text-xs sm:text-sm font-bold text-slate-900">{title}</h4>
-      <button
-        type="button"
-        onClick={onAdd}
-        className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] sm:text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
-      >
-        + Add Row
-      </button>
-    </div>
-    <div className="space-y-2.5">
+const ProposalRowsEditor = ({ title, rows = [], fields, onChange, onAdd, onRemove, compact }) => (
+  <div className="rounded-xl border border-slate-200 bg-white p-2.5 sm:p-3">
+    {title && (
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h4 className="text-xs font-bold text-slate-900">{title}</h4>
+        <button
+          type="button"
+          onClick={onAdd}
+          className="rounded-md border border-slate-200 px-2 py-0.5 text-[10.5px] font-semibold text-slate-600 hover:bg-slate-50 transition"
+        >
+          + Add Row
+        </button>
+      </div>
+    )}
+    {!title && (
+      <div className="mb-1.5 flex justify-end">
+        <button
+          type="button"
+          onClick={onAdd}
+          className="rounded-md border border-slate-200 px-2 py-0.5 text-[10.5px] font-semibold text-slate-600 hover:bg-slate-50 transition"
+        >
+          + Add Row
+        </button>
+      </div>
+    )}
+    <div className="space-y-2">
       {asArray(rows).map((row, index) => {
         if (fields.length === 2) {
           const [f1, f2] = fields;
           return (
-            <div key={`${title}-${index}`} className="grid grid-cols-[minmax(0,1fr)_90px_auto] sm:grid-cols-[minmax(0,1fr)_120px_auto] items-end gap-1.5 sm:gap-2 rounded-lg bg-slate-50 p-2.5 border border-slate-100">
+            <div key={`${title}-${index}`} className="grid grid-cols-[minmax(0,1fr)_90px_auto] sm:grid-cols-[minmax(0,1fr)_120px_auto] items-end gap-1.5 sm:gap-2 rounded-lg bg-slate-50 p-2 border border-slate-100">
               <label className="block min-w-0">
-                <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{f1[1]}</span>
+                <span className="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{f1[1]}</span>
                 <input
                   value={row?.[f1[0]] || ''}
                   onChange={v => onChange(index, f1[0], v.target.value)}
-                  className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-1.5 focus:ring-blue-500/20"
                 />
               </label>
               <label className="block min-w-0">
-                <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{f2[1]}</span>
+                <span className="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{f2[1]}</span>
                 <input
                   value={row?.[f2[0]] || ''}
                   onChange={v => onChange(index, f2[0], v.target.value)}
-                  className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-1.5 focus:ring-blue-500/20"
                 />
               </label>
               <button
                 type="button"
                 onClick={() => onRemove(index)}
-                className="h-8 w-8 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition"
+                className="h-6 w-6 shrink-0 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-xs"
                 title="Remove row"
               >
                 ✕
@@ -1521,32 +2376,32 @@ const ProposalRowsEditor = ({ title, rows = [], fields, onChange, onAdd, onRemov
         const [sf1, sf2] = shortFields;
 
         return (
-          <div key={`${title}-${index}`} className="space-y-2 rounded-lg bg-slate-50 p-2.5 border border-slate-100">
+          <div key={`${title}-${index}`} className="space-y-1.5 rounded-lg bg-slate-50 p-2 border border-slate-100">
             <div className="grid grid-cols-[minmax(0,1fr)_90px_auto] sm:grid-cols-[minmax(0,1fr)_120px_auto] items-end gap-1.5 sm:gap-2">
               {sf1 && (
                 <label className="block min-w-0">
-                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{sf1[1]}</span>
+                  <span className="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{sf1[1]}</span>
                   <input
                     value={row?.[sf1[0]] || ''}
                     onChange={v => onChange(index, sf1[0], v.target.value)}
-                    className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-1.5 focus:ring-blue-500/20"
                   />
                 </label>
               )}
               {sf2 && (
                 <label className="block min-w-0">
-                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{sf2[1]}</span>
+                  <span className="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{sf2[1]}</span>
                   <input
                     value={row?.[sf2[0]] || ''}
                     onChange={v => onChange(index, sf2[0], v.target.value)}
-                    className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-1.5 focus:ring-blue-500/20"
                   />
                 </label>
               )}
               <button
                 type="button"
                 onClick={() => onRemove(index)}
-                className="h-8 w-8 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition"
+                className="h-6 w-6 shrink-0 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition text-xs"
                 title="Remove row"
               >
                 ✕
@@ -1554,11 +2409,11 @@ const ProposalRowsEditor = ({ title, rows = [], fields, onChange, onAdd, onRemov
             </div>
             {longField && (
               <label className="block w-full">
-                <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{longField[1]}</span>
+                <span className="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate whitespace-nowrap">{longField[1]}</span>
                 <input
                   value={row?.[longField[0]] || ''}
                   onChange={v => onChange(index, longField[0], v.target.value)}
-                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-1.5 focus:ring-blue-500/20"
                 />
               </label>
             )}
@@ -1570,27 +2425,27 @@ const ProposalRowsEditor = ({ title, rows = [], fields, onChange, onAdd, onRemov
 );
 
 const EditableAiSection = ({ label, value, onChange, onImprove, disabled, helper }) => (
-  <div className="rounded-xl border border-slate-200 bg-white p-3">
-    <div className="mb-2 flex items-center justify-between gap-2">
-      <p className="text-xs font-bold text-slate-600">{label}</p>
+  <div className="rounded-xl border border-slate-200 bg-white p-2.5 sm:p-3">
+    <div className="mb-1.5 flex items-center justify-between gap-2">
+      <p className="text-[11px] font-bold text-slate-600">{label}</p>
       <button
         type="button"
         onClick={onImprove}
         disabled={disabled}
-        className="rounded-lg border border-fuchsia-100 bg-fuchsia-50 px-2.5 py-1 text-[11px] font-semibold text-fuchsia-700 hover:bg-fuchsia-100 disabled:opacity-60"
+        className="rounded-md border border-fuchsia-100 bg-fuchsia-50 px-2 py-0.5 text-[10.5px] font-semibold text-fuchsia-700 hover:bg-fuchsia-100 disabled:opacity-60"
       >
         Improve with AI
       </button>
     </div>
-    {helper && <p className="mb-1 text-[11px] font-medium text-slate-400">{helper}</p>}
-    <textarea value={value || ''} onChange={(e) => onChange(e.target.value)} rows="4" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+    {helper && <p className="mb-1 text-[10.5px] font-medium text-slate-400">{helper}</p>}
+    <textarea value={value || ''} onChange={(e) => onChange(e.target.value)} rows="3" className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1.5 focus:ring-blue-500/20" />
   </div>
 );
 
 const Select = ({ label, value, onChange, options }) => (
   <label className="block">
-    <span className="mb-1 block text-xs font-medium text-slate-500">{label}</span>
-    <select value={value || ''} onChange={(e) => onChange(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+    <span className="mb-1 block text-[11px] font-semibold text-slate-600">{label}</span>
+    <select value={value || ''} onChange={(e) => onChange(e.target.value)} className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1.5 focus:ring-blue-500/20">
       {options.map(option => <option key={option} value={option}>{option}</option>)}
     </select>
   </label>
@@ -1621,12 +2476,48 @@ const ProposalPreview = ({
   const sectionText = (value) => formatSectionToText(value);
   const timelineRows = asArray(sections.projectTimeline);
   const timelineHasNotes = timelineRows.some(row => String(row?.notes || '').trim());
+  const formatProposalDate = (d) => {
+    if (!d) return '-';
+    if (typeof d === 'string') {
+      const s = d.trim();
+      if (!s) return '-';
+      const dmy = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+      if (dmy) {
+        const [, day, month, year] = dmy;
+        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+      }
+    }
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return String(d);
+    return date.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const currSymbol = pricing.currency === 'INR' ? '(₹)' : `(${pricing.currency || 'INR'})`;
+  const commercialSummaryRows = [
+    { label: 'Contract Duration', val: proposal.contractDuration || '-', isAmount: false },
+    { label: 'Project Start Date', val: formatProposalDate(proposal.projectStartDate), isAmount: false },
+    { label: 'Project End Date', val: formatProposalDate(proposal.projectEndDate), isAmount: false },
+    { label: `Total Quoted Price ${currSymbol}`, val: pricing.totalPrice !== '' && pricing.totalPrice !== undefined && pricing.totalPrice !== null && Number(pricing.totalPrice) > 0 ? formatProposalMoney(pricing.totalPrice, pricing.currency) : '-', isAmount: true },
+    { label: `Discounted Offer Price ${currSymbol}`, val: Number(pricing.discountedPrice) > 0 ? formatProposalMoney(pricing.discountedPrice, pricing.currency) : '-', isAmount: true, isHighlight: Number(pricing.discountedPrice) > 0 },
+    { label: `AMC / Support Cost ${currSymbol}`, val: Number(pricing.amcCost) > 0 ? `${formatProposalMoney(pricing.amcCost, pricing.currency)} / year` : '-', isAmount: true },
+    { label: `Additional One-Time Charges ${currSymbol}`, val: Number(pricing.additionalCharges) > 0 ? formatProposalMoney(pricing.additionalCharges, pricing.currency) : '-', isAmount: true },
+    { label: `Recurring Charges ${currSymbol}`, val: Number(pricing.recurringCharges) > 0 ? formatProposalMoney(pricing.recurringCharges, pricing.currency) : '-', isAmount: true }
+  ];
+
+  if (proposal.validity?.validUntil) {
+    commercialSummaryRows.push({
+      label: 'Valid Until',
+      val: formatProposalDate(proposal.validity?.validUntil),
+      isAmount: false
+    });
+  }
+
+  const visibleCommercialSummaryRows = commercialSummaryRows.filter(r => r.val && r.val !== '-');
 
   const page = (key, defaultTitle, children) => {
     const title = proposal.sectionTitles?.[key] || defaultTitle;
     return (
       <div className={`proposal-page relative mx-auto mb-3 sm:mb-4 min-h-[460px] sm:min-h-[560px] w-full overflow-hidden rounded-sm bg-white p-3.5 sm:p-6 shadow-md sm:shadow-lg ring-1 ring-slate-300 flex flex-col justify-between ${embedded ? 'max-w-full sm:max-w-[500px]' : 'max-w-full sm:max-w-[440px] xl:max-w-[680px]'}`}>
-        {/* Background Watermark - Brighter Logo */}
         <img
           src="/Taruna-logo-text.png"
           alt=""
@@ -1634,13 +2525,11 @@ const ProposalPreview = ({
         />
 
         <div className={`relative min-h-[400px] sm:min-h-[500px] ${embedded ? 'text-xs sm:text-[15px]' : 'text-xs sm:text-sm'}`}>
-          {/* Decent, Smaller Top Header Logo Only */}
           <div className="mb-3 sm:mb-4 flex items-center justify-between border-b border-slate-100 pb-2">
             <img src="/Taruna-logo-text.png" alt="" className={embedded ? 'h-5 sm:h-7 w-auto object-contain' : 'h-4 sm:h-6 w-auto object-contain'} />
             <span className={`${embedded ? 'text-[10px] sm:text-[11px]' : 'text-[9px] sm:text-[10px]'} font-semibold text-fuchsia-600 uppercase tracking-wider`}>{proposal.proposalType || 'Project Proposal'}</span>
           </div>
 
-          {/* Page Title */}
           <div className="mt-2 sm:mt-4 border-l-4 border-fuchsia-500 pl-2.5 sm:pl-3">
             <input
               type="text"
@@ -1651,7 +2540,6 @@ const ProposalPreview = ({
             />
           </div>
 
-          {/* Children Content */}
           <div className={`mt-3 sm:mt-5 ${embedded ? 'text-xs sm:text-[15px] leading-6 sm:leading-8' : 'text-xs sm:text-sm leading-6 sm:leading-7'} text-slate-700`}>{children}</div>
         </div>
       </div>
@@ -1663,13 +2551,11 @@ const ProposalPreview = ({
 
   return (
     <div className="employee-sales-pipeline-preview max-h-[70vh] sm:max-h-[78vh] overflow-y-auto rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-200/80 p-2 sm:p-3">
-      {/* Cover Page (First Page - Matching Image 1) */}
+      {/* Cover Page */}
       <div className={`proposal-page relative mx-auto mb-3 sm:mb-4 min-h-[460px] sm:min-h-[560px] w-full overflow-hidden rounded-sm bg-white p-3.5 sm:p-6 shadow-md sm:shadow-lg ring-1 ring-slate-300 flex flex-col justify-between ${embedded ? 'max-w-full sm:max-w-[500px]' : 'max-w-full sm:max-w-[440px]'}`}>
         <div className="relative">
-          {/* Centered Top Company Logo */}
           <img src="/Taruna-logo-text.png" alt="Taruna Technology" className={embedded ? 'mx-auto h-14 sm:h-22 w-auto object-contain mb-4 sm:mb-6' : 'mx-auto h-12 sm:h-20 w-auto object-contain mb-4 sm:mb-6'} />
 
-          {/* Defined Pink Subtitle */}
           <input
             type="text"
             value={proposal.subtitle || proposal.proposalType || ''}
@@ -1678,7 +2564,6 @@ const ProposalPreview = ({
             className={`w-full bg-transparent ${embedded ? 'text-[10px] sm:text-[12px]' : 'text-[9px] sm:text-[11px]'} font-black uppercase tracking-wider text-fuchsia-600 outline-none focus:bg-fuchsia-50/50 rounded px-1 -ml-1`}
           />
 
-          {/* Big Main Title: PROJECT PROPOSAL */}
           <div className="mt-2 text-xl sm:text-3xl font-black uppercase leading-none text-indigo-900">
             <input
               type="text"
@@ -1689,14 +2574,12 @@ const ProposalPreview = ({
             />
           </div>
 
-          {/* Decorative Circuit Lines on Right */}
           <svg className="absolute right-0 top-36 w-24 h-16 pointer-events-none text-purple-500" viewBox="0 0 100 60" fill="none">
             <path d="M0 20 H50 L70 5 H100 M0 35 H40 L60 50 H100" stroke="currentColor" strokeWidth="2" />
             <circle cx="50" cy="20" r="3" fill="currentColor" />
             <circle cx="40" cy="35" r="3" fill="currentColor" />
           </svg>
 
-          {/* Description Text */}
           <textarea
             value={proposal.description || `Project details and budget projections for ${proposal.proposalType || 'WEB APP Development'}`}
             onChange={e => onProposalChange?.('description', e.target.value)}
@@ -1704,7 +2587,6 @@ const ProposalPreview = ({
             className={`mt-6 w-full resize-none bg-transparent ${embedded ? 'text-[13px] leading-7' : 'text-xs leading-relaxed'} text-slate-800 outline-none focus:bg-slate-50 rounded p-1`}
           />
 
-          {/* Vertical Pink Accent Bar with Presented Details */}
           <div className="mt-8 border-l-2 border-fuchsia-500 pl-4 py-1 space-y-3">
             <div>
               <p className="text-[11px] font-bold text-fuchsia-600">Presented to</p>
@@ -1730,7 +2612,6 @@ const ProposalPreview = ({
           </div>
         </div>
 
-        {/* Decorative Grid of Dots & Bottom Right Arc */}
         <svg className="absolute left-6 bottom-8 w-24 h-16 pointer-events-none text-purple-400 opacity-60" viewBox="0 0 120 80">
           <pattern id="dots-cover" x="0" y="0" width="15" height="15" patternUnits="userSpaceOnUse">
             <circle cx="3" cy="3" r="1.5" fill="currentColor" />
@@ -1739,6 +2620,29 @@ const ProposalPreview = ({
         </svg>
         <div className="absolute -right-10 -bottom-10 h-32 w-32 rounded-full border-[18px] border-fuchsia-600 pointer-events-none" />
       </div>
+
+      {/* Commercial Summary Page */}
+      {visibleCommercialSummaryRows.length > 0 && page('commercialSummary', 'Commercial Summary', (
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-lg border border-slate-200 text-xs">
+            <div className="grid grid-cols-[1.5fr_1fr] bg-slate-900 px-3 py-2.5 font-bold text-white text-[11px] sm:text-xs">
+              <div>Commercial Agreement & Charges</div>
+              <div>Details / Amount</div>
+            </div>
+            {visibleCommercialSummaryRows.map((row, index) => (
+              <div
+                key={index}
+                className={`grid grid-cols-[1.5fr_1fr] items-center border-t border-slate-200 px-3 py-2 text-[11px] sm:text-xs ${index % 2 === 0 ? 'bg-slate-50/70' : 'bg-white'}`}
+              >
+                <span className="font-bold text-slate-600">{row.label}</span>
+                <span className={`font-bold ${row.isHighlight ? 'text-emerald-600 font-extrabold' : row.isAmount ? 'text-slate-950 font-black text-xs sm:text-sm' : 'text-slate-800'}`}>
+                  {row.val}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
 
       {/* Editable Section Pages */}
       {proposalEditableSections.map(([key, defaultTitle, type]) => (
@@ -2011,19 +2915,16 @@ const ProposalPreview = ({
         </div>
       ))}
 
-      {/* Thank You / Contact Us Page (Final Dedicated Page - Matching Image 2) */}
+      {/* Thank You / Contact Us Page */}
       <div className="employee-sales-pipeline-preview proposal-page relative mx-auto mb-4 min-h-[560px] max-w-[440px] overflow-hidden rounded-sm bg-white p-6 shadow-lg ring-1 ring-slate-300 flex flex-col justify-between">
         <div className="relative">
-          {/* Centered Top Company Logo */}
           <img src="/Taruna-logo-text.png" alt="Taruna Technology" className="mx-auto h-24 w-auto object-contain mb-8" />
 
-          {/* Heading */}
           <h2 className="text-2xl font-black uppercase tracking-tight leading-tight">
             <span className="text-fuchsia-600 block">FOR INQUIRIES,</span>
             <span className="text-indigo-900 block">CONTACT US</span>
           </h2>
 
-          {/* Contact Details List with Circular Icon Badges */}
           <div className="mt-8 space-y-4 text-xs font-medium text-slate-800">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white shrink-0">
@@ -2046,13 +2947,11 @@ const ProposalPreview = ({
           </div>
         </div>
 
-        {/* Centered Address & Website Footer */}
         <div className="relative mt-12 space-y-2 text-center text-xs text-slate-700">
           <p className="w-full text-center text-[11px] leading-relaxed text-slate-700">{contact.address}</p>
           <p className="text-xs font-bold text-fuchsia-600">{contact.website || 'www.tarunatech.com'}</p>
         </div>
 
-        {/* Decorative Grid of Dots & Bottom Right Arc */}
         <svg className="absolute left-6 bottom-12 w-24 h-16 pointer-events-none text-purple-400 opacity-60" viewBox="0 0 120 80">
           <pattern id="dots-thankyou" x="0" y="0" width="15" height="15" patternUnits="userSpaceOnUse">
             <circle cx="3" cy="3" r="1.5" fill="currentColor" />
@@ -2077,7 +2976,7 @@ const PreviewTextarea = ({ value, onChange, rows = 10 }) => (
 
 const SectionActions = ({ onSave, disabled }) => (
   <div className="mt-3 flex justify-end">
-    <button onClick={onSave} disabled={disabled} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60">
+    <button onClick={onSave} disabled={disabled} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 shadow-xs">
       Save Section
     </button>
   </div>

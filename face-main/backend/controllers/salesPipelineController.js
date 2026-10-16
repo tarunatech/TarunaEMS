@@ -1,6 +1,7 @@
 import Lead from '../models/Lead.js';
 import Employee from '../models/Employee.js';
 import SalesPipeline from '../models/SalesPipeline.js';
+import Project, { generateProjectCode } from '../models/Project.js';
 import { buildProposalDefaults, generateProposalContent, generateProposalSectionContent } from '../services/proposalAIService.js';
 import { generateProposalPdf } from '../services/proposalPdfService.js';
 import { extractProposalFromPdf as extractFromPdf } from '../services/proposalPdfExtractService.js';
@@ -9,7 +10,7 @@ const STAGE_ORDER = ['client_details', 'quotation', 'proposal', 'sent_to_client'
 const EMPLOYEE_EDITABLE_SECTIONS = ['clientDetails', 'quotation', 'proposal', 'sentToClient', 'negotiation', 'outcome'];
 
 const populatePipeline = (query) => query
-  .populate('lead', 'leadId firstName lastName email phone company position estimatedValue status assignedTo')
+  .populate('lead', 'leadId firstName lastName email phone company position estimatedValue status assignedTo expectedCloseDate')
   .populate('approval.submittedBy', 'name email')
   .populate('approval.approvedBy', 'name email')
   .populate('approval.history.actedBy', 'name email')
@@ -37,9 +38,17 @@ const assertLeadAccess = async (lead, user) => {
 const getOrCreatePipeline = async (lead, userId) => {
   let pipeline = await SalesPipeline.findOne({ lead: lead._id });
   if (!pipeline) {
+    const leadEstimatedVal = lead.estimatedValue !== undefined && lead.estimatedValue !== null && lead.estimatedValue !== ''
+      ? Number(lead.estimatedValue) || null
+      : null;
+
     pipeline = await SalesPipeline.create({
       lead: lead._id,
       currentStage: 'client_details',
+      clientDetails: {
+        expectedClosingDate: lead.expectedCloseDate || null,
+        clientBudgetAmount: leadEstimatedVal,
+      },
       stageHistory: [{
         fromStage: null,
         toStage: 'client_details',
@@ -48,9 +57,32 @@ const getOrCreatePipeline = async (lead, userId) => {
         comments: 'Pipeline created on first access'
       }]
     });
-  } else if (pipeline.currentStage === 'admin_approval') {
-    pipeline.currentStage = 'proposal';
-    await pipeline.save();
+  } else {
+    let shouldSave = false;
+    if (pipeline.currentStage === 'admin_approval') {
+      pipeline.currentStage = 'proposal';
+      shouldSave = true;
+    }
+    if ((!pipeline.clientDetails || !pipeline.clientDetails.expectedClosingDate) && lead.expectedCloseDate) {
+      pipeline.clientDetails = {
+        ...(pipeline.clientDetails || {}),
+        expectedClosingDate: lead.expectedCloseDate
+      };
+      shouldSave = true;
+    }
+    const hasClientBudget = pipeline.clientDetails?.clientBudgetAmount !== undefined &&
+      pipeline.clientDetails?.clientBudgetAmount !== null &&
+      pipeline.clientDetails?.clientBudgetAmount !== '';
+    if (!hasClientBudget && lead.estimatedValue !== undefined && lead.estimatedValue !== null && lead.estimatedValue !== '') {
+      pipeline.clientDetails = {
+        ...(pipeline.clientDetails || {}),
+        clientBudgetAmount: Number(lead.estimatedValue) || null
+      };
+      shouldSave = true;
+    }
+    if (shouldSave) {
+      await pipeline.save();
+    }
   }
   return pipeline;
 };
@@ -106,7 +138,14 @@ export const getPipelineByLead = async (req, res) => {
     const pipeline = await getOrCreatePipeline(lead, req.user.id);
     const populated = await populatePipeline(SalesPipeline.findById(pipeline._id));
 
-    res.json({ success: true, data: populated });
+    let project = null;
+    if (pipeline.outcome?.projectId) {
+      project = await Project.findById(pipeline.outcome.projectId);
+    } else if (pipeline.outcome?.status === 'won') {
+      project = await Project.findOne({ pipelineId: pipeline._id }) || await Project.findOne({ leadId: lead._id });
+    }
+
+    res.json({ success: true, data: populated, project });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
@@ -129,22 +168,90 @@ export const updatePipelineSection = async (req, res) => {
     const pipeline = await getOrCreatePipeline(lead, req.user.id);
     const payload = { ...req.body };
 
-    if (section === 'quotation' && payload.amount !== undefined) {
-      payload.amount = Number(payload.amount) || 0;
+    if (section === 'clientDetails') {
+      if (payload.clientBudgetAmount !== undefined && payload.clientBudgetAmount !== null && payload.clientBudgetAmount !== '') {
+        payload.clientBudgetAmount = Number(payload.clientBudgetAmount) || 0;
+      }
+      if (payload.expectedClosingDate) payload.expectedClosingDate = new Date(payload.expectedClosingDate);
+      else if (payload.expectedClosingDate === '') payload.expectedClosingDate = null;
+      if (payload.expectedProjectStartDate) payload.expectedProjectStartDate = new Date(payload.expectedProjectStartDate);
+      else if (payload.expectedProjectStartDate === '') payload.expectedProjectStartDate = null;
+      if (payload.expectedProjectEndDate) payload.expectedProjectEndDate = new Date(payload.expectedProjectEndDate);
+      else if (payload.expectedProjectEndDate === '') payload.expectedProjectEndDate = null;
     }
-    if (section === 'quotation' && payload.validUntil) {
-      payload.validUntil = new Date(payload.validUntil);
+    if (section === 'quotation') {
+      if (payload.totalQuotationValue !== undefined && payload.totalQuotationValue !== null && payload.totalQuotationValue !== '') {
+        payload.totalQuotationValue = Number(payload.totalQuotationValue) || 0;
+        payload.amount = payload.totalQuotationValue;
+      } else if (payload.amount !== undefined) {
+        payload.amount = Number(payload.amount) || 0;
+      }
+      if (payload.baseAmount !== undefined && payload.baseAmount !== null && payload.baseAmount !== '') {
+        payload.baseAmount = Number(payload.baseAmount) || 0;
+      }
+      if (payload.discountValue !== undefined && payload.discountValue !== null && payload.discountValue !== '') {
+        payload.discountValue = Number(payload.discountValue) || 0;
+      }
+      if (payload.taxableAmount !== undefined && payload.taxableAmount !== null && payload.taxableAmount !== '') {
+        payload.taxableAmount = Number(payload.taxableAmount) || 0;
+      }
+      if (payload.taxRate !== undefined && payload.taxRate !== null && payload.taxRate !== '') {
+        payload.taxRate = Number(payload.taxRate) || 0;
+      }
+      if (payload.cgstAmount !== undefined && payload.cgstAmount !== null && payload.cgstAmount !== '') {
+        payload.cgstAmount = Number(payload.cgstAmount) || 0;
+      }
+      if (payload.sgstAmount !== undefined && payload.sgstAmount !== null && payload.sgstAmount !== '') {
+        payload.sgstAmount = Number(payload.sgstAmount) || 0;
+      }
+      if (payload.igstAmount !== undefined && payload.igstAmount !== null && payload.igstAmount !== '') {
+        payload.igstAmount = Number(payload.igstAmount) || 0;
+      }
+      if (payload.otherCharges !== undefined && payload.otherCharges !== null && payload.otherCharges !== '') {
+        payload.otherCharges = Number(payload.otherCharges) || 0;
+      }
+      if (payload.validUntil) {
+        payload.validUntil = new Date(payload.validUntil);
+      }
     }
-    if (section === 'sentToClient' && payload.sentAt) {
-      payload.sentAt = new Date(payload.sentAt);
+    if (section === 'sentToClient') {
+      if (payload.sentAt) payload.sentAt = new Date(payload.sentAt);
+      if (payload.expectedClientResponseDate) payload.expectedClientResponseDate = new Date(payload.expectedClientResponseDate);
+      if (payload.clientAcceptanceDate) payload.clientAcceptanceDate = new Date(payload.clientAcceptanceDate);
     }
     if (section === 'negotiation') {
       if (payload.expectedCloseDate) payload.expectedCloseDate = new Date(payload.expectedCloseDate);
+      if (payload.originalQuotationValue !== undefined && payload.originalQuotationValue !== null && payload.originalQuotationValue !== '') {
+        payload.originalQuotationValue = Number(payload.originalQuotationValue) || 0;
+      }
+      if (payload.currentProposedValue !== undefined && payload.currentProposedValue !== null && payload.currentProposedValue !== '') {
+        payload.currentProposedValue = Number(payload.currentProposedValue) || 0;
+      }
+      if (payload.negotiatedDiscount !== undefined && payload.negotiatedDiscount !== null && payload.negotiatedDiscount !== '') {
+        payload.negotiatedDiscount = Number(payload.negotiatedDiscount) || 0;
+      }
+      if (payload.revisedContractValue !== undefined && payload.revisedContractValue !== null && payload.revisedContractValue !== '') {
+        payload.revisedContractValue = Number(payload.revisedContractValue) || 0;
+      }
       payload.lastNegotiationAt = new Date();
       payload.enteredAt = pipeline.negotiation?.enteredAt || new Date();
     }
     if (section === 'outcome') {
-      if (payload.finalValue !== undefined) payload.finalValue = Number(payload.finalValue) || 0;
+      if (payload.finalContractValue !== undefined && payload.finalContractValue !== null && payload.finalContractValue !== '') {
+        payload.finalContractValue = Number(payload.finalContractValue) || 0;
+        payload.finalValue = payload.finalContractValue;
+      } else if (payload.finalValue !== undefined) {
+        payload.finalValue = Number(payload.finalValue) || 0;
+        payload.finalContractValue = payload.finalValue;
+      }
+      if (payload.initialAdvanceAmount !== undefined && payload.initialAdvanceAmount !== null && payload.initialAdvanceAmount !== '') {
+        payload.initialAdvanceAmount = Number(payload.initialAdvanceAmount) || 0;
+      }
+      if (payload.internalApprovedBudget !== undefined && payload.internalApprovedBudget !== null && payload.internalApprovedBudget !== '') {
+        payload.internalApprovedBudget = Number(payload.internalApprovedBudget) || 0;
+      }
+      if (payload.contractStartDate) payload.contractStartDate = new Date(payload.contractStartDate);
+      if (payload.contractEndDate) payload.contractEndDate = new Date(payload.contractEndDate);
       if (payload.status && ['won', 'lost'].includes(payload.status)) {
         payload.closedAt = payload.closedAt ? new Date(payload.closedAt) : new Date();
       }
@@ -192,17 +299,86 @@ export const updatePipelineSection = async (req, res) => {
       appendStageHistory(pipeline, 'won_closed', req.user.id, `Deal marked ${pipeline.outcome.status}`);
 
       const isWon = pipeline.outcome.status === 'won';
+      let linkedProject = null;
       if (isWon) {
-        const finalVal = Number(pipeline.outcome.finalValue) || Number(pipeline.quotation?.totalAmount) || Number(lead.estimatedValue) || 0;
+        const finalVal = Number(pipeline.outcome.finalContractValue) || Number(pipeline.outcome.finalValue) || Number(pipeline.quotation?.amount) || Number(lead.estimatedValue) || 0;
+        const approvedBud = Number(pipeline.outcome.internalApprovedBudget) || 0;
+
         await Lead.findByIdAndUpdate(lead._id, {
           status: 'Won',
           actualValue: finalVal,
           wonDetails: {
             finalValue: finalVal,
             wonDate: pipeline.outcome.closedAt || new Date(),
-            notes: pipeline.outcome.notes || ''
+            notes: pipeline.outcome.notes || '',
+            contractNumber: pipeline.outcome.contractNumber || '',
+            contractStartDate: pipeline.outcome.contractStartDate || null,
+            contractEndDate: pipeline.outcome.contractEndDate || null,
+            internalApprovedBudget: approvedBud,
+            projectManager: pipeline.outcome.projectManager || '',
+            financeOwner: pipeline.outcome.financeOwner || '',
+            billingSchedule: pipeline.outcome.billingSchedule || []
           }
         });
+
+        // Check if project already exists for this pipeline or lead
+        let existingProject = await Project.findOne({ pipelineId: pipeline._id });
+        if (!existingProject && lead._id) {
+          existingProject = await Project.findOne({ leadId: lead._id });
+        }
+
+        if (existingProject) {
+          linkedProject = existingProject;
+          pipeline.outcome.projectId = existingProject._id;
+          pipeline.outcome.projectCode = existingProject.projectCode;
+          if (!existingProject.pipelineId) {
+            await Project.findByIdAndUpdate(existingProject._id, { pipelineId: pipeline._id });
+          }
+        } else {
+          const projectCode = await generateProjectCode();
+          const clientName = lead.company || `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || lead.name || 'Client';
+          const projectName = pipeline.proposal?.projectTitle || (lead.company ? `${lead.company} Project` : `${clientName} Project`);
+          const description = pipeline.proposal?.executiveSummary || pipeline.outcome?.notes || lead.requirement || '';
+
+          let pm = null;
+          if (pipeline.outcome.projectManager && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pipeline.outcome.projectManager)) {
+            pm = pipeline.outcome.projectManager;
+          }
+
+          try {
+            linkedProject = await Project.create({
+              projectCode,
+              name: projectName,
+              description,
+              leadId: lead._id,
+              pipelineId: pipeline._id,
+              status: 'Active',
+              contractValue: finalVal,
+              approvedBudget: approvedBud,
+              currency: pipeline.quotation?.currency || 'INR',
+              startDate: pipeline.outcome.contractStartDate || pipeline.clientDetails?.expectedProjectStartDate || null,
+              endDate: pipeline.outcome.contractEndDate || pipeline.clientDetails?.expectedProjectEndDate || null,
+              projectManager: pm,
+              clientName,
+              billingSchedule: Array.isArray(pipeline.outcome.billingSchedule) ? pipeline.outcome.billingSchedule : [],
+              createdBy: req.user.id
+            });
+            pipeline.outcome.projectId = linkedProject._id;
+            pipeline.outcome.projectCode = linkedProject.projectCode;
+          } catch (createErr) {
+            if (createErr.code === '23505' || createErr.message?.includes('unique') || createErr.message?.includes('duplicate')) {
+              linkedProject = await Project.findOne({ pipelineId: pipeline._id });
+              if (linkedProject) {
+                pipeline.outcome.projectId = linkedProject._id;
+                pipeline.outcome.projectCode = linkedProject.projectCode;
+              } else {
+                throw createErr;
+              }
+            } else {
+              throw createErr;
+            }
+          }
+        }
       } else {
         await Lead.findByIdAndUpdate(lead._id, { status: 'Lost' });
       }
@@ -210,7 +386,11 @@ export const updatePipelineSection = async (req, res) => {
 
     await pipeline.save();
     const populated = await populatePipeline(SalesPipeline.findById(pipeline._id));
-    res.json({ success: true, data: populated });
+    let project = null;
+    if (pipeline.outcome?.projectId) {
+      project = await Project.findById(pipeline.outcome.projectId);
+    }
+    res.json({ success: true, data: populated, project });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }

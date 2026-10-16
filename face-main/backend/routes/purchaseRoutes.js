@@ -83,10 +83,10 @@ const supplierValidation = [
 
 // Routes
 router.get('/suppliers', getSuppliers);
-router.post('/suppliers', adminOnly, supplierValidation, createSupplier);
+router.post('/suppliers', supplierValidation, createSupplier);
 router.get('/', getPurchaseOrders);
-router.post('/', adminOnly, purchaseOrderValidation, createPurchaseOrder);
-router.put('/:id', adminOnly, purchaseOrderValidation, updatePurchaseOrder);
-router.delete('/:id', adminOnly, deletePurchaseOrder);
+router.post('/', purchaseOrderValidation, createPurchaseOrder);
+router.put('/:id', purchaseOrderValidation, updatePurchaseOrder);
+router.delete('/:id', deletePurchaseOrder);
 
 export default router;

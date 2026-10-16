@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, ilike, isNull, lt, lte, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import db from '../db/index.js';
 import { purchaseOrders } from '../db/schema/purchaseOrder.js';
 import { users } from '../db/schema/user.js';
@@ -53,6 +53,7 @@ const WRITABLE_FIELDS = [
   'lineItems',
   'totalAmount',
   'grandTotal',
+  'projectId',
   'createdBy',
   'createdAt',
   'updatedAt',
@@ -77,6 +78,7 @@ const columnByField = {
   deliveryDate: purchaseOrders.deliveryDate,
   totalAmount: purchaseOrders.totalAmount,
   grandTotal: purchaseOrders.grandTotal,
+  projectId: purchaseOrders.projectId,
   createdBy: purchaseOrders.createdBy,
   createdAt: purchaseOrders.createdAt,
   updatedAt: purchaseOrders.updatedAt,
@@ -154,6 +156,11 @@ const buildWhere = (query = {}) => {
       conditions.push(or(...value.map(buildWhere)));
       continue;
     }
+    if (field === '$and') {
+      if (!Array.isArray(value)) unsupported('$and must be an array');
+      conditions.push(and(...value.map(buildWhere)));
+      continue;
+    }
 
     const column = columnByField[field];
     if (!column) unsupported(`unknown field "${field}"`);
@@ -167,9 +174,25 @@ const buildWhere = (query = {}) => {
         if (op === '$gte') conditions.push(gte(column, normalizeDate(operand)));
         else if (op === '$lte') conditions.push(lte(column, normalizeDate(operand)));
         else if (op === '$lt') conditions.push(lt(column, normalizeDate(operand)));
+        else if (op === '$in') {
+          if (!Array.isArray(operand) || operand.length === 0) {
+            conditions.push(sql`1=0`);
+          } else {
+            const valid = operand.filter((item) => item !== '__none__');
+            if (valid.length === 0) {
+              conditions.push(sql`1=0`);
+            } else {
+              conditions.push(inArray(column, valid));
+            }
+          }
+        }
         else if (op === '$options') continue;
         else unsupported(`operator "${op}" on field "${field}"`);
       }
+      continue;
+    }
+    if (value === '__none__') {
+      conditions.push(sql`1=0`);
       continue;
     }
     conditions.push(value === null ? isNull(column) : eq(column, value));
@@ -213,10 +236,21 @@ const loadLead = async (id, select) => {
   return pickFields(lead, select);
 };
 
+const loadProject = async (id, select) => {
+  if (!id) return null;
+  const Project = (await import('./Project.js')).default;
+  const project = await Project.findById(typeof id === 'object' ? id.id || id._id : id).lean();
+  return pickFields(project, select);
+};
+
 const populateOne = async (doc, path, select) => {
   if (!doc) return doc;
   if (path === 'client') {
     doc.client = await loadLead(doc.client, select);
+    return doc;
+  }
+  if (path === 'projectId') {
+    doc.projectId = await loadProject(doc.projectId, select);
     return doc;
   }
   if (path === 'createdBy' && doc.createdBy) {

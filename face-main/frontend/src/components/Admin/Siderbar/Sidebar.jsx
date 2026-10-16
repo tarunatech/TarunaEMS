@@ -1,6 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Calendar, Clock, FileText, X, DollarSign, CreditCard, ChevronLeft, ChevronRight, Wallet, Moon, Sun, ClipboardList, AlertCircle } from "lucide-react";
+import {
+  LayoutDashboard, Users, Calendar, Clock, FileText, X,
+  DollarSign, CreditCard, ChevronLeft, Wallet, Moon, Sun,
+  ClipboardList, AlertCircle, GitBranch, FolderKanban, Landmark, ShieldCheck
+} from "lucide-react";
 import logo from "../../../assets/logo.jpg";
 import { useTheme } from "../../../hooks/useTheme";
 
@@ -11,16 +15,21 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) =
   const sidebarItems = [
     { name: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
     { name: "Employee Management", icon: Users, path: "/admin/employees" },
-    { name: "Leave Management", icon: Calendar, path: "/admin/leaves" },
-    { name: "Attendance", icon: Clock, path: "/admin/attendance" },
-    { name: "Holiday Calendar", icon: Calendar, path: "/admin/holidays" },
-    { name: "Department", icon: FileText, path: "/admin/department" },
     { name: "Task Management", icon: Calendar, path: "/admin/tasks" },
-    { name: "Problem Statements", icon: AlertCircle, path: "/admin/problems" },
     { name: "Sales", icon: DollarSign, path: "/admin/sales" },
-    { name: "Interviews", icon: ClipboardList, path: "/admin/interviews" },
+    { name: "Sales Pipeline", icon: GitBranch, path: "/admin/sales-pipeline" },
+    { name: "Projects", icon: FolderKanban, path: "/admin/projects" },
+    
+    { name: "Finance Management", icon: Landmark, path: "/admin/finance" },
     { name: "Purchase Orders", icon: FileText, path: "/admin/purchase-orders" },
     { name: "Expense Tracker", icon: Wallet, path: "/admin/expense-tracker" },
+    { name: "AMC Management", icon: ShieldCheck, path: "/admin/amc" },
+    { name: "Leave Management", icon: Calendar, path: "/admin/leaves" },
+    { name: "Attendance", icon: Clock, path: "/admin/attendance" },
+    { name: "Department", icon: FileText, path: "/admin/department" },
+    { name: "Problem Statements", icon: AlertCircle, path: "/admin/problems" },
+    { name: "Holiday Calendar", icon: Calendar, path: "/admin/holidays" },
+    { name: "Interviews", icon: ClipboardList, path: "/admin/interviews" },
     { name: "Payslips", icon: CreditCard, path: "/admin/payslips" },
   ];
 
@@ -46,49 +55,77 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) =
         <div className="relative flex-1 overflow-y-auto scrollbar-none">
           {/* Logo Section */}
           <div className={`flex items-center h-16 ${
-            isCollapsed ? "justify-center px-3" : "justify-between px-5"
+            isCollapsed ? "justify-center px-3" : "justify-between px-4"
           }`}>
-            <div className={`flex items-center min-w-0 ${isCollapsed ? "justify-center" : "gap-2.5"}`}>
-              <div className={`${isCollapsed ? "w-10 h-10" : "w-8 h-8"} relative rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0 ring-1 ring-white/10`}>
+            {isCollapsed ? (
+              <button
+                type="button"
+                onClick={handleToggle}
+                className="w-10 h-10 relative rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0 ring-1 ring-white/10 hover:ring-2 hover:ring-indigo-400/70 hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer group"
+                title="Click logo to expand sidebar"
+                aria-label="Expand sidebar"
+              >
                 <img
                   src={logo}
                   alt="Taruna Technology"
                   className="h-full w-full object-cover"
                 />
-              </div>
+              </button>
+            ) : (
+              <>
+                <div className="flex items-center min-w-0 gap-2.5">
+                  <div className="w-8 h-8 relative rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 flex-shrink-0 ring-1 ring-white/10">
+                    <img
+                      src={logo}
+                      alt="Taruna Technology"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
 
-              {!isCollapsed && (
-                <div className="flex flex-col justify-center min-w-0">
-                  <h1 className="text-[13.5px] font-semibold text-white leading-tight tracking-tight truncate">
-                    Taruna Technology
-                  </h1>
-                  <p className="text-[10px] text-slate-500 leading-tight mt-0.5 font-medium truncate">
-                    Admin Panel
-                  </p>
+                  <div className="flex flex-col justify-center min-w-0">
+                    <h1 className="text-[13.5px] font-semibold text-white leading-tight tracking-tight truncate">
+                      Taruna Technology
+                    </h1>
+                    <p className="text-[10px] text-slate-500 leading-tight mt-0.5 font-medium truncate">
+                      Admin Panel
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Close button for mobile */}
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-slate-500 hover:text-white transition-colors duration-150 flex-shrink-0"
-              aria-label="Close sidebar"
-            >
-              <X className="w-5 h-5" />
-            </button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Desktop collapse button beside logo and text */}
+                  <button
+                    type="button"
+                    onClick={handleToggle}
+                    className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors duration-150"
+                    aria-label="Collapse sidebar"
+                    title="Collapse sidebar"
+                  >
+                    <ChevronLeft strokeWidth={1.75} className="w-4 h-4" />
+                  </button>
+
+                  {/* Close button for mobile */}
+                  <button
+                    type="button"
+                    onClick={() => setSidebarOpen(false)}
+                    className="lg:hidden text-slate-500 hover:text-white transition-colors duration-150 p-1"
+                    aria-label="Close sidebar"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="h-px bg-white/[0.06] mx-5 mb-3" />
+          <div className="h-px bg-white/[0.06] mx-4 mb-3" />
 
           {/* Navigation */}
           <nav className="px-3">
-            
             <div className="space-y-0.5">
               {sidebarItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
-                  
                   <Link
                     key={item.name}
                     to={item.path}
@@ -116,29 +153,14 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, isCollapsed, setIsCollapsed }) =
                     )}
                   </Link>
                 );
-                
               })}
-             
             </div>
           </nav>
-          
         </div>
 
         {/* Footer controls */}
         <div className="relative p-3 space-y-2">
-          
           <div className="h-px bg-white/[0.06] mb-1" />
-          <button
-            onClick={handleToggle}
-            className={`hidden lg:flex w-full items-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 ${
-              isCollapsed ? "justify-center h-10 w-10 mx-auto" : "justify-center h-9"
-            }`}
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isCollapsed ? <ChevronRight strokeWidth={1.75} className="w-[18px] h-[18px]" /> : <ChevronLeft strokeWidth={1.75} className="w-[18px] h-[18px]" />}
-          </button>
-           
           <button
             type="button"
             onClick={toggleTheme}

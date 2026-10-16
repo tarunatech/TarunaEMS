@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, inArray, isNull, lt, lte, ne, notInArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lt, lte, ne, notInArray, or, sql } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import db from '../db/index.js';
 import { leads } from '../db/schema/lead.js';
@@ -186,11 +186,40 @@ const matchValue = (actual, expected) => {
   return actual === expected;
 };
 
-const matchRow = (row, query = {}) => Object.entries(query).every(([field, expected]) => matchValue(field.includes('.') ? getNested(row, field) : row[field], expected));
+const matchRow = (row, query = {}) => {
+  for (const [field, expected] of Object.entries(query)) {
+    if (field === '$or') {
+      if (!Array.isArray(expected)) unsupported('$or must be an array');
+      if (!expected.some((cond) => matchRow(row, cond))) return false;
+      continue;
+    }
+    if (field === '$and') {
+      if (!Array.isArray(expected)) unsupported('$and must be an array');
+      if (!expected.every((cond) => matchRow(row, cond))) return false;
+      continue;
+    }
+    const actual = field.includes('.') ? getNested(row, field) : row[field];
+    if (!matchValue(actual, expected)) return false;
+  }
+  return true;
+};
 
 const buildWhere = (query = {}) => {
   const conditions = [];
   for (const [field, value] of Object.entries(query)) {
+    if (field === '$or') {
+      if (!Array.isArray(value)) unsupported('$or must be an array');
+      const orClauses = value.map(buildWhere).filter((c) => c !== undefined && c !== null);
+      if (orClauses.length > 0) conditions.push(or(...orClauses));
+      continue;
+    }
+    if (field === '$and') {
+      if (!Array.isArray(value)) unsupported('$and must be an array');
+      const andClauses = value.map(buildWhere).filter((c) => c !== undefined && c !== null);
+      if (andClauses.length > 0) conditions.push(and(...andClauses));
+      continue;
+    }
+
     const column = columnByField[field];
     if (!column) return null;
     if (value && typeof value === 'object' && !(value instanceof Date)) {
@@ -198,12 +227,22 @@ const buildWhere = (query = {}) => {
         if (op === '$gte') conditions.push(gte(column, normalizeDate(operand)));
         else if (op === '$lte') conditions.push(lte(column, normalizeDate(operand)));
         else if (op === '$lt') conditions.push(lt(column, normalizeDate(operand)));
-        else if (op === '$in') conditions.push(inArray(column, operand));
+        else if (op === '$in') {
+          const validOperand = Array.isArray(operand) ? operand.filter((v) => v !== '__none__') : [];
+          if (validOperand.length === 0) conditions.push(sql`1=0`);
+          else conditions.push(inArray(column, validOperand));
+        }
         else if (op === '$nin') conditions.push(notInArray(column, operand));
         else if (op === '$ne') conditions.push(ne(column, operand));
         else unsupported(`operator "${op}" on field "${field}"`);
       }
-    } else conditions.push(value === null ? isNull(column) : eq(column, value));
+    } else {
+      if (value === '__none__') {
+        conditions.push(sql`1=0`);
+      } else {
+        conditions.push(value === null ? isNull(column) : eq(column, value));
+      }
+    }
   }
   if (conditions.length === 0) return undefined;
   return conditions.length === 1 ? conditions[0] : and(...conditions);

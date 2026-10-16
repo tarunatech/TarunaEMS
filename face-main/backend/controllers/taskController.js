@@ -3,7 +3,9 @@ import { validationResult } from 'express-validator';
 import Task from '../models/Task.js';
 import Employee from '../models/Employee.js';
 import User from '../models/User.js';
+import Project from '../models/Project.js';
 import { sendTaskAssignmentEmail } from '../utils/email.js';
+import { isHrOrAdmin } from '../middleware/authMiddleware.js';
 
 const guardEmployeeTaskAccess = async (req, res) => {
   if (req.user.role !== 'employee') return { ok: true };
@@ -71,13 +73,30 @@ export const createTask = async (req, res) => {
       ? String(req.body.assignedTo) === String(creatorEmployee._id)
       : false;
 
+    let projectId = null;
+    let projectName = req.body.project || '';
+    if (req.body.projectId) {
+      const referencedProject = await Project.findById(req.body.projectId);
+      if (!referencedProject) {
+        return res.status(400).json({
+          success: false,
+          message: 'Referenced project not found'
+        });
+      }
+      projectId = referencedProject._id;
+      if (!projectName) {
+        projectName = referencedProject.name;
+      }
+    }
+
     // Create the task
     const taskData = {
       title: req.body.title || 'Task',
       description: req.body.description,
       assignedTo: req.body.assignedTo,
       assignedBy: req.user.id,
-      project: req.body.project || '',
+      project: projectName,
+      projectId,
       priority: req.body.priority || 'Medium',
       dueDate: req.body.dueDate,
       category: req.body.category || 'Other',
@@ -104,6 +123,9 @@ export const createTask = async (req, res) => {
         {
           path: 'assignedBy',
           select: 'name email'
+        },
+        {
+          path: 'projectId'
         }
       ]);
 
@@ -147,24 +169,34 @@ export const getTasks = async (req, res) => {
       priority,
       assignedTo,
       search,
-      overdue
+      overdue,
+      projectId
     } = req.query;
 
     let query = {};
 
     // Build query based on user role
-    const guard = await guardEmployeeTaskAccess(req, res);
-    if (!guard.ok) return;
-
+    const isHr = await isHrOrAdmin(req.user);
     if (req.user.role === 'employee') {
-      query.assignedTo = guard.employee._id;
+      const guard = await guardEmployeeTaskAccess(req, res);
+      if (!guard.ok) return;
+
+      if (isHr && assignedTo) {
+        // HR viewing a specific employee's tasks in the Employee Management modal
+        query.assignedTo = assignedTo;
+      } else {
+        // Regular employees or HR on their own Task page: only see their own tasks
+        query.assignedTo = guard.employee._id;
+      }
       console.log('Employee query filter:', query);
+    } else if (req.user.role === 'admin' && assignedTo) {
+      query.assignedTo = assignedTo;
     }
 
     // Apply filters
     if (status) query.status = status;
     if (priority) query.priority = priority;
-    if (assignedTo && req.user.role === 'admin') query.assignedTo = assignedTo;
+    if (projectId) query.projectId = projectId;
 
     // Handle overdue filter
     if (overdue === 'true') {
@@ -193,6 +225,9 @@ export const getTasks = async (req, res) => {
         {
           path: 'assignedBy',
           select: 'name email'
+        },
+        {
+          path: 'projectId'
         }
       ])
       .sort({ createdAt: -1 })
@@ -288,6 +323,9 @@ export const getTaskById = async (req, res) => {
         {
           path: 'comments.user',
           select: 'name email'
+        },
+        {
+          path: 'projectId'
         }
       ]);
 
@@ -367,7 +405,9 @@ export const updateTask = async (req, res) => {
         'actualHours',
         'comments',
         'subtasks',
-        'achievedSoFar'
+        'achievedSoFar',
+        'projectId',
+        'project'
       ];
       const updates = {};
 
@@ -382,6 +422,23 @@ export const updateTask = async (req, res) => {
       }
 
       req.body = updates;
+    }
+
+    if (req.body.projectId !== undefined) {
+      if (req.body.projectId) {
+        const referencedProject = await Project.findById(req.body.projectId);
+        if (!referencedProject) {
+          return res.status(400).json({
+            success: false,
+            message: 'Referenced project not found'
+          });
+        }
+        if (!req.body.project) {
+          req.body.project = referencedProject.name;
+        }
+      } else {
+        req.body.projectId = null;
+      }
     }
 
     const updatedTask = await Task.findByIdAndUpdate(
@@ -399,6 +456,9 @@ export const updateTask = async (req, res) => {
       {
         path: 'assignedBy',
         select: 'name email'
+      },
+      {
+        path: 'projectId'
       }
     ]);
 

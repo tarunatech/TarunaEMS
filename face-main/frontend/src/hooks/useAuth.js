@@ -200,7 +200,7 @@ export const useAuth = () => {
     
     // Computed properties
     isAdmin: user?.role === 'admin',
-    isHR: user?.role === 'hr',
+    isHR: user?.role === 'hr' || ['hr', 'humanresources', 'humanresource', 'hrdepartment'].some(k => String(user?.department || user?.workInfo?.department?.name || user?.workInfo?.department || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(k)),
     isManager: user?.role === 'manager',
     isEmployee: user?.role === 'employee',
     

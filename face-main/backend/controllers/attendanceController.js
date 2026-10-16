@@ -3,6 +3,7 @@ import Attendance from '../models/Attendance.js';
 import Employee from '../models/Employee.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
+import { isHrOrAdmin } from '../middleware/authMiddleware.js';
 
 export const OFFICE_LOCATION = {
   latitude: 22.298873262930066,
@@ -981,10 +982,11 @@ export const getAttendanceHistory = async (req, res) => {
 
 export const getAllAttendance = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    const isHr = await isHrOrAdmin(req.user);
+    if (req.user.role !== 'admin' && !isHr) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied. Admin only.'
+        message: 'Access denied. Admin or HR only.'
       });
     }
 

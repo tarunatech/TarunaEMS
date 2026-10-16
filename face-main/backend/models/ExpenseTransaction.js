@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, ilike, isNull, lt, lte, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import db from '../db/index.js';
 import { expenseTransactions } from '../db/schema/expenseTransaction.js';
 import { users } from '../db/schema/user.js';
@@ -24,6 +24,8 @@ const WRITABLE_FIELDS = [
   'createdBy',
   'employee',
   'source',
+  'projectId',
+  'leadId',
   'createdAt',
   'updatedAt',
 ];
@@ -45,6 +47,8 @@ const columnByField = {
   createdBy: expenseTransactions.createdBy,
   employee: expenseTransactions.employee,
   source: expenseTransactions.source,
+  projectId: expenseTransactions.projectId,
+  leadId: expenseTransactions.leadId,
   createdAt: expenseTransactions.createdAt,
   updatedAt: expenseTransactions.updatedAt,
 };
@@ -72,6 +76,13 @@ const pickWritable = (data = {}) => {
 
 const trimString = (value) => (value === undefined || value === null ? value : String(value).trim());
 
+const normalizeId = (value) => {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  if (typeof value === 'object') return value.id || value._id || null;
+  return value;
+};
+
 const normalizeInput = (data = {}) => {
   const normalized = pickWritable(data);
 
@@ -87,6 +98,9 @@ const normalizeInput = (data = {}) => {
   }
   for (const field of ['paidTo', 'clientName', 'category', 'description', 'referenceNumber', 'invoiceNumber', 'remarks']) {
     if (normalized[field] !== undefined) normalized[field] = trimString(normalized[field]);
+  }
+  for (const field of ['createdBy', 'employee', 'projectId', 'leadId']) {
+    if (normalized[field] !== undefined) normalized[field] = normalizeId(normalized[field]);
   }
   if (normalized.source !== undefined && !SOURCES.has(normalized.source)) unsupported(`source value "${normalized.source}"`);
   if (normalized.createdAt !== undefined) normalized.createdAt = normalizeDate(normalized.createdAt);
@@ -105,6 +119,11 @@ const buildWhere = (query = {}) => {
       conditions.push(or(...value.map(buildWhere)));
       continue;
     }
+    if (field === '$and') {
+      if (!Array.isArray(value)) unsupported('$and must be an array');
+      conditions.push(and(...value.map(buildWhere)));
+      continue;
+    }
 
     const column = columnByField[field];
     if (!column) unsupported(`unknown field "${field}"`);
@@ -119,8 +138,21 @@ const buildWhere = (query = {}) => {
         if (op === '$gte') conditions.push(gte(column, normalizeDate(operand)));
         else if (op === '$lte') conditions.push(lte(column, normalizeDate(operand)));
         else if (op === '$lt') conditions.push(lt(column, normalizeDate(operand)));
+        else if (op === '$in') {
+          const validOperand = Array.isArray(operand) ? operand.filter((v) => v !== '__none__') : [];
+          if (validOperand.length === 0) {
+            conditions.push(sql`1=0`);
+          } else {
+            conditions.push(inArray(column, validOperand));
+          }
+        }
         else unsupported(`operator "${op}" on field "${field}"`);
       }
+      continue;
+    }
+
+    if (value === '__none__') {
+      conditions.push(sql`1=0`);
       continue;
     }
 
@@ -139,6 +171,11 @@ const matchRow = (row, query = {}) => {
       if (!expected.some((condition) => matchRow(row, condition))) return false;
       continue;
     }
+    if (field === '$and') {
+      if (!Array.isArray(expected)) unsupported('$and must be an array');
+      if (!expected.every((condition) => matchRow(row, condition))) return false;
+      continue;
+    }
 
     const actual = field.includes('.') ? getNested(row, field) : row[field];
     if (expected instanceof RegExp) {
@@ -150,6 +187,9 @@ const matchRow = (row, query = {}) => {
         if (op === '$gte' && !(new Date(actual) >= value)) return false;
         else if (op === '$lte' && !(new Date(actual) <= value)) return false;
         else if (op === '$lt' && !(new Date(actual) < value)) return false;
+        else if (op === '$in') {
+          if (!Array.isArray(value) || !value.map(String).includes(String(actual || ''))) return false;
+        }
         else unsupported(`aggregate match operator "${op}" on field "${field}"`);
       }
       continue;
@@ -215,6 +255,22 @@ const populateOne = async (doc, spec) => {
       const [department] = await db.select().from(departments).where(eq(departments.id, departmentId)).limit(1);
       doc.employee.workInfo.department = pickFields(department ? { ...department, _id: department.id } : null, spec.populate.select);
     }
+    return doc;
+  }
+
+  if (path === 'projectId') {
+    if (!doc.projectId) return doc;
+    const Project = (await import('./Project.js')).default;
+    const project = await Project.findById(typeof doc.projectId === 'object' ? doc.projectId.id || doc.projectId._id : doc.projectId).lean();
+    doc.projectId = pickFields(project, spec.select);
+    return doc;
+  }
+
+  if (path === 'leadId') {
+    if (!doc.leadId) return doc;
+    const Lead = (await import('./Lead.js')).default;
+    const lead = await Lead.findById(typeof doc.leadId === 'object' ? doc.leadId.id || doc.leadId._id : doc.leadId).lean();
+    doc.leadId = pickFields(lead, spec.select);
     return doc;
   }
 
@@ -327,9 +383,11 @@ ExpenseTransaction.findOne = (query = {}) => new ExpenseTransactionQuery(async (
   return rows[0] || null;
 });
 
+ExpenseTransaction.findById = (id) => ExpenseTransaction.findOne({ id: typeof id === 'object' ? id?.id || id?._id : id });
+
 ExpenseTransaction.create = async (data) => new ExpenseTransactionDocument(data, { isNew: true }).save();
 
-ExpenseTransaction.findOneAndUpdate = (query, data) => new ExpenseTransactionQuery(async () => {
+ExpenseTransaction.findOneAndUpdate = (query, data, options = {}) => new ExpenseTransactionQuery(async () => {
   const where = buildWhere(query);
   let builder = db.select().from(expenseTransactions);
   if (where) builder = builder.where(where);
@@ -337,8 +395,23 @@ ExpenseTransaction.findOneAndUpdate = (query, data) => new ExpenseTransactionQue
   if (!existing) return null;
   const values = normalizeInput({ ...serialize(existing), ...data });
   const [row] = await db.update(expenseTransactions).set(values).where(eq(expenseTransactions.id, existing.id)).returning();
-  return row || null;
+  return row ? (options.new !== false ? new ExpenseTransactionDocument(row) : new ExpenseTransactionDocument(existing)) : null;
 });
+
+ExpenseTransaction.findByIdAndUpdate = (id, data, options = {}) => new ExpenseTransactionQuery(async () => {
+  const targetId = typeof id === 'object' ? id?.id || id?._id : id;
+  const [existing] = await db.select().from(expenseTransactions).where(eq(expenseTransactions.id, targetId)).limit(1);
+  if (!existing) return null;
+  const values = normalizeInput({ ...serialize(existing), ...data });
+  const [row] = await db.update(expenseTransactions).set(values).where(eq(expenseTransactions.id, targetId)).returning();
+  return row ? (options.new !== false ? new ExpenseTransactionDocument(row) : new ExpenseTransactionDocument(existing)) : null;
+});
+
+ExpenseTransaction.findByIdAndDelete = async (id) => {
+  const targetId = typeof id === 'object' ? id?.id || id?._id : id;
+  const [row] = await db.delete(expenseTransactions).where(eq(expenseTransactions.id, targetId)).returning();
+  return row ? new ExpenseTransactionDocument(row) : null;
+};
 
 ExpenseTransaction.findOneAndDelete = async (query) => {
   const where = buildWhere(query);

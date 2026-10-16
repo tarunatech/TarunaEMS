@@ -4,6 +4,7 @@ import Leave from '../models/Leave.js';
 import Employee from '../models/Employee.js';
 import User from '../models/User.js';
 import { sendEmail } from '../utils/email.js';
+import { isHrOrAdmin } from '../middleware/authMiddleware.js';
 
 // @desc    Apply for leave
 // @route   POST /api/leaves
@@ -224,19 +225,28 @@ export const getLeaves = async (req, res) => {
 
     let query = {};
 
+    const isHr = await isHrOrAdmin(req.user);
+
     // Build query based on user role
     if (req.user.role === 'employee') {
-      // Employees can only see their own leaves
       const employee = await Employee.findOne({ user: req.user.id });
       if (employee) {
-        query.employee = employee._id;
+        if (isHr && (employeeId || search?.trim())) {
+          // HR inspecting a specific employee's leaves in Employee Management modal
+          if (employeeId) {
+            query.employee = employeeId;
+          }
+        } else {
+          // Regular employees or HR on the Leave Requests page: only see their own leaves
+          query.employee = employee._id;
+        }
       }
     } else if (employeeId) {
-      // Admin can filter by specific employee
+      // Admin filtering by employee
       query.employee = employeeId;
     }
 
-    if (req.user.role !== 'employee' && search?.trim()) {
+    if ((req.user.role === 'admin' || (isHr && (employeeId || search?.trim()))) && search?.trim()) {
       const searchTerm = search.trim().toLowerCase();
       const employees = await Employee.find({ status: { $ne: 'Terminated' } })
         .populate('user', 'name email employeeId')
@@ -275,7 +285,7 @@ export const getLeaves = async (req, res) => {
         });
       }
 
-      if (employeeId && !matchingEmployeeIds.includes(employeeId)) {
+      if (employeeId && !matchingEmployeeIds.map(String).includes(String(employeeId))) {
         return res.json({
           success: true,
           leaves: [],

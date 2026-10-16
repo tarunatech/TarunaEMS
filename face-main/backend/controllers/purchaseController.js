@@ -1,6 +1,8 @@
 import PurchaseOrder from '../models/PurchaseOrder.js';
 import Supplier from '../models/Supplier.js';
 import Lead from '../models/Lead.js';
+import Project from '../models/Project.js';
+import { getSalesEmployeeScope } from '../utils/salesScope.js';
 
 const buildClientName = (client) => {
   if (!client) return '';
@@ -65,8 +67,49 @@ export const getPurchaseOrders = async (req, res) => {
       ];
     }
 
+    if (req.query.projectId) {
+      query.projectId = req.query.projectId;
+    }
+
+    const scope = await getSalesEmployeeScope(req.user);
+    if (scope.isScoped) {
+      if (scope.projectIds.length === 0 && scope.leadIds.length === 0) {
+        return res.json({
+          success: true,
+          data: {
+            purchaseOrders: [],
+            pagination: {
+              currentPage: Number(page),
+              totalPages: 0,
+              totalPurchaseOrders: 0,
+              hasNext: false,
+              hasPrev: false
+            }
+          }
+        });
+      }
+
+      const scopeOr = [
+        ...(scope.leadIds.length ? [{ client: { $in: scope.leadIds } }] : []),
+        ...(scope.projectIds.length ? [{ projectId: { $in: scope.projectIds } }] : []),
+        { createdBy: scope.userId }
+      ];
+
+      if (query.$or) {
+        const searchConditions = query.$or;
+        delete query.$or;
+        query.$and = [
+          { $or: searchConditions },
+          { $or: scopeOr }
+        ];
+      } else {
+        query.$or = scopeOr;
+      }
+    }
+
     const purchaseOrders = await PurchaseOrder.find(query)
       .populate('client', 'leadId firstName lastName company email interestedProducts')
+      .populate('projectId', 'id projectCode name')
       .populate('createdBy', 'name email')
       .sort({ renewalDate: 1, createdAt: -1 })
       .limit(Number(limit))
@@ -109,10 +152,6 @@ export const getSuppliers = async (req, res) => {
 
 export const createSupplier = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Access denied. Admin only.' });
-    }
-
     const { name, email, phone, address } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, message: 'Provider name is required' });
@@ -130,10 +169,7 @@ export const createSupplier = async (req, res) => {
 
 export const createPurchaseOrder = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Access denied. Admin only.' });
-    }
-
+    const scope = await getSalesEmployeeScope(req.user);
     const poNumber = `PO-${Date.now()}`;
     let clientName = req.body.clientName;
 
@@ -143,11 +179,44 @@ export const createPurchaseOrder = async (req, res) => {
       clientName = buildClientName(client);
     }
 
+    let resolvedProjectId = req.body.projectId || undefined;
+    if (resolvedProjectId) {
+      const projectDoc = await Project.findById(resolvedProjectId);
+      if (!projectDoc) return res.status(400).json({ success: false, message: 'Invalid projectId' });
+    } else if (req.body.project) {
+      const pStr = String(req.body.project).trim();
+      const codeMatch = pStr.match(/^(PRJ-\d{4}-\d{4})/i);
+      const codeToSearch = codeMatch ? codeMatch[1] : null;
+
+      const found = await Project.findOne({
+        $or: [
+          ...(codeToSearch ? [{ projectCode: codeToSearch }] : []),
+          { projectCode: pStr },
+          { name: pStr },
+          ...(req.body.client ? [{ leadId: req.body.client }] : [])
+        ]
+      }).lean();
+
+      if (found) {
+        resolvedProjectId = found.id || found._id;
+      }
+    }
+
+    if (scope.isScoped) {
+      if (req.body.client && !scope.leadIds.includes(String(req.body.client))) {
+        return res.status(403).json({ success: false, message: 'Access denied: You can only create purchase orders for your assigned clients.' });
+      }
+      if (resolvedProjectId && !scope.projectIds.includes(String(resolvedProjectId))) {
+        return res.status(403).json({ success: false, message: 'Access denied: You can only create purchase orders for your assigned projects.' });
+      }
+    }
+
     const purchaseOrder = new PurchaseOrder({
       ...req.body,
       poNumber,
       clientName,
       client: req.body.client || undefined,
+      projectId: resolvedProjectId || undefined,
       amount: Number(req.body.amount || 0),
       totalAmount: Number(req.body.amount || 0),
       grandTotal: Number(req.body.amount || 0),
@@ -156,7 +225,10 @@ export const createPurchaseOrder = async (req, res) => {
 
     await purchaseOrder.save();
     await purchaseOrder.populate('client', 'leadId firstName lastName company email interestedProducts');
+    await purchaseOrder.populate('projectId', 'id projectCode name');
     await purchaseOrder.populate('createdBy', 'name email');
+
+    req.app?.get?.('io')?.emit?.('finance:updated');
 
     res.status(201).json({
       success: true,
@@ -179,7 +251,15 @@ export const updatePurchaseOrder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Purchase record not found' });
     }
 
-    if (purchaseOrder.createdBy.toString() !== req.user.id.toString() && req.user.role !== 'admin') {
+    const scope = await getSalesEmployeeScope(req.user);
+    if (scope.isScoped) {
+      const isCreator = String(purchaseOrder.createdBy) === String(scope.userId);
+      const isProjectScoped = purchaseOrder.projectId && scope.projectIds.includes(String(purchaseOrder.projectId));
+      const isClientScoped = purchaseOrder.client && scope.leadIds.includes(String(purchaseOrder.client));
+      if (!isCreator && !isProjectScoped && !isClientScoped) {
+        return res.status(403).json({ success: false, message: 'Access denied: You do not have permission to modify this purchase order.' });
+      }
+    } else if (purchaseOrder.createdBy.toString() !== req.user.id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
@@ -190,10 +270,34 @@ export const updatePurchaseOrder = async (req, res) => {
       clientName = buildClientName(client);
     }
 
+    let resolvedProjectId = req.body.projectId !== undefined ? req.body.projectId : purchaseOrder.projectId;
+    if (resolvedProjectId) {
+      const projectDoc = await Project.findById(resolvedProjectId);
+      if (!projectDoc) return res.status(400).json({ success: false, message: 'Invalid projectId' });
+    } else if (req.body.project) {
+      const pStr = String(req.body.project).trim();
+      const codeMatch = pStr.match(/^(PRJ-\d{4}-\d{4})/i);
+      const codeToSearch = codeMatch ? codeMatch[1] : null;
+
+      const found = await Project.findOne({
+        $or: [
+          ...(codeToSearch ? [{ projectCode: codeToSearch }] : []),
+          { projectCode: pStr },
+          { name: pStr },
+          ...(req.body.client ? [{ leadId: req.body.client }] : [])
+        ]
+      }).lean();
+
+      if (found) {
+        resolvedProjectId = found.id || found._id;
+      }
+    }
+
     Object.assign(purchaseOrder, {
       ...req.body,
       clientName,
       client: req.body.client || undefined,
+      projectId: resolvedProjectId || undefined,
       amount: Number(req.body.amount || 0),
       totalAmount: Number(req.body.amount || 0),
       grandTotal: Number(req.body.amount || 0)
@@ -201,7 +305,10 @@ export const updatePurchaseOrder = async (req, res) => {
 
     await purchaseOrder.save();
     await purchaseOrder.populate('client', 'leadId firstName lastName company email interestedProducts');
+    await purchaseOrder.populate('projectId', 'id projectCode name');
     await purchaseOrder.populate('createdBy', 'name email');
+
+    req.app?.get?.('io')?.emit?.('finance:updated');
 
     res.json({
       success: true,
@@ -221,7 +328,15 @@ export const deletePurchaseOrder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Purchase record not found' });
     }
 
-    if (purchaseOrder.createdBy.toString() !== req.user.id.toString() && req.user.role !== 'admin') {
+    const scope = await getSalesEmployeeScope(req.user);
+    if (scope.isScoped) {
+      const isCreator = String(purchaseOrder.createdBy) === String(scope.userId);
+      const isProjectScoped = purchaseOrder.projectId && scope.projectIds.includes(String(purchaseOrder.projectId));
+      const isClientScoped = purchaseOrder.client && scope.leadIds.includes(String(purchaseOrder.client));
+      if (!isCreator && !isProjectScoped && !isClientScoped) {
+        return res.status(403).json({ success: false, message: 'Access denied: You do not have permission to delete this purchase order.' });
+      }
+    } else if (purchaseOrder.createdBy.toString() !== req.user.id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 

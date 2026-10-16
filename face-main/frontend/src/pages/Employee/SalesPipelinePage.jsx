@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { GitBranch, Loader2, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GitBranch, Loader2, Search, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
 import SalesPipelineModal from '../../components/Sales/SalesPipelineModal';
@@ -12,16 +12,23 @@ const SalesPipelinePage = () => {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLeadId, setSelectedLeadId] = useState(searchParams.get('leadId') || '');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('employee-pipeline-leads-collapsed') === 'true';
+  });
 
-  const selectedLead = useMemo(
-    () => leads.find((lead) => lead._id === selectedLeadId) || null,
-    [leads, selectedLeadId]
-  );
+  const handleToggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('employee-pipeline-leads-collapsed', String(next));
+      return next;
+    });
+  };
 
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const response = await leadAPI.getLeads();
+      const response = await leadAPI.getLeads({ limit: 1000 });
       if (response.data.success) {
         const fetched = response.data.data.leads || [];
         setLeads(fetched);
@@ -42,6 +49,22 @@ const SalesPipelinePage = () => {
   useEffect(() => {
     fetchLeads();
   }, []);
+
+  const filteredLeads = useMemo(() => {
+    if (!searchTerm.trim()) return leads;
+    const term = searchTerm.toLowerCase().trim();
+    return leads.filter((lead) => {
+      const fullName = `${lead.firstName || ''} ${lead.lastName || ''}`.toLowerCase();
+      const company = (lead.company || '').toLowerCase();
+      const email = (lead.email || '').toLowerCase();
+      return fullName.includes(term) || company.includes(term) || email.includes(term);
+    });
+  }, [leads, searchTerm]);
+
+  const selectedLead = useMemo(
+    () => leads.find((lead) => lead._id === selectedLeadId) || null,
+    [leads, selectedLeadId]
+  );
 
   const handleSelectLead = (leadId) => {
     setSelectedLeadId(leadId);
@@ -88,45 +111,133 @@ const SalesPipelinePage = () => {
             <p className="mt-1 text-[12.5px] text-slate-500">Add or receive a lead first to start a sales pipeline.</p>
           </div>
         ) : (
-          <div className="grid flex-1 min-h-0 min-w-0 w-full max-w-full gap-4 lg:grid-cols-[230px_minmax(0,1fr)] 2xl:grid-cols-[220px_minmax(0,1fr)]">
+          <div className={`grid flex-1 min-h-0 min-w-0 w-full max-w-full gap-4 transition-[grid-template-columns] duration-200 ease-out ${
+            isCollapsed
+              ? 'lg:grid-cols-[68px_minmax(0,1fr)]'
+              : 'lg:grid-cols-[230px_minmax(0,1fr)] 2xl:grid-cols-[220px_minmax(0,1fr)]'
+          }`}>
             {/* Leads list */}
             <aside className="sales-pipeline-leads flex min-h-0 min-w-0 w-full max-w-full flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-              <div className="flex-shrink-0 border-b border-slate-100 px-4 py-3">
-                <p className="text-[10.5px] font-semibold uppercase tracking-wider text-slate-400">My Leads</p>
+              {/* Aside Header */}
+              <div className={`flex-shrink-0 border-b border-slate-100 ${
+                isCollapsed ? 'p-2 flex flex-col items-center gap-1.5' : 'px-3 py-2.5 space-y-2'
+              }`}>
+                <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'justify-between'}`}>
+                  {!isCollapsed ? (
+                    <>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="text-[10.5px] font-semibold uppercase tracking-wider text-slate-400 truncate">My Leads</p>
+                        <span className="text-[10px] font-medium text-slate-400 bg-slate-100 rounded px-1.5 py-0.5">
+                          {filteredLeads.length}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleToggleCollapse}
+                        className="rounded-md p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                        title="Collapse list"
+                        aria-label="Collapse list"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleToggleCollapse}
+                      className="rounded-md p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                      title="Expand list"
+                      aria-label="Expand list"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {!isCollapsed && (
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search leads..."
+                      className="w-full rounded-md border border-slate-200 bg-slate-50/50 pl-8 pr-2.5 py-1 text-[12px] text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none"
+                    />
+                  </div>
+                )}
               </div>
+
+              {/* Leads scrollable area */}
               <div className="flex-1 min-h-0 max-h-48 lg:max-h-none overflow-y-auto p-2 touch-pan-y">
                 <div className="space-y-1">
-                  {leads.map((lead) => {
-                    const isActive = selectedLeadId === lead._id;
-                    return (
-                      <button
-                        key={lead._id}
-                        type="button"
-                        onClick={() => handleSelectLead(lead._id)}
-                        className={`group relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors duration-150 ${
-                          isActive
-                            ? 'bg-indigo-50 text-indigo-700'
-                            : 'text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        {isActive && (
-                          <span className="absolute left-0 top-1/2 h-4 w-[2.5px] -translate-y-1/2 rounded-full bg-indigo-500" />
-                        )}
-                        <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white ${
-                          isActive ? 'bg-indigo-600' : 'bg-gradient-to-br from-slate-400 to-slate-500'
-                        }`}>
-                          {getInitials(lead)}
-                        </span>
-                        <span className="min-w-0">
-                          <span className={`block truncate text-[13px] font-medium ${isActive ? 'text-indigo-700' : 'text-slate-800'}`}>
-                            {lead.firstName} {lead.lastName}
+                  {filteredLeads.length === 0 ? (
+                    <div className="py-6 text-center text-[12px] text-slate-400">
+                      {isCollapsed ? '—' : 'No matching leads'}
+                    </div>
+                  ) : (
+                    filteredLeads.map((lead) => {
+                      const isActive = selectedLeadId === lead._id;
+                      const leadTooltip = `${lead.firstName} ${lead.lastName}${lead.company ? ` (${lead.company})` : ''}`;
+                      return (
+                        <button
+                          key={lead._id}
+                          type="button"
+                          onClick={() => handleSelectLead(lead._id)}
+                          title={isCollapsed ? leadTooltip : undefined}
+                          className={`group relative flex w-full items-center rounded-lg transition-colors duration-150 ${
+                            isCollapsed
+                              ? 'justify-center h-10 w-10 mx-auto'
+                              : 'gap-2.5 px-2.5 py-2 text-left'
+                          } ${
+                            isActive
+                              ? 'bg-indigo-50 text-indigo-700'
+                              : 'text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          {isActive && (
+                            <span className="absolute left-0 top-1/2 h-4 w-[2.5px] -translate-y-1/2 rounded-full bg-indigo-500" />
+                          )}
+                          <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white ${
+                            isActive ? 'bg-indigo-600' : 'bg-gradient-to-br from-slate-400 to-slate-500'
+                          }`}>
+                            {getInitials(lead)}
                           </span>
-                          <span className="block truncate text-[11.5px] text-slate-400">{lead.company || 'No company'}</span>
-                        </span>
-                      </button>
-                    );
-                  })}
+                          {!isCollapsed && (
+                            <span className="min-w-0 flex-1">
+                              <span className={`block truncate text-[13px] font-medium ${isActive ? 'text-indigo-700' : 'text-slate-800'}`}>
+                                {lead.firstName} {lead.lastName}
+                              </span>
+                              <span className="block truncate text-[11.5px] text-slate-400">{lead.company || 'No company'}</span>
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
+              </div>
+
+              {/* Aside Footer collapse toggle button */}
+              <div className="flex-shrink-0 border-t border-slate-100 p-1.5 hidden lg:block">
+                <button
+                  type="button"
+                  onClick={handleToggleCollapse}
+                  className={`w-full flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors duration-150 ${
+                    isCollapsed ? 'h-8 w-8 mx-auto' : 'h-7 gap-1.5 text-[11.5px] font-medium'
+                  }`}
+                  title={isCollapsed ? 'Expand leads list' : 'Collapse leads list'}
+                  aria-label={isCollapsed ? 'Expand leads list' : 'Collapse leads list'}
+                >
+                  {isCollapsed ? (
+                    <ChevronRight className="h-4 w-4" />
+                  ) : (
+                    <>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                      <span>Collapse list</span>
+                    </>
+                  )}
+                </button>
               </div>
             </aside>
 

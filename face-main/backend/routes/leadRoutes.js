@@ -409,8 +409,8 @@ const validateNote = [
 
 // IMPORTANT: Apply protection middleware to all routes
 router.use(protect);
-// Employees must belong to BDE/Sales to access lead routes
-router.use(requireDepartment(['bde', 'businessdevelopmentexecutive', 'sales', 'businessdevelopment']));
+// Employees must belong to BDE/Sales or HR to access lead routes
+router.use(requireDepartment(['bde', 'businessdevelopmentexecutive', 'sales', 'businessdevelopment', 'hr', 'human resources', 'humanresources', 'humanresource', 'hrdepartment']));
 
 // Statistics routes - MUST come first before parameterized routes
 router.get('/stats', getLeadStats);

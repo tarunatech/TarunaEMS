@@ -2,7 +2,7 @@ import Lead from '../models/Lead.js';
 import Employee from '../models/Employee.js';
 import { validationResult } from 'express-validator';
 import { sendEmail } from '../utils/email.js';
-import { isDepartmentAllowed } from '../middleware/departmentAccess.js';
+import { isDepartmentAllowed, isHrOrAdmin } from '../middleware/departmentAccess.js';
 
 const BDE_DEPARTMENTS = [
   'bde', 
@@ -315,7 +315,8 @@ export const getLeads = async (req, res) => {
     let query = {};
 
     // If user is employee (sales), only show their assigned leads
-    if (req.user.role === 'employee') {
+    const isHr = await isHrOrAdmin(req.user);
+    if (req.user.role === 'employee' && !isHr) {
       const employee = await Employee.findOne({ user: req.user.id }).populate(
         'workInfo.department',
         'name code'

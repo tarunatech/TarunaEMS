@@ -30,6 +30,8 @@ export const expenseTransactions = pgTable(
     createdBy: uuid('createdBy').notNull(),
     employee: uuid('employee'),
     source: expenseTransactionSourceEnum('source').notNull().default('admin'),
+    projectId: uuid('projectId'),
+    leadId: uuid('leadId'),
     createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -39,5 +41,7 @@ export const expenseTransactions = pgTable(
     employeeIdx: index('expenseTransactions_employee_idx').on(table.employee),
     sourceIdx: index('expenseTransactions_source_idx').on(table.source),
     typeDateIdx: index('expenseTransactions_type_date_idx').on(table.type, table.date),
+    projectIdIdx: index('expenseTransactions_projectId_idx').on(table.projectId),
+    leadIdIdx: index('expenseTransactions_leadId_idx').on(table.leadId),
   }),
 );
