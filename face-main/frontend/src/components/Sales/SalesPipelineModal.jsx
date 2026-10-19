@@ -13,6 +13,18 @@ const stages = [
   ['won_closed', 'Won / Closed']
 ];
 
+const STAGE_TRANSITION_MAP = {
+  client_details: 'quotation',
+  clientDetails: 'quotation',
+  quotation: 'proposal',
+  proposal: 'sent_to_client',
+  sent_to_client: 'negotiation',
+  sentToClient: 'negotiation',
+  negotiation: 'won_closed',
+  outcome: 'won_closed',
+  won_closed: 'won_closed'
+};
+
 const proposalEditableSections = [
   ['companyIntroduction', 'Company Introduction', 'text'],
   ['executiveSummary', 'Executive Summary', 'text'],
@@ -518,12 +530,21 @@ const getProposalDefaults = (lead, clientDetails, quotation, proposal = {}) => {
   };
 };
 
-const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embedded = false }) => {
+const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embedded = false, initialStage }) => {
+  const getInitialStage = () => {
+    if (initialStage && stages.some(([s]) => s === initialStage)) return initialStage;
+    if (typeof window !== 'undefined') {
+      const urlStage = new URLSearchParams(window.location.search).get('stage');
+      if (urlStage && stages.some(([s]) => s === urlStage)) return urlStage;
+    }
+    return 'client_details';
+  };
+
   const [pipeline, setPipeline] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [extractingPdf, setExtractingPdf] = useState(false);
-  const [activeStage, setActiveStage] = useState('client_details');
+  const [activeStage, setActiveStage] = useState(getInitialStage);
   const pdfUploadRef = useRef(null);
   const modalScrollRef = useRef(null);
   const [forms, setForms] = useState(() => ({
@@ -543,6 +564,20 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
     amcCost: '',
     additionalCharges: '',
   });
+
+  const handleStageSelect = (stage) => {
+    setActiveStage(stage);
+    if (embedded && typeof window !== 'undefined' && window.history?.replaceState) {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('stage', stage);
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {}
+    }
+    setTimeout(() => {
+      scrollToTop();
+    }, 50);
+  };
 
   const syncNegotiationFromProposal = (manual = false) => {
     const propPricing = forms.proposal?.pricing || {};
@@ -644,10 +679,44 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
     }
   };
 
-  const hydrate = (data) => {
+  const initialStageAppliedRef = useRef(false);
+
+  useEffect(() => {
+    initialStageAppliedRef.current = false;
+  }, [lead?._id]);
+
+  useEffect(() => {
+    const urlStage = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('stage') : null;
+    const target = (initialStage && stages.some(([s]) => s === initialStage)) ? initialStage : (urlStage && stages.some(([s]) => s === urlStage) ? urlStage : null);
+    if (target) {
+      setActiveStage(target);
+    }
+  }, [initialStage, lead?._id]);
+
+  const hydrate = (data, targetStage = null) => {
     setPipeline(data);
-    const initialStage = data.currentStage === 'admin_approval' ? 'proposal' : (data.currentStage || 'client_details');
-    setActiveStage(prev => prev === 'admin_approval' ? 'proposal' : (prev || initialStage));
+    if (targetStage) {
+      setActiveStage(targetStage);
+      if (embedded && typeof window !== 'undefined' && window.history?.replaceState) {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('stage', targetStage);
+          window.history.replaceState({}, '', url.toString());
+        } catch (e) {}
+      }
+    } else {
+      setActiveStage(prev => {
+        if (!initialStageAppliedRef.current) {
+          initialStageAppliedRef.current = true;
+          const urlStage = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('stage') : null;
+          const requestedStage = (initialStage && stages.some(([s]) => s === initialStage)) ? initialStage : (urlStage && stages.some(([s]) => s === urlStage) ? urlStage : null);
+          if (requestedStage) return requestedStage;
+        }
+        if (prev && prev !== 'admin_approval') return prev;
+        const defaultStage = data.currentStage === 'admin_approval' ? 'proposal' : (data.currentStage || 'client_details');
+        return defaultStage;
+      });
+    }
 
     const quot = data.quotation || {};
     const baseAmt = quot.baseAmount !== undefined && quot.baseAmount !== null ? quot.baseAmount : (quot.amount || lead.estimatedValue || '');
@@ -857,6 +926,28 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
     });
   };
 
+  // Two-way sync for negotiation commercial adjustments with proposal baseline
+  const updateNegotiationCommercialField = (field, value) => {
+    lastProposalPricingRef.current = {
+      ...lastProposalPricingRef.current,
+      [field]: value ?? ''
+    };
+    setForms(prev => ({
+      ...prev,
+      negotiation: {
+        ...prev.negotiation,
+        [field]: value
+      },
+      proposal: {
+        ...prev.proposal,
+        pricing: {
+          ...(prev.proposal?.pricing || {}),
+          [field]: value
+        }
+      }
+    }));
+  };
+
   // Log negotiation revision
   const addNegotiationRevision = () => {
     const revised = Number(forms.negotiation.revisedContractValue || 0);
@@ -885,6 +976,283 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
     toast.success('Commercial revision logged to history');
   };
 
+  // Helpers for Final Agreed Billing Schedule calculations in Won / Closed
+  const getOutcomeContractValue = (currentForms = forms) => {
+    return Number(currentForms.outcome?.finalContractValue || currentForms.outcome?.finalValue || 0);
+  };
+
+  const updateOutcomeContractValue = (val) => {
+    const newContractVal = val === '' ? 0 : Number(val || 0);
+    setForms(prev => {
+      const schedule = asArray(prev.outcome?.billingSchedule);
+      let updatedSchedule = schedule;
+      if (schedule.length > 0) {
+        if (newContractVal > 0) {
+          const hasPercentages = schedule.some(r => Number(r.percentage) > 0);
+          if (hasPercentages) {
+            const sumPct = schedule.reduce((sum, r) => sum + (Number(r.percentage) || 0), 0);
+            let allocatedTotal = 0;
+            updatedSchedule = schedule.map(row => {
+              const p = sumPct > 0 ? Number(row.percentage || 0) : Number((100 / schedule.length).toFixed(2));
+              const amt = Math.round((newContractVal * p) / 100);
+              allocatedTotal += amt;
+              return { ...row, percentage: p, amount: amt };
+            });
+            const diff = newContractVal - allocatedTotal;
+            if (diff !== 0 && updatedSchedule.length > 0) {
+              const lastIdx = updatedSchedule.length - 1;
+              updatedSchedule[lastIdx] = {
+                ...updatedSchedule[lastIdx],
+                amount: Math.max(0, Number(updatedSchedule[lastIdx].amount) + diff)
+              };
+            }
+          } else {
+            const eachPct = Number((100 / schedule.length).toFixed(2));
+            let allocatedTotal = 0;
+            updatedSchedule = schedule.map(row => {
+              const amt = Math.round((newContractVal * eachPct) / 100);
+              allocatedTotal += amt;
+              return { ...row, percentage: eachPct, amount: amt };
+            });
+            const diff = newContractVal - allocatedTotal;
+            if (diff !== 0 && updatedSchedule.length > 0) {
+              const lastIdx = updatedSchedule.length - 1;
+              updatedSchedule[lastIdx] = {
+                ...updatedSchedule[lastIdx],
+                amount: Math.max(0, Number(updatedSchedule[lastIdx].amount) + diff)
+              };
+            }
+          }
+        } else {
+          updatedSchedule = schedule.map(row => ({ ...row, amount: '' }));
+        }
+      }
+      return {
+        ...prev,
+        outcome: {
+          ...prev.outcome,
+          finalContractValue: val,
+          finalValue: val,
+          billingSchedule: updatedSchedule
+        }
+      };
+    });
+  };
+
+  const handleBillingScheduleAmountChange = (changedIndex, newAmountStr) => {
+    const contractVal = getOutcomeContractValue();
+    setForms(prev => {
+      const schedule = asArray(prev.outcome?.billingSchedule).map(r => ({ ...r }));
+      if (changedIndex < 0 || changedIndex >= schedule.length) return prev;
+
+      if (!contractVal || contractVal <= 0) {
+        schedule[changedIndex].amount = newAmountStr;
+        return {
+          ...prev,
+          outcome: { ...prev.outcome, billingSchedule: schedule }
+        };
+      }
+
+      const valNum = newAmountStr === '' ? 0 : Math.max(0, Number(newAmountStr) || 0);
+      const clampedVal = Math.min(valNum, contractVal);
+      schedule[changedIndex].amount = newAmountStr === '' ? '' : clampedVal;
+      schedule[changedIndex].percentage = newAmountStr === '' ? '' : Number(((clampedVal / contractVal) * 100).toFixed(2));
+
+      const otherIndices = schedule.map((_, i) => i).filter(i => i !== changedIndex);
+      if (otherIndices.length > 0) {
+        const remainingAmount = Math.max(0, contractVal - clampedVal);
+        const otherCurrentTotal = otherIndices.reduce((sum, i) => sum + (Number(schedule[i].amount) || 0), 0);
+
+        let allocatedTotal = clampedVal;
+        if (otherCurrentTotal > 0) {
+          otherIndices.forEach(i => {
+            const ratio = (Number(schedule[i].amount) || 0) / otherCurrentTotal;
+            const amt = Math.round(remainingAmount * ratio);
+            schedule[i].amount = amt;
+            schedule[i].percentage = Number(((amt / contractVal) * 100).toFixed(2));
+            allocatedTotal += amt;
+          });
+        } else {
+          const otherCurrentPctTotal = otherIndices.reduce((sum, i) => sum + (Number(schedule[i].percentage) || 0), 0);
+          if (otherCurrentPctTotal > 0) {
+            otherIndices.forEach(i => {
+              const ratio = (Number(schedule[i].percentage) || 0) / otherCurrentPctTotal;
+              const amt = Math.round(remainingAmount * ratio);
+              schedule[i].amount = amt;
+              schedule[i].percentage = Number(((amt / contractVal) * 100).toFixed(2));
+              allocatedTotal += amt;
+            });
+          } else {
+            const equalAmt = Math.round(remainingAmount / otherIndices.length);
+            otherIndices.forEach(i => {
+              schedule[i].amount = equalAmt;
+              schedule[i].percentage = Number(((equalAmt / contractVal) * 100).toFixed(2));
+              allocatedTotal += equalAmt;
+            });
+          }
+        }
+
+        const diff = contractVal - allocatedTotal;
+        if (diff !== 0 && otherIndices.length > 0) {
+          const lastOther = otherIndices[otherIndices.length - 1];
+          schedule[lastOther].amount = Math.max(0, Number(schedule[lastOther].amount) + diff);
+          schedule[lastOther].percentage = Number(((schedule[lastOther].amount / contractVal) * 100).toFixed(2));
+        }
+
+        const totalPct = schedule.reduce((sum, r) => sum + (Number(r.percentage) || 0), 0);
+        const pctDiff = Number((100 - totalPct).toFixed(2));
+        if (pctDiff !== 0 && otherIndices.length > 0) {
+          const lastOther = otherIndices[otherIndices.length - 1];
+          schedule[lastOther].percentage = Number((Number(schedule[lastOther].percentage) + pctDiff).toFixed(2));
+        }
+      }
+
+      return {
+        ...prev,
+        outcome: { ...prev.outcome, billingSchedule: schedule }
+      };
+    });
+  };
+
+  const handleBillingSchedulePercentageChange = (changedIndex, newPctStr) => {
+    const contractVal = getOutcomeContractValue();
+    setForms(prev => {
+      const schedule = asArray(prev.outcome?.billingSchedule).map(r => ({ ...r }));
+      if (changedIndex < 0 || changedIndex >= schedule.length) return prev;
+
+      const pctNum = newPctStr === '' ? 0 : Math.max(0, Number(newPctStr) || 0);
+      const clampedPct = Math.min(pctNum, 100);
+      schedule[changedIndex].percentage = newPctStr === '' ? '' : clampedPct;
+      if (contractVal > 0) {
+        schedule[changedIndex].amount = newPctStr === '' ? '' : Math.round((contractVal * clampedPct) / 100);
+      }
+
+      const otherIndices = schedule.map((_, i) => i).filter(i => i !== changedIndex);
+      if (otherIndices.length > 0) {
+        const remainingPct = Math.max(0, 100 - clampedPct);
+        const otherCurrentPctTotal = otherIndices.reduce((sum, i) => sum + (Number(schedule[i].percentage) || 0), 0);
+
+        let allocatedPct = clampedPct;
+        if (otherCurrentPctTotal > 0) {
+          otherIndices.forEach(i => {
+            const ratio = (Number(schedule[i].percentage) || 0) / otherCurrentPctTotal;
+            const p = Number((remainingPct * ratio).toFixed(2));
+            schedule[i].percentage = p;
+            if (contractVal > 0) {
+              schedule[i].amount = Math.round((contractVal * p) / 100);
+            }
+            allocatedPct += p;
+          });
+        } else {
+          const equalPct = Number((remainingPct / otherIndices.length).toFixed(2));
+          otherIndices.forEach(i => {
+            schedule[i].percentage = equalPct;
+            if (contractVal > 0) {
+              schedule[i].amount = Math.round((contractVal * equalPct) / 100);
+            }
+            allocatedPct += equalPct;
+          });
+        }
+
+        const pctDiff = Number((100 - allocatedPct).toFixed(2));
+        if (pctDiff !== 0 && otherIndices.length > 0) {
+          const lastOther = otherIndices[otherIndices.length - 1];
+          schedule[lastOther].percentage = Number((Number(schedule[lastOther].percentage) + pctDiff).toFixed(2));
+          if (contractVal > 0) {
+            schedule[lastOther].amount = Math.round((contractVal * schedule[lastOther].percentage) / 100);
+          }
+        }
+
+        if (contractVal > 0) {
+          const allocatedTotal = schedule.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+          const diff = contractVal - allocatedTotal;
+          if (diff !== 0 && otherIndices.length > 0) {
+            const lastOther = otherIndices[otherIndices.length - 1];
+            schedule[lastOther].amount = Math.max(0, Number(schedule[lastOther].amount) + diff);
+          }
+        }
+      }
+
+      return {
+        ...prev,
+        outcome: { ...prev.outcome, billingSchedule: schedule }
+      };
+    });
+  };
+
+  const removeBillingScheduleMilestone = (deleteIndex) => {
+    const contractVal = getOutcomeContractValue();
+    setForms(prev => {
+      const list = asArray(prev.outcome?.billingSchedule).filter((_, i) => i !== deleteIndex);
+      if (list.length === 0) {
+        return {
+          ...prev,
+          outcome: { ...prev.outcome, billingSchedule: [] }
+        };
+      }
+      const currentPctTotal = list.reduce((sum, r) => sum + (Number(r.percentage) || 0), 0);
+      let allocatedTotal = 0;
+      let allocatedPct = 0;
+      const rebalanced = list.map(row => {
+        const pct = currentPctTotal > 0
+          ? Number(((Number(row.percentage || 0) / currentPctTotal) * 100).toFixed(2))
+          : Number((100 / list.length).toFixed(2));
+        const amt = contractVal > 0 ? Math.round((contractVal * pct) / 100) : Number(row.amount || 0);
+        allocatedTotal += amt;
+        allocatedPct += pct;
+        return { ...row, percentage: pct, amount: amt };
+      });
+
+      if (contractVal > 0 && rebalanced.length > 0) {
+        const diff = contractVal - allocatedTotal;
+        if (diff !== 0) {
+          rebalanced[rebalanced.length - 1].amount += diff;
+        }
+      }
+      const pctDiff = Number((100 - allocatedPct).toFixed(2));
+      if (pctDiff !== 0 && rebalanced.length > 0) {
+        rebalanced[rebalanced.length - 1].percentage = Number((rebalanced[rebalanced.length - 1].percentage + pctDiff).toFixed(2));
+      }
+
+      return {
+        ...prev,
+        outcome: { ...prev.outcome, billingSchedule: rebalanced }
+      };
+    });
+  };
+
+  const addBillingScheduleMilestone = () => {
+    const contractVal = getOutcomeContractValue();
+    setForms(prev => {
+      const list = [...asArray(prev.outcome?.billingSchedule)];
+      if (list.length === 0) {
+        return {
+          ...prev,
+          outcome: {
+            ...prev.outcome,
+            billingSchedule: [{
+              milestone: 'Initial Milestone',
+              description: '',
+              percentage: 100,
+              amount: contractVal > 0 ? contractVal : '',
+              dueDate: ''
+            }]
+          }
+        };
+      }
+      return {
+        ...prev,
+        outcome: {
+          ...prev.outcome,
+          billingSchedule: [
+            ...list,
+            { milestone: '', description: '', percentage: 0, amount: 0, dueDate: '' }
+          ]
+        }
+      };
+    });
+  };
+
   // Import milestones from proposal into Won / Closed billing schedule
   const importMilestonesFromProposal = () => {
     const milestones = asArray(forms.proposal.sections?.paymentTerms);
@@ -892,14 +1260,26 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
       toast.error('No payment milestones configured in proposal');
       return;
     }
-    const contractVal = Number(forms.outcome.finalContractValue || forms.outcome.finalValue || forms.proposal.pricing?.discountedPrice || forms.proposal.pricing?.totalPrice || 0);
-    const schedule = milestones.map(m => ({
-      milestone: m.milestone || 'Milestone',
-      description: m.description || '',
-      percentage: m.percentage || '',
-      amount: contractVal && m.percentage ? Math.round((contractVal * Number(m.percentage)) / 100) : '',
-      dueDate: ''
-    }));
+    const contractVal = getOutcomeContractValue();
+    let allocatedTotal = 0;
+    const schedule = milestones.map((m, idx) => {
+      const pct = Number(m.percentage || 0);
+      const amt = contractVal && pct ? Math.round((contractVal * pct) / 100) : '';
+      if (amt !== '') allocatedTotal += Number(amt);
+      return {
+        milestone: m.milestone || `Milestone ${idx + 1}`,
+        description: m.description || '',
+        percentage: m.percentage || '',
+        amount: amt,
+        dueDate: ''
+      };
+    });
+    if (contractVal > 0 && schedule.length > 0 && allocatedTotal > 0) {
+      const diff = contractVal - allocatedTotal;
+      if (diff !== 0) {
+        schedule[schedule.length - 1].amount = Math.max(0, Number(schedule[schedule.length - 1].amount) + diff);
+      }
+    }
     setForms(prev => ({
       ...prev,
       outcome: {
@@ -943,13 +1323,22 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
   };
 
   const updateProposalNested = (group, key, value) => {
-    setForms(prev => ({
-      ...prev,
-      proposal: {
+    setForms(prev => {
+      const nextProposal = {
         ...prev.proposal,
         [group]: { ...(prev.proposal[group] || {}), [key]: value }
+      };
+      const nextNegotiation = { ...prev.negotiation };
+      if (group === 'pricing') {
+        if (key === 'amcCost') nextNegotiation.amcCost = value;
+        if (key === 'additionalCharges') nextNegotiation.additionalCharges = value;
       }
-    }));
+      return {
+        ...prev,
+        proposal: nextProposal,
+        negotiation: nextNegotiation
+      };
+    });
   };
 
   const updateProposalSection = (key, value) => updateProposalNested('sections', key, value);
@@ -1064,14 +1453,18 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
     updateProposalSection(key, value.split('\n'));
   };
 
-  const saveProposal = async (status = forms.proposal.status || 'draft') => {
+  const saveProposal = async (status = forms.proposal.status || 'draft', advanceNext = false) => {
     try {
       setSaving(true);
       const res = await salesPipelineAPI.saveProposal(lead._id, { ...forms.proposal, status });
       if (res.data.success) {
-        hydrate(res.data.data);
+        const nextStage = advanceNext ? 'sent_to_client' : null;
+        hydrate(res.data.data, nextStage);
         onUpdated?.();
-        toast.success('Proposal saved');
+        toast.success(status === 'finalized' ? 'Proposal finalized' : 'Proposal saved');
+        if (nextStage) {
+          handleStageSelect(nextStage);
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to save proposal');
@@ -1192,12 +1585,13 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
     }
   };
 
-  const saveSection = async (section) => {
+  const saveSection = async (section, explicitNextStage = null) => {
     try {
       setSaving(true);
       const res = await salesPipelineAPI.updateSection(lead._id, section, forms[section]);
       if (res.data.success) {
-        hydrate(res.data.data);
+        const nextStage = explicitNextStage || STAGE_TRANSITION_MAP[section];
+        hydrate(res.data.data, nextStage);
         onUpdated?.();
         if (res.data.project && res.data.budget) {
           toast.success(`Project ${res.data.project.projectCode} established! Delivery budget submitted to Finance for approval.`);
@@ -1208,9 +1602,41 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
         } else {
           toast.success('Pipeline updated');
         }
+        if (nextStage && nextStage !== activeStage) {
+          handleStageSelect(nextStage);
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update pipeline');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleProceedToProposal = async () => {
+    try {
+      setSaving(true);
+      const res = await salesPipelineAPI.updateSection(lead._id, 'quotation', forms.quotation);
+      if (res.data.success) {
+        let latestData = res.data.data;
+        try {
+          const transRes = await salesPipelineAPI.transitionStage(lead._id, {
+            stage: 'proposal',
+            comments: 'Proceeded to proposal stage'
+          });
+          if (transRes.data?.success) {
+            latestData = transRes.data.data;
+          }
+        } catch (transErr) {
+          console.warn('Pipeline stage transition notice:', transErr);
+        }
+        hydrate(latestData, 'proposal');
+        onUpdated?.();
+        toast.success('Quotation saved & proceeded to Proposal');
+        handleStageSelect('proposal');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to proceed to proposal');
     } finally {
       setSaving(false);
     }
@@ -1221,9 +1647,10 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
       setSaving(true);
       const res = await salesPipelineAPI.transitionStage(lead._id, { stage, comments });
       if (res.data.success) {
-        hydrate(res.data.data);
+        hydrate(res.data.data, stage);
         onUpdated?.();
         toast.success('Stage updated');
+        handleStageSelect(stage);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update stage');
@@ -1526,7 +1953,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
         </div>
       ) : (
         <div ref={modalScrollRef} className={`pipeline-modal-scroll flex-1 min-w-0 max-w-full ${embedded ? 'min-h-0' : 'overflow-y-auto overscroll-y-contain'} space-y-3 sm:space-y-5 pr-0.5 touch-pan-y`}>
-          <StageStepper currentStage={pipeline?.currentStage} activeStage={activeStage} onSelect={setActiveStage} />
+          <StageStepper currentStage={pipeline?.currentStage} activeStage={activeStage} onSelect={handleStageSelect} />
 
           <div key={activeStage} className="pipeline-stage-panel rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3.5 sm:p-5 shadow-sm min-w-0 w-full max-w-full overflow-hidden sm:overflow-visible">
             
@@ -1544,8 +1971,8 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                 </div>
 
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3">
-                    <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider mb-2">Commercial & Budget Expectations</h4>
+                  <div className="pipeline-commercial-budget-card rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/25 p-3 shadow-xs">
+                    <h4 className="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider mb-2">Commercial & Budget Expectations</h4>
                     <div className="grid gap-3 sm:grid-cols-3">
                       <Input
                         label="Client Stated Budget (₹)"
@@ -1718,7 +2145,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <button onClick={() => saveSection('quotation')} disabled={saving} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 shadow-xs">
+                  <button onClick={() => saveSection('quotation')} disabled={saving} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-60 shadow-xs">
                     Save Section
                   </button>
                   <button
@@ -1729,7 +2156,12 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                     <Download className="h-4 w-4" />
                     Generate PDF
                   </button>
-                  <button onClick={() => transition('proposal', 'Proceeded to proposal stage')} disabled={saving} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 shadow-xs">
+                  <button
+                    type="button"
+                    onClick={handleProceedToProposal}
+                    disabled={saving}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 shadow-xs"
+                  >
                     Proceed to Proposal
                   </button>
                 </div>
@@ -1781,7 +2213,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                       </button>
                       <button
                         type="button"
-                        onClick={() => saveProposal('finalized')}
+                        onClick={() => saveProposal('finalized', true)}
                         disabled={saving || extractingPdf}
                         className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60 shadow-xs w-full sm:w-auto truncate"
                       >
@@ -1824,8 +2256,8 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                     </div>
 
                     {/* Commercial Agreement & Dates */}
-                    <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 space-y-3">
-                      <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Commercial Agreement & Charges</h4>
+                    <div className="pipeline-commercial-agreement-card rounded-xl border border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/40 dark:bg-indigo-950/25 p-3 space-y-3 shadow-xs">
+                      <h4 className="text-xs font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Commercial Agreement & Charges</h4>
                       <div className="grid gap-3 sm:grid-cols-3">
                         <Input label="Contract Duration" value={forms.proposal.contractDuration} onChange={v => updateProposal('contractDuration', v)} />
                         <Input label="Project Start Date" type="date" value={forms.proposal.projectStartDate} onChange={v => updateProposal('projectStartDate', v)} />
@@ -1928,6 +2360,8 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                     />
                   </div>
                 </div>
+
+                <SectionActions onSave={() => saveProposal(forms.proposal.status || 'draft', true)} disabled={saving} />
               </section>
             )}
 
@@ -1951,8 +2385,8 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                     <Textarea label="Send Notes" value={forms.sentToClient.notes} onChange={v => updateForm('sentToClient', 'notes', v)} />
                   </div>
 
-                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 shadow-xs space-y-3">
-                    <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">Commercial Acceptance Tracking</h4>
+                  <div className="pipeline-commercial-acceptance-card rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/25 p-3 shadow-xs space-y-3">
+                    <h4 className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider">Commercial Acceptance Tracking</h4>
                     <div className="grid gap-3 sm:grid-cols-3">
                       <Select label="Acceptance Status" value={forms.sentToClient.acceptanceStatus} onChange={v => updateForm('sentToClient', 'acceptanceStatus', v)} options={acceptanceStatusOptions} />
                       <Input label="Client Acceptance Date" type="date" value={forms.sentToClient.clientAcceptanceDate} onChange={v => updateForm('sentToClient', 'clientAcceptanceDate', v)} />
@@ -1973,27 +2407,27 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                 
                 <div className="space-y-4">
                   {/* Proposal Commercial Baseline & Terms Card */}
-                  <div className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/50 p-4 shadow-xs space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-100 pb-2.5">
+                  <div className="pipeline-negotiation-baseline-card rounded-xl border border-indigo-200 dark:border-indigo-900/50 bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/50 dark:from-slate-900/90 dark:via-indigo-950/30 dark:to-slate-900/90 p-4 shadow-xs space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-100 dark:border-indigo-900/40 pb-2.5">
                       <div className="flex items-center gap-2">
                         <div className="h-6 w-6 rounded-md bg-indigo-600 text-white flex items-center justify-center font-bold text-[10px]">
                           PRP
                         </div>
                         <div>
-                          <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">
+                          <h4 className="text-xs font-bold text-indigo-950 dark:text-indigo-200 uppercase tracking-wider">
                             Proposal Commercial Baseline {forms.proposal.version ? `(v${forms.proposal.version})` : ''}
                           </h4>
-                          <p className="text-[11px] text-slate-500">Live details fetched from Proposal stage</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">Live details fetched from Proposal stage</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border dark:border-indigo-800/60">
                           Auto-Synced
                         </span>
                         <button
                           type="button"
                           onClick={() => syncNegotiationFromProposal(true)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-indigo-200 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-medium transition shadow-2xs"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-indigo-200 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-medium transition shadow-2xs dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 dark:border-indigo-800/60 dark:text-indigo-300"
                           title="Re-fetch all commercial details directly from Proposal stage"
                         >
                           <RefreshCw className="h-3 w-3" />
@@ -2004,66 +2438,66 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
 
                     {/* 4 Key Proposal Figures */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="rounded-lg bg-white/90 p-2.5 border border-indigo-100 shadow-2xs">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Proposed Project Price</span>
-                        <div className="text-sm font-bold text-slate-900 mt-0.5">
+                      <div className="rounded-lg bg-white/90 dark:bg-slate-800/80 p-2.5 border border-indigo-100 dark:border-indigo-900/40 shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">Proposed Project Price</span>
+                        <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                           ₹{Number(forms.proposal.pricing?.discountedPrice || forms.proposal.pricing?.totalPrice || 0).toLocaleString('en-IN')}
                         </div>
                         {forms.proposal.pricing?.discountedPrice && (
-                          <span className="text-[10px] text-emerald-600 font-medium">
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
                             (Base: ₹{Number(forms.proposal.pricing?.totalPrice || 0).toLocaleString('en-IN')})
                           </span>
                         )}
                       </div>
 
-                      <div className="rounded-lg bg-white/90 p-2.5 border border-indigo-100 shadow-2xs">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">AMC / Support Cost</span>
-                        <div className="text-sm font-bold text-indigo-700 mt-0.5">
+                      <div className="rounded-lg bg-white/90 dark:bg-slate-800/80 p-2.5 border border-indigo-100 dark:border-indigo-900/40 shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">AMC / Support Cost</span>
+                        <div className="text-sm font-bold text-indigo-700 dark:text-indigo-300 mt-0.5">
                           ₹{Number(forms.proposal.pricing?.amcCost || 0).toLocaleString('en-IN')}
                         </div>
-                        <span className="text-[10px] text-slate-400">Annual maintenance</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-400">Annual maintenance</span>
                       </div>
 
-                      <div className="rounded-lg bg-white/90 p-2.5 border border-indigo-100 shadow-2xs">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Additional One-Time</span>
-                        <div className="text-sm font-bold text-violet-700 mt-0.5">
+                      <div className="rounded-lg bg-white/90 dark:bg-slate-800/80 p-2.5 border border-indigo-100 dark:border-indigo-900/40 shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">Additional One-Time</span>
+                        <div className="text-sm font-bold text-violet-700 dark:text-violet-300 mt-0.5">
                           ₹{Number(forms.proposal.pricing?.additionalCharges || 0).toLocaleString('en-IN')}
                         </div>
-                        <span className="text-[10px] text-slate-400">Setup / custom scope</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-400">Setup / custom scope</span>
                       </div>
 
-                      <div className="rounded-lg bg-white/90 p-2.5 border border-indigo-100 shadow-2xs">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Total Proposed Package</span>
-                        <div className="text-sm font-bold text-emerald-700 mt-0.5">
+                      <div className="rounded-lg bg-white/90 dark:bg-slate-800/80 p-2.5 border border-indigo-100 dark:border-indigo-900/40 shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">Total Proposed Package</span>
+                        <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
                           ₹{(
                             Number(forms.proposal.pricing?.discountedPrice || forms.proposal.pricing?.totalPrice || 0) +
                             Number(forms.proposal.pricing?.additionalCharges || 0) +
                             Number(forms.proposal.pricing?.amcCost || 0)
                           ).toLocaleString('en-IN')}
                         </div>
-                        <span className="text-[10px] text-slate-400">Project + Add-ons + AMC</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-400">Project + Add-ons + AMC</span>
                       </div>
                     </div>
 
                     {/* Proposal Agreement & Timeline Details */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-indigo-100/70 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-indigo-100/70 dark:border-indigo-900/40 text-xs">
                       <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Contract Duration</span>
-                        <span className="font-medium text-slate-800">{forms.proposal.contractDuration || 'Not specified'}</span>
+                        <span className="text-slate-400 dark:text-slate-400 block text-[10px] uppercase font-semibold">Contract Duration</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{forms.proposal.contractDuration || 'Not specified'}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Project Timeline</span>
-                        <span className="font-medium text-slate-800">
+                        <span className="text-slate-400 dark:text-slate-400 block text-[10px] uppercase font-semibold">Project Timeline</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">
                           {forms.proposal.projectStartDate ? `${forms.proposal.projectStartDate} → ${forms.proposal.projectEndDate || 'TBD'}` : 'Timeline not set'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Payment Terms</span>
-                        <span className="font-medium text-slate-800">{forms.proposal.commercialPaymentTerms || 'Milestone Based'}</span>
+                        <span className="text-slate-400 dark:text-slate-400 block text-[10px] uppercase font-semibold">Payment Terms</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{forms.proposal.commercialPaymentTerms || 'Milestone Based'}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Proposal Valid Until</span>
-                        <span className="font-medium text-slate-800">{forms.proposal.validity?.validUntil || 'Not specified'}</span>
+                        <span className="text-slate-400 dark:text-slate-400 block text-[10px] uppercase font-semibold">Proposal Valid Until</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{forms.proposal.validity?.validUntil || 'Not specified'}</span>
                       </div>
                     </div>
                   </div>
@@ -2100,13 +2534,13 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                         label="AMC / Support Cost (₹)"
                         type="number"
                         value={forms.negotiation.amcCost}
-                        onChange={v => updateForm('negotiation', 'amcCost', v)}
+                        onChange={v => updateNegotiationCommercialField('amcCost', v)}
                       />
                       <Input
                         label="Additional One-Time Charges (₹)"
                         type="number"
                         value={forms.negotiation.additionalCharges}
-                        onChange={v => updateForm('negotiation', 'additionalCharges', v)}
+                        onChange={v => updateNegotiationCommercialField('additionalCharges', v)}
                       />
                     </div>
 
@@ -2224,19 +2658,19 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                     forms.outcome.status === 'won' &&
                     (forms.outcome.projectId || pipeline?.outcome?.projectId || pipeline?.outcome?.status === 'won')
                   ) && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/90 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="pipeline-relational-project-card rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/90 dark:bg-emerald-950/25 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-start sm:items-center gap-3">
                         <div className="h-10 w-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                           <FolderKanban className="h-5 w-5 text-white" />
                         </div>
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs font-bold text-emerald-950 uppercase tracking-wider">Relational Project Established</span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <span className="text-xs font-bold text-emerald-950 dark:text-emerald-200 uppercase tracking-wider">Relational Project Established</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-700/60">
                               {forms.outcome.projectCode || pipeline?.outcome?.projectCode || 'Active Project'}
                             </span>
                           </div>
-                          <p className="text-xs text-emerald-700 mt-0.5">
+                          <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
                             This won deal is linked to centralized Project Management. Commercial contract terms and delivery budgets are synchronized.
                           </p>
                         </div>
@@ -2258,7 +2692,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                         onClick={() => {
                           if (onClose) onClose();
                         }}
-                        className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs transition shrink-0"
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition shrink-0"
                       >
                         <FolderKanban className="h-3.5 w-3.5" />
                         View in Projects
@@ -2276,10 +2710,7 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                         label="Final Commercially Agreed Contract Value (₹)"
                         type="number"
                         value={forms.outcome.finalContractValue}
-                        onChange={v => {
-                          updateForm('outcome', 'finalContractValue', v);
-                          updateForm('outcome', 'finalValue', v);
-                        }}
+                        onChange={v => updateOutcomeContractValue(v)}
                       />
                       <Select
                         label="Tax Inclusivity"
@@ -2296,121 +2727,150 @@ const SalesPipelineModal = ({ lead, role = 'employee', onClose, onUpdated, embed
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-3">
-                      <Input label="Final Agreed Payment Terms" value={forms.outcome.finalPaymentTerms} onChange={v => updateForm('outcome', 'finalPaymentTerms', v)} />
+                      <Select
+                        label="Final Agreed Payment Terms"
+                        value={forms.outcome.finalPaymentTerms || 'Milestone Based'}
+                        onChange={v => updateForm('outcome', 'finalPaymentTerms', v)}
+                        options={paymentTermsOptions}
+                      />
                       <Input label="Initial Advance Amount (₹)" type="number" value={forms.outcome.initialAdvanceAmount} onChange={v => updateForm('outcome', 'initialAdvanceAmount', v)} />
                       <Input label="Contract / Acceptance Doc URL" value={forms.outcome.contractDocumentRef} onChange={v => updateForm('outcome', 'contractDocumentRef', v)} />
                     </div>
+                    {forms.outcome.finalPaymentTerms === 'Custom' && (
+                      <div className="mt-2.5">
+                        <Input
+                          label="Custom Payment Terms Description"
+                          value={forms.outcome.customPaymentTerms}
+                          onChange={v => updateForm('outcome', 'customPaymentTerms', v)}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Final Agreed Billing Schedule */}
-                  <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2 shadow-xs">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900">Final Agreed Billing Schedule</h4>
-                      <button
-                        type="button"
-                        onClick={importMilestonesFromProposal}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition"
-                      >
-                        <RefreshCw className="h-3 w-3" />
-                        Import Proposal Milestones
-                      </button>
-                    </div>
+                  {(() => {
+                    const outcomeContractVal = Number(forms.outcome.finalContractValue || forms.outcome.finalValue || 0);
+                    const outcomeBillingSchedule = asArray(forms.outcome.billingSchedule);
+                    const totalScheduleAmount = outcomeBillingSchedule.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+                    const totalSchedulePct = Number(outcomeBillingSchedule.reduce((sum, r) => sum + (Number(r.percentage) || 0), 0).toFixed(2));
+                    const isScheduleBalanced = outcomeContractVal > 0
+                      ? totalScheduleAmount === outcomeContractVal && (Math.abs(totalSchedulePct - 100) < 0.1 || outcomeBillingSchedule.length === 0)
+                      : totalSchedulePct === 100 || outcomeBillingSchedule.length === 0;
 
-                    <div className="space-y-2">
-                      {asArray(forms.outcome.billingSchedule).map((row, idx) => (
-                        <div key={idx} className="grid grid-cols-[1fr_80px_100px_auto] sm:grid-cols-[1.5fr_80px_120px_110px_auto] items-end gap-1.5 p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs">
-                          <label className="block min-w-0">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">Milestone</span>
-                            <input
-                              value={row.milestone || ''}
-                              onChange={e => {
-                                const list = [...asArray(forms.outcome.billingSchedule)];
-                                list[idx].milestone = e.target.value;
-                                updateForm('outcome', 'billingSchedule', list);
-                              }}
-                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs"
-                            />
-                          </label>
-                          <label className="block min-w-0">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">%</span>
-                            <input
-                              type="number"
-                              value={row.percentage || ''}
-                              onChange={e => {
-                                const list = [...asArray(forms.outcome.billingSchedule)];
-                                list[idx].percentage = e.target.value;
-                                const contractVal = Number(forms.outcome.finalContractValue || forms.outcome.finalValue || 0);
-                                if (contractVal && e.target.value) {
-                                  list[idx].amount = Math.round((contractVal * Number(e.target.value)) / 100);
-                                }
-                                updateForm('outcome', 'billingSchedule', list);
-                              }}
-                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs font-semibold"
-                            />
-                          </label>
-                          <label className="block min-w-0">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">Amount (₹)</span>
-                            <input
-                              type="number"
-                              value={row.amount || ''}
-                              onChange={e => {
-                                const list = [...asArray(forms.outcome.billingSchedule)];
-                                list[idx].amount = e.target.value;
-                                updateForm('outcome', 'billingSchedule', list);
-                              }}
-                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-900"
-                            />
-                          </label>
-                          <label className="hidden sm:block min-w-0">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">Due Date</span>
-                            <input
-                              type="date"
-                              value={row.dueDate || ''}
-                              onChange={e => {
-                                const list = [...asArray(forms.outcome.billingSchedule)];
-                                list[idx].dueDate = e.target.value;
-                                updateForm('outcome', 'billingSchedule', list);
-                              }}
-                              className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs"
-                            />
-                          </label>
+                    return (
+                      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 space-y-3 shadow-xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">Final Agreed Billing Schedule</h4>
+                              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${isScheduleBalanced ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border dark:border-emerald-800/60' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 dark:border dark:border-amber-800/60'}`}>
+                                {isScheduleBalanced ? '100% Balanced ✓' : `Total: ${totalSchedulePct}% (Must equal 100%)`}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                              Amounts and percentages adjust automatically to match Contract Value: <span className="font-semibold text-slate-700 dark:text-slate-200">₹{outcomeContractVal.toLocaleString('en-IN')}</span>
+                            </p>
+                          </div>
                           <button
                             type="button"
-                            onClick={() => {
-                              const list = asArray(forms.outcome.billingSchedule).filter((_, i) => i !== idx);
-                              updateForm('outcome', 'billingSchedule', list);
-                            }}
-                            className="p-1 text-slate-400 hover:text-red-600 rounded"
+                            onClick={importMilestonesFromProposal}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:border-blue-800/60 dark:text-blue-300 transition"
                           >
-                            ✕
+                            <RefreshCw className="h-3 w-3" />
+                            Import Proposal Milestones
                           </button>
                         </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const list = [...asArray(forms.outcome.billingSchedule), { milestone: '', percentage: '', amount: '', dueDate: '' }];
-                          updateForm('outcome', 'billingSchedule', list);
-                        }}
-                        className="rounded border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                      >
-                        + Add Milestone
-                      </button>
-                    </div>
-                  </div>
+
+                        <div className="space-y-2">
+                          {outcomeBillingSchedule.map((row, idx) => (
+                            <div key={idx} className="grid grid-cols-[1fr_80px_100px_auto] sm:grid-cols-[1.5fr_85px_130px_110px_auto] items-end gap-1.5 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-100 dark:border-slate-700/60 text-xs">
+                              <label className="block min-w-0">
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Milestone</span>
+                                <input
+                                  value={row.milestone || ''}
+                                  onChange={e => {
+                                    const list = [...asArray(forms.outcome.billingSchedule)];
+                                    list[idx].milestone = e.target.value;
+                                    updateForm('outcome', 'billingSchedule', list);
+                                  }}
+                                  className="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-slate-900 dark:text-slate-100"
+                                />
+                              </label>
+                              <label className="block min-w-0">
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">%</span>
+                                <input
+                                  type="number"
+                                  value={row.percentage !== undefined && row.percentage !== null ? row.percentage : ''}
+                                  onChange={e => handleBillingSchedulePercentageChange(idx, e.target.value)}
+                                  className="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-900 dark:text-slate-100"
+                                />
+                              </label>
+                              <label className="block min-w-0">
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Amount (₹)</span>
+                                <input
+                                  type="number"
+                                  value={row.amount !== undefined && row.amount !== null ? row.amount : ''}
+                                  onChange={e => handleBillingScheduleAmountChange(idx, e.target.value)}
+                                  className="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-bold text-slate-900 dark:text-slate-100"
+                                />
+                              </label>
+                              <label className="hidden sm:block min-w-0">
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Due Date</span>
+                                <input
+                                  type="date"
+                                  value={row.dueDate || ''}
+                                  onChange={e => {
+                                    const list = [...asArray(forms.outcome.billingSchedule)];
+                                    list[idx].dueDate = e.target.value;
+                                    updateForm('outcome', 'billingSchedule', list);
+                                  }}
+                                  className="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-slate-900 dark:text-slate-100"
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => removeBillingScheduleMilestone(idx)}
+                                className="p-1 text-slate-400 hover:text-red-600 rounded transition-colors"
+                                title="Remove Milestone"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={addBillingScheduleMilestone}
+                              className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-xs"
+                            >
+                              + Add Milestone
+                            </button>
+                            <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-300">
+                              <span>Total Scheduled: <strong className="text-slate-900 dark:text-slate-100 font-bold">₹{totalScheduleAmount.toLocaleString('en-IN')}</strong> ({totalSchedulePct}%)</span>
+                              {outcomeContractVal > 0 && totalScheduleAmount !== outcomeContractVal && (
+                                <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                  (Difference: ₹{(outcomeContractVal - totalScheduleAmount).toLocaleString('en-IN')})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Distinct Internal Approved Project Budget */}
-                  <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50/30 p-4 shadow-xs space-y-3">
+                  <div className="pipeline-internal-budget-card rounded-xl border border-amber-200 dark:border-amber-900/40 bg-gradient-to-br from-amber-50 to-orange-50/30 dark:from-slate-900/90 dark:to-amber-950/20 p-4 shadow-xs space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <ShieldCheck className="h-5 w-5 text-amber-600 shrink-0" />
+                        <ShieldCheck className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
                         <div>
-                          <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">Internal Approved Delivery Budget</h4>
-                          <p className="text-[11px] text-amber-700">Company's authorized internal execution budget (Synced to Finance Management &gt; Budget Management for approval)</p>
+                          <h4 className="text-xs font-bold text-amber-950 dark:text-amber-200 uppercase tracking-wider">Internal Approved Delivery Budget</h4>
+                          <p className="text-[11px] text-amber-700 dark:text-amber-400">Company's authorized internal execution budget (Synced to Finance Management &gt; Budget Management for approval)</p>
                         </div>
                       </div>
                       {Number(forms.outcome.internalApprovedBudget || 0) > 0 && forms.outcome.status === 'won' && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60">
                           Synced to Finance for Approval
                         </span>
                       )}
@@ -2551,15 +3011,15 @@ const Info = ({ label, value }) => {
 
 const Input = ({ label, value, onChange, type = 'text', disabled = false }) => (
   <label className="block">
-    <span className="mb-1 block text-[11px] font-semibold text-slate-600">{label}</span>
-    <input type={type} value={value || ''} onChange={(e) => onChange?.(e.target.value)} disabled={disabled} className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1.5 focus:ring-blue-500/20 disabled:bg-slate-50 disabled:text-slate-600" />
+    <span className="mb-1 block text-[11px] font-semibold text-slate-600 dark:text-slate-400">{label}</span>
+    <input type={type} value={value || ''} onChange={(e) => onChange?.(e.target.value)} disabled={disabled} className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1.5 focus:ring-blue-500/20 disabled:bg-slate-50 disabled:text-slate-600 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-100" />
   </label>
 );
 
 const Textarea = ({ label, value, onChange }) => (
   <label className="block">
-    <span className="mb-1 block text-[11px] font-semibold text-slate-600">{label}</span>
-    <textarea value={value || ''} onChange={(e) => onChange(e.target.value)} rows="2" className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1.5 focus:ring-blue-500/20" />
+    <span className="mb-1 block text-[11px] font-semibold text-slate-600 dark:text-slate-400">{label}</span>
+    <textarea value={value || ''} onChange={(e) => onChange(e.target.value)} rows="2" className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1.5 focus:ring-blue-500/20 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-100" />
   </label>
 );
 
@@ -2695,8 +3155,8 @@ const EditableAiSection = ({ label, value, onChange, onImprove, disabled, helper
 
 const Select = ({ label, value, onChange, options }) => (
   <label className="block">
-    <span className="mb-1 block text-[11px] font-semibold text-slate-600">{label}</span>
-    <select value={value || ''} onChange={(e) => onChange(e.target.value)} className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1.5 focus:ring-blue-500/20">
+    <span className="mb-1 block text-[11px] font-semibold text-slate-600 dark:text-slate-400">{label}</span>
+    <select value={value || ''} onChange={(e) => onChange(e.target.value)} className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1.5 focus:ring-blue-500/20 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-100">
       {options.map(option => <option key={option} value={option}>{option}</option>)}
     </select>
   </label>
@@ -3226,7 +3686,12 @@ const PreviewTextarea = ({ value, onChange, rows = 10 }) => (
 
 const SectionActions = ({ onSave, disabled }) => (
   <div className="mt-3 flex justify-end">
-    <button onClick={onSave} disabled={disabled} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 shadow-xs">
+    <button
+      type="button"
+      onClick={onSave}
+      disabled={disabled}
+      className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-60 shadow-xs"
+    >
       Save Section
     </button>
   </div>

@@ -253,6 +253,13 @@
       "when": 1792130562385,
       "tag": "0035_condemned_angel",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792217701879,
+      "tag": "0036_common_bill_hollister",
+      "breakpoints": true
     }
   ]
 }

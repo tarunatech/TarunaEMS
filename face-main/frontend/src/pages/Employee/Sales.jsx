@@ -1210,7 +1210,7 @@ const DetailItem = ({ icon, label, value }) => (
     </div>
     <div className="min-w-0">
       <p className="text-[10px] leading-tight text-slate-500 sm:text-xs">{label}</p>
-      <p className="break-words text-[12px] font-medium leading-snug text-slate-900 sm:text-sm">{value || '—'}</p>
+      <p className={`min-w-0 text-[12px] font-medium leading-snug text-slate-900 sm:text-sm ${label === 'Email' ? 'truncate' : 'break-words'}`} title={value || undefined}>{value || '—'}</p>
     </div>
   </div>
 );

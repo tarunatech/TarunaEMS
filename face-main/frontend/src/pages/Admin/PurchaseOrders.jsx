@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import {
   FileText, Plus, Search, Download, Edit3, Trash2, Eye,
@@ -77,15 +77,47 @@ const getStoredOptions = (key) => {
 
 const mergeOptions = (...groups) => [...new Set(groups.flat().filter(Boolean).map(option => String(option).trim()).filter(Boolean))];
 
+const getClientName = (client) => {
+  if (!client) return '';
+  const fullName = `${client.firstName || ''} ${client.lastName || ''}`.trim();
+  if (client.company && fullName) {
+    return `${client.company} (${fullName})`;
+  }
+  return client.company || fullName || client.email || 'Client';
+};
+
 const PurchaseOrders = ({ Layout = AdminLayout }) => {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  const getInitialCreationData = useCallback(() => {
+    const isNew =
+      searchParams.get('new') === 'true' ||
+      searchParams.get('create') === 'true' ||
+      Boolean(location.state?.openCreateModal);
+
+    if (!isNew) {
+      return { isNew: false, projectId: '', project: '', clientId: '', clientName: '' };
+    }
+
+    return {
+      isNew: true,
+      projectId: searchParams.get('projectId') || location.state?.projectId || '',
+      project: (searchParams.get('project') || location.state?.project || '').trim(),
+      clientId: searchParams.get('clientId') || searchParams.get('client') || location.state?.clientId || '',
+      clientName: (searchParams.get('clientName') || location.state?.clientName || '').trim()
+    };
+  }, [searchParams, location.state]);
+
+  const initialCreation = useMemo(() => getInitialCreationData(), [getInitialCreationData]);
+
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState(() => {
     const qProject = searchParams.get('project') || '';
-    const qSearch = searchParams.get('search') || qProject;
+    const qSearch = searchParams.get('search') || searchParams.get('projectName') || qProject;
     return {
       status: 'all',
       vendor: '',
@@ -96,15 +128,47 @@ const PurchaseOrders = ({ Layout = AdminLayout }) => {
       search: qSearch
     };
   });
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(() => initialCreation.isNew);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedPO, setSelectedPO] = useState(null);
-  const [formData, setFormData] = useState(defaultForm());
+  const [formData, setFormData] = useState(() => {
+    const form = defaultForm();
+    if (initialCreation.isNew) {
+      if (initialCreation.projectId) form.projectId = initialCreation.projectId;
+      if (initialCreation.project) form.project = initialCreation.project;
+      if (initialCreation.clientId) form.client = initialCreation.clientId;
+      if (initialCreation.clientName) form.clientName = initialCreation.clientName;
+    }
+    return form;
+  });
   const [customClients, setCustomClients] = useState(() => getStoredOptions('itPurchaseClients'));
   const [customProjects, setCustomProjects] = useState(() => getStoredOptions('itPurchaseProjects'));
   const [customServiceTypes, setCustomServiceTypes] = useState(() => getStoredOptions('itPurchaseServiceTypes'));
   const [customVendors, setCustomVendors] = useState(() => getStoredOptions('itPurchaseVendors'));
+
+  const handledNavKeyRef = useRef(location.key || 'init');
+  const syncedDataRef = useRef(false);
+
+  // Auto-open modal on navigation with creation params
+  useEffect(() => {
+    const init = getInitialCreationData();
+    const currentKey = location.key || `${location.pathname}?${searchParams.toString()}`;
+
+    if (init.isNew && handledNavKeyRef.current !== currentKey) {
+      handledNavKeyRef.current = currentKey;
+      syncedDataRef.current = false;
+
+      setFormData({
+        ...defaultForm(),
+        projectId: init.projectId,
+        project: init.project,
+        client: init.clientId,
+        clientName: init.clientName
+      });
+      setShowCreateModal(true);
+    }
+  }, [getInitialCreationData, location.key, location.pathname, searchParams]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -130,14 +194,68 @@ const PurchaseOrders = ({ Layout = AdminLayout }) => {
     fetchData();
   }, [fetchData]);
 
-  const getClientName = (client) => {
-    if (!client) return '';
-    const fullName = `${client.firstName || ''} ${client.lastName || ''}`.trim();
-    if (client.company && fullName) {
-      return `${client.company} (${fullName})`;
+  // Synchronize formData with loaded projects & clients from database
+  useEffect(() => {
+    const init = getInitialCreationData();
+    if (!init.isNew && !showCreateModal) return;
+    if (syncedDataRef.current) return;
+    if (projects.length === 0 && clients.length === 0) return;
+
+    const targetProjectId = init.projectId || formData.projectId;
+    const targetProjectName = init.project || formData.project;
+    const targetClientId = init.clientId || formData.client;
+    const targetClientName = init.clientName || formData.clientName;
+
+    let foundProject = null;
+    if (projects.length > 0) {
+      foundProject = projects.find(p => {
+        const pId = String(p.id || p._id || '');
+        const pLabel = p.projectCode ? `${p.projectCode} - ${p.name}` : (p.name || '');
+        return (targetProjectId && pId === String(targetProjectId)) ||
+          (targetProjectName && (
+            pLabel.toLowerCase() === targetProjectName.toLowerCase() ||
+            p.name?.toLowerCase() === targetProjectName.toLowerCase() ||
+            p.projectCode?.toLowerCase() === targetProjectName.toLowerCase()
+          ));
+      });
     }
-    return client.company || fullName || client.email || 'Client';
-  };
+
+    const resolvedProjId = foundProject ? (foundProject.id || foundProject._id) : targetProjectId;
+    const resolvedProjLabel = foundProject
+      ? (foundProject.projectCode ? `${foundProject.projectCode} - ${foundProject.name}` : foundProject.name)
+      : targetProjectName;
+
+    const foundLeadId = foundProject?.leadId?._id || foundProject?.leadId?.id || foundProject?.leadId || targetClientId;
+    let clientObj = null;
+    if (clients.length > 0) {
+      clientObj = clients.find(c => {
+        const cId = String(c._id || c.id || '');
+        if (foundLeadId && cId === String(foundLeadId)) return true;
+        if (targetClientName) {
+          const comp = (c.company || '').trim().toLowerCase();
+          const full = `${c.firstName || ''} ${c.lastName || ''}`.trim().toLowerCase();
+          const combined = `${comp} (${full})`.toLowerCase();
+          const targetLower = targetClientName.toLowerCase();
+          return comp === targetLower || full === targetLower || combined === targetLower || getClientName(c).toLowerCase() === targetLower;
+        }
+        return false;
+      });
+    }
+
+    const resolvedClientId = clientObj ? (clientObj._id || clientObj.id) : (foundLeadId || '');
+    const resolvedClientName = clientObj
+      ? getClientName(clientObj)
+      : (foundProject?.clientName || targetClientName);
+
+    setFormData(prev => ({
+      ...prev,
+      projectId: resolvedProjId || prev.projectId,
+      project: resolvedProjLabel || prev.project,
+      client: resolvedClientId || prev.client,
+      clientName: resolvedClientName || prev.clientName
+    }));
+    syncedDataRef.current = true;
+  }, [projects, clients, getInitialCreationData, showCreateModal, formData.projectId, formData.project, formData.client, formData.clientName]);
 
   const selectedClient = useMemo(
     () => clients.find(client => client._id === formData.client || getClientName(client).toLowerCase() === (formData.clientName || '').trim().toLowerCase()),
@@ -175,19 +293,27 @@ const PurchaseOrders = ({ Layout = AdminLayout }) => {
 
   const clientOptions = useMemo(() => {
     const leadNames = [];
+    const companiesWithFull = new Set();
+
     clients.forEach(c => {
       const company = c.company?.trim();
       const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim();
       if (company && fullName) {
         leadNames.push(`${company} (${fullName})`);
-        leadNames.push(company);
+        companiesWithFull.add(company.toLowerCase());
       } else if (company) {
         leadNames.push(company);
       } else if (fullName) {
         leadNames.push(fullName);
       }
     });
-    return mergeOptions(leadNames, customClients);
+
+    const filteredCustom = (customClients || []).filter(name => {
+      const lower = (name || '').trim().toLowerCase();
+      return !companiesWithFull.has(lower);
+    });
+
+    return mergeOptions(leadNames, filteredCustom);
   }, [clients, customClients]);
   const serviceTypeOptions = useMemo(() => mergeOptions(SERVICE_TYPES, customServiceTypes), [customServiceTypes]);
   const vendorOptions = useMemo(() => mergeOptions(VENDORS, customVendors), [customVendors]);

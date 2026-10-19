@@ -50,6 +50,13 @@ const SalesPipelinePage = () => {
     fetchLeads();
   }, []);
 
+  useEffect(() => {
+    const requestedLeadId = searchParams.get('leadId');
+    if (requestedLeadId && requestedLeadId !== selectedLeadId && leads.some((lead) => lead._id === requestedLeadId)) {
+      setSelectedLeadId(requestedLeadId);
+    }
+  }, [searchParams, leads, selectedLeadId]);
+
   const filteredLeads = useMemo(() => {
     if (!searchTerm.trim()) return leads;
     const term = searchTerm.toLowerCase().trim();
@@ -245,9 +252,11 @@ const SalesPipelinePage = () => {
             <main className="sales-pipeline-main flex-1 min-h-0 min-w-0 w-full max-w-full lg:overflow-y-auto rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-3 sm:p-6 overflow-hidden sm:overflow-visible">
               {selectedLead ? (
                 <SalesPipelineModal
+                  key={`${selectedLead._id}-${searchParams.get('stage') || 'default'}`}
                   lead={selectedLead}
                   role="employee"
                   embedded
+                  initialStage={searchParams.get('stage')}
                   onUpdated={fetchLeads}
                 />
               ) : (

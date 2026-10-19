@@ -29,6 +29,7 @@ import * as budgetSchema from './schema/budget.js';
 import * as customerInvoiceSchema from './schema/customerInvoice.js';
 import * as customerEquipmentSchema from './schema/customerEquipment.js';
 import * as amcContractSchema from './schema/amcContract.js';
+import * as agreementSchema from './schema/agreement.js';
 
 const { Pool } = pg;
 
@@ -66,6 +67,7 @@ export const db = drizzle(pool, {
     ...customerInvoiceSchema,
     ...customerEquipmentSchema,
     ...amcContractSchema,
+    ...agreementSchema,
   },
 });
 
@@ -392,6 +394,83 @@ export const ensurePostgresExtensions = async () => {
   await pool.query('CREATE INDEX IF NOT EXISTS "amc_contracts_endDate_idx" ON "amc_contracts" ("endDate")');
   await pool.query('CREATE INDEX IF NOT EXISTS "amc_contracts_previousContractId_idx" ON "amc_contracts" ("previousContractId")');
   await pool.query('CREATE INDEX IF NOT EXISTS "amc_contracts_createdAt_idx" ON "amc_contracts" ("createdAt")');
+
+  // Employee Agreement Tables Initialization
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "agreement_templates" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "templateKey" varchar(64) NOT NULL,
+      "title" varchar(255) NOT NULL,
+      "version" varchar(32) NOT NULL DEFAULT '1.0',
+      "documentType" varchar(64) NOT NULL DEFAULT 'internship_agreement',
+      "companyName" varchar(255) NOT NULL DEFAULT 'Taruna Technology',
+      "companyAddress" varchar(512) NOT NULL DEFAULT '709,710 Broadway Empire, circle, Vasna Bhayli Main Rd, Vadodara, Gujarat 391410',
+      "companyEmail" varchar(255) NOT NULL DEFAULT 'tarunatechnology@gmail.com',
+      "companyPhone" varchar(64) NOT NULL DEFAULT '+91 9106610595',
+      "signatoryName" varchar(255) NOT NULL DEFAULT 'Tisha Bhadja',
+      "signatoryRole" varchar(255) NOT NULL DEFAULT 'Operational Manager',
+      "sections" jsonb NOT NULL DEFAULT '[]'::jsonb,
+      "isActive" boolean NOT NULL DEFAULT true,
+      "metadata" jsonb NOT NULL DEFAULT '{}'::jsonb,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS "agreement_templates_key_version_idx" ON "agreement_templates" ("templateKey", "version")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "agreement_templates_is_active_idx" ON "agreement_templates" ("isActive")');
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "employee_agreements" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "employeeId" uuid NOT NULL REFERENCES "employees"("id") ON DELETE CASCADE,
+      "templateId" uuid NOT NULL REFERENCES "agreement_templates"("id"),
+      "agreementTitle" varchar(255) NOT NULL DEFAULT 'Internship Agreement',
+      "version" varchar(32) NOT NULL DEFAULT '1.0',
+      "status" varchar(64) NOT NULL DEFAULT 'Not Sent',
+      "employeeName" varchar(255) NOT NULL,
+      "employeeEmail" varchar(255) NOT NULL,
+      "employeePhone" varchar(64),
+      "jobRole" varchar(255) NOT NULL DEFAULT 'MERN Stack Developer Intern',
+      "commencementDate" varchar(64),
+      "duration" varchar(64) DEFAULT 'three (3) months',
+      "stipendStatus" varchar(128) DEFAULT 'Unpaid',
+      "customTerms" jsonb NOT NULL DEFAULT '{}'::jsonb,
+      "acknowledged" boolean NOT NULL DEFAULT false,
+      "acknowledgementText" text,
+      "signatureData" text,
+      "signaturePath" varchar(1024),
+      "signedPdfPath" varchar(1024),
+      "signedAt" timestamptz,
+      "ipAddress" varchar(128),
+      "userAgent" text,
+      "lastSentAt" timestamptz,
+      "emailDeliveryStatus" text,
+      "emailMessageId" varchar(255),
+      "createdBy" uuid NOT NULL REFERENCES "users"("id"),
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query('CREATE INDEX IF NOT EXISTS "employee_agreements_employee_id_idx" ON "employee_agreements" ("employeeId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "employee_agreements_status_idx" ON "employee_agreements" ("status")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "employee_agreements_template_id_idx" ON "employee_agreements" ("templateId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "employee_agreements_created_by_idx" ON "employee_agreements" ("createdBy")');
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "agreement_signing_links" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "agreementId" uuid NOT NULL REFERENCES "employee_agreements"("id") ON DELETE CASCADE,
+      "tokenHash" varchar(128) NOT NULL,
+      "expiresAt" timestamptz NOT NULL,
+      "usedAt" timestamptz,
+      "revokedAt" timestamptz,
+      "createdBy" uuid NOT NULL REFERENCES "users"("id"),
+      "createdAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS "agreement_signing_links_token_hash_idx" ON "agreement_signing_links" ("tokenHash")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "agreement_signing_links_agreement_id_idx" ON "agreement_signing_links" ("agreementId")');
+  await pool.query('CREATE INDEX IF NOT EXISTS "agreement_signing_links_expires_at_idx" ON "agreement_signing_links" ("expiresAt")');
 };
 
 export default db;

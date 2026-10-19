@@ -1105,52 +1105,54 @@ const AdminSalesDashboard = () => {
             <div className="grid grid-cols-1 gap-3 sm:gap-4 xl:grid-cols-[1.4fr_0.9fr]">
               <div className="space-y-3 sm:space-y-4">
             <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 sm:gap-3 sm:text-sm lg:grid-cols-3">
-              <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
+              <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3 min-w-0">
                 <div>
                   <p className="text-slate-500 text-xs">Name</p>
-                  <p className="text-slate-900 font-medium">{selectedLead.firstName} {selectedLead.lastName}</p>
+                  <p className="text-slate-900 font-medium truncate" title={`${selectedLead.firstName} ${selectedLead.lastName}`}>{selectedLead.firstName} {selectedLead.lastName}</p>
                 </div>
               </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3 min-w-0">
                   <p className="text-slate-500 text-xs">Email</p>
-                  <p className="text-slate-900">{selectedLead.email || '—'}</p>
+                  <p className="text-slate-900 truncate" title={selectedLead.email || '—'}>{selectedLead.email || '—'}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3 min-w-0">
                   <p className="text-slate-500 text-xs">Phone</p>
-                  <p className="text-slate-900">{selectedLead.phone || '—'}</p>
+                  <p className="text-slate-900 truncate" title={selectedLead.phone || '—'}>{selectedLead.phone || '—'}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3 min-w-0">
                   <p className="text-slate-500 text-xs">Company</p>
-                  <p className="text-slate-900">{selectedLead.company || '—'}</p>
+                  <p className="text-slate-900 truncate" title={selectedLead.company || '—'}>{selectedLead.company || '—'}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3 min-w-0">
                   <p className="text-slate-500 text-xs">Position</p>
-                  <p className="text-slate-900">{selectedLead.position || '—'}</p>
+                  <p className="text-slate-900 truncate" title={selectedLead.position || '—'}>{selectedLead.position || '—'}</p>
                 </div>
               
-                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3 min-w-0">
                   <p className="text-slate-500 text-xs">Status</p>
-                  <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(selectedLead.status)}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs inline-block truncate max-w-full ${getStatusColor(selectedLead.status)}`}>
                     {selectedLead.status}
                   </span>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3 min-w-0">
                   <p className="text-slate-500 text-xs">Priority</p>
-                  <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(selectedLead.priority)}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs inline-block truncate max-w-full ${getPriorityColor(selectedLead.priority)}`}>
                     {selectedLead.priority || 'Medium'}
                   </span>
                 </div>
-                <div className="rounded-lg border border-blue-100 bg-blue-50/70 p-2.5 sm:rounded-xl sm:p-3">
-                  <p className="text-slate-500 text-xs">Estimated Value</p>
-                  <p className="text-blue-700 font-bold">{formatCurrency(selectedLead.estimatedValue)}</p>
+                <div className="admin-lead-estimated-value-card rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50/70 dark:bg-blue-950/25 p-2.5 sm:rounded-xl sm:p-3 min-w-0 shadow-2xs">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs">Estimated Value</p>
+                  <p className="text-blue-700 dark:text-blue-400 font-bold truncate">{formatCurrency(selectedLead.estimatedValue)}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3 min-w-0">
                   <p className="text-slate-500 text-xs">Source</p>
-                  <p className="text-slate-900">{selectedLead.source || '—'}</p>
+                  <p className="text-slate-900 truncate" title={selectedLead.source || '—'}>{selectedLead.source || '—'}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3">
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 sm:rounded-xl sm:p-3 min-w-0">
                   <p className="text-slate-500 text-xs">Assigned To</p>
-                  <p className="text-slate-900">
+                  <p className="text-slate-900 truncate" title={selectedLead.assignedTo?.personalInfo
+                      ? `${selectedLead.assignedTo.personalInfo.firstName} ${selectedLead.assignedTo.personalInfo.lastName}`
+                      : 'Unassigned'}>
                     {selectedLead.assignedTo?.personalInfo
                       ? `${selectedLead.assignedTo.personalInfo.firstName} ${selectedLead.assignedTo.personalInfo.lastName}`
                       : 'Unassigned'}

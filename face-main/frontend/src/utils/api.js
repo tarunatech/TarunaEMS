@@ -763,6 +763,15 @@ export const amcAPI = {
   createEquipment: (data) => API.post('/amc/equipment', data),
 };
 
+// Agreement / Consent Form API calls
+export const agreementAPI = {
+  getEmployeeAgreement: (employeeId) => API.get(`/agreements/employee/${employeeId}`),
+  sendAgreement: (data) => API.post('/agreements/send', data),
+  getSigningAgreement: (token) => API.get(`/agreements/sign/${token}`),
+  submitSignedAgreement: (token, data) => API.post(`/agreements/sign/${token}`, data),
+  downloadSignedPdf: (agreementId) => API.get(`/agreements/${agreementId}/pdf`, { responseType: 'blob' }),
+};
+
 // Export the configured axios instance
 export default API;
 

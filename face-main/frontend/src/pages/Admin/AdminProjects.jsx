@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import {
   FolderKanban,
@@ -41,6 +41,8 @@ import {
   ArrowUpRight,
   CheckCircle,
   ClipboardList,
+  UserCheck,
+  GitBranch,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { projectAPI, taskAPI, financeAPI } from '../../utils/api';
@@ -99,6 +101,34 @@ const formatDate = (dateStr) => {
   }
 };
 
+const getSalesPersonDisplay = (p) => {
+  if (!p) return 'Unassigned';
+  if (p.salesPerson?.name && p.salesPerson.name !== 'Unassigned') {
+    return p.salesPerson.name;
+  }
+  const leadAssigned = p.leadId?.assignedTo;
+  if (leadAssigned) {
+    if (typeof leadAssigned === 'object') {
+      const name = `${leadAssigned.personalInfo?.firstName || ''} ${leadAssigned.personalInfo?.lastName || ''}`.trim() || leadAssigned.name || leadAssigned.employeeId;
+      if (name) return name;
+    } else if (typeof leadAssigned === 'string') {
+      return leadAssigned;
+    }
+  }
+  if (p.createdBy) {
+    if (typeof p.createdBy === 'object' && p.createdBy.name) {
+      return p.createdBy.name;
+    }
+  }
+  if (p.projectManager) {
+    const pmName = typeof p.projectManager === 'object'
+      ? (`${p.projectManager.personalInfo?.firstName || ''} ${p.projectManager.personalInfo?.lastName || ''}`.trim() || p.projectManager.name)
+      : p.projectManager;
+    if (pmName) return pmName;
+  }
+  return 'Unassigned';
+};
+
 export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
   const [searchParams] = useSearchParams();
   const urlProjectId = searchParams.get('projectId');
@@ -118,6 +148,26 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsTab, setDetailsTab] = useState('overview');
   const [downloadingPdfId, setDownloadingPdfId] = useState(null);
+  const navigate = useNavigate();
+
+  const navigateToPipelineStage = (stage = 'client_details') => {
+    const targetLeadId =
+      selectedProject?.leadId?._id ||
+      selectedProject?.leadId?.id ||
+      (typeof selectedProject?.leadId === 'string' ? selectedProject.leadId : null) ||
+      selectedProjectData?.pipeline?.lead ||
+      selectedProject?.pipeline?.lead ||
+      urlLeadId ||
+      '';
+
+    if (!targetLeadId) {
+      toast.error('No originating sales lead found for this project.');
+      return;
+    }
+
+    setSelectedProject(null);
+    navigate(`${basePath}/sales-pipeline?leadId=${targetLeadId}&stage=${stage}`);
+  };
 
   // Tabs scroll management
   const projectTabsRef = useRef(null);
@@ -307,11 +357,13 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
   const filteredProjects = useMemo(() => {
     return safeProjects.filter((p) => {
       const term = searchTerm.toLowerCase().trim();
+      const salesPersonName = getSalesPersonDisplay(p).toLowerCase();
       const matchSearch =
         !term ||
         p.projectCode?.toLowerCase().includes(term) ||
         p.name?.toLowerCase().includes(term) ||
-        p.clientName?.toLowerCase().includes(term);
+        p.clientName?.toLowerCase().includes(term) ||
+        salesPersonName.includes(term);
 
       const matchStatus = statusFilter === 'ALL' || p.status === statusFilter;
 
@@ -359,67 +411,82 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
         </div>
 
         {/* Top Metric Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Projects</span>
-              <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400">
-                <Layers className="h-4 w-4" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+          <div className="rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 sm:p-4 shadow-xs flex flex-col justify-between">
+            <div className="flex items-start justify-between gap-1 sm:gap-2">
+              <span className="text-[10px] sm:text-xs font-semibold sm:font-medium text-slate-500 dark:text-slate-400 uppercase tracking-tight sm:tracking-wider leading-tight">Total Projects</span>
+              <div className="p-1 sm:p-1.5 rounded-md sm:rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 shrink-0">
+                <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold text-slate-900 dark:text-white">{stats.total}</span>
-              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{stats.active} Active</span>
+            <div className="mt-1.5 sm:mt-2">
+              <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+                <span className="text-base sm:text-2xl font-bold sm:font-extrabold text-slate-900 dark:text-white tracking-tight">{stats.total}</span>
+                <span className="text-[10px] sm:text-xs font-semibold sm:font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{stats.active} Active</span>
+              </div>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-400 mt-0.5 leading-tight truncate sm:whitespace-normal" title="All registered projects">
+                All registered projects
+              </p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Contract Value</span>
-              <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400">
-                <DollarSign className="h-4 w-4" />
+          <div className="rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 sm:p-4 shadow-xs flex flex-col justify-between">
+            <div className="flex items-start justify-between gap-1 sm:gap-2">
+              <span className="text-[10px] sm:text-xs font-semibold sm:font-medium text-slate-500 dark:text-slate-400 uppercase tracking-tight sm:tracking-wider leading-tight">Total Contract Value</span>
+              <div className="p-1 sm:p-1.5 rounded-md sm:rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
             </div>
-            <div className="mt-2">
-              <span className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">{formatINR(stats.totalContractValue)}</span>
-              <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">Agreed commercial revenue</p>
+            <div className="mt-1.5 sm:mt-2">
+              <span className="text-base sm:text-2xl font-bold sm:font-extrabold text-slate-900 dark:text-white tracking-tight block whitespace-nowrap truncate" title={formatINR(stats.totalContractValue)}>
+                {formatINR(stats.totalContractValue)}
+              </span>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-400 mt-0.5 leading-tight truncate sm:whitespace-normal" title="Agreed commercial revenue">
+                Agreed commercial revenue
+              </p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Approved Delivery Budget</span>
-              <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
-                <TrendingUp className="h-4 w-4" />
+          <div className="rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 sm:p-4 shadow-xs flex flex-col justify-between">
+            <div className="flex items-start justify-between gap-1 sm:gap-2">
+              <span className="text-[10px] sm:text-xs font-semibold sm:font-medium text-slate-500 dark:text-slate-400 uppercase tracking-tight sm:tracking-wider leading-tight">Approved Delivery Budget</span>
+              <div className="p-1 sm:p-1.5 rounded-md sm:rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 shrink-0">
+                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
             </div>
-            <div className="mt-2">
-              <span className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">{formatINR(stats.totalBudget)}</span>
-              <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">Authorized internal execution cost</p>
+            <div className="mt-1.5 sm:mt-2">
+              <span className="text-base sm:text-2xl font-bold sm:font-extrabold text-slate-900 dark:text-white tracking-tight block whitespace-nowrap truncate" title={formatINR(stats.totalBudget)}>
+                {formatINR(stats.totalBudget)}
+              </span>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-400 mt-0.5 leading-tight truncate sm:whitespace-normal" title="Authorized internal execution cost">
+                Authorized internal execution cost
+              </p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Gross Target Margin</span>
-              <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400">
-                <Briefcase className="h-4 w-4" />
+          <div className="rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 sm:p-4 shadow-xs flex flex-col justify-between">
+            <div className="flex items-start justify-between gap-1 sm:gap-2">
+              <span className="text-[10px] sm:text-xs font-semibold sm:font-medium text-slate-500 dark:text-slate-400 uppercase tracking-tight sm:tracking-wider leading-tight">Gross Target Margin</span>
+              <div className="p-1 sm:p-1.5 rounded-md sm:rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 shrink-0">
+                <Briefcase className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
             </div>
-            <div className="mt-2">
-              <span className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
+            <div className="mt-1.5 sm:mt-2">
+              <span className="text-base sm:text-2xl font-bold sm:font-extrabold text-slate-900 dark:text-white tracking-tight block whitespace-nowrap truncate">
                 {stats.totalContractValue > 0
                   ? `${Math.round(((stats.totalContractValue - stats.totalBudget) / stats.totalContractValue) * 100)}%`
                   : '0%'}
               </span>
-              <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">Commercial vs execution allocation</p>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-400 mt-0.5 leading-tight truncate sm:whitespace-normal" title="Commercial vs execution allocation">
+                Commercial vs execution allocation
+              </p>
             </div>
           </div>
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="relative flex-1 min-w-[240px]">
+        <div className="rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 sm:p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="relative flex-1 min-w-0 md:min-w-[240px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -430,14 +497,14 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 w-full md:w-auto">
             {/* Status Filter */}
-            <div className="flex items-center gap-1.5">
-              <Filter className="h-3.5 w-3.5 text-slate-400" />
+            <div className="flex-1 md:flex-initial flex items-center gap-1.5 min-w-0">
+              <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="text-xs font-semibold px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/50"
+                className="w-full md:w-auto text-xs font-semibold px-2.5 sm:px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/50 truncate cursor-pointer"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="Planning">Planning</option>
@@ -453,7 +520,7 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
               <select
                 value={clientFilter}
                 onChange={(e) => setClientFilter(e.target.value)}
-                className="text-xs font-semibold px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/50 max-w-[180px] truncate"
+                className="flex-1 md:flex-initial w-full md:w-auto text-xs font-semibold px-2.5 sm:px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/50 md:max-w-[180px] min-w-0 truncate cursor-pointer"
               >
                 <option value="ALL">All Clients</option>
                 {uniqueClients.map((client) => (
@@ -476,7 +543,7 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                   <th className="py-3 px-4">Client</th>
                   <th className="py-3 px-4 text-right">Contract Value</th>
                   <th className="py-3 px-4 text-right">Approved Budget</th>
-                  <th className="py-3 px-4">Project Manager</th>
+                  <th className="py-3 px-4">Sales Person</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4">Created Date</th>
                   <th className="py-3 px-4 text-center">Actions</th>
@@ -507,11 +574,7 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                 ) : (
                   filteredProjects.map((p) => {
                     const statusCfg = STATUS_CONFIG[p.status] || STATUS_CONFIG.Planning;
-                    const pmDisplay =
-                      p.projectManager?.name ||
-                      (p.projectManager?.personalInfo
-                        ? `${p.projectManager.personalInfo.firstName || ''} ${p.projectManager.personalInfo.lastName || ''}`.trim()
-                        : 'Unassigned');
+                    const salesDisplay = getSalesPersonDisplay(p);
                     const client = p.clientName || p.leadId?.company || p.leadId?.name || 'Client';
 
                     return (
@@ -536,8 +599,8 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                         <td className="py-3.5 px-4 text-right font-semibold text-slate-700 dark:text-slate-300">{formatINR(p.approvedBudget)}</td>
                         <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
                           <div className="flex items-center gap-1.5">
-                            <User className="h-3.5 w-3.5 text-slate-400" />
-                            <span className="text-xs">{pmDisplay}</span>
+                            <UserCheck className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                            <span className="text-xs font-medium text-slate-800 dark:text-slate-200">{salesDisplay}</span>
                           </div>
                         </td>
                         <td className="py-3.5 px-4">
@@ -618,15 +681,15 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                   if (e.target === e.currentTarget) setSelectedProject(null);
                 }}
               >
-                <div className="relative w-full max-w-5xl bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]">
+                <div className="relative w-full max-w-5xl bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150 flex flex-col h-[94vh] sm:h-auto sm:max-h-[92vh]">
                   {/* Modal Header */}
-                  <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/80 flex-shrink-0">
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
-                        <FolderKanban className="h-5 w-5" />
+                  <div className="px-3.5 sm:px-5 py-2.5 sm:py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/80 flex-shrink-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                      <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
+                        <FolderKanban className="h-4 w-4 sm:h-5 sm:w-5" />
                       </div>
                       <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <span
                             onClick={() => {
                               if (selectedProject.projectCode) {
@@ -634,36 +697,36 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                                 toast.success('Project ID copied to clipboard!');
                               }
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-mono text-xs font-bold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 tracking-wider shrink-0 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition shadow-2xs"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-mono text-[10px] sm:text-xs font-bold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 tracking-wider shrink-0 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition shadow-2xs"
                             title="Click to copy Project ID"
                           >
-                            <Tag className="h-3 w-3 text-indigo-500 dark:text-indigo-400" />
+                            <Tag className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-indigo-500 dark:text-indigo-400" />
                             {selectedProject.projectCode}
                           </span>
-                          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate" title={selectedProject.name}>
+                          <h3 className="text-sm sm:text-lg font-bold text-slate-900 dark:text-white truncate max-w-[140px] sm:max-w-none" title={selectedProject.name}>
                             {selectedProject.name}
                           </h3>
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold border ${
                               STATUS_CONFIG[selectedProject.status]?.bg || 'bg-slate-100 dark:bg-slate-800'
                             } ${STATUS_CONFIG[selectedProject.status]?.text || 'text-slate-700 dark:text-slate-300'} ${
                               STATUS_CONFIG[selectedProject.status]?.border || 'border-slate-200 dark:border-slate-700'
-                            } shadow-2xs`}
+                            } shadow-2xs shrink-0`}
                           >
                             <span className={`h-1.5 w-1.5 rounded-full ${STATUS_CONFIG[selectedProject.status]?.dot || 'bg-slate-500'}`} />
                             {selectedProject.status}
                           </span>
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-1.5">
+                        <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-1.5">
                           <span className="text-slate-400 dark:text-slate-500">Client:</span>
-                          <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedProject.clientName || 'Client'}</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px] sm:max-w-none">{selectedProject.clientName || 'Client'}</span>
                           {selectedProject.leadId?.company && selectedProject.leadId?.company !== selectedProject.clientName && (
-                            <span className="text-slate-400 dark:text-slate-500">({selectedProject.leadId.company})</span>
+                            <span className="text-slate-400 dark:text-slate-500 truncate max-w-[100px] sm:max-w-none">({selectedProject.leadId.company})</span>
                           )}
                           {selectedProject.leadId?.phone && (
                             <>
                               <span className="text-slate-300 dark:text-slate-600">•</span>
-                              <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                              <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1 whitespace-nowrap">
                                 <Phone className="h-3 w-3 text-slate-400" />
                                 {selectedProject.leadId.phone}
                               </span>
@@ -672,19 +735,28 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <button
+                        onClick={() => navigateToPipelineStage('client_details')}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs font-semibold rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 transition shadow-2xs group"
+                        title="Open originating Sales Pipeline"
+                      >
+                        <GitBranch className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 group-hover:rotate-12 transition-transform" />
+                        <span className="hidden sm:inline">Pipeline</span>
+                        <ExternalLink className="h-3 w-3 opacity-60" />
+                      </button>
                       <button
                         onClick={() => setSelectedProject(null)}
-                        className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition"
+                        className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition"
                         title="Close"
                       >
-                        <X className="h-5 w-5" />
+                        <X className="h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Financial & Status Summary Strip (Always Visible) */}
-                  <div className="px-5 py-3 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-200/80 dark:border-slate-700/60 flex-shrink-0">
+                  {/* Financial & Status Summary Strip (Desktop: Always Visible) */}
+                  <div className="hidden sm:block px-5 py-3 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-200/80 dark:border-slate-700/60 flex-shrink-0">
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
                       {/* Contract Revenue */}
                       <div className="p-2.5 bg-white dark:bg-slate-800/90 rounded-xl border border-slate-200/80 dark:border-slate-700/60 shadow-xs">
@@ -795,9 +867,9 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                           )}
                         </div>
 
-                        <div className="hidden sm:flex items-center gap-1 text-slate-500 dark:text-slate-400 border-l border-slate-200 dark:border-slate-700 pl-3">
-                          <User className="h-3.5 w-3.5" />
-                          <span>PM: <strong>{selectedProject.projectManager?.personalInfo?.name || selectedProject.projectManager?.name || 'Unassigned'}</strong></span>
+                        <div className="hidden sm:flex items-center gap-1.5 text-slate-500 dark:text-slate-400 border-l border-slate-200 dark:border-slate-700 pl-3">
+                          <UserCheck className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+                          <span>Sales: <strong className="text-slate-800 dark:text-slate-200">{getSalesPersonDisplay(selectedProject)}</strong></span>
                         </div>
                       </div>
 
@@ -898,7 +970,7 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                   </div>
 
                   {/* Modal Body / Tab Content */}
-                  <div className="p-5 flex-1 overflow-y-auto space-y-5">
+                  <div className="p-3 sm:p-5 flex-1 overflow-y-auto space-y-4 sm:space-y-5">
                     {detailsLoading ? (
                       <div className="py-16 text-center">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-3 border-indigo-600 border-t-transparent dark:border-indigo-400 mb-2" />
@@ -910,13 +982,143 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                       <>
                         {/* TAB 1: OVERVIEW & COMMERCIALS */}
                         {detailsTab === 'overview' && (
-                          <div className="space-y-5">
+                          <div className="space-y-4 sm:space-y-5">
+                            {/* Mobile-Only Financial & Status Summary Strip */}
+                            <div className="sm:hidden p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/60 space-y-2">
+                              <div className="grid grid-cols-3 gap-1.5">
+                                {/* Contract Revenue */}
+                                <div className="p-2 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+                                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-tight block truncate">Contract</span>
+                                  <p className="text-xs font-extrabold text-slate-900 dark:text-white mt-0.5 truncate" title={formatINR(financialSummary.contractValue)}>
+                                    {formatINR(financialSummary.contractValue)}
+                                  </p>
+                                  <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium block truncate">Revenue</span>
+                                </div>
+
+                                {/* Approved Budget */}
+                                <div className="p-2 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+                                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-tight block truncate">Budget</span>
+                                  <p className="text-xs font-extrabold text-indigo-900 dark:text-indigo-300 mt-0.5 truncate" title={formatINR(financialSummary.approvedBudget)}>
+                                    {formatINR(financialSummary.approvedBudget)}
+                                  </p>
+                                  <span className="text-[9px] text-indigo-600 dark:text-indigo-400 font-medium block truncate">Approved</span>
+                                </div>
+
+                                {/* Actual Costs */}
+                                <div className="p-2 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+                                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-tight block truncate">Actual Costs</span>
+                                  <p className="text-xs font-extrabold text-rose-900 dark:text-rose-300 mt-0.5 truncate" title={formatINR(financialSummary.actualCosts)}>
+                                    {formatINR(financialSummary.actualCosts)}
+                                  </p>
+                                  <span className="text-[9px] text-rose-600 dark:text-rose-400 font-medium block truncate">Expenses</span>
+                                </div>
+
+                                {/* Open POs */}
+                                <div className="p-2 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+                                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-tight block truncate">Open POs</span>
+                                  <p className="text-xs font-extrabold text-amber-900 dark:text-amber-300 mt-0.5 truncate" title={formatINR(financialSummary.openCommitments)}>
+                                    {formatINR(financialSummary.openCommitments)}
+                                  </p>
+                                  <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium block truncate">{projectPOs.length} Linked</span>
+                                </div>
+
+                                {/* Available Budget */}
+                                <div className="p-2 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+                                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-tight block truncate">Available</span>
+                                  <p className={`text-xs font-extrabold mt-0.5 truncate ${
+                                    financialSummary.availableBudget >= 0
+                                      ? 'text-emerald-700 dark:text-emerald-300'
+                                      : 'text-rose-700 dark:text-rose-400'
+                                  }`} title={formatINR(financialSummary.availableBudget)}>
+                                    {formatINR(financialSummary.availableBudget)}
+                                  </p>
+                                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium block truncate">
+                                    {financialSummary.budgetUtilization}% used
+                                  </span>
+                                </div>
+
+                                {/* Invoiced */}
+                                <div className="p-2 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+                                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-tight block truncate">Invoiced</span>
+                                  <p className="text-xs font-extrabold text-blue-900 dark:text-blue-300 mt-0.5 truncate" title={formatINR(financialSummary.invoicedAmount)}>
+                                    {formatINR(financialSummary.invoicedAmount)}
+                                  </p>
+                                  <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium block truncate">
+                                    {formatINR(financialSummary.invoicePaidAmount)} pd
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Mobile Status & Dates bar */}
+                              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/50 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                                  <span className="text-slate-400 font-semibold">Status:</span>
+                                  {!editingStatus ? (
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-semibold text-slate-800 dark:text-slate-100">{selectedProject.status}</span>
+                                      <button
+                                        onClick={() => setEditingStatus(true)}
+                                        className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-0.5"
+                                        title="Change status"
+                                      >
+                                        <Edit3 className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1">
+                                      <select
+                                        value={newStatus}
+                                        onChange={(e) => setNewStatus(e.target.value)}
+                                        className="text-xs font-semibold px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100"
+                                      >
+                                        <option value="Planning">Planning</option>
+                                        <option value="Active">Active</option>
+                                        <option value="On Hold">On Hold</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Cancelled">Cancelled</option>
+                                      </select>
+                                      <button
+                                        onClick={handleUpdateStatus}
+                                        disabled={statusUpdating}
+                                        className="px-2 py-0.5 text-xs font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                                      >
+                                        {statusUpdating ? '...' : 'Save'}
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingStatus(false)}
+                                        className="text-xs text-slate-400 hover:text-slate-200"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                                  <UserCheck className="h-3 w-3 text-indigo-500 dark:text-indigo-400" />
+                                  <span>Sales: <strong className="text-slate-800 dark:text-slate-200">{getSalesPersonDisplay(selectedProject)}</strong></span>
+                                </div>
+
+                                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[10px]">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {formatDate(selectedProject.startDate)}
+                                  </span>
+                                  <span>→</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {formatDate(selectedProject.endDate)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
                             {/* Commercial Cushion & Margin */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <div className="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40 rounded-xl">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                              <div className="p-3 sm:p-3.5 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40 rounded-xl">
                                 <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider block">Contract Revenue</span>
-                                <p className="text-xl font-extrabold text-emerald-950 dark:text-emerald-200 mt-1">{formatINR(selectedProject.contractValue)}</p>
-                                <span className="text-[11px] text-emerald-700 dark:text-emerald-400/80">Client agreed commercial value</span>
+                                <p className="text-lg sm:text-xl font-extrabold text-emerald-950 dark:text-emerald-200 mt-1">{formatINR(selectedProject.contractValue)}</p>
+                                <span className="text-[10px] sm:text-[11px] text-emerald-700 dark:text-emerald-400/80">Client agreed commercial value</span>
                               </div>
 
                               <div className="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/40 rounded-xl">
@@ -957,17 +1159,28 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
 
                                 {/* Requirements Section from Sales Pipeline Client Details */}
                                 <div className="pt-3 border-t border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
-                                  <div className="flex items-center justify-between">
+                                  <div className="flex items-center justify-between flex-wrap gap-2">
                                     <div className="flex items-center gap-2">
                                       <ClipboardList className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                                       <h5 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                                         Client Requirements
                                       </h5>
                                     </div>
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/70">
-                                      <Briefcase className="h-3 w-3" />
-                                      Sales Pipeline • Client Details
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/70">
+                                        <Briefcase className="h-3 w-3" />
+                                        Sales Pipeline • Client Details
+                                      </span>
+                                      <button
+                                        onClick={() => navigateToPipelineStage('client_details')}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 transition shadow-2xs group cursor-pointer"
+                                        title="Edit Requirements in Sales Pipeline (Client Details Section)"
+                                      >
+                                        <Edit3 className="h-3 w-3 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
+                                        <span>Edit in Client Details</span>
+                                        <ExternalLink className="h-3 w-3 opacity-60" />
+                                      </button>
+                                    </div>
                                   </div>
 
                                   {clientRequirements ? (
@@ -977,17 +1190,33 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                                       </p>
                                     </div>
                                   ) : (
-                                    <div className="p-3 bg-white/70 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-500 text-xs italic">
-                                      No requirements mentioned in Sales Pipeline Client Details.
+                                    <div className="p-3 bg-white/70 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-500 text-xs flex items-center justify-between flex-wrap gap-2">
+                                      <span>No requirements mentioned in Sales Pipeline Client Details.</span>
+                                      <button
+                                        onClick={() => navigateToPipelineStage('client_details')}
+                                        className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                      >
+                                        <Edit3 className="h-3 w-3" />
+                                        Add Requirements in Client Details →
+                                      </button>
                                     </div>
                                   )}
 
                                   {/* Business Need if specified in Client Details */}
                                   {clientBusinessNeed && (
                                     <div className="space-y-1 mt-2">
-                                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-                                        Business Need
-                                      </span>
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                                          Business Need
+                                        </span>
+                                        <button
+                                          onClick={() => navigateToPipelineStage('client_details')}
+                                          className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                        >
+                                          <Edit3 className="h-2.5 w-2.5" />
+                                          Edit in Client Details
+                                        </button>
+                                      </div>
                                       <div className="p-3 bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200/90 dark:border-slate-700/70 shadow-xs">
                                         <p className="whitespace-pre-line leading-relaxed text-slate-800 dark:text-slate-200 font-normal">
                                           {clientBusinessNeed}
@@ -998,40 +1227,58 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
 
                                   {/* Client Details Highlights Grid (Decision Maker, Timeline, Stated Budget, Payment Terms) */}
                                   {clientDetails && (clientDetails.timeline || clientDetails.decisionMaker || clientDetails.budgetRange || clientDetails.clientBudgetAmount || clientDetails.paymentTerms || clientDetails.billingType) && (
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[11px]">
-                                      {clientDetails.decisionMaker && (
-                                        <div className="p-2.5 bg-white dark:bg-slate-900/60 rounded-lg border border-slate-200/60 dark:border-slate-800">
-                                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold uppercase tracking-wider">Decision Maker</span>
-                                          <span className="font-medium text-slate-800 dark:text-slate-200 truncate block mt-0.5">{clientDetails.decisionMaker}</span>
-                                        </div>
-                                      )}
-                                      {clientDetails.timeline && (
-                                        <div className="p-2.5 bg-white dark:bg-slate-900/60 rounded-lg border border-slate-200/60 dark:border-slate-800">
-                                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold uppercase tracking-wider">Expected Timeline</span>
-                                          <span className="font-medium text-slate-800 dark:text-slate-200 truncate block mt-0.5">{clientDetails.timeline}</span>
-                                        </div>
-                                      )}
-                                      {(clientDetails.clientBudgetAmount || clientDetails.budgetRange) && (
-                                        <div className="p-2.5 bg-white dark:bg-slate-900/60 rounded-lg border border-slate-200/60 dark:border-slate-800">
-                                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold uppercase tracking-wider">Stated Client Budget</span>
-                                          <span className="font-medium text-slate-800 dark:text-slate-200 truncate block mt-0.5">
-                                            {clientDetails.clientBudgetAmount ? formatINR(clientDetails.clientBudgetAmount) : clientDetails.budgetRange}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {(clientDetails.paymentTerms || clientDetails.billingType) && (
-                                        <div className="p-2.5 bg-white dark:bg-slate-900/60 rounded-lg border border-slate-200/60 dark:border-slate-800">
-                                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold uppercase tracking-wider">Billing & Terms</span>
-                                          <span className="font-medium text-slate-800 dark:text-slate-200 truncate block mt-0.5">
-                                            {[clientDetails.billingType, clientDetails.paymentTerms].filter(Boolean).join(' • ')}
-                                          </span>
-                                        </div>
-                                      )}
+                                    <div className="space-y-1.5 pt-1">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                          Client Details & Commercial Terms
+                                        </span>
+                                        <button
+                                          onClick={() => navigateToPipelineStage('client_details')}
+                                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                                        >
+                                          <Edit3 className="h-2.5 w-2.5" />
+                                          Edit in Client Details
+                                        </button>
+                                      </div>
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                                        {clientDetails.decisionMaker && (
+                                          <div className="p-2.5 bg-white dark:bg-slate-900/60 rounded-lg border border-slate-200/60 dark:border-slate-800">
+                                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold uppercase tracking-wider">Decision Maker</span>
+                                            <span className="font-medium text-slate-800 dark:text-slate-200 truncate block mt-0.5">{clientDetails.decisionMaker}</span>
+                                          </div>
+                                        )}
+                                        {clientDetails.timeline && (
+                                          <div className="p-2.5 bg-white dark:bg-slate-900/60 rounded-lg border border-slate-200/60 dark:border-slate-800">
+                                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold uppercase tracking-wider">Expected Timeline</span>
+                                            <span className="font-medium text-slate-800 dark:text-slate-200 truncate block mt-0.5">{clientDetails.timeline}</span>
+                                          </div>
+                                        )}
+                                        {(clientDetails.clientBudgetAmount || clientDetails.budgetRange) && (
+                                          <div className="p-2.5 bg-white dark:bg-slate-900/60 rounded-lg border border-slate-200/60 dark:border-slate-800">
+                                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold uppercase tracking-wider">Stated Client Budget</span>
+                                            <span className="font-medium text-slate-800 dark:text-slate-200 truncate block mt-0.5">
+                                              {clientDetails.clientBudgetAmount ? formatINR(clientDetails.clientBudgetAmount) : clientDetails.budgetRange}
+                                            </span>
+                                          </div>
+                                        )}
+                                        {(clientDetails.paymentTerms || clientDetails.billingType) && (
+                                          <div className="p-2.5 bg-white dark:bg-slate-900/60 rounded-lg border border-slate-200/60 dark:border-slate-800">
+                                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold uppercase tracking-wider">Billing & Terms</span>
+                                            <span className="font-medium text-slate-800 dark:text-slate-200 truncate block mt-0.5">
+                                              {[clientDetails.billingType, clientDetails.paymentTerms].filter(Boolean).join(' • ')}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   )}
                                 </div>
 
                                 <div className="pt-3 border-t border-slate-200 dark:border-slate-700/60 flex flex-wrap items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
+                                  <span className="flex items-center gap-1.5">
+                                    <UserCheck className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+                                    Sales Person: <strong className="text-slate-800 dark:text-slate-200">{getSalesPersonDisplay(selectedProject)}</strong>
+                                  </span>
                                   {selectedProject.leadId && (
                                     <span>
                                       Originating Client Lead: <strong className="text-slate-700 dark:text-slate-200">{selectedProject.leadId.name || (selectedProject.leadId.firstName ? `${selectedProject.leadId.firstName} ${selectedProject.leadId.lastName || ''}`.trim() : null) || selectedProject.clientName}</strong>
@@ -1044,25 +1291,52 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                                     <span>Phone: <strong className="text-slate-700 dark:text-slate-200">{selectedProject.leadId.phone}</strong></span>
                                   )}
                                   {selectedProject.pipelineId && (
-                                    <span className="text-indigo-600 dark:text-indigo-400 font-medium">Originated from Sales Pipeline Won Deal</span>
+                                    <button
+                                      onClick={() => navigateToPipelineStage('won_closed')}
+                                      className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <span>Originated from Sales Pipeline Won Deal</span>
+                                      <ExternalLink className="h-3 w-3" />
+                                    </button>
                                   )}
                                 </div>
                               </div>
                             </div>
 
                             {/* Billing Schedule Milestones */}
-                            {Array.isArray(selectedProject.billingSchedule) && selectedProject.billingSchedule.length > 0 && (
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <div className="flex items-center gap-2">
+                                  <Receipt className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                   <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                                    Client Billing Schedule Milestones ({selectedProject.billingSchedule.length})
+                                    Client Billing Schedule Milestones ({Array.isArray(selectedProject.billingSchedule) ? selectedProject.billingSchedule.length : 0})
                                   </h4>
-                                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                                    Total: {formatINR(selectedProject.billingSchedule.reduce((sum, b) => sum + Number(b.amount || 0), 0))}
-                                  </span>
+                                  {Array.isArray(selectedProject.billingSchedule) && selectedProject.billingSchedule.length > 0 && (
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
+                                      • Total: {formatINR(selectedProject.billingSchedule.reduce((sum, b) => sum + Number(b.amount || 0), 0))}
+                                    </span>
+                                  )}
                                 </div>
-                                <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-hidden text-xs">
-                                  <table className="w-full text-left">
+                                <div className="flex items-center gap-2">
+                                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/70">
+                                    <CheckCircle className="h-3 w-3" />
+                                    Won / Closed Stage
+                                  </span>
+                                  <button
+                                    onClick={() => navigateToPipelineStage('won_closed')}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 transition shadow-2xs group cursor-pointer"
+                                    title="Edit Milestones in Sales Pipeline (Won / Closed Section)"
+                                  >
+                                    <Edit3 className="h-3 w-3 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                                    <span>Edit in Won / Closed</span>
+                                    <ExternalLink className="h-3 w-3 opacity-60" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {Array.isArray(selectedProject.billingSchedule) && selectedProject.billingSchedule.length > 0 ? (
+                                <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-x-auto text-xs">
+                                  <table className="w-full min-w-[500px] text-left">
                                     <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
                                       <tr>
                                         <th className="py-2.5 px-3">Milestone</th>
@@ -1085,8 +1359,19 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                                     </tbody>
                                   </table>
                                 </div>
-                              </div>
-                            )}
+                              ) : (
+                                <div className="p-3.5 bg-white/70 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-500 text-xs flex items-center justify-between flex-wrap gap-2">
+                                  <span>No billing schedule milestones configured.</span>
+                                  <button
+                                    onClick={() => navigateToPipelineStage('won_closed')}
+                                    className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Edit3 className="h-3 w-3" />
+                                    Configure Milestones in Won / Closed →
+                                  </button>
+                                </div>
+                              )}
+                            </div>
 
                             {/* Internal Budget Details */}
                             {latestApprovedBudget && (
@@ -1266,13 +1551,55 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Link
-                                  to={`${basePath}/purchase-orders?project=${encodeURIComponent(selectedProject.name || selectedProject.id || selectedProject._id || '')}`}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                  New Purchase Order
-                                </Link>
+                                {(() => {
+                                  const targetProjId = selectedProject.id || selectedProject._id || '';
+                                  const targetProjName = selectedProject.projectCode
+                                    ? `${selectedProject.projectCode} - ${selectedProject.name}`
+                                    : (selectedProject.name || '');
+                                  const targetClientId =
+                                    selectedProject.leadId?._id ||
+                                    selectedProject.leadId?.id ||
+                                    (typeof selectedProject.leadId === 'string' ? selectedProject.leadId : '') ||
+                                    selectedProject.client?._id ||
+                                    selectedProject.client?.id ||
+                                    '';
+                                  const leadFullName = `${selectedProject.leadId?.firstName || ''} ${selectedProject.leadId?.lastName || ''}`.trim();
+                                  const leadCompany = selectedProject.leadId?.company || selectedProject.client?.company || selectedProject.clientName || '';
+                                  const targetClientName = (leadCompany && leadFullName)
+                                    ? `${leadCompany} (${leadFullName})`
+                                    : (selectedProject.clientName || leadCompany || leadFullName || '');
+
+                                  const newPoSearch = new URLSearchParams({
+                                    create: 'true',
+                                    new: 'true',
+                                    projectId: targetProjId,
+                                    project: targetProjName,
+                                    projectName: selectedProject.name || '',
+                                    clientId: targetClientId,
+                                    clientName: targetClientName
+                                  }).toString();
+
+                                  return (
+                                    <Link
+                                      to={{
+                                        pathname: `${basePath}/purchase-orders`,
+                                        search: `?${newPoSearch}`
+                                      }}
+                                      state={{
+                                        openCreateModal: true,
+                                        projectId: targetProjId,
+                                        project: targetProjName,
+                                        projectName: selectedProject.name || '',
+                                        clientId: targetClientId,
+                                        clientName: targetClientName
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                                    >
+                                      <Plus className="h-3.5 w-3.5" />
+                                      New Purchase Order
+                                    </Link>
+                                  );
+                                })()}
                               </div>
                             </div>
 
@@ -1283,16 +1610,67 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
                                   No purchase orders or cloud services are linked to this project. Link software licenses, cloud servers, domains, and vendor services from the Purchase Orders section.
                                 </p>
-                                <Link
-                                  to={`${basePath}/purchase-orders?project=${encodeURIComponent(selectedProject.name || selectedProject.id || selectedProject._id || '')}`}
-                                  className="inline-flex items-center gap-1.5 mt-4 px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-                                >
-                                  Go to Purchase Orders
-                                </Link>
+                                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                  {(() => {
+                                    const targetProjId = selectedProject.id || selectedProject._id || '';
+                                    const targetProjName = selectedProject.projectCode
+                                      ? `${selectedProject.projectCode} - ${selectedProject.name}`
+                                      : (selectedProject.name || '');
+                                    const targetClientId =
+                                      selectedProject.leadId?._id ||
+                                      selectedProject.leadId?.id ||
+                                      (typeof selectedProject.leadId === 'string' ? selectedProject.leadId : '') ||
+                                      selectedProject.client?._id ||
+                                      selectedProject.client?.id ||
+                                      '';
+                                    const leadFullName = `${selectedProject.leadId?.firstName || ''} ${selectedProject.leadId?.lastName || ''}`.trim();
+                                    const leadCompany = selectedProject.leadId?.company || selectedProject.client?.company || selectedProject.clientName || '';
+                                    const targetClientName = (leadCompany && leadFullName)
+                                      ? `${leadCompany} (${leadFullName})`
+                                      : (selectedProject.clientName || leadCompany || leadFullName || '');
+
+                                    const newPoSearch = new URLSearchParams({
+                                      create: 'true',
+                                      new: 'true',
+                                      projectId: targetProjId,
+                                      project: targetProjName,
+                                      projectName: selectedProject.name || '',
+                                      clientId: targetClientId,
+                                      clientName: targetClientName
+                                    }).toString();
+
+                                    return (
+                                      <Link
+                                        to={{
+                                          pathname: `${basePath}/purchase-orders`,
+                                          search: `?${newPoSearch}`
+                                        }}
+                                        state={{
+                                          openCreateModal: true,
+                                          projectId: targetProjId,
+                                          project: targetProjName,
+                                          projectName: selectedProject.name || '',
+                                          clientId: targetClientId,
+                                          clientName: targetClientName
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                                      >
+                                        <Plus className="h-3.5 w-3.5" />
+                                        New Purchase Order
+                                      </Link>
+                                    );
+                                  })()}
+                                  <Link
+                                    to={`${basePath}/purchase-orders?project=${encodeURIComponent(selectedProject.name || selectedProject.id || selectedProject._id || '')}`}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                                  >
+                                    Go to Purchase Orders
+                                  </Link>
+                                </div>
                               </div>
                             ) : (
-                              <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-hidden text-xs">
-                                <table className="w-full text-left">
+                              <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-x-auto text-xs">
+                                <table className="w-full min-w-[640px] text-left">
                                   <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
                                     <tr>
                                       <th className="py-2.5 px-3">PO Number</th>
@@ -1364,13 +1742,39 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
-                                <a
-                                  href={`${basePath}/finance`}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                  Issue Invoice
-                                </a>
+                                {(() => {
+                                  const targetProjId = selectedProject.id || selectedProject._id || '';
+                                  const targetProjName = selectedProject.projectCode
+                                    ? `${selectedProject.projectCode} - ${selectedProject.name}`
+                                    : (selectedProject.name || '');
+
+                                  const invoiceParams = new URLSearchParams({
+                                    tab: 'invoices',
+                                    createInvoice: 'true',
+                                    newInvoice: 'true',
+                                    projectId: targetProjId,
+                                    project: targetProjName
+                                  }).toString();
+
+                                  return (
+                                    <Link
+                                      to={{
+                                        pathname: `${basePath}/finance`,
+                                        search: `?${invoiceParams}`
+                                      }}
+                                      state={{
+                                        openCreateInvoiceModal: true,
+                                        tab: 'invoices',
+                                        projectId: targetProjId,
+                                        project: targetProjName
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                                    >
+                                      <Plus className="h-3.5 w-3.5" />
+                                      Issue Invoice
+                                    </Link>
+                                  );
+                                })()}
                               </div>
                             </div>
 
@@ -1381,16 +1785,51 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
                                   No customer invoices have been issued for this project. Issue milestone invoices in Finance Management to bill the client.
                                 </p>
-                                <a
-                                  href={`${basePath}/finance`}
-                                  className="inline-flex items-center gap-1.5 mt-4 px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-                                >
-                                  Go to Finance Management
-                                </a>
+                                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                  {(() => {
+                                    const targetProjId = selectedProject.id || selectedProject._id || '';
+                                    const targetProjName = selectedProject.projectCode
+                                      ? `${selectedProject.projectCode} - ${selectedProject.name}`
+                                      : (selectedProject.name || '');
+
+                                    const invoiceParams = new URLSearchParams({
+                                      tab: 'invoices',
+                                      createInvoice: 'true',
+                                      newInvoice: 'true',
+                                      projectId: targetProjId,
+                                      project: targetProjName
+                                    }).toString();
+
+                                    return (
+                                      <Link
+                                        to={{
+                                          pathname: `${basePath}/finance`,
+                                          search: `?${invoiceParams}`
+                                        }}
+                                        state={{
+                                          openCreateInvoiceModal: true,
+                                          tab: 'invoices',
+                                          projectId: targetProjId,
+                                          project: targetProjName
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                                      >
+                                        <Plus className="h-3.5 w-3.5" />
+                                        Issue Invoice
+                                      </Link>
+                                    );
+                                  })()}
+                                  <Link
+                                    to={`${basePath}/finance?tab=invoices`}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                                  >
+                                    Go to Finance Management
+                                  </Link>
+                                </div>
                               </div>
                             ) : (
-                              <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-hidden text-xs">
-                                <table className="w-full text-left">
+                              <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-x-auto text-xs">
+                                <table className="w-full min-w-[680px] text-left">
                                   <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
                                     <tr>
                                       <th className="py-2.5 px-3">Invoice #</th>
@@ -1476,8 +1915,8 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                                   No direct project expenses recorded yet. Log project expenses in Expense Tracker.
                                 </div>
                               ) : (
-                                <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-hidden text-xs">
-                                  <table className="w-full text-left">
+                                <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-x-auto text-xs">
+                                  <table className="w-full min-w-[500px] text-left">
                                     <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
                                       <tr>
                                         <th className="py-2.5 px-3">Date</th>
@@ -1519,8 +1958,8 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                                   No client incoming payment transactions linked directly. Payments allocated to invoices will appear in Invoices & Billing.
                                 </div>
                               ) : (
-                                <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-hidden text-xs">
-                                  <table className="w-full text-left">
+                                <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-x-auto text-xs">
+                                  <table className="w-full min-w-[500px] text-left">
                                     <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
                                       <tr>
                                         <th className="py-2.5 px-3">Date</th>
@@ -1636,8 +2075,8 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                                 </p>
                               </div>
                             ) : (
-                              <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-hidden text-xs">
-                                <table className="w-full text-left">
+                              <div className="border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-x-auto text-xs">
+                                <table className="w-full min-w-[640px] text-left">
                                   <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
                                     <tr>
                                       <th className="py-2.5 px-3">Equipment / Asset Name</th>
@@ -1695,13 +2134,13 @@ export const ProjectsView = ({ Layout = AdminLayout, isEmployee = false }) => {
                   </div>
 
                   {/* Modal Footer */}
-                  <div className="px-5 py-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                  <div className="px-3.5 sm:px-5 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+                    <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate mr-2">
                       Project Code: <strong className="text-slate-700 dark:text-slate-200">{selectedProject.projectCode}</strong> • Created {formatDate(selectedProject.createdAt)}
                     </div>
                     <button
                       onClick={() => setSelectedProject(null)}
-                      className="px-4 py-2 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                      className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition shrink-0"
                     >
                       Close
                     </button>

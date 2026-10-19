@@ -184,7 +184,14 @@ const pickFields = (obj, selection = '') => {
 const loadLead = async (id, select) => {
   if (!id) return null;
   const Lead = (await import('./Lead.js')).default;
-  const lead = await Lead.findById(typeof id === 'object' ? id.id || id._id : id).lean();
+  const leadDoc = await Lead.findById(typeof id === 'object' ? id.id || id._id : id);
+  if (!leadDoc) return null;
+  if (leadDoc.assignedTo) {
+    try {
+      await leadDoc.populate('assignedTo', 'employeeId personalInfo workInfo');
+    } catch (e) {}
+  }
+  const lead = leadDoc.toObject ? leadDoc.toObject() : leadDoc;
   return pickFields(lead, select);
 };
 

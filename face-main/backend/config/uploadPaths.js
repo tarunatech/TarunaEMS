@@ -16,9 +16,22 @@ export const facesDir = path.join(uploadsDir, 'faces');
 export const offerLettersDir = path.join(uploadsDir, 'offer-letters');
 export const employeeDocumentsDir = path.join(uploadsDir, 'employee-documents');
 export const amcContractsDir = path.join(uploadsDir, 'amc-contracts');
+export const agreementsDir = path.join(uploadsDir, 'agreements');
+export const agreementSignaturesDir = path.join(uploadsDir, 'agreement-signatures');
 
 export const ensureUploadDirs = () => {
-  [uploadsDir, profilePicsDir, resumesDir, candidateDocumentsDir, facesDir, offerLettersDir, employeeDocumentsDir, amcContractsDir].forEach((dir) => {
+  [
+    uploadsDir,
+    profilePicsDir,
+    resumesDir,
+    candidateDocumentsDir,
+    facesDir,
+    offerLettersDir,
+    employeeDocumentsDir,
+    amcContractsDir,
+    agreementsDir,
+    agreementSignaturesDir,
+  ].forEach((dir) => {
     fs.mkdirSync(dir, { recursive: true });
   });
 };

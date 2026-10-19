@@ -15,6 +15,109 @@ const ALLOWED_STATUSES = ['Planning', 'Active', 'On Hold', 'Completed', 'Cancell
 
 export { generateProjectCode };
 
+export const resolveProjectSalesPerson = async (p) => {
+  let leadAssigned = p.leadId?.assignedTo;
+  if (!leadAssigned && p.leadId) {
+    try {
+      const rawLeadId = typeof p.leadId === 'object' ? p.leadId._id || p.leadId.id : p.leadId;
+      if (rawLeadId) {
+        const lead = await Lead.findById(rawLeadId).lean();
+        if (lead?.assignedTo) {
+          leadAssigned = lead.assignedTo;
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (leadAssigned) {
+    if (typeof leadAssigned === 'object') {
+      const fullName = `${leadAssigned.personalInfo?.firstName || ''} ${leadAssigned.personalInfo?.lastName || ''}`.trim();
+      return {
+        name: fullName || leadAssigned.name || leadAssigned.employeeId || 'Sales Representative',
+        employeeId: leadAssigned.employeeId || null,
+        email: leadAssigned.personalInfo?.email || null,
+      };
+    } else if (typeof leadAssigned === 'string') {
+      try {
+        const emp = await Employee.findById(leadAssigned).lean();
+        if (emp) {
+          const fullName = `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim();
+          return {
+            name: fullName || emp.employeeId || 'Sales Representative',
+            employeeId: emp.employeeId || null,
+            email: emp.personalInfo?.email || null,
+          };
+        }
+      } catch (e) {}
+    }
+  }
+
+  if (p.pipelineId) {
+    try {
+      const pipeline = await SalesPipeline.findById(p.pipelineId).lean();
+      if (pipeline?.assignedTo) {
+        const emp = await Employee.findById(pipeline.assignedTo).lean();
+        if (emp) {
+          const fullName = `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim();
+          if (fullName) {
+            return {
+              name: fullName,
+              employeeId: emp.employeeId || null,
+              email: emp.personalInfo?.email || null,
+            };
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (p.createdBy) {
+    const creatorName = typeof p.createdBy === 'object' ? p.createdBy.name : '';
+    const creatorId = typeof p.createdBy === 'object' ? p.createdBy._id || p.createdBy.id : p.createdBy;
+    let employeeId = null;
+    if (creatorId) {
+      try {
+        const emp = await Employee.findOne({ user: creatorId }).lean();
+        if (emp) {
+          employeeId = emp.employeeId || null;
+          const fullName = `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim();
+          if (fullName) {
+            return {
+              name: fullName,
+              employeeId,
+              email: emp.personalInfo?.email || p.createdBy?.email || null,
+            };
+          }
+        }
+      } catch (e) {}
+    }
+    if (creatorName) {
+      return {
+        name: creatorName,
+        employeeId,
+        email: p.createdBy?.email || null,
+      };
+    }
+  }
+
+  if (p.projectManager && typeof p.projectManager === 'object') {
+    const pmName = `${p.projectManager.personalInfo?.firstName || ''} ${p.projectManager.personalInfo?.lastName || ''}`.trim() || p.projectManager.name;
+    if (pmName) {
+      return {
+        name: pmName,
+        employeeId: p.projectManager.employeeId || null,
+        email: null,
+      };
+    }
+  }
+
+  return {
+    name: 'Unassigned',
+    employeeId: null,
+    email: null,
+  };
+};
+
 // @desc    Get all projects with filters and pagination
 // @route   GET /api/projects
 // @access  Private
@@ -64,11 +167,12 @@ export const getProjects = async (req, res) => {
       ];
     }
 
+
     const sort = { [sortBy]: Number(sortOrder) || -1 };
     const skip = (Number(page) - 1) * Number(limit);
 
     const projectsList = await Project.find(query)
-      .populate('leadId', 'leadId firstName lastName company email phone')
+      .populate('leadId', 'leadId firstName lastName company email phone assignedTo')
       .populate('projectManager', 'employeeId personalInfo workInfo')
       .populate('createdBy', 'name email')
       .sort(sort)
@@ -77,10 +181,18 @@ export const getProjects = async (req, res) => {
 
     const total = await Project.countDocuments(query);
 
+    const enrichedProjects = await Promise.all(
+      projectsList.map(async (doc) => {
+        const pObj = doc.toObject ? doc.toObject() : { ...doc };
+        pObj.salesPerson = await resolveProjectSalesPerson(pObj);
+        return pObj;
+      })
+    );
+
     res.json({
       success: true,
-      data: projectsList,
-      projects: projectsList,
+      data: enrichedProjects,
+      projects: enrichedProjects,
       pagination: {
         currentPage: Number(page),
         totalPages: Math.ceil(total / Number(limit)),
@@ -101,7 +213,7 @@ export const getProjects = async (req, res) => {
 export const getProjectById = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('leadId', 'leadId firstName lastName company email phone interestedProducts status')
+      .populate('leadId', 'leadId firstName lastName company email phone interestedProducts status assignedTo')
       .populate('projectManager', 'employeeId personalInfo workInfo')
       .populate('createdBy', 'name email');
 
@@ -273,6 +385,7 @@ export const getProjectById = async (req, res) => {
     if (pipeline) {
       projectObj.pipeline = pipeline;
     }
+    projectObj.salesPerson = await resolveProjectSalesPerson(projectObj);
 
     res.json({
       success: true,

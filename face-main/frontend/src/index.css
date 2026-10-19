@@ -2416,6 +2416,134 @@ html.theme-dark .employee-sales-pipeline-modal .border-slate-300 {
   border-color: rgba(148, 163, 184, 0.16) !important;
 }
 
+/* Sales Pipeline Modal - 5 Distinct Stage Accent Cards (Dark Theme) */
+
+/* 1. Client Details: Commercial & Budget Expectations */
+html.theme-dark .employee-sales-pipeline-modal .pipeline-commercial-budget-card,
+html.theme-dark .employee-sales-pipeline-modal .border-blue-100.bg-blue-50\/50 {
+  background-color: rgba(30, 58, 138, 0.22) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-commercial-budget-card h4,
+html.theme-dark .employee-sales-pipeline-modal .border-blue-100.bg-blue-50\/50 h4,
+html.theme-dark .employee-sales-pipeline-modal .text-blue-900 {
+  color: #93c5fd !important;
+}
+
+/* 2. Proposal: Commercial Agreement & Charges */
+html.theme-dark .employee-sales-pipeline-modal .pipeline-commercial-agreement-card,
+html.theme-dark .employee-sales-pipeline-modal .border-indigo-100.bg-indigo-50\/40 {
+  background-color: rgba(49, 46, 129, 0.22) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-commercial-agreement-card h4,
+html.theme-dark .employee-sales-pipeline-modal .border-indigo-100.bg-indigo-50\/40 h4,
+html.theme-dark .employee-sales-pipeline-modal .text-indigo-900 {
+  color: #a5b4fc !important;
+}
+
+/* 3. Sent to Client: Commercial Acceptance Tracking */
+html.theme-dark .employee-sales-pipeline-modal .pipeline-commercial-acceptance-card,
+html.theme-dark .employee-sales-pipeline-modal .border-emerald-100.bg-emerald-50\/40 {
+  background-color: rgba(6, 78, 59, 0.22) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-commercial-acceptance-card h4,
+html.theme-dark .employee-sales-pipeline-modal .border-emerald-100.bg-emerald-50\/40 h4,
+html.theme-dark .employee-sales-pipeline-modal .text-emerald-900 {
+  color: #6ee7b7 !important;
+}
+
+/* 4. Negotiation: Proposal Commercial Baseline */
+html.theme-dark .employee-sales-pipeline-modal .pipeline-negotiation-baseline-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.45) 50%, rgba(15, 23, 42, 0.95) 100%) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-negotiation-baseline-card h4,
+html.theme-dark .employee-sales-pipeline-modal .pipeline-negotiation-baseline-card .text-indigo-950 {
+  color: #e0e7ff !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-negotiation-baseline-card .border-indigo-100,
+html.theme-dark .employee-sales-pipeline-modal .pipeline-negotiation-baseline-card .border-indigo-100\/70,
+html.theme-dark .employee-sales-pipeline-modal .pipeline-negotiation-baseline-card .border-indigo-100\/40 {
+  border-color: rgba(99, 102, 241, 0.2) !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-negotiation-baseline-card .bg-indigo-100 {
+  background-color: rgba(99, 102, 241, 0.25) !important;
+  color: #a5b4fc !important;
+  border: 1px solid rgba(99, 102, 241, 0.35) !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-negotiation-baseline-card button.border-indigo-200 {
+  background-color: rgba(30, 41, 59, 0.7) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  color: #c7d2fe !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-negotiation-baseline-card button.border-indigo-200:hover {
+  background-color: rgba(49, 46, 129, 0.5) !important;
+  color: #ffffff !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-negotiation-baseline-card .text-slate-800 {
+  color: #e2e8f0 !important;
+}
+
+/* 5. Won / Closed: Relational Project Established */
+html.theme-dark .employee-sales-pipeline-modal .pipeline-relational-project-card,
+html.theme-dark .employee-sales-pipeline-modal .border-emerald-200.bg-emerald-50\/90 {
+  background-color: rgba(6, 78, 59, 0.22) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-relational-project-card .text-emerald-950 {
+  color: #a7f3d0 !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-relational-project-card .text-emerald-700 {
+  color: #6ee7b7 !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-relational-project-card .bg-emerald-100 {
+  background-color: rgba(6, 78, 59, 0.5) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-relational-project-card a {
+  background-color: #059669 !important;
+  color: #ffffff !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-relational-project-card a:hover {
+  background-color: #10b981 !important;
+}
+
+/* Won / Closed: Internal Approved Delivery Budget (Dark Theme) */
+html.theme-dark .employee-sales-pipeline-modal .pipeline-internal-budget-card,
+html.theme-dark .employee-sales-pipeline-modal .border-amber-200.bg-gradient-to-br {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(120, 53, 15, 0.2) 100%) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-internal-budget-card .text-amber-950 {
+  color: #fde68a !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-internal-budget-card .text-amber-700 {
+  color: #fcd34d !important;
+}
+html.theme-dark .employee-sales-pipeline-modal .pipeline-internal-budget-card .bg-amber-50 {
+  background-color: rgba(120, 53, 15, 0.3) !important;
+  color: #fde68a !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Admin / Employee Lead Details Modal - Estimated Value Card (Dark Theme) */
+html.theme-dark .admin-lead-estimated-value-card,
+html.theme-dark .border-blue-100.bg-blue-50\/70 {
+  background-color: rgba(30, 58, 138, 0.22) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+html.theme-dark .admin-lead-estimated-value-card .text-blue-700,
+html.theme-dark .border-blue-100.bg-blue-50\/70 .text-blue-700 {
+  color: #60a5fa !important;
+}
+html.theme-dark .admin-lead-estimated-value-card p.text-slate-500,
+html.theme-dark .border-blue-100.bg-blue-50\/70 p.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
 /* Payslip Details View Modal Dark Theme Rules */
 html.theme-dark .payslip-details-modal {
   background-color: #0f172a !important;

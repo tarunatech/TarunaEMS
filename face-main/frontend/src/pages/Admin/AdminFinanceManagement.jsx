@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import {
@@ -32,7 +32,7 @@ import {
   Briefcase
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { financeAPI, projectAPI } from '../../utils/api';
 import CustomerInvoicesTab from '../../components/Finance/CustomerInvoicesTab';
 import AccountsReceivableTab from '../../components/Finance/AccountsReceivableTab';
@@ -73,8 +73,25 @@ const BUDGET_STATUS_COLORS = {
 const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const isEmployee = location.pathname.startsWith('/employee') || Layout !== AdminLayout;
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'projects' | 'budgets' | 'transactions' | 'analysis'
+
+  const urlTab = searchParams.get('tab');
+  const isCreateInvoiceReq =
+    searchParams.get('createInvoice') === 'true' ||
+    searchParams.get('newInvoice') === 'true' ||
+    Boolean(location.state?.openCreateInvoiceModal);
+
+  const initialReqProjectId =
+    searchParams.get('projectId') ||
+    location.state?.projectId ||
+    '';
+
+  const [activeTab, setActiveTab] = useState(() => {
+    if (urlTab) return urlTab;
+    if (isCreateInvoiceReq) return 'invoices';
+    return 'overview';
+  });
   const [loading, setLoading] = useState(false);
 
   // Projects list for selectors
@@ -122,9 +139,32 @@ const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
   // 6. Phase 3: Customer Invoices state
   const [invoices, setInvoices] = useState([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
-  const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState(false);
+  const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState(() => isCreateInvoiceReq);
+  const [preselectedProjectId, setPreselectedProjectId] = useState(() => initialReqProjectId);
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [viewingInvoice, setViewingInvoice] = useState(null);
+
+  const handledInvoiceNavKeyRef = useRef(location.key || 'init');
+
+  // Handle in-app navigation with invoice creation parameters
+  useEffect(() => {
+    const isCreateInvoice =
+      searchParams.get('createInvoice') === 'true' ||
+      searchParams.get('newInvoice') === 'true' ||
+      Boolean(location.state?.openCreateInvoiceModal);
+
+    const currentKey = location.key || `${location.pathname}?${searchParams.toString()}`;
+
+    if (isCreateInvoice && handledInvoiceNavKeyRef.current !== currentKey) {
+      handledInvoiceNavKeyRef.current = currentKey;
+      setActiveTab('invoices');
+      setEditingInvoice(null);
+      setPreselectedProjectId(searchParams.get('projectId') || location.state?.projectId || '');
+      setShowCreateInvoiceModal(true);
+    } else if (searchParams.get('tab') && searchParams.get('tab') !== activeTab) {
+      setActiveTab(searchParams.get('tab'));
+    }
+  }, [searchParams, location.key, location.pathname, location.state, activeTab]);
 
   // 7. Phase 3: Accounts Receivable & Payment Allocations state
   const [receivablesData, setReceivablesData] = useState(null);
@@ -439,19 +479,19 @@ const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
 
   return (
     <Layout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+      <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 sm:pb-5">
           <div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
-                <Landmark className="w-5 h-5" />
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0 mt-0.5">
+                <Landmark className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                   Finance Management
                 </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                   Consolidated financial control, project budgets, actual expenditure & purchase commitments
                 </p>
               </div>
@@ -469,29 +509,30 @@ const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
                 else if (activeTab === 'transactions') fetchTransactions();
                 else if (activeTab === 'analysis') fetchAnalysis();
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 shadow-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 shadow-xs transition-colors"
             >
-              <RefreshCw className={`w-4 h-4 ${loading || loadingInvoices || loadingReceivables ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading || loadingInvoices || loadingReceivables ? 'animate-spin' : ''}`} />
               Refresh
             </button>
             {activeTab === 'invoices' && (
               <button
                 onClick={() => {
                   setEditingInvoice(null);
+                  setPreselectedProjectId('');
                   setShowCreateInvoiceModal(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 New Invoice
               </button>
             )}
             {activeTab === 'budgets' && (
               <button
                 onClick={() => setShowCreateBudgetModal(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 New Budget
               </button>
             )}
@@ -499,7 +540,7 @@ const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto scrollbar-none gap-2">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto scrollbar-none gap-1 sm:gap-2 select-none -mx-3 px-3 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
           {[
             { id: 'overview', label: 'Overview', icon: Landmark },
             { id: 'invoices', label: 'Customer Invoices', icon: FileText },
@@ -523,14 +564,14 @@ const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
                   }
                   setActiveTab(tab.id);
                 }}
-                className={`inline-flex items-center gap-2 py-3 px-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                className={`inline-flex items-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium border-b-2 whitespace-nowrap shrink-0 transition-colors ${
                   isActive
-                    ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
+                    ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400 font-bold'
                     : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                {tab.label}
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span>{tab.label}</span>
               </button>
             );
           })}
@@ -1412,6 +1453,7 @@ const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
             onRefresh={fetchInvoices}
             onOpenCreateModal={() => {
               setEditingInvoice(null);
+              setPreselectedProjectId('');
               setShowCreateInvoiceModal(true);
             }}
             onViewInvoice={(inv) => setViewingInvoice(inv)}
@@ -1950,6 +1992,7 @@ const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
           onClose={() => {
             setShowCreateInvoiceModal(false);
             setEditingInvoice(null);
+            setPreselectedProjectId('');
           }}
           onSuccess={() => {
             fetchInvoices();
@@ -1957,6 +2000,7 @@ const AdminFinanceManagement = ({ Layout = AdminLayout }) => {
           }}
           projectsList={projectsList}
           initialInvoice={editingInvoice}
+          initialProjectId={preselectedProjectId}
         />
 
         {/* PHASE 3 MODAL: Invoice Details & PDF */}

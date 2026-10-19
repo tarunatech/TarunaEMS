@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import api, { employeeAPI, departmentAPI, attendanceAPI, leadAPI } from '../../utils/api';
+import api, { employeeAPI, departmentAPI, attendanceAPI, leadAPI, agreementAPI } from '../../utils/api';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import EmployeeLayout from '../../components/Employee/EmployeeLayout/EmployeeLayout';
 import { faceAPI, cameraHelper } from '../../utils/faceAPI';
@@ -28,7 +28,19 @@ import {
   Loader2,
   UploadCloud,
   FileText,
-  ExternalLink
+  ExternalLink,
+  FileSignature,
+  Send,
+  DownloadCloud,
+  History,
+  CheckCheck,
+  RefreshCw,
+  FileCheck2,
+  ShieldAlert,
+  ShieldCheck,
+  Clock,
+  Copy,
+  ChevronDown
 } from 'lucide-react';
 import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
 import toast from 'react-hot-toast';
@@ -884,6 +896,24 @@ const EmployeeManagement = () => {
   const [employeeOverview, setEmployeeOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [recentActivities, setRecentActivities] = useState([]);
+  const [agreementState, setAgreementState] = useState({
+    loading: false,
+    agreement: null,
+    history: [],
+    activeLink: null,
+    isExpired: false,
+    status: 'not_sent'
+  });
+  const [isAgreementExpanded, setIsAgreementExpanded] = useState(true);
+  const [showSendAgreementModal, setShowSendAgreementModal] = useState(false);
+  const [isSendingAgreement, setIsSendingAgreement] = useState(false);
+  const [sendAgreementParams, setSendAgreementParams] = useState({
+    jobRole: 'MERN Stack Developer',
+    duration: '3 months',
+    commencementDate: new Date().toISOString().split('T')[0]
+  });
+  const [showAgreementHistoryModal, setShowAgreementHistoryModal] = useState(false);
+  const [showSignedAgreementModal, setShowSignedAgreementModal] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [faceRegistrationEnabled, setFaceRegistrationEnabled] = useState(true); // Face registration is now OPTIONAL
@@ -896,6 +926,7 @@ const EmployeeManagement = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const keyDetailsRef = useRef(null);
+  const viewModalContentRef = useRef(null);
   const POSES = [
     { name: 'front', instruction: 'Look straight ahead at the camera. Keep your head level.', emoji: '👁️' }
   ];
@@ -1824,9 +1855,153 @@ const EmployeeManagement = () => {
     }
   };
 
+  const fetchEmployeeAgreementData = async (employee) => {
+    if (!employee) return;
+    const empId = employee._id || employee.id;
+    try {
+      setAgreementState(prev => ({ ...prev, loading: true }));
+      const res = await agreementAPI.getEmployeeAgreement(empId);
+      if (res.data?.success) {
+        const { agreement, history, activeLink, isExpired } = res.data.data;
+        let derivedStatus = 'not_sent';
+        if (agreement) {
+          if (agreement.status === 'Signed') {
+            derivedStatus = 'signed';
+          } else if (activeLink) {
+            derivedStatus = activeLink.emailStatus === 'failed' ? 'email_failed' : 'link_sent';
+          } else if (isExpired) {
+            derivedStatus = 'expired';
+          } else if (agreement.status === 'Email Failed') {
+            derivedStatus = 'email_failed';
+          } else {
+            derivedStatus = 'not_sent';
+          }
+        }
+        setAgreementState({
+          loading: false,
+          agreement,
+          history: history || [],
+          activeLink,
+          isExpired,
+          status: derivedStatus
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load employee agreement:', err);
+      setAgreementState(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const handleOpenSendAgreementModal = () => {
+    if (!selectedEmployee) return;
+    const email = selectedEmployee.contactInfo?.personalEmail || selectedEmployee.user?.email;
+    if (!email) {
+      toast.error('Selected employee does not have a registered email address in their record.');
+      return;
+    }
+    const role = selectedEmployee.workInfo?.position || selectedEmployee.workInfo?.designation || 'MERN Stack Developer';
+    const joinDate = selectedEmployee.workInfo?.joiningDate 
+      ? new Date(selectedEmployee.workInfo.joiningDate).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0];
+
+    setSendAgreementParams({
+      jobRole: role,
+      duration: '3 months',
+      commencementDate: joinDate
+    });
+    setShowSendAgreementModal(true);
+  };
+
+  const handleSendAgreement = async (e) => {
+    if (e) e.preventDefault();
+    if (!selectedEmployee) return;
+    const empId = selectedEmployee._id || selectedEmployee.id;
+    try {
+      setIsSendingAgreement(true);
+      const res = await agreementAPI.sendAgreement({
+        employeeId: empId,
+        jobRole: sendAgreementParams.jobRole,
+        duration: sendAgreementParams.duration,
+        commencementDate: sendAgreementParams.commencementDate
+      });
+      if (res.data?.success) {
+        const signingUrl = res.data.data?.signingUrl;
+        if (signingUrl) {
+          try {
+            await navigator.clipboard.writeText(signingUrl);
+          } catch (clipErr) {
+            console.warn('Could not copy to clipboard:', clipErr);
+          }
+        }
+        if (res.data.emailDelivered === false) {
+          toast(
+            res.data.message || 'Signing link active & copied to clipboard! (Email restricted by test sandbox)',
+            { icon: '📋', duration: 7000 }
+          );
+        } else {
+          toast.success(res.data.message || 'Internship agreement signing link sent successfully!');
+        }
+        setShowSendAgreementModal(false);
+        fetchEmployeeAgreementData(selectedEmployee);
+      } else {
+        toast.error(res.data?.message || 'Failed to send agreement');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error sending agreement link');
+    } finally {
+      setIsSendingAgreement(false);
+    }
+  };
+
+  const handleToggleAgreementExpanded = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const container = viewModalContentRef.current || document.querySelector('.employee-details-view');
+    const savedScrollTop = container ? container.scrollTop : null;
+
+    setIsAgreementExpanded(prev => !prev);
+
+    if (container && savedScrollTop !== null) {
+      requestAnimationFrame(() => {
+        if (container) container.scrollTop = savedScrollTop;
+      });
+      setTimeout(() => {
+        if (container) container.scrollTop = savedScrollTop;
+      }, 30);
+      setTimeout(() => {
+        if (container) container.scrollTop = savedScrollTop;
+      }, 100);
+    }
+  };
+
+  const handleDownloadSignedAgreement = async (agreementId) => {
+    const id = agreementId || agreementState.agreement?.id;
+    if (!id) return;
+    try {
+      toast.loading('Downloading signed agreement PDF...', { id: 'hr-download-pdf' });
+      const res = await agreementAPI.downloadSignedPdf(id);
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const empName = selectedEmployee?.fullName || 'Employee';
+      link.download = `Taruna_Internship_Agreement_${empName.replace(/\s+/g, '_')}_Signed.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Signed PDF downloaded successfully', { id: 'hr-download-pdf' });
+    } catch (err) {
+      toast.error('Failed to download signed agreement PDF', { id: 'hr-download-pdf' });
+    }
+  };
+
   useEffect(() => {
     if (showViewModal && selectedEmployee) {
       fetchEmployeeOverview(selectedEmployee);
+      fetchEmployeeAgreementData(selectedEmployee);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showViewModal, selectedEmployee?._id]);
@@ -2431,15 +2606,68 @@ const EmployeeManagement = () => {
         html.theme-dark .employee-details-view label {
           color: #94a3b8 !important;
         }
+        html.theme-dark .employee-details-view .agreement-section {
+          background: rgba(15, 23, 42, 0.75) !important;
+          border-color: rgba(51, 65, 85, 0.6) !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-header-banner {
+          border-color: rgba(51, 65, 85, 0.6) !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-header-banner:hover {
+          background: rgba(30, 41, 59, 0.45) !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-title-text {
+          color: #ffffff !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-subtitle-text {
+          color: #94a3b8 !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-card-box {
+          background: rgba(30, 41, 59, 0.8) !important;
+          border-color: rgba(51, 65, 85, 0.6) !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-card-box span {
+          color: #94a3b8 !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-card-box p {
+          color: #f8fafc !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-actions-bar {
+          border-color: rgba(51, 65, 85, 0.6) !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-history-btn {
+          background: rgba(30, 41, 59, 0.7) !important;
+          border-color: rgba(71, 85, 105, 0.6) !important;
+          color: #e2e8f0 !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-history-btn:hover {
+          background: rgba(51, 65, 85, 0.8) !important;
+          color: #ffffff !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-refresh-btn {
+          color: #94a3b8 !important;
+        }
+        html.theme-dark .employee-details-view .agreement-section .agreement-refresh-btn:hover {
+          color: #818cf8 !important;
+        }
       `}</style>
       {/* Enhanced backdrop with blur */}
       <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={handleCloseViewModal} />
 
       {/* Modal content */}
-      <div className="employee-details-view relative w-full max-w-3xl lg:max-w-7xl xl:max-w-[1400px] max-h-[74vh] lg:max-h-[86vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
+      <div ref={viewModalContentRef} className="employee-details-view relative w-full max-w-3xl lg:max-w-7xl xl:max-w-[1400px] max-h-[74vh] lg:max-h-[86vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
         <div className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-blue-100 bg-[#F8FAFC]/95 px-3 py-2.5 backdrop-blur sm:px-5 sm:py-3">
           <h2 className="text-sm sm:text-xl font-bold text-slate-900 truncate min-w-0">Employee Details</h2>
           <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleOpenSendAgreementModal}
+              className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold text-indigo-700 transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-800 whitespace-nowrap"
+              title="Send Consent Form / Digital Agreement"
+            >
+              <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span>Send Consent Form</span>
+            </button>
             <button
               onClick={() => {
                 handleCloseViewModal();
@@ -2567,6 +2795,14 @@ const EmployeeManagement = () => {
                   >
                     <Edit className="h-3.5 w-3.5" />
                     Edit Profile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenSendAgreementModal}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100 hover:border-indigo-300 shadow-sm"
+                  >
+                    <FileSignature className="h-3.5 w-3.5" />
+                    Send Consent Form
                   </button>
                   {overviewLoading && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-100 px-2.5 py-1 text-[10px] font-semibold text-blue-500">
@@ -2854,6 +3090,217 @@ const EmployeeManagement = () => {
               </div>
             </section>
 
+            {/* ── Agreement & Digital Consent Form Section ─── */}
+            <section className="agreement-section overflow-hidden rounded-2xl border border-indigo-100 dark:border-slate-800 bg-gradient-to-br from-white via-indigo-50/20 to-white dark:from-slate-900/90 dark:via-slate-900/80 dark:to-slate-900/90 shadow-sm transition-all duration-300">
+              {/* Header with interactive Toggle */}
+              <div
+                onClick={handleToggleAgreementExpanded}
+                className={`agreement-header-banner flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 cursor-pointer select-none transition-colors hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 ${
+                  isAgreementExpanded ? 'border-b border-indigo-100/70 dark:border-slate-800' : ''
+                }`}
+                title={isAgreementExpanded ? 'Click to collapse section' : 'Click to expand section'}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 shadow-sm">
+                    <FileSignature className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="agreement-title-text text-base font-black text-slate-900 dark:text-white tracking-tight">Internship Agreement & Digital Consent</h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80">
+                        v{agreementState.agreement?.templateVersion || '1.0'}
+                      </span>
+                    </div>
+                    <p className="agreement-subtitle-text text-xs text-slate-500 dark:text-slate-400">Official Taruna Technology digital contract & signing workflow</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  {agreementState.loading ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking Status...
+                    </span>
+                  ) : (
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                      agreementState.status === 'signed'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+                        : agreementState.status === 'link_sent'
+                        ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/60'
+                        : agreementState.status === 'expired'
+                        ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
+                        : agreementState.status === 'email_failed'
+                        ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}>
+                      {agreementState.status === 'signed' && <CheckCircle className="w-3.5 h-3.5" />}
+                      {agreementState.status === 'link_sent' && <Clock className="w-3.5 h-3.5" />}
+                      {agreementState.status === 'expired' && <AlertCircle className="w-3.5 h-3.5" />}
+                      {agreementState.status === 'email_failed' && <AlertCircle className="w-3.5 h-3.5" />}
+                      {agreementState.status === 'not_sent' && <FileText className="w-3.5 h-3.5" />}
+                      <span className="capitalize">{
+                        agreementState.status === 'signed' ? 'Signed' :
+                        agreementState.status === 'link_sent' ? 'Link Sent' :
+                        agreementState.status === 'expired' ? 'Expired' :
+                        agreementState.status === 'email_failed' ? 'Email Failed' : 'Not Sent'
+                      }</span>
+                    </span>
+                  )}
+
+                  {/* Expand / Collapse Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={handleToggleAgreementExpanded}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 hover:border-indigo-200 dark:border-slate-700 dark:hover:border-slate-600 text-slate-600 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-white text-xs font-semibold transition-all shadow-sm"
+                    title={isAgreementExpanded ? 'Collapse section' : 'Expand section'}
+                  >
+                    <span className="text-[11px] hidden sm:inline">{isAgreementExpanded ? 'Collapse' : 'Expand'}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-500 dark:text-slate-400 transition-transform duration-300 ${isAgreementExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Smooth Collapsible Content Body */}
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  isAgreementExpanded
+                    ? 'max-h-[1000px] opacity-100 p-4 sm:p-5 pt-3'
+                    : 'max-h-0 opacity-0 px-4 sm:px-5 py-0 pointer-events-none'
+                }`}
+              >
+                {/* Agreement Details Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="agreement-card-box bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Agreement Title</span>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-1 truncate">
+                      {agreementState.agreement?.templateTitle || 'Internship Agreement'}
+                    </p>
+                  </div>
+
+                  <div className="agreement-card-box bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Employee Email</span>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-1 truncate">
+                      {selectedEmployee.contactInfo?.personalEmail || selectedEmployee.user?.email || 'N/A'}
+                    </p>
+                  </div>
+
+                  <div className="agreement-card-box bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Link Generated</span>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-1">
+                      {agreementState.activeLink?.createdAt
+                        ? new Date(agreementState.activeLink.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                        : agreementState.agreement?.createdAt
+                        ? new Date(agreementState.agreement.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                        : 'Never'}
+                    </p>
+                  </div>
+
+                  <div className="agreement-card-box bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Email Delivery</span>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-1">
+                      {!agreementState.agreement
+                        ? 'Not Sent'
+                        : agreementState.agreement?.emailDeliveryStatus?.startsWith('Failed')
+                        ? 'Sandbox / Restricted'
+                        : agreementState.agreement?.emailDeliveryStatus === 'Sent'
+                        ? 'Delivered Successfully'
+                        : agreementState.status === 'email_failed'
+                        ? 'Delivery Failed'
+                        : 'Delivered'}
+                    </p>
+                  </div>
+
+                  <div className="agreement-card-box bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Link Expiration (15m)</span>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-1">
+                      {agreementState.activeLink?.expiresAt
+                        ? new Date(agreementState.activeLink.expiresAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                        : agreementState.isExpired
+                        ? 'Expired'
+                        : 'N/A'}
+                    </p>
+                  </div>
+
+                  <div className="agreement-card-box bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Signing Timestamp</span>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-1">
+                      {agreementState.agreement?.signedAt
+                        ? new Date(agreementState.agreement.signedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : 'Pending'}
+                    </p>
+                  </div>
+
+                  <div className="agreement-card-box bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Signature Status</span>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-1">
+                      {agreementState.agreement?.signatureData || agreementState.agreement?.signaturePath ? 'Captured & Recorded' : 'Not Signed Yet'}
+                    </p>
+                  </div>
+
+                  <div className="agreement-card-box bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Signed PDF Document</span>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-1">
+                      {agreementState.agreement?.signedPdfPath ? 'Ready to Download' : 'Not Generated'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action Buttons Row */}
+                <div className="agreement-actions-bar mt-4 pt-3 border-t border-indigo-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {agreementState.status === 'signed' ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setShowSignedAgreementModal(true)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View Signed Agreement</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadSignedAgreement(agreementState.agreement?.id)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all"
+                        >
+                          <DownloadCloud className="w-3.5 h-3.5" />
+                          <span>Download Signed PDF</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleOpenSendAgreementModal}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>{agreementState.status === 'link_sent' ? 'Resend / Replace Link' : 'Send Consent Form'}</span>
+                      </button>
+                    )}
+
+                    {agreementState.history?.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAgreementHistoryModal(true)}
+                        className="agreement-history-btn inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-sm transition-all"
+                      >
+                        <History className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                        <span>Signing History ({agreementState.history.length})</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => fetchEmployeeAgreementData(selectedEmployee)}
+                    className="agreement-refresh-btn inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Refresh Status</span>
+                  </button>
+                </div>
+              </div>
+            </section>
+
             {showFullEmployeeDetails && (
               <>
                 {/* Personal Information */}
@@ -3118,7 +3565,15 @@ const EmployeeManagement = () => {
                         <label className="block text-sm font-medium text-slate-500 mb-2">IFSC Code</label>
                         <p className="text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl">{selectedEmployee.bankInfo?.ifscCode || 'N/A'}</p>
                       </div>
+                     
                     </div>
+                     <button
+                  type="button"
+                  onClick={handleToggleFullEmployeeDetails}
+                  className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs  font-semibold text-blue-700 transition hover:bg-blue-100"
+                >
+                  {showFullEmployeeDetails ? 'Show less' : 'Show more'}
+                </button>
                   </div>
                 )}
               </>
@@ -3473,7 +3928,7 @@ const EmployeeManagement = () => {
           />
         )}
         {showEditModal && EditModal()}
-        {showViewModal && <ViewModal />}
+        {showViewModal && ViewModal()}
 
         {/* Document Preview Modal */}
         {previewDocumentModal.isOpen && (
@@ -3519,6 +3974,324 @@ const EmployeeManagement = () => {
                     className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-md"
                   />
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Send Consent Form Confirmation Modal */}
+        {showSendAgreementModal && selectedEmployee && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+            <div className="relative bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-indigo-100 overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-white">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm">
+                    <FileSignature className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Send Internship Consent Form</h3>
+                    <p className="text-xs text-slate-500">Generate & email official agreement signing link</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSendAgreementModal(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSendAgreement} className="p-5 space-y-4">
+                {/* Employee Confirmation Card */}
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500 font-medium">Selected Employee:</span>
+                    <strong className="text-slate-900 font-bold">{selectedEmployee.fullName || 'Employee'}</strong>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500 font-medium">Registered Delivery Email:</span>
+                    <strong className="text-indigo-600 font-mono font-bold">
+                      {selectedEmployee.contactInfo?.personalEmail || selectedEmployee.user?.email}
+                    </strong>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500 font-medium">Source Document Template:</span>
+                    <span className="text-slate-700 font-semibold">Taruna Technology Internship Agreement (v1.0, 7 Pages)</span>
+                  </div>
+                </div>
+
+                {/* Status Warning Banner */}
+                {agreementState.status === 'signed' ? (
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5 text-xs text-amber-800">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-bold">Notice:</strong> This employee has already executed an agreement on{' '}
+                      {new Date(agreementState.agreement?.signedAt).toLocaleDateString('en-IN')}. Sending a new form will create a fresh agreement version.
+                    </div>
+                  </div>
+                ) : agreementState.status === 'link_sent' && agreementState.activeLink ? (
+                  <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-start gap-2.5 text-xs text-blue-800">
+                    <Clock className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-bold">Active link pending:</strong> An active signing token is currently outstanding (expires at{' '}
+                      {new Date(agreementState.activeLink.expiresAt).toLocaleTimeString('en-IN')}). Sending a new link will automatically revoke previous tokens and issue a fresh 15-minute token.
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Agreement Parameters */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Internship Program / Role</label>
+                    <input
+                      type="text"
+                      value={sendAgreementParams.jobRole}
+                      onChange={(e) => setSendAgreementParams(prev => ({ ...prev, jobRole: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Duration</label>
+                    <input
+                      type="text"
+                      value={sendAgreementParams.duration}
+                      onChange={(e) => setSendAgreementParams(prev => ({ ...prev, duration: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                      required
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-slate-700 mb-1">Commencement Date</label>
+                    <input
+                      type="date"
+                      value={sendAgreementParams.commencementDate}
+                      onChange={(e) => setSendAgreementParams(prev => ({ ...prev, commencementDate: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Security Guarantee Note */}
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-500 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-700">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Security Controls Enforced
+                  </div>
+                  <p>• Cryptographically secure token (SHA-256 stored in DB).</p>
+                  <p>• Single-use, strict 15-minute expiry, invalidated upon submission.</p>
+                  <p>• Email is the sole delivery channel; no external communication services used.</p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowSendAgreementModal(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSendingAgreement}
+                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/25 flex items-center gap-1.5 transition-all disabled:opacity-50"
+                  >
+                    {isSendingAgreement ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Sending Link...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Send Agreement Link by Email</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* View Signed Agreement Modal */}
+        {showSignedAgreementModal && agreementState.agreement && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+            <div className="relative bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                    <CheckCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Signed Internship Agreement</h3>
+                    <p className="text-xs text-slate-500">Legal Audit Trail & Executed Digital Instrument</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSignedAgreementModal(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Employee Name</span>
+                    <p className="font-bold text-slate-800 mt-0.5">{selectedEmployee.fullName}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Document Title & Version</span>
+                    <p className="font-bold text-slate-800 mt-0.5">{agreementState.agreement.templateTitle} (v{agreementState.agreement.templateVersion})</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Signed Timestamp</span>
+                    <p className="font-bold text-emerald-700 mt-0.5">
+                      {new Date(agreementState.agreement.signedAt).toLocaleString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Company Signatory</span>
+                    <p className="font-bold text-slate-800 mt-0.5">Tisha Bhadja (Operational Manager)</p>
+                  </div>
+                </div>
+
+                {/* Audit Trail Details */}
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                  <div className="font-bold text-slate-700 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-blue-600" /> Digital Signature Audit Details
+                  </div>
+                  <p className="text-[11px] text-slate-500">Signer IP Address: <span className="font-mono text-slate-700">{agreementState.agreement.signerIp || 'Recorded on Server'}</span></p>
+                  <p className="text-[11px] text-slate-500">Signer Client: <span className="font-mono text-slate-700 truncate block">{agreementState.agreement.signerUserAgent || 'Standard Web Browser'}</span></p>
+                  <p className="text-[11px] text-slate-500">Declaration: <span className="text-emerald-700 font-semibold">"Confirmed & Agreed to terms and conditions"</span></p>
+                </div>
+
+                {/* Captured Digital Signature Preview */}
+                {agreementState.agreement.signatureImage && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Captured Employee Digital Signature</label>
+                    <div className="p-4 bg-white border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center">
+                      <img
+                        src={agreementState.agreement.signatureImage}
+                        alt="Employee Digital Signature"
+                        className="max-h-28 object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                <span className="text-xs text-slate-500">Authoritative 7-page PDF generated via Taruna Engine</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadSignedAgreement(agreementState.agreement.id)}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all"
+                  >
+                    <DownloadCloud className="w-4 h-4" /> Download Official Signed PDF
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowSignedAgreementModal(false)}
+                    className="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-white text-slate-700 text-xs font-semibold"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Signing History Modal */}
+        {showAgreementHistoryModal && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+            <div className="relative bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-slate-800 text-white flex items-center justify-center shadow-sm">
+                    <History className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Agreement Signing History</h3>
+                    <p className="text-xs text-slate-500">Audit logs for {selectedEmployee?.fullName}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAgreementHistoryModal(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 max-h-[70vh] overflow-y-auto">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
+                      <tr>
+                        <th className="p-2.5">Agreement / Version</th>
+                        <th className="p-2.5">Created Date</th>
+                        <th className="p-2.5">Status</th>
+                        <th className="p-2.5">Signed Date</th>
+                        <th className="p-2.5 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {agreementState.history.map((item, idx) => (
+                        <tr key={item.id || idx} className="hover:bg-slate-50/60">
+                          <td className="p-2.5 font-bold text-slate-800">
+                            {item.templateTitle} <span className="text-slate-400 font-normal">v{item.templateVersion}</span>
+                          </td>
+                          <td className="p-2.5 text-slate-600">
+                            {new Date(item.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </td>
+                          <td className="p-2.5">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              item.status === 'Signed'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}>
+                              {item.status}
+                            </span>
+                          </td>
+                          <td className="p-2.5 text-slate-600">
+                            {item.signedAt ? new Date(item.signedAt).toLocaleDateString('en-IN') : '—'}
+                          </td>
+                          <td className="p-2.5 text-right">
+                            {item.status === 'Signed' && (
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadSignedAgreement(item.id)}
+                                className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-bold"
+                              >
+                                <DownloadCloud className="w-3.5 h-3.5" /> PDF
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="p-3 border-t border-slate-200 bg-slate-50 text-right">
+                <button
+                  type="button"
+                  onClick={() => setShowAgreementHistoryModal(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-white"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

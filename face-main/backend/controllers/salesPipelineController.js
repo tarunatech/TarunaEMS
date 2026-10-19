@@ -256,6 +256,18 @@ export const updatePipelineSection = async (req, res) => {
       }
       payload.lastNegotiationAt = new Date();
       payload.enteredAt = pipeline.negotiation?.enteredAt || new Date();
+
+      if (pipeline.proposal) {
+        const propPricing = pipeline.proposal.pricing || {};
+        pipeline.proposal = {
+          ...(pipeline.proposal?.toObject ? pipeline.proposal.toObject() : pipeline.proposal),
+          pricing: {
+            ...propPricing,
+            ...(payload.amcCost !== undefined ? { amcCost: payload.amcCost } : {}),
+            ...(payload.additionalCharges !== undefined ? { additionalCharges: payload.additionalCharges } : {})
+          }
+        };
+      }
     }
     if (section === 'outcome') {
       if (payload.finalContractValue !== undefined && payload.finalContractValue !== null && payload.finalContractValue !== '') {
@@ -296,6 +308,14 @@ export const updatePipelineSection = async (req, res) => {
         ...(current?.versions || []),
         { version: payload.version, source: 'manual', content: payload.sections, createdAt: new Date(), createdBy: req.user.id }
       ].slice(-10);
+
+      if (pipeline.negotiation) {
+        pipeline.negotiation = {
+          ...(pipeline.negotiation?.toObject ? pipeline.negotiation.toObject() : pipeline.negotiation),
+          ...(payload.pricing?.amcCost !== undefined ? { amcCost: Number(payload.pricing.amcCost) || 0 } : {}),
+          ...(payload.pricing?.additionalCharges !== undefined ? { additionalCharges: Number(payload.pricing.additionalCharges) || 0 } : {})
+        };
+      }
     }
 
     pipeline[section] = {

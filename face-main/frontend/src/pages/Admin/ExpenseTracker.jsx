@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../components/Admin/layout/AdminLayout';
 import { expenseTrackerAPI, leadAPI, projectAPI } from '../../utils/api';
-import { RefreshCw, Trash2, Edit3, Eye, Plus, Users, UserPlus, X, List } from 'lucide-react';
+import { RefreshCw, Trash2, Edit3, Eye, Plus, Users, UserPlus, X, List, ArrowDownLeft, ArrowUpRight, TrendingUp, DollarSign } from 'lucide-react';
 import toast from 'react-hot-toast';
 import io from 'socket.io-client';
 import SearchWithSuggestions from '../../components/Common/SearchWithSuggestions';
@@ -36,7 +36,9 @@ const emptyPayment = {
 
 const ExpenseTracker = ({ Layout = AdminLayout }) => {
   const [activeView, setActiveView] = useState('dashboard');
+  const [dashboardFilter, setDashboardFilter] = useState('all'); // 'all' | 'payment' | 'expense'
   const [summary, setSummary] = useState({ totalReceived: 0, totalSpent: 0, remainingBalance: 0 });
+  const [allTransactions, setAllTransactions] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -219,14 +221,17 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [summaryRes, expenseRes, paymentRes] = await Promise.all([
+      const [summaryRes, transactionsRes] = await Promise.all([
         expenseTrackerAPI.getSummary(),
-        expenseTrackerAPI.getTransactions({ type: 'expense' }),
-        expenseTrackerAPI.getTransactions({ type: 'payment' })
+        expenseTrackerAPI.getTransactions()
       ]);
-      setSummary(summaryRes.data.data || {});
-      setExpenses(expenseRes.data.data || []);
-      setPayments(paymentRes.data.data || []);
+      const txs = transactionsRes.data?.data || [];
+      const exp = txs.filter((t) => t.type === 'expense');
+      const pay = txs.filter((t) => t.type === 'payment');
+      setSummary(summaryRes.data?.data || {});
+      setAllTransactions(txs);
+      setExpenses(exp);
+      setPayments(pay);
     } catch (error) {
       console.error('Failed to load expense tracker data:', error);
       toast.error('Failed to load expense tracker data');
@@ -251,15 +256,33 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
     return () => socket.disconnect();
   }, [loadData]);
 
-  const filteredExpenses = useMemo(() => {
+  const displayedDashboardTransactions = useMemo(() => {
+    let list = allTransactions;
+    if (dashboardFilter === 'expense') {
+      list = expenses;
+    } else if (dashboardFilter === 'payment') {
+      list = payments;
+    }
     const term = search.trim().toLowerCase();
-    if (!term) return expenses;
-    return expenses.filter((item) =>
-      [item.paidTo, item.category, item.paymentMethod, item.description, item.referenceNumber, item.remarks]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(term))
-    );
-  }, [expenses, search]);
+    if (!term) return list;
+    return list.filter((item) => {
+      const empName = item.employee
+        ? `${item.employee.personalInfo?.firstName || ''} ${item.employee.personalInfo?.lastName || ''}`.trim()
+        : '';
+      return [
+        item.clientName,
+        item.paidTo,
+        item.category,
+        item.paymentMethod,
+        item.description,
+        item.referenceNumber,
+        item.invoiceNumber,
+        item.remarks,
+        empName,
+        item.createdBy?.name
+      ].filter(Boolean).some((value) => String(value).toLowerCase().includes(term));
+    });
+  }, [allTransactions, expenses, payments, dashboardFilter, search]);
 
   const filteredPayments = useMemo(() => {
     const term = paymentSearch.trim().toLowerCase();
@@ -366,12 +389,12 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
 
   return (
     <Layout>
-      <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-4 sm:space-y-6">
-        <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="admin-page-shell w-full min-h-[calc(100vh-7rem)] space-y-3 sm:space-y-4">
+        <div className="flex flex-col gap-2 sm:gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             {/* <p className="text-xs font-bold uppercase tracking-[0.32em] text-blue-600">Admin Only</p> */}
-            <h1 className="premium-page-title mt-2 text-xl font-bold sm:text-2xl md:text-3xl">Expense Tracker</h1>
-            <p className="mt-1 text-xs text-slate-500 sm:text-sm">Manage company spending and incoming client payments.</p>
+            <h1 className="premium-page-title mt-1 text-lg font-bold sm:text-xl md:text-2xl">Expense Tracker</h1>
+            <p className="mt-0.5 text-xs text-slate-500">Manage company spending and incoming client payments.</p>
           </div>
           {/* <div className="flex flex-wrap gap-2">
             <button onClick={openExpenseForm} className="premium-primary-button inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold">
@@ -383,7 +406,7 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
           </div> */}
         </div>
 
-        <nav className="premium-panel grid w-full grid-cols-2 gap-2 rounded-2xl p-2 sm:flex sm:flex-wrap">
+        <nav className="premium-panel grid w-full grid-cols-2 gap-1.5 rounded-xl p-1.5 sm:flex sm:flex-wrap">
           <TabButton active={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')}>Dashboard</TabButton>
           <TabButton active={activeView === 'payments'} onClick={() => setActiveView('payments')}>Payments</TabButton>
           <TabButton active={activeView === 'add-expense'} onClick={openExpenseForm}>Add Expense</TabButton>
@@ -394,13 +417,19 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
             {activeView === 'dashboard' && (
               <DashboardView
                 summary={summary}
-                expenses={filteredExpenses}
+                transactions={displayedDashboardTransactions}
+                allTransactions={allTransactions}
+                expensesCount={expenses.length}
+                paymentsCount={payments.length}
+                dashboardFilter={dashboardFilter}
+                setDashboardFilter={setDashboardFilter}
                 search={search}
                 setSearch={setSearch}
                 loading={loading}
                 currency={currency}
                 displayDate={displayDate}
                 openExpenseForm={openExpenseForm}
+                openPaymentForm={openPaymentForm}
                 onRefresh={loadData}
                 onView={setViewing}
                 onEdit={startEdit}
@@ -419,6 +448,7 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
                 displayDate={displayDate}
                 openPaymentForm={openPaymentForm}
                 onRefresh={loadData}
+                onView={setViewing}
                 onEdit={startEdit}
                 onDelete={deleteTransaction}
               />
@@ -455,23 +485,81 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
 
         {viewing && (
           <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-2.5 pt-14 sm:p-4">
-            <div className="fixed inset-0 bg-slate-955/35 backdrop-blur-sm" onClick={() => setViewing(null)} />
-            <div className="relative flex max-h-[42dvh] sm:max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-6 shadow-xl">
-              <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white/95 pb-2 backdrop-blur sm:border-b-0 sm:pb-3 mb-2.5 sm:mb-4">
-                <h3 className="text-base font-bold text-slate-955 sm:text-xl">Expense Details</h3>
-                <button onClick={() => setViewing(null)} className="shrink-0 rounded-lg px-2.5 py-1 text-xs sm:text-sm text-slate-500 hover:bg-slate-100">Close</button>
-              </div>
-              <div className="task-details-modal-scroll flex-1 overflow-y-auto overscroll-contain space-y-2 sm:space-y-3 text-xs sm:text-sm">
-                <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm sm:grid-cols-2 sm:gap-3">
-                  <Info label="Date" value={displayDate(viewing.date)} />
-                  <Info label="Paid To" value={viewing.paidTo || '-'} />
-                  <Info label="Category" value={viewing.category || '-'} />
-                  <Info label="Amount" value={currency(viewing.amount)} />
-                  <Info label="Payment Method" value={viewing.paymentMethod || '-'} />
-                  <Info label="Reference Number" value={viewing.referenceNumber || '-'} />
+            <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setViewing(null)} />
+            <div className="relative flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4.5 shadow-xl">
+              <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 pb-2.5 backdrop-blur mb-3">
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${
+                    viewing.type === 'payment'
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                  }`}>
+                    {viewing.type === 'payment' ? <ArrowDownLeft className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white sm:text-base">
+                      {viewing.type === 'payment' ? 'Incoming Payment Details' : 'Expense Details'}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {viewing.type === 'payment' ? 'Client Payment Record' : 'Company Spending Record'}
+                    </p>
+                  </div>
                 </div>
-                <Info label="Description" value={viewing.description || '-'} />
-                <Info label="Remarks" value={viewing.remarks || '-'} />
+                <button
+                  onClick={() => setViewing(null)}
+                  className="shrink-0 rounded-lg p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Amount Highlight Banner */}
+              <div className={`rounded-lg p-2.5 mb-3 border ${
+                viewing.type === 'payment'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60'
+                  : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/60'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {viewing.type === 'payment' ? 'Amount Received' : 'Amount Spent'}
+                  </span>
+                  <span className={`text-lg sm:text-xl font-black ${
+                    viewing.type === 'payment'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-rose-600 dark:text-rose-400'
+                  }`}>
+                    {viewing.type === 'payment' ? '+' : '-'} ₹{currency(viewing.amount)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-2 text-xs pr-1">
+                <div className="grid grid-cols-2 gap-2">
+                  <Info label="Date" value={displayDate(viewing.date)} />
+                  <Info label="Payment Method" value={viewing.paymentMethod || '-'} />
+                  {viewing.type === 'payment' ? (
+                    <>
+                      <Info label="Client Name" value={viewing.clientName || '-'} />
+                      <Info label="Invoice Number" value={viewing.invoiceNumber || '-'} />
+                    </>
+                  ) : (
+                    <>
+                      <Info label="Paid To" value={viewing.paidTo || '-'} />
+                      <Info label="Category" value={viewing.category || '-'} />
+                    </>
+                  )}
+                  <Info label="Reference Number" value={viewing.referenceNumber || '-'} />
+                  <Info
+                    label="Recorded By"
+                    value={
+                      viewing.employee
+                        ? `${viewing.employee.personalInfo?.firstName || ''} ${viewing.employee.personalInfo?.lastName || ''}`.trim() || viewing.createdBy?.name || 'Employee'
+                        : viewing.source === 'admin' ? 'Admin' : viewing.createdBy?.name || '-'
+                    }
+                  />
+                </div>
+                {viewing.description && <Info label="Description" value={viewing.description} />}
+                {viewing.remarks && <Info label="Remarks" value={viewing.remarks} />}
               </div>
             </div>
           </div>
@@ -484,30 +572,30 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
               className="fixed inset-0"
               onClick={() => !creatingClient && setShowAddClientModal(false)}
             />
-            <div className="relative w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-2xl p-5 sm:p-6 z-10 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
-                    <UserPlus className="h-5 w-5" />
+            <div className="relative w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-2xl p-4 sm:p-5 z-10 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
+                    <UserPlus className="h-4 w-4" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">Add New Client</h3>
-                    <p className="text-xs text-slate-500">Create client in CRM and auto-select</p>
+                    <h3 className="text-sm font-bold text-slate-900">Add New Client</h3>
+                    <p className="text-[11px] text-slate-500">Create client in CRM and auto-select</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowAddClientModal(false)}
                   disabled={creatingClient}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
-              <form onSubmit={handleCreateClient} className="space-y-3.5">
+              <form onSubmit={handleCreateClient} className="space-y-2.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Company / Organization Name
                   </label>
                   <input
@@ -515,13 +603,13 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
                     value={newClientForm.company}
                     onChange={(e) => setNewClientForm(p => ({ ...p, company: e.target.value }))}
                     placeholder="e.g. Acme Technologies Ltd"
-                    className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900"
+                    className="premium-input w-full rounded-lg px-3 py-1.5 text-xs text-slate-900"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
                       First Name <span className="text-rose-500">*</span>
                     </label>
                     <input
@@ -530,11 +618,11 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
                       value={newClientForm.firstName}
                       onChange={(e) => setNewClientForm(p => ({ ...p, firstName: e.target.value }))}
                       placeholder="e.g. Rahul"
-                      className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900"
+                      className="premium-input w-full rounded-lg px-3 py-1.5 text-xs text-slate-900"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
                       Last Name <span className="text-rose-500">*</span>
                     </label>
                     <input
@@ -543,14 +631,14 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
                       value={newClientForm.lastName}
                       onChange={(e) => setNewClientForm(p => ({ ...p, lastName: e.target.value }))}
                       placeholder="e.g. Sharma"
-                      className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900"
+                      className="premium-input w-full rounded-lg px-3 py-1.5 text-xs text-slate-900"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
                       Phone Number <span className="text-rose-500">*</span>
                     </label>
                     <input
@@ -559,11 +647,11 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
                       value={newClientForm.phone}
                       onChange={(e) => setNewClientForm(p => ({ ...p, phone: e.target.value }))}
                       placeholder="+91 9876543210"
-                      className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900"
+                      className="premium-input w-full rounded-lg px-3 py-1.5 text-xs text-slate-900"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
                       Email Address <span className="text-rose-500">*</span>
                     </label>
                     <input
@@ -572,19 +660,19 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
                       value={newClientForm.email}
                       onChange={(e) => setNewClientForm(p => ({ ...p, email: e.target.value }))}
                       placeholder="client@example.com"
-                      className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900"
+                      className="premium-input w-full rounded-lg px-3 py-1.5 text-xs text-slate-900"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Lead Source
                   </label>
                   <select
                     value={newClientForm.source}
                     onChange={(e) => setNewClientForm(p => ({ ...p, source: e.target.value }))}
-                    className="premium-input w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900 bg-white"
+                    className="premium-input w-full rounded-lg px-3 py-1.5 text-xs text-slate-900 bg-white"
                   >
                     <option value="Referral">Referral</option>
                     <option value="Website">Website</option>
@@ -597,19 +685,19 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
                   </select>
                 </div>
 
-                <div className="pt-2 flex items-center justify-end gap-2.5">
+                <div className="pt-1.5 flex items-center justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setShowAddClientModal(false)}
                     disabled={creatingClient}
-                    className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={creatingClient}
-                    className="premium-primary-button px-5 py-2.5 rounded-xl text-xs font-semibold text-white disabled:opacity-50"
+                    className="premium-primary-button px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
                   >
                     {creatingClient ? 'Creating Client...' : 'Create & Select Client'}
                   </button>
@@ -626,173 +714,523 @@ const ExpenseTracker = ({ Layout = AdminLayout }) => {
 const TabButton = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
-    className={`min-h-11 rounded-xl px-3 py-2.5 text-center text-xs font-semibold transition sm:flex-1 sm:min-w-40 sm:px-4 sm:text-sm ${
+    className={`min-h-9 rounded-lg px-3 py-1.5 text-center text-xs font-semibold transition sm:flex-1 sm:min-w-32 sm:px-3 sm:text-xs ${
       active
-        ? 'bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white shadow-[0_10px_22px_rgba(37,99,235,0.22)]'
-        : 'bg-white text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+        ? 'bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white shadow-[0_6px_16px_rgba(37,99,235,0.2)]'
+        : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-800/80 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-700 dark:hover:text-blue-400'
     }`}
   >
     {children}
   </button>
 );
 
-const SummaryCard = ({ label, value }) => (
-  <div className="premium-stat-card rounded-2xl p-3 sm:p-4 md:p-5">
-    <p className="text-xs text-slate-500 sm:text-sm">{label}</p>
-    <p className="mt-2 text-lg font-bold text-slate-900 sm:mt-3 sm:text-2xl md:text-3xl">{value}</p>
-  </div>
-);
+const SummaryCard = ({ label, value, type = 'default' }) => {
+  let valueColor = 'text-slate-900 dark:text-white';
+  let badgeColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
+  let Icon = DollarSign;
 
-const DashboardView = ({ summary, expenses, search, setSearch, loading, currency, displayDate, openExpenseForm, onRefresh, onView, onEdit, onDelete }) => (
-  <div className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+  if (type === 'received') {
+    valueColor = 'text-emerald-600 dark:text-emerald-400';
+    badgeColor = 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+    Icon = ArrowDownLeft;
+  } else if (type === 'spent') {
+    valueColor = 'text-rose-600 dark:text-rose-400';
+    badgeColor = 'bg-rose-500/15 text-rose-600 dark:text-rose-400';
+    Icon = ArrowUpRight;
+  } else if (type === 'balance') {
+    valueColor = 'text-blue-600 dark:text-blue-400';
+    badgeColor = 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
+    Icon = TrendingUp;
+  }
+
+  return (
+    <div className="premium-stat-card rounded-xl p-3 sm:p-3.5 relative overflow-hidden border border-slate-200/70 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
+        <span className={`p-1 rounded-md ${badgeColor}`}>
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+      </div>
+      <p className={`mt-1.5 text-base sm:text-lg md:text-xl font-bold ${valueColor}`}>{value}</p>
+    </div>
+  );
+};
+
+const DashboardView = ({
+  summary,
+  transactions,
+  allTransactions,
+  expensesCount,
+  paymentsCount,
+  dashboardFilter,
+  setDashboardFilter,
+  search,
+  setSearch,
+  loading,
+  currency,
+  displayDate,
+  openExpenseForm,
+  openPaymentForm,
+  onRefresh,
+  onView,
+  onEdit,
+  onDelete
+}) => (
+  <div className="premium-panel rounded-xl p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4">
+    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <div>
-        <h2 className="text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">Expense List</h2>
-        <p className="mt-1 text-xs text-slate-500 sm:text-sm">Search, filter, and manage company expenses.</p>
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+          Transactions & Spending
+        </h2>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+          Track company expenses and incoming client payments in one place.
+        </p>
       </div>
-      <div className="flex gap-2">
-        <button onClick={onRefresh} className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm hover:bg-slate-50 sm:p-3" aria-label="Refresh">
-          <RefreshCw className="h-5 w-5" />
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={onRefresh}
+          className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-slate-600 dark:text-slate-300 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+          aria-label="Refresh"
+          title="Refresh transactions"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
         </button>
-        <button onClick={openExpenseForm} className="premium-primary-button flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold sm:flex-none sm:py-3">
-          Add Expense
+        <button
+          onClick={openExpenseForm}
+          className="premium-primary-button inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-xs"
+        >
+          <ArrowUpRight className="h-3.5 w-3.5" />
+          <span>Add Expense</span>
+        </button>
+        <button
+          onClick={openPaymentForm}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 shadow-xs transition"
+        >
+          <ArrowDownLeft className="h-3.5 w-3.5" />
+          <span>Add Payment</span>
         </button>
       </div>
     </div>
 
-    <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4">
-      <SummaryCard label="Total Received" value={currency(summary.totalReceived)} />
-      <SummaryCard label="Total Spent" value={currency(summary.totalSpent)} />
-      <SummaryCard label="Remaining Balance" value={currency(summary.remainingBalance)} />
+    {/* Summary Stat Cards */}
+    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
+      <SummaryCard label="Total Received" value={`₹${currency(summary.totalReceived)}`} type="received" />
+      <SummaryCard label="Total Spent" value={`₹${currency(summary.totalSpent)}`} type="spent" />
+      <SummaryCard label="Remaining Balance" value={`₹${currency(summary.remainingBalance)}`} type="balance" />
     </div>
 
-    <SearchWithSuggestions
-      value={search}
-      onChange={setSearch}
-      items={expenses}
-      getSuggestionValue={(item) => item.paidTo || item.description || item.category || ''}
-      getSuggestionTitle={(item) => item.paidTo || item.category || 'Expense'}
-      getSuggestionSubtitle={(item) => [item.category, item.paymentMethod, item.description].filter(Boolean).join(' • ')}
-      placeholder="Search expenses"
-      className="mt-4 sm:mt-6"
-      inputClassName="premium-input rounded-xl py-3 text-sm"
+    {/* Controls Bar: Filter Tabs + Search */}
+    <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between pt-0.5">
+      {/* Filter Tabs */}
+      <div className="inline-flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 p-0.5 border border-slate-200/60 dark:border-slate-700/60 self-start sm:self-auto overflow-x-auto max-w-full">
+        <button
+          type="button"
+          onClick={() => setDashboardFilter('all')}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition whitespace-nowrap ${
+            dashboardFilter === 'all'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <span>All Transactions</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            dashboardFilter === 'all'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+              : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+          }`}>
+            {allTransactions.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setDashboardFilter('payment')}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition whitespace-nowrap ${
+            dashboardFilter === 'payment'
+              ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-300'
+          }`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span>Incoming Payments</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            dashboardFilter === 'payment'
+              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+              : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+          }`}>
+            {paymentsCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setDashboardFilter('expense')}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition whitespace-nowrap ${
+            dashboardFilter === 'expense'
+              ? 'bg-white dark:bg-slate-700 text-rose-700 dark:text-rose-300 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-300'
+          }`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+          <span>Expenses</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            dashboardFilter === 'expense'
+              ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
+              : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+          }`}>
+            {expensesCount}
+          </span>
+        </button>
+      </div>
+
+      {/* Search Input with Suggestions */}
+      <div className="w-full lg:max-w-xs">
+        <SearchWithSuggestions
+          value={search}
+          onChange={setSearch}
+          items={allTransactions}
+          getSuggestionValue={(item) => item.clientName || item.paidTo || item.description || item.category || ''}
+          getSuggestionTitle={(item) => item.clientName || item.paidTo || (item.type === 'payment' ? 'Client Payment' : 'Expense')}
+          getSuggestionSubtitle={(item) => [
+            item.type === 'payment' ? 'Incoming Payment' : item.category || 'Expense',
+            item.paymentMethod,
+            item.invoiceNumber ? `Inv: ${item.invoiceNumber}` : null,
+            item.referenceNumber ? `Ref: ${item.referenceNumber}` : null
+          ].filter(Boolean).join(' • ')}
+          placeholder="Search by client, vendor, category..."
+          inputClassName="premium-input rounded-lg py-1.5 px-3 text-xs"
+        />
+      </div>
+    </div>
+
+    {/* Table / List */}
+    <TransactionTable
+      transactions={transactions}
+      loading={loading}
+      currency={currency}
+      displayDate={displayDate}
+      onView={onView}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      openExpenseForm={openExpenseForm}
+      openPaymentForm={openPaymentForm}
+      dashboardFilter={dashboardFilter}
     />
-
-    <ExpenseTable expenses={expenses} loading={loading} currency={currency} displayDate={displayDate} onView={onView} onEdit={onEdit} onDelete={onDelete} />
   </div>
 );
 
-const ExpenseTable = ({ expenses, loading, currency, displayDate, onView, onEdit, onDelete }) => {
+const TransactionTable = ({
+  transactions,
+  loading,
+  currency,
+  displayDate,
+  onView,
+  onEdit,
+  onDelete,
+  openExpenseForm,
+  openPaymentForm,
+  dashboardFilter
+}) => {
   const isInteractiveClick = (event) =>
     event.target.closest('button, a, input, select, textarea, label');
 
-  const openExpenseDetails = (event, item) => {
+  const openDetails = (event, item) => {
     if (isInteractiveClick(event)) return;
     onView(item);
   };
 
   return (
-  <div className="mt-4 sm:mt-6">
-    {/* Mobile: card list */}
-    <div className="space-y-3 md:hidden">
-      {loading ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">Loading expenses...</div>
-      ) : expenses.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">No expenses found</div>
-      ) : expenses.map((item) => (
-        <div key={item._id} onClick={(event) => openExpenseDetails(event, item)} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm cursor-pointer hover:border-blue-200 hover:bg-blue-50/40 transition-colors">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">{item.paidTo}</p>
-              <p className="mt-0.5 text-xs text-slate-500">{displayDate(item.date)}</p>
+    <div className="mt-1 sm:mt-2">
+      {/* Mobile Card List */}
+      <div className="space-y-2.5 md:hidden">
+        {loading ? (
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 text-center text-xs text-slate-500 dark:text-slate-400">
+            Loading transactions...
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-center">
+            <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              {dashboardFilter === 'expense'
+                ? 'No expenses found'
+                : dashboardFilter === 'payment'
+                  ? 'No incoming payments found'
+                  : 'No transactions found'}
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+              {dashboardFilter === 'expense'
+                ? 'No company expenses logged yet.'
+                : dashboardFilter === 'payment'
+                  ? 'No client payments logged yet.'
+                  : 'Start adding expenses or payments.'}
+            </p>
+            <div className="mt-2.5 flex items-center justify-center gap-2">
+              <button
+                onClick={openExpenseForm}
+                className="premium-primary-button rounded-lg px-2.5 py-1 text-xs font-semibold"
+              >
+                + Expense
+              </button>
+              <button
+                onClick={openPaymentForm}
+                className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2.5 py-1 text-xs font-semibold"
+              >
+                + Payment
+              </button>
             </div>
-            <p className="text-base font-bold text-slate-950">₹{currency(item.amount)}</p>
           </div>
-          <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-            {item.category && <span className="rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700">{item.category}</span>}
-            {item.paymentMethod && <span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">{item.paymentMethod}</span>}
-          </div>
-          <p className="mt-2 text-xs text-slate-500">
-            {item.employee
-              ? `${item.employee.personalInfo?.firstName || ''} ${item.employee.personalInfo?.lastName || ''}`.trim() || item.createdBy?.name || 'Employee'
-              : item.source === 'admin' ? 'Admin' : item.createdBy?.name || '-'}
-            {item.employee?.employeeId && ` · ${item.employee.employeeId}`}
-          </p>
-          {item.description && <p className="mt-2 text-sm text-slate-600">{item.description}</p>}
-          <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
-            <ActionButton onClick={() => onView(item)} icon={Eye}>View</ActionButton>
-            <ActionButton onClick={() => onEdit(item)} icon={Edit3}>Edit</ActionButton>
-            <ActionButton danger onClick={() => onDelete(item._id)} icon={Trash2}>Delete</ActionButton>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    {/* Desktop / tablet: table */}
-    <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white md:block">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px]">
-          <thead className="bg-slate-50/90">
-            <tr>
-              {['Date', 'Employee', 'Paid To', 'Category', 'Amount', 'Payment Method', 'Description', 'Actions'].map((head) => (
-                <th key={head} className="border-b border-slate-200 p-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{head}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan="8" className="p-8 text-center text-slate-500">Loading expenses...</td></tr>
-            ) : expenses.length === 0 ? (
-              <tr><td colSpan="8" className="p-8 text-center text-slate-500">No expenses found</td></tr>
-            ) : expenses.map((item) => (
-              <tr key={item._id} onClick={(event) => openExpenseDetails(event, item)} className="premium-table-row border-b border-slate-100 cursor-pointer">
-                <td className="p-4 text-slate-800">{displayDate(item.date)}</td>
-                <td className="p-4 text-slate-800">
-                  {item.employee
-                    ? `${item.employee.personalInfo?.firstName || ''} ${item.employee.personalInfo?.lastName || ''}`.trim() || item.createdBy?.name || 'Employee'
-                    : item.source === 'admin' ? 'Admin' : item.createdBy?.name || '-'}
-                  {item.employee?.employeeId && <p className="text-xs text-slate-500">{item.employee.employeeId}</p>}
-                </td>
-                <td className="p-4 text-slate-800">{item.paidTo}</td>
-                <td className="p-4 text-slate-800">{item.category}</td>
-                <td className="p-4 font-semibold text-slate-950">{currency(item.amount)}</td>
-                <td className="p-4 text-slate-800">{item.paymentMethod}</td>
-                <td className="p-4 text-slate-600">{item.description || '-'}</td>
-                <td className="p-4">
-                  <div className="flex gap-2">
-                    <ActionButton onClick={() => onView(item)} icon={Eye}>View</ActionButton>
-                    <ActionButton onClick={() => onEdit(item)} icon={Edit3}>Edit</ActionButton>
-                    <ActionButton danger onClick={() => onDelete(item._id)} icon={Trash2}>Delete</ActionButton>
+        ) : (
+          transactions.map((item) => (
+            <div
+              key={item._id || item.id}
+              onClick={(event) => openDetails(event, item)}
+              className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs cursor-pointer hover:border-blue-300 dark:hover:border-blue-800/80 hover:bg-blue-50/20 dark:hover:bg-slate-800/50 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2.5">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5">
+                    {item.type === 'payment' ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold">
+                        <ArrowDownLeft className="h-2.5 w-2.5" /> Incoming
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20 px-2 py-0.5 text-[10px] font-semibold">
+                        <ArrowUpRight className="h-2.5 w-2.5" /> Expense
+                      </span>
+                    )}
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">{displayDate(item.date)}</span>
                   </div>
-                </td>
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">
+                    {item.type === 'payment' ? item.clientName : item.paidTo}
+                  </p>
+                </div>
+                <p className={`text-xs sm:text-sm font-bold whitespace-nowrap ${
+                  item.type === 'payment'
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {item.type === 'payment' ? '+' : '-'} ₹{currency(item.amount)}
+                </p>
+              </div>
+
+              <div className="mt-2 flex flex-wrap gap-1 text-[11px]">
+                {item.type === 'payment' ? (
+                  <span className="rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 font-medium text-blue-700 dark:text-blue-300">
+                    Client Payment
+                  </span>
+                ) : (
+                  item.category && (
+                    <span className="rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 font-medium text-blue-700 dark:text-blue-300">
+                      {item.category}
+                    </span>
+                  )
+                )}
+                {item.paymentMethod && (
+                  <span className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 font-medium text-slate-600 dark:text-slate-300">
+                    {item.paymentMethod}
+                  </span>
+                )}
+                {item.invoiceNumber && (
+                  <span className="rounded bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 font-medium text-indigo-700 dark:text-indigo-300">
+                    Inv #{item.invoiceNumber}
+                  </span>
+                )}
+              </div>
+
+              {(item.description || item.remarks) && (
+                <p className="mt-1.5 text-[11px] text-slate-600 dark:text-slate-400 line-clamp-1">
+                  {item.description || item.remarks}
+                </p>
+              )}
+
+              <div className="mt-2 flex gap-1.5 border-t border-slate-100 dark:border-slate-800 pt-2">
+                <ActionButton onClick={() => onView(item)} icon={Eye}>View</ActionButton>
+                <ActionButton onClick={() => onEdit(item)} icon={Edit3}>Edit</ActionButton>
+                <ActionButton danger onClick={() => onDelete(item._id || item.id)} icon={Trash2}>Delete</ActionButton>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop / Tablet Table */}
+      <div className="hidden overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px]">
+            <thead className="bg-slate-50/90 dark:bg-slate-800/80">
+              <tr>
+                {['Type', 'Date', 'Party / Name', 'Category / Details', 'Amount', 'Method', 'Reference / Remarks', 'Actions'].map((head) => (
+                  <th
+                    key={head}
+                    className="border-b border-slate-200 dark:border-slate-800 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+                  >
+                    {head}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="px-3 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                    Loading transactions...
+                  </td>
+                </tr>
+              ) : transactions.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="px-3 py-8 text-center">
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {dashboardFilter === 'expense'
+                        ? 'No expenses found'
+                        : dashboardFilter === 'payment'
+                          ? 'No incoming payments found'
+                          : 'No transactions found'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                      {dashboardFilter === 'expense'
+                        ? 'Record company expenses to track spending and keep financial balances updated.'
+                        : dashboardFilter === 'payment'
+                          ? 'Record incoming client payments to see received funds reflected here.'
+                          : 'Start logging company spending and incoming client payments to track balances.'}
+                    </p>
+                    <div className="mt-3 flex items-center justify-center gap-2">
+                      {(dashboardFilter === 'all' || dashboardFilter === 'expense') && (
+                        <button
+                          onClick={openExpenseForm}
+                          className="premium-primary-button rounded-lg px-3 py-1.5 text-xs font-semibold"
+                        >
+                          + Add Expense
+                        </button>
+                      )}
+                      {(dashboardFilter === 'all' || dashboardFilter === 'payment') && (
+                        <button
+                          onClick={openPaymentForm}
+                          className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 text-xs font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/60"
+                        >
+                          + Add Payment
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                transactions.map((item) => (
+                  <tr
+                    key={item._id || item.id}
+                    onClick={(event) => openDetails(event, item)}
+                    className="premium-table-row border-b border-slate-100 dark:border-slate-800/80 cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors"
+                  >
+                    {/* Type Badge */}
+                    <td className="px-3 py-2">
+                      {item.type === 'payment' ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap">
+                          <ArrowDownLeft className="h-3 w-3" /> Incoming
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25 px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap">
+                          <ArrowUpRight className="h-3 w-3" /> Expense
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Date */}
+                    <td className="px-3 py-2 text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                      {displayDate(item.date)}
+                    </td>
+
+                    {/* Party / Client / Paid To */}
+                    <td className="px-3 py-2">
+                      <div className="font-semibold text-slate-900 dark:text-white text-xs">
+                        {item.type === 'payment' ? item.clientName : item.paidTo}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {item.employee
+                          ? `${item.employee.personalInfo?.firstName || ''} ${item.employee.personalInfo?.lastName || ''}`.trim() || item.createdBy?.name || 'Employee'
+                          : item.source === 'admin' ? 'Admin' : item.createdBy?.name || '-'}
+                        {item.employee?.employeeId && ` · ${item.employee.employeeId}`}
+                      </div>
+                    </td>
+
+                    {/* Category / Details */}
+                    <td className="px-3 py-2">
+                      {item.type === 'payment' ? (
+                        <div>
+                          <span className="inline-block rounded bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 text-[10px] font-medium">
+                            Client Payment
+                          </span>
+                          {item.invoiceNumber && (
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                              Inv: {item.invoiceNumber}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="inline-block rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 text-[10px] font-medium">
+                          {item.category || 'Expense'}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Amount */}
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className={`font-bold text-xs sm:text-sm ${
+                        item.type === 'payment'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                      }`}>
+                        {item.type === 'payment' ? '+' : '-'} ₹{currency(item.amount)}
+                      </span>
+                    </td>
+
+                    {/* Payment Method */}
+                    <td className="px-3 py-2 text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                      {item.paymentMethod || '-'}
+                    </td>
+
+                    {/* Reference / Remarks / Description */}
+                    <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-400 max-w-[180px]">
+                      <span className="truncate block" title={item.description || item.remarks || item.referenceNumber || ''}>
+                        {item.description || item.remarks || item.referenceNumber || '-'}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="flex items-center gap-1">
+                        <ActionButton onClick={() => onView(item)} icon={Eye}>View</ActionButton>
+                        <ActionButton onClick={() => onEdit(item)} icon={Edit3}>Edit</ActionButton>
+                        <ActionButton danger onClick={() => onDelete(item._id || item.id)} icon={Trash2}>Delete</ActionButton>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
   );
 };
 
-const PaymentsView = ({ payments, filters, setFilters, paymentSearch, setPaymentSearch, loading, currency, displayDate, openPaymentForm, onRefresh, onEdit, onDelete }) => (
-  <div className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+const PaymentsView = ({ payments, filters, setFilters, paymentSearch, setPaymentSearch, loading, currency, displayDate, openPaymentForm, onRefresh, onView, onEdit, onDelete }) => (
+  <div className="premium-panel rounded-xl p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4">
+    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <div>
-        <h2 className="text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">Incoming Payments</h2>
-        <p className="mt-1 text-xs text-slate-500 sm:text-sm">Track client payments received by the admin team.</p>
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Incoming Payments</h2>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Track client payments received by the admin team.</p>
       </div>
-      <div className="flex gap-2">
-        <button onClick={onRefresh} className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm hover:bg-slate-50 sm:p-3" aria-label="Refresh">
-          <RefreshCw className="h-5 w-5" />
+      <div className="flex items-center gap-2">
+        <button onClick={onRefresh} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-slate-600 dark:text-slate-300 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition" aria-label="Refresh">
+          <RefreshCw className="h-3.5 w-3.5" />
         </button>
-        <button onClick={openPaymentForm} className="premium-primary-button flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold sm:flex-none sm:py-3">
-          Add Payment
+        <button onClick={openPaymentForm} className="premium-primary-button inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-xs">
+          <ArrowDownLeft className="h-3.5 w-3.5" />
+          <span>Add Payment</span>
         </button>
       </div>
     </div>
 
-    <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-6 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
       <SearchWithSuggestions
         value={paymentSearch}
         onChange={setPaymentSearch}
@@ -800,36 +1238,37 @@ const PaymentsView = ({ payments, filters, setFilters, paymentSearch, setPayment
         getSuggestionValue={(item) => item.clientName || item.invoiceNumber || item.referenceNumber || ''}
         getSuggestionTitle={(item) => item.clientName || 'Payment'}
         getSuggestionSubtitle={(item) => [item.paymentMethod, item.invoiceNumber, item.referenceNumber].filter(Boolean).join(' • ')}
-        placeholder="Search by client name"
-        inputClassName="premium-input rounded-xl py-3 text-sm"
+        placeholder="Search client name..."
+        inputClassName="premium-input rounded-lg py-1.5 px-3 text-xs"
       />
-      <input type="date" value={filters.startDate} onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))} className="premium-input rounded-xl px-4 py-3 text-sm text-slate-900" />
-      <input type="date" value={filters.endDate} onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))} className="premium-input rounded-xl px-4 py-3 text-sm text-slate-900" />
-      <button onClick={onRefresh} className="premium-primary-button rounded-xl px-4 py-3 text-sm font-semibold">Filter</button>
+      <input type="date" value={filters.startDate} onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))} className="premium-input rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white" />
+      <input type="date" value={filters.endDate} onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))} className="premium-input rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white" />
+      <button onClick={onRefresh} className="premium-primary-button rounded-lg px-3 py-1.5 text-xs font-semibold">Filter</button>
     </div>
 
-    <div className="mt-4 sm:mt-6">
+    <div className="mt-1 sm:mt-2">
       {/* Mobile: card list */}
-      <div className="space-y-3 md:hidden">
+      <div className="space-y-2.5 md:hidden">
         {loading ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">Loading payments...</div>
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 text-center text-xs text-slate-500 dark:text-slate-400">Loading payments...</div>
         ) : payments.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">No incoming payments found</div>
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 text-center text-xs text-slate-500 dark:text-slate-400">No incoming payments found</div>
         ) : payments.map((item) => (
-          <div key={item._id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
+          <div key={item._id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs">
+            <div className="flex items-start justify-between gap-2.5">
               <div>
-                <p className="text-sm font-semibold text-slate-900">{item.clientName}</p>
-                <p className="mt-0.5 text-xs text-slate-500">{displayDate(item.date)}</p>
+                <p className="text-xs font-semibold text-slate-900 dark:text-white">{item.clientName}</p>
+                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{displayDate(item.date)}</p>
               </div>
-              <p className="text-base font-bold text-slate-950">₹{currency(item.amount)}</p>
+              <p className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400">₹{currency(item.amount)}</p>
             </div>
-            <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-              {item.paymentMethod && <span className="rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700">{item.paymentMethod}</span>}
-              {item.invoiceNumber && <span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">Inv: {item.invoiceNumber}</span>}
+            <div className="mt-2 flex flex-wrap gap-1 text-[11px]">
+              {item.paymentMethod && <span className="rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 font-medium text-blue-700 dark:text-blue-300">{item.paymentMethod}</span>}
+              {item.invoiceNumber && <span className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 font-medium text-slate-600 dark:text-slate-300">Inv: {item.invoiceNumber}</span>}
             </div>
-            {item.remarks && <p className="mt-2 text-sm text-slate-600">{item.remarks}</p>}
-            <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
+            {item.remarks && <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">{item.remarks}</p>}
+            <div className="mt-2 flex gap-1.5 border-t border-slate-100 dark:border-slate-800 pt-2">
+              {onView && <ActionButton onClick={() => onView(item)} icon={Eye}>View</ActionButton>}
               <ActionButton onClick={() => onEdit(item)} icon={Edit3}>Edit</ActionButton>
               <ActionButton danger onClick={() => onDelete(item._id)} icon={Trash2}>Delete</ActionButton>
             </div>
@@ -838,31 +1277,32 @@ const PaymentsView = ({ payments, filters, setFilters, paymentSearch, setPayment
       </div>
 
       {/* Desktop / tablet: table */}
-      <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white md:block">
+      <div className="hidden overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 md:block">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px]">
-            <thead className="bg-slate-50">
+          <table className="w-full min-w-[700px]">
+            <thead className="bg-slate-50 dark:bg-slate-800/80">
               <tr>
                 {['Date', 'Client', 'Amount', 'Method', 'Invoice', 'Remarks', 'Actions'].map((head) => (
-                <th key={head} className="border-b border-slate-200 p-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{head}</th>
+                <th key={head} className="border-b border-slate-200 dark:border-slate-800 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{head}</th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {loading ? (
-                <tr><td colSpan="7" className="p-8 text-center text-slate-500">Loading payments...</td></tr>
+                <tr><td colSpan="7" className="px-3 py-6 text-center text-xs text-slate-500 dark:text-slate-400">Loading payments...</td></tr>
               ) : payments.length === 0 ? (
-                <tr><td colSpan="7" className="p-8 text-center text-slate-500">No incoming payments found</td></tr>
+                <tr><td colSpan="7" className="px-3 py-6 text-center text-xs text-slate-500 dark:text-slate-400">No incoming payments found</td></tr>
               ) : payments.map((item) => (
-                <tr key={item._id} className="premium-table-row border-b border-slate-100">
-                  <td className="p-4 text-slate-800">{displayDate(item.date)}</td>
-                  <td className="p-4 text-slate-800">{item.clientName}</td>
-                  <td className="p-4 font-semibold text-slate-950">{currency(item.amount)}</td>
-                  <td className="p-4 text-slate-800">{item.paymentMethod}</td>
-                  <td className="p-4 text-slate-600">{item.invoiceNumber || '-'}</td>
-                  <td className="p-4 text-slate-600">{item.remarks || '-'}</td>
-                  <td className="p-4">
-                    <div className="flex gap-2">
+                <tr key={item._id} className="premium-table-row border-b border-slate-100 dark:border-slate-800/80">
+                  <td className="px-3 py-2 text-xs text-slate-800 dark:text-slate-200 whitespace-nowrap">{displayDate(item.date)}</td>
+                  <td className="px-3 py-2 text-xs font-medium text-slate-800 dark:text-white">{item.clientName}</td>
+                  <td className="px-3 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">₹{currency(item.amount)}</td>
+                  <td className="px-3 py-2 text-xs text-slate-800 dark:text-slate-300 whitespace-nowrap">{item.paymentMethod}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-400">{item.invoiceNumber || '-'}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-400 max-w-[200px] truncate">{item.remarks || '-'}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <div className="flex items-center gap-1">
+                      {onView && <ActionButton onClick={() => onView(item)} icon={Eye}>View</ActionButton>}
                       <ActionButton onClick={() => onEdit(item)} icon={Edit3}>Edit</ActionButton>
                       <ActionButton danger onClick={() => onDelete(item._id)} icon={Trash2}>Delete</ActionButton>
                     </div>
@@ -905,34 +1345,34 @@ const ClientSelectWithAdd = ({
 
   return (
     <div className={`block ${className}`}>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="block text-sm font-bold text-slate-700">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="block text-xs font-bold text-slate-700">
           Client Name {required && <span className="text-rose-500">*</span>}
         </span>
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={onOpenAddClientModal}
-            className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 shadow-xs hover:bg-indigo-100 transition-colors"
+            className="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 shadow-2xs hover:bg-indigo-100 transition-colors"
             title="Add a new client to leads CRM and select"
           >
-            <UserPlus className="h-3.5 w-3.5" />
+            <UserPlus className="h-3 w-3" />
             <span>+ Add New Client</span>
           </button>
           <button
             type="button"
             onClick={() => setIsCustomClient(!isCustomClient)}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors"
             title={isCustomClient ? "Select from available leads" : "Type custom client name directly"}
           >
             {isCustomClient ? (
               <>
-                <List className="h-3.5 w-3.5" />
+                <List className="h-3 w-3" />
                 <span>Select from leads</span>
               </>
             ) : (
               <>
-                <Edit3 className="h-3.5 w-3.5" />
+                <Edit3 className="h-3 w-3" />
                 <span>Type custom</span>
               </>
             )}
@@ -947,10 +1387,10 @@ const ClientSelectWithAdd = ({
             value={value}
             onChange={(e) => onChange(e.target.value, null)}
             placeholder="Type client name..."
-            className="premium-input w-full rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400"
+            className="premium-input w-full rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400"
             required={required}
           />
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[10px] text-slate-500">
             Entering custom name. Click "Select from leads" above to pick an existing lead.
           </p>
         </div>
@@ -971,7 +1411,7 @@ const ClientSelectWithAdd = ({
               const selected = clientOptions.find((c) => c.name === val);
               onChange(val, selected?.leadId || null, selected?.projectId || null);
             }}
-            className="premium-input w-full rounded-xl px-4 py-3 text-sm text-slate-900 bg-white"
+            className="premium-input w-full rounded-lg px-3 py-2 text-xs text-slate-900 bg-white"
             required={required}
           >
             <option value="">-- Select Client from Leads ({clientOptions.length} available) --</option>
@@ -1070,12 +1510,12 @@ const PaymentForm = ({
 );
 
 const FormPanel = ({ title, subtitle, onSubmit, buttonText, children }) => (
-  <form onSubmit={onSubmit} className="premium-panel rounded-2xl p-3 sm:p-4 md:p-6">
-    <h2 className="text-lg font-bold text-slate-900 sm:text-xl md:text-2xl">{title}</h2>
-    <p className="mt-1 text-xs text-slate-500 sm:text-sm">{subtitle}</p>
-    <div className="mt-4 grid grid-cols-1 gap-4 sm:mt-6 md:grid-cols-2">{children}</div>
-    <div className="mt-6 flex justify-end">
-      <button type="submit" className="premium-primary-button w-full rounded-xl px-5 py-3 text-sm font-semibold sm:w-auto">
+  <form onSubmit={onSubmit} className="premium-panel rounded-xl p-3 sm:p-4 md:p-5">
+    <h2 className="text-base sm:text-lg font-bold text-slate-900 sm:text-lg">{title}</h2>
+    <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
+    <div className="mt-3.5 grid grid-cols-1 gap-3 sm:mt-4 md:grid-cols-2">{children}</div>
+    <div className="mt-4 flex justify-end">
+      <button type="submit" className="premium-primary-button w-full rounded-lg px-4 py-2 text-xs font-semibold sm:w-auto">
         {buttonText}
       </button>
     </div>
@@ -1084,15 +1524,15 @@ const FormPanel = ({ title, subtitle, onSubmit, buttonText, children }) => (
 
 const Input = ({ label, value, onChange, className = '', ...props }) => (
   <label className={`block ${className}`}>
-    <span className="mb-2 block text-sm font-bold text-slate-700">{label}</span>
-    <input value={value} onChange={(event) => onChange(event.target.value)} className="premium-input w-full rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400" {...props} />
+    <span className="mb-1 block text-xs font-bold text-slate-700">{label}</span>
+    <input value={value} onChange={(event) => onChange(event.target.value)} className="premium-input w-full rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400" {...props} />
   </label>
 );
 
 const Select = ({ label, value, onChange, options, placeholder, className = '', ...props }) => (
   <label className={`block ${className}`}>
-    <span className="mb-2 block text-sm font-bold text-slate-700">{label}</span>
-    <select value={value} onChange={(event) => onChange(event.target.value)} className="premium-input w-full rounded-xl px-4 py-3 text-sm text-slate-900" {...props}>
+    <span className="mb-1 block text-xs font-bold text-slate-700">{label}</span>
+    <select value={value} onChange={(event) => onChange(event.target.value)} className="premium-input w-full rounded-lg px-3 py-2 text-xs text-slate-900" {...props}>
       <option value="">{placeholder}</option>
       {options.map((option) => <option key={option} value={option}>{option}</option>)}
     </select>
@@ -1101,22 +1541,29 @@ const Select = ({ label, value, onChange, options, placeholder, className = '', 
 
 const TextArea = ({ label, value, onChange, className = '', ...props }) => (
   <label className={`block ${className}`}>
-    <span className="mb-2 block text-sm font-bold text-slate-700">{label}</span>
-    <textarea value={value} onChange={(event) => onChange(event.target.value)} rows="4" className="premium-input w-full rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400" {...props} />
+    <span className="mb-1 block text-xs font-bold text-slate-700">{label}</span>
+    <textarea value={value} onChange={(event) => onChange(event.target.value)} rows="3" className="premium-input w-full rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400" {...props} />
   </label>
 );
 
 const ActionButton = ({ children, onClick, icon: Icon, danger = false }) => (
-  <button onClick={onClick} className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-2 text-xs font-semibold sm:flex-none sm:px-3 ${danger ? 'border-red-100 text-red-600 hover:bg-red-50' : 'border-blue-100 text-blue-600 hover:bg-blue-50'}`}>
-    {React.createElement(Icon, { className: 'h-4 w-4' })}
+  <button
+    onClick={onClick}
+    className={`inline-flex items-center justify-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold transition ${
+      danger
+        ? 'border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40'
+        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400'
+    }`}
+  >
+    {React.createElement(Icon, { className: 'h-3 w-3' })}
     <span className="hidden sm:inline">{children}</span>
   </button>
 );
 
 const Info = ({ label, value }) => (
-  <div className="flex flex-col gap-0.5 border-b border-slate-100 pb-2 sm:flex-row sm:justify-between sm:gap-4">
-    <span className="font-semibold text-slate-500">{label}</span>
-    <span className="text-left font-semibold text-slate-900 sm:text-right">{value}</span>
+  <div className="flex flex-col gap-0.5 border-b border-slate-100 dark:border-slate-800 pb-1.5 sm:flex-row sm:justify-between sm:gap-2">
+    <span className="font-medium text-slate-500 dark:text-slate-400 text-[11px] sm:text-xs">{label}</span>
+    <span className="text-left font-semibold text-slate-900 dark:text-slate-100 sm:text-right text-xs">{value}</span>
   </div>
 );
 

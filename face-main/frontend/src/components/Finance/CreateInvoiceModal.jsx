@@ -30,8 +30,9 @@ const CreateInvoiceModal = ({
   onSuccess,
   projectsList = [],
   initialInvoice = null,
+  initialProjectId = '',
 }) => {
-  const [projectId, setProjectId] = useState('');
+  const [projectId, setProjectId] = useState(() => initialInvoice?.projectId || initialProjectId || '');
   const [milestoneName, setMilestoneName] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState(
@@ -85,7 +86,7 @@ const CreateInvoiceModal = ({
       }
     } else {
       // Reset form
-      setProjectId('');
+      setProjectId(initialProjectId || '');
       setMilestoneName('');
       setInvoiceDate(new Date().toISOString().split('T')[0]);
       setDueDate(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
@@ -97,7 +98,23 @@ const CreateInvoiceModal = ({
       setAllowOverbilling(false);
       setIssueImmediately(false);
     }
-  }, [initialInvoice, isOpen]);
+  }, [initialInvoice, isOpen, initialProjectId]);
+
+  // Synchronize initialProjectId with projectsList when projects load
+  useEffect(() => {
+    if (initialProjectId && projectsList.length > 0 && !initialInvoice) {
+      const match = projectsList.find((p) =>
+        String(p.id || p._id) === String(initialProjectId) ||
+        p.name?.toLowerCase() === String(initialProjectId).toLowerCase() ||
+        p.projectCode?.toLowerCase() === String(initialProjectId).toLowerCase()
+      );
+      if (match) {
+        setProjectId(match.id || match._id);
+      } else if (!projectId) {
+        setProjectId(initialProjectId);
+      }
+    }
+  }, [initialProjectId, projectsList, initialInvoice, projectId]);
 
   // Handle milestone selection
   const handleSelectMilestone = (m) => {

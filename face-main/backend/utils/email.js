@@ -81,8 +81,9 @@ export const sendEmail = async ({ to, subject, html, text, fromName, attachments
         content: Buffer.isBuffer(attachment.content)
           ? attachment.content.toString('base64')
           : attachment.content,
-        type: attachment.contentType,
-        disposition: 'attachment',
+        type: attachment.contentType || 'image/png',
+        disposition: attachment.cid ? 'inline' : (attachment.disposition || 'attachment'),
+        content_id: attachment.cid,
       })),
     };
 

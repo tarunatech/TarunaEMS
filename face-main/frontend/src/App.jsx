@@ -49,6 +49,7 @@ import EmployeeProjects from './pages/Employee/EmployeeProjects';
 import EmployeeAMCManagement from './pages/Employee/EmployeeAMCManagement';
 import EmployeeFinanceManagement from './pages/Employee/EmployeeFinanceManagement';
 import EmployeePurchaseOrders from './pages/Employee/EmployeePurchaseOrders';
+import SignAgreement from './pages/Public/SignAgreement';
 
 function App() {
   return (
@@ -60,6 +61,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/sign-agreement/:token" element={<SignAgreement />} />
 
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={
