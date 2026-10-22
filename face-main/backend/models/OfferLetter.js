@@ -6,9 +6,13 @@ import { users } from '../db/schema/user.js';
 const columnByField = {
   id: offerLetters.id,
   _id: offerLetters.id,
+  letterType: offerLetters.letterType,
   employeeName: offerLetters.employeeName,
   role: offerLetters.role,
   joiningDate: offerLetters.joiningDate,
+  completionDate: offerLetters.completionDate,
+  employmentType: offerLetters.employmentType,
+  letterDate: offerLetters.letterDate,
   companyName: offerLetters.companyName,
   location: offerLetters.location,
   duration: offerLetters.duration,
@@ -32,9 +36,13 @@ const mapRowToDoc = (row) => {
   return {
     _id: raw.id,
     id: raw.id,
+    letterType: raw.letterType || 'offer',
     employeeName: raw.employeeName,
     role: raw.role,
     joiningDate: raw.joiningDate,
+    completionDate: raw.completionDate || null,
+    employmentType: raw.employmentType || 'Internship',
+    letterDate: raw.letterDate || null,
     companyName: raw.companyName || 'Taruna Technology',
     location: raw.location || 'Vadodara',
     duration: raw.duration || 'three (3) months',
@@ -99,6 +107,9 @@ class OfferLetterQuery {
     if (this.filter.id || this.filter._id) {
       conditions.push(eq(offerLetters.id, this.filter.id || this.filter._id));
     }
+    if (this.filter.letterType) {
+      conditions.push(eq(offerLetters.letterType, this.filter.letterType));
+    }
 
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
@@ -141,9 +152,13 @@ class OfferLetterModel {
 
   static async create(data) {
     const payload = {
+      letterType: data.letterType || 'offer',
       employeeName: data.employeeName,
       role: data.role,
       joiningDate: data.joiningDate,
+      completionDate: data.completionDate || null,
+      employmentType: data.employmentType || 'Internship',
+      letterDate: data.letterDate || null,
       companyName: data.companyName || 'Taruna Technology',
       location: data.location || 'Vadodara',
       duration: data.duration || 'three (3) months',

@@ -3,7 +3,7 @@ import path from 'path';
 import OfferLetter from '../models/OfferLetter.js';
 import Employee from '../models/Employee.js';
 import InterviewSchedule from '../models/InterviewSchedule.js';
-import { generateOfferLetterPDF } from '../services/offerLetterPdfService.js';
+import { generateOfferLetterPDF, generateCompletionLetterPDF } from '../services/offerLetterPdfService.js';
 import { offerLettersDir } from '../config/uploadPaths.js';
 
 export const generateOfferLetter = async (req, res) => {
@@ -54,6 +54,7 @@ export const generateOfferLetter = async (req, res) => {
     );
 
     const record = await OfferLetter.create({
+      letterType: 'offer',
       employeeName: employeeName.trim(),
       role: role.trim(),
       joiningDate: joiningDate.trim(),
@@ -86,9 +87,99 @@ export const generateOfferLetter = async (req, res) => {
   }
 };
 
+export const generateCompletionLetter = async (req, res) => {
+  try {
+    const {
+      employeeName,
+      role,
+      joiningDate,
+      completionDate,
+      employmentType = 'Internship',
+      letterDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+      companyName = 'Taruna Technology',
+      location = 'Vadodara',
+      signatoryName = 'MIHIR MAKWANA',
+      signatoryRole = 'Operational Manager',
+      employeeId,
+      candidateId,
+    } = req.body;
+
+    if (!employeeName?.trim()) {
+      return res.status(400).json({ success: false, message: 'Employee name is required' });
+    }
+    if (!role?.trim()) {
+      return res.status(400).json({ success: false, message: 'Role / Position is required' });
+    }
+    if (!joiningDate?.trim()) {
+      return res.status(400).json({ success: false, message: 'Joining date is required' });
+    }
+    if (!completionDate?.trim()) {
+      return res.status(400).json({ success: false, message: 'Completion date is required' });
+    }
+
+    const safeName = employeeName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const fileName = `Completion_Letter_${safeName}_${Date.now()}.pdf`;
+
+    const pdfResult = await generateCompletionLetterPDF(
+      {
+        employeeName: employeeName.trim(),
+        role: role.trim(),
+        joiningDate: joiningDate.trim(),
+        completionDate: completionDate.trim(),
+        employmentType: employmentType.trim(),
+        letterDate: (letterDate || '').trim() || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+        companyName: companyName.trim(),
+        location: location.trim(),
+        signatoryName: signatoryName.trim(),
+        signatoryRole: signatoryRole.trim(),
+      },
+      {
+        saveToFile: true,
+        fileName,
+      }
+    );
+
+    const record = await OfferLetter.create({
+      letterType: 'completion',
+      employeeName: employeeName.trim(),
+      role: role.trim(),
+      joiningDate: joiningDate.trim(),
+      completionDate: completionDate.trim(),
+      employmentType: employmentType.trim(),
+      letterDate: (letterDate || '').trim(),
+      companyName: companyName.trim(),
+      location: location.trim(),
+      signatoryName: signatoryName.trim(),
+      signatoryRole: signatoryRole.trim(),
+      employeeId: employeeId || null,
+      candidateId: candidateId || null,
+      pdfPath: pdfResult.publicUrl,
+      status: 'Generated',
+      createdBy: req.user.id,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Completion letter generated successfully',
+      data: record,
+      downloadUrl: pdfResult.publicUrl,
+      pdfBase64: pdfResult.pdfBuffer.toString('base64'),
+    });
+  } catch (error) {
+    console.error('Error generating completion letter:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate completion letter',
+    });
+  }
+};
+
 export const getAllOfferLetters = async (req, res) => {
   try {
     const filter = req.user?.role === 'admin' ? {} : { createdBy: req.user.id };
+    if (req.query.type) {
+      filter.letterType = req.query.type;
+    }
     const list = await OfferLetter.find(filter).populate('createdBy').sort({ createdAt: -1 });
 
     return res.json({
@@ -96,10 +187,10 @@ export const getAllOfferLetters = async (req, res) => {
       data: list,
     });
   } catch (error) {
-    console.error('Error fetching offer letters:', error);
+    console.error('Error fetching offer/completion letters:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch offer letters',
+      message: 'Failed to fetch letters',
     });
   }
 };
@@ -108,7 +199,7 @@ export const getOfferLetterById = async (req, res) => {
   try {
     const letter = await OfferLetter.findById(req.params.id);
     if (!letter) {
-      return res.status(404).json({ success: false, message: 'Offer letter not found' });
+      return res.status(404).json({ success: false, message: 'Letter record not found' });
     }
 
     if (req.user.role !== 'admin' && String(letter.createdBy?._id || letter.createdBy) !== String(req.user.id)) {
@@ -120,10 +211,10 @@ export const getOfferLetterById = async (req, res) => {
       data: letter,
     });
   } catch (error) {
-    console.error('Error fetching offer letter:', error);
+    console.error('Error fetching letter:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch offer letter',
+      message: 'Failed to fetch letter',
     });
   }
 };
@@ -132,42 +223,64 @@ export const downloadOfferLetter = async (req, res) => {
   try {
     const letter = await OfferLetter.findById(req.params.id);
     if (!letter) {
-      return res.status(404).json({ success: false, message: 'Offer letter not found' });
+      return res.status(404).json({ success: false, message: 'Letter record not found' });
     }
 
-    const fileName = letter.pdfPath ? path.basename(letter.pdfPath) : `offer_letter_${letter.id}.pdf`;
+    const isCompletion = letter.letterType === 'completion';
+    const prefix = isCompletion ? 'Completion_Letter' : 'Offer_Letter';
+    const safeName = (letter.employeeName || 'Employee').replace(/[^a-z0-9]/gi, '_');
+    const fileName = letter.pdfPath ? path.basename(letter.pdfPath) : `${prefix.toLowerCase()}_${letter.id}.pdf`;
     const filePath = path.join(offerLettersDir, fileName);
 
     if (fs.existsSync(filePath)) {
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="Offer_Letter_${letter.employeeName.replace(/[^a-z0-9]/gi, '_')}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${prefix}_${safeName}.pdf"`);
       return fs.createReadStream(filePath).pipe(res);
     }
 
     // If file missing on disk, regenerate on the fly
-    const pdfResult = await generateOfferLetterPDF(
-      {
-        employeeName: letter.employeeName,
-        role: letter.role,
-        joiningDate: letter.joiningDate,
-        companyName: letter.companyName,
-        location: letter.location,
-        duration: letter.duration,
-        workingHours: letter.workingHours,
-        signatoryName: letter.signatoryName,
-        signatoryRole: letter.signatoryRole,
-      },
-      { saveToFile: true, fileName }
-    );
+    let pdfResult;
+    if (isCompletion) {
+      pdfResult = await generateCompletionLetterPDF(
+        {
+          employeeName: letter.employeeName,
+          role: letter.role,
+          joiningDate: letter.joiningDate,
+          completionDate: letter.completionDate,
+          employmentType: letter.employmentType || 'Internship',
+          letterDate: letter.letterDate,
+          companyName: letter.companyName,
+          location: letter.location,
+          signatoryName: letter.signatoryName,
+          signatoryRole: letter.signatoryRole,
+        },
+        { saveToFile: true, fileName }
+      );
+    } else {
+      pdfResult = await generateOfferLetterPDF(
+        {
+          employeeName: letter.employeeName,
+          role: letter.role,
+          joiningDate: letter.joiningDate,
+          companyName: letter.companyName,
+          location: letter.location,
+          duration: letter.duration,
+          workingHours: letter.workingHours,
+          signatoryName: letter.signatoryName,
+          signatoryRole: letter.signatoryRole,
+        },
+        { saveToFile: true, fileName }
+      );
+    }
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="Offer_Letter_${letter.employeeName.replace(/[^a-z0-9]/gi, '_')}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${prefix}_${safeName}.pdf"`);
     return res.send(pdfResult.pdfBuffer);
   } catch (error) {
-    console.error('Error downloading offer letter:', error);
+    console.error('Error downloading letter:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to download offer letter',
+      message: 'Failed to download letter',
     });
   }
 };

@@ -76,9 +76,13 @@ export const ensurePostgresExtensions = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS "offer_letters" (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "letterType" varchar(64) NOT NULL DEFAULT 'offer',
       "employeeName" varchar(255) NOT NULL,
       "role" varchar(255) NOT NULL,
       "joiningDate" varchar(128) NOT NULL,
+      "completionDate" varchar(128),
+      "employmentType" varchar(128) DEFAULT 'Internship',
+      "letterDate" varchar(128),
       "companyName" varchar(255) NOT NULL DEFAULT 'Taruna Technology',
       "location" varchar(255) NOT NULL DEFAULT 'Vadodara',
       "duration" varchar(128) NOT NULL DEFAULT 'three (3) months',
@@ -94,6 +98,10 @@ export const ensurePostgresExtensions = async () => {
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
+  await pool.query('ALTER TABLE "offer_letters" ADD COLUMN IF NOT EXISTS "letterType" varchar(64) DEFAULT \'offer\'');
+  await pool.query('ALTER TABLE "offer_letters" ADD COLUMN IF NOT EXISTS "completionDate" varchar(128)');
+  await pool.query('ALTER TABLE "offer_letters" ADD COLUMN IF NOT EXISTS "employmentType" varchar(128) DEFAULT \'Internship\'');
+  await pool.query('ALTER TABLE "offer_letters" ADD COLUMN IF NOT EXISTS "letterDate" varchar(128)');
   await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "isHalfDay" boolean DEFAULT false');
   await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "halfDayType" varchar(32) DEFAULT \'full\'');
   await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "includeBreak" boolean DEFAULT true');

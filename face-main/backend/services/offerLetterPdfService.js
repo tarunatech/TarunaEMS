@@ -322,4 +322,178 @@ export const generateOfferLetterPDF = async (data, { saveToFile = true, fileName
   });
 };
 
-export default { generateOfferLetterPDF };
+/**
+ * Generate Completion Letter PDF buffer or save to file
+ */
+export const generateCompletionLetterPDF = async (data, { saveToFile = true, fileName = null } = {}) => {
+  const {
+    employeeName   = 'Employee Name',
+    role           = 'Junior MERN Stack Developer',
+    joiningDate    = '09 July 2026',
+    completionDate = '09 October 2026',
+    employmentType = 'Internship',
+    letterDate     = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+    companyName    = 'Taruna Technology',
+    location       = 'Vadodara',
+    signatoryName  = 'MIHIR MAKWANA',
+    signatoryRole  = 'Operational Manager',
+  } = data;
+
+  const doc = new PDFDocument({
+    size: 'A4',
+    margin: 0,
+    info: {
+      Title:   `Completion Letter - ${employeeName}`,
+      Author:  companyName,
+      Subject: `Completion Letter – ${role}`,
+      Creator: 'Taruna EMS',
+    },
+  });
+
+  const buffers = [];
+  doc.on('data', buffers.push.bind(buffers));
+
+  // 1. Draw geometric decorations + watermark
+  drawBackgroundDecorations(doc);
+
+  // 2. Company Logo (top-left header)
+  const logo = getLogoPath();
+  if (logo) {
+    try {
+      doc.image(logo, 50, 28, { width: 215 });
+    } catch (err) {
+      console.warn('Could not render logo image in completion letter:', err.message);
+    }
+  }
+
+  // 3. Document Title
+  doc.fillColor('#0F172A')
+    .font('Helvetica-Bold')
+    .fontSize(19)
+    .text('COMPLETION LETTER', 50, 155, {
+      width: doc.page.width - 100,
+      align: 'center',
+    });
+
+  const textX = 52;
+  const contentWidth = 491;
+
+  // 4. Date
+  doc.fillColor('#0F172A')
+    .font('Helvetica')
+    .fontSize(11)
+    .text(`Date: ${letterDate}`, textX, 195);
+
+  // 5. To Block
+  doc.fillColor('#0F172A')
+    .font('Helvetica-Bold')
+    .fontSize(11)
+    .text('To,', textX, 222);
+
+  doc.font('Helvetica-Bold')
+    .fontSize(11.5)
+    .text(employeeName, textX, 237);
+
+  // 6. Subject
+  doc.font('Helvetica-Bold')
+    .fontSize(11.5)
+    .text(`Subject: Completion Letter – ${role}`, textX, 265);
+
+  // 7. Salutation
+  doc.font('Helvetica-Bold')
+    .fontSize(11.5)
+    .text(`Dear ${employeeName},`, textX, 295);
+
+  // 8. Body Paragraphs
+  const bodyStyle = { width: contentWidth, align: 'left', lineGap: 4.5 };
+
+  // Paragraph 1
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `This is to certify that ${employeeName} has successfully completed their ${employmentType} as a ${role} at ${companyName}, ${location}, from ${joiningDate} to ${completionDate}.`,
+      textX, 325, bodyStyle
+    );
+
+  // Paragraph 2
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `During this period, they were involved in assigned responsibilities and organizational activities related to their role. We appreciate their dedication, efforts, and contribution to the organization throughout their tenure.`,
+      textX, 395, bodyStyle
+    );
+
+  // Paragraph 3
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `We thank them for their association with ${companyName} and wish them continued success in their future professional endeavors.`,
+      textX, 465, bodyStyle
+    );
+
+  // Paragraph 4
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `This letter is issued upon completion of their tenure with the organization for official and professional reference purposes.`,
+      textX, 520, bodyStyle
+    );
+
+  // 9. Signatory Block (right-aligned)
+  const signX = 365;
+  const signWidth = 180;
+  let currentY = 585;
+
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#0F172A')
+    .text('Best Regards,', signX, currentY, { width: signWidth, align: 'left' });
+
+  currentY += 16;
+  doc.font('Helvetica-Bold').fontSize(11.5).fillColor('#0F172A')
+    .text(signatoryName.toUpperCase(), signX, currentY, { width: signWidth, align: 'left' });
+
+  const signPath = getSignPath();
+  if (signPath) {
+    try {
+      doc.image(signPath, signX + 25, currentY - 6, { width: 100 });
+      currentY += 46;
+    } catch (err) {
+      console.warn('Could not render signature image:', err.message);
+      currentY += 24;
+    }
+  } else {
+    currentY += 24;
+  }
+
+  doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0F172A')
+    .text(signatoryRole, signX, currentY, { width: signWidth, align: 'left' });
+
+  currentY += 15;
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#0F172A')
+    .text(companyName, signX, currentY, { width: signWidth, align: 'left' });
+
+  // 10. Footer
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#0F172A')
+    .text('www.tarunatech.com', 50, 802, {
+      width: doc.page.width - 100,
+      align: 'center',
+    });
+
+  doc.end();
+
+  return new Promise((resolve, reject) => {
+    doc.on('end', () => {
+      const pdfBuffer = Buffer.concat(buffers);
+
+      if (saveToFile) {
+        fs.mkdirSync(offerLettersDir, { recursive: true });
+        const finalFileName = fileName || `completion_letter_${Date.now()}_${employeeName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+        const filePath = path.join(offerLettersDir, finalFileName);
+        fs.writeFileSync(filePath, pdfBuffer);
+        const publicUrl = uploadPublicPath('offer-letters', finalFileName);
+        resolve({ pdfBuffer, filePath, publicUrl, fileName: finalFileName });
+      } else {
+        resolve({ pdfBuffer });
+      }
+    });
+
+    doc.on('error', reject);
+  });
+};
+
+export default { generateOfferLetterPDF, generateCompletionLetterPDF };

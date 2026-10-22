@@ -2192,9 +2192,9 @@ const EmployeeManagement = () => {
         <div className="fixed inset-0 bg-slate-950/35 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
 
         {/* Modal content */}
-        <div className="employee-edit-modal relative w-full max-w-3xl max-h-[76vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
-          <div className="sticky top-0 z-20 flex items-center justify-between border-b border-blue-100 bg-[#F8FAFC]/95 px-4 py-3 backdrop-blur sm:px-5">
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Edit Employee</h2>
+        <div className="employee-edit-modal relative w-full max-w-2xl sm:max-w-6xl max-h-[88vh] overflow-y-auto rounded-2xl border border-blue-100 bg-[#F8FAFC] shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
+          <div className="sticky top-1 z-20 flex items-center justify-between border-b border-blue-100 bg-[#F8FAFC]/95 px-4 py-2 backdrop-blur sm:px-5">
+            <h2 className="text-lg sm:text-l font-bold text-slate-900">Edit Employee</h2>
             <button
               onClick={() => setShowEditModal(false)}
               className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900"
@@ -2796,14 +2796,14 @@ const EmployeeManagement = () => {
                     <Edit className="h-3.5 w-3.5" />
                     Edit Profile
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     onClick={handleOpenSendAgreementModal}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100 hover:border-indigo-300 shadow-sm"
                   >
                     <FileSignature className="h-3.5 w-3.5" />
                     Send Consent Form
-                  </button>
+                  </button> */}
                   {overviewLoading && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-100 px-2.5 py-1 text-[10px] font-semibold text-blue-500">
                       <Loader2 className="h-3 w-3 animate-spin" />

@@ -10,9 +10,13 @@ export const offerLetters = pgTable(
   'offer_letters',
   {
     id: uuid('id').defaultRandom().primaryKey(),
+    letterType: varchar('letterType', { length: 64 }).notNull().default('offer'),
     employeeName: varchar('employeeName', { length: 255 }).notNull(),
     role: varchar('role', { length: 255 }).notNull(),
     joiningDate: varchar('joiningDate', { length: 128 }).notNull(),
+    completionDate: varchar('completionDate', { length: 128 }),
+    employmentType: varchar('employmentType', { length: 128 }).default('Internship'),
+    letterDate: varchar('letterDate', { length: 128 }),
     companyName: varchar('companyName', { length: 255 }).notNull().default('Taruna Technology'),
     location: varchar('location', { length: 255 }).notNull().default('Vadodara'),
     duration: varchar('duration', { length: 128 }).notNull().default('three (3) months'),
@@ -30,6 +34,7 @@ export const offerLetters = pgTable(
   (table) => ({
     createdByIdx: index('offer_letters_created_by_idx').on(table.createdBy),
     employeeNameIdx: index('offer_letters_employee_name_idx').on(table.employeeName),
+    letterTypeIdx: index('offer_letters_letter_type_idx').on(table.letterType),
     createdAtIdx: index('offer_letters_created_at_idx').on(table.createdAt),
   }),
 );

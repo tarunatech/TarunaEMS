@@ -3,6 +3,7 @@ import { protect } from '../middleware/auth.js';
 import { requireDepartment } from '../middleware/departmentAccess.js';
 import {
   generateOfferLetter,
+  generateCompletionLetter,
   getAllOfferLetters,
   getOfferLetterById,
   downloadOfferLetter,
@@ -21,6 +22,7 @@ router.use(requireDepartment(['hr', 'human resources', 'humanresources']));
 // Routes
 router.get('/candidates-and-employees', getCandidatesAndEmployees);
 router.post('/generate', generateOfferLetter);
+router.post('/generate-completion', generateCompletionLetter);
 router.get('/', getAllOfferLetters);
 router.get('/:id', getOfferLetterById);
 router.get('/:id/download', downloadOfferLetter);

@@ -7,7 +7,7 @@ import {
   TrendingUp, Building2, User, MoreVertical, RefreshCw, Eye, ArrowLeft
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { attendanceAPI, departmentAPI } from '../../utils/api';
+import { attendanceAPI, departmentAPI, employeeAPI } from '../../utils/api';
 
 const ATTENDANCE_STATUS_OPTIONS = ['Present', 'Late', 'Half Day', 'Absent', 'Work from Home'];
 
@@ -69,6 +69,7 @@ const AdminAttendance = () => {
     manualEntryReason: ''
   });
   const [departments, setDepartments] = useState([]);
+  const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
     fetchAttendanceData();
@@ -77,6 +78,7 @@ const AdminAttendance = () => {
 
   useEffect(() => {
     fetchDepartments();
+    fetchEmployees();
   }, []);
 
   useEffect(() => {
@@ -153,6 +155,23 @@ const AdminAttendance = () => {
     }
   };
 
+  const fetchEmployees = async () => {
+    try {
+      const response = await employeeAPI.getEmployees({ limit: 500 });
+      if (response.data.success) {
+        const list = response.data.data?.employees || response.data.data || [];
+        const sorted = [...list].sort((a, b) => {
+          const nameA = `${a.personalInfo?.firstName || ''} ${a.personalInfo?.lastName || ''}`.trim();
+          const nameB = `${b.personalInfo?.firstName || ''} ${b.personalInfo?.lastName || ''}`.trim();
+          return nameA.localeCompare(nameB);
+        });
+        setEmployees(sorted);
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
   const handleFilterChange = (key, value) => {
     if (key === 'startDate' || key === 'endDate') {
       setSelectedMonth('');
@@ -178,15 +197,14 @@ const AdminAttendance = () => {
   };
 
   const clearFilters = () => {
-    const { startDate, endDate } = getMonthDateRange(currentMonthDefault);
     setFilters({
-      startDate,
-      endDate,
+      startDate: '',
+      endDate: '',
       department: '',
       status: '',
       search: ''
     });
-    setSelectedMonth(currentMonthDefault);
+    setSelectedMonth('');
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
@@ -552,18 +570,27 @@ const AdminAttendance = () => {
           </div>
           {/* Search + Clear Filters row */}
           <div className="mt-2.5 sm:mt-4 flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3">
-            {/* Search – full width on mobile, capped on desktop */}
+            {/* Employee dropdown – full width on mobile, capped on desktop */}
             <div className="w-full sm:max-w-sm">
               <label className="block text-[11px] sm:text-sm font-medium text-slate-600 mb-1">Search Employee</label>
               <div className="relative">
-                <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Name or employee ID..."
+                <User className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-slate-400 pointer-events-none" />
+                <select
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
-                  className="premium-input w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none text-xs sm:text-sm"
-                />
+                  className="premium-input w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 rounded-lg text-slate-900 focus:outline-none text-xs sm:text-sm appearance-none"
+                >
+                  <option value="">All Employees</option>
+                  {employees.map((emp) => {
+                    const fullName = `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim() || emp.user?.name || 'Unknown';
+                    const empId = emp.user?.employeeId || emp.employeeId || '';
+                    return (
+                      <option key={emp._id} value={fullName}>
+                        {fullName}{empId ? ` (${empId})` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             </div>
             {/* Clear Filters – desktop only beside search */}
