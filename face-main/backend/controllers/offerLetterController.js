@@ -3,7 +3,12 @@ import path from 'path';
 import OfferLetter from '../models/OfferLetter.js';
 import Employee from '../models/Employee.js';
 import InterviewSchedule from '../models/InterviewSchedule.js';
-import { generateOfferLetterPDF, generateCompletionLetterPDF } from '../services/offerLetterPdfService.js';
+import {
+  generateOfferLetterPDF,
+  generateCompletionLetterPDF,
+  generateExperienceLetterPDF,
+  generateRelievingLetterPDF,
+} from '../services/offerLetterPdfService.js';
 import { offerLettersDir } from '../config/uploadPaths.js';
 
 export const generateOfferLetter = async (req, res) => {
@@ -174,6 +179,182 @@ export const generateCompletionLetter = async (req, res) => {
   }
 };
 
+export const generateExperienceLetter = async (req, res) => {
+  try {
+    const {
+      employeeName,
+      role,
+      department,
+      joiningDate,
+      lastWorkingDate,
+      letterDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+      companyName = 'Taruna Technology',
+      location = 'Vadodara',
+      signatoryName = 'MIHIR MAKWANA',
+      signatoryRole = 'Operational Manager',
+      employeeId,
+      candidateId,
+    } = req.body;
+
+    if (!employeeName?.trim()) {
+      return res.status(400).json({ success: false, message: 'Employee name is required' });
+    }
+    if (!role?.trim()) {
+      return res.status(400).json({ success: false, message: 'Role / Position is required' });
+    }
+    if (!department?.trim()) {
+      return res.status(400).json({ success: false, message: 'Department is required' });
+    }
+    if (!joiningDate?.trim()) {
+      return res.status(400).json({ success: false, message: 'Joining date is required' });
+    }
+    if (!lastWorkingDate?.trim()) {
+      return res.status(400).json({ success: false, message: 'Last working date is required' });
+    }
+
+    const safeName = employeeName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const fileName = `Experience_Letter_${safeName}_${Date.now()}.pdf`;
+
+    const pdfResult = await generateExperienceLetterPDF(
+      {
+        employeeName: employeeName.trim(),
+        role: role.trim(),
+        department: department.trim(),
+        joiningDate: joiningDate.trim(),
+        lastWorkingDate: lastWorkingDate.trim(),
+        letterDate: (letterDate || '').trim() || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+        companyName: companyName.trim(),
+        location: location.trim(),
+        signatoryName: signatoryName.trim(),
+        signatoryRole: signatoryRole.trim(),
+      },
+      {
+        saveToFile: true,
+        fileName,
+      }
+    );
+
+    const record = await OfferLetter.create({
+      letterType: 'experience',
+      employeeName: employeeName.trim(),
+      role: role.trim(),
+      department: department.trim(),
+      joiningDate: joiningDate.trim(),
+      lastWorkingDate: lastWorkingDate.trim(),
+      letterDate: (letterDate || '').trim(),
+      companyName: companyName.trim(),
+      location: location.trim(),
+      signatoryName: signatoryName.trim(),
+      signatoryRole: signatoryRole.trim(),
+      employeeId: employeeId || null,
+      candidateId: candidateId || null,
+      pdfPath: pdfResult.publicUrl,
+      status: 'Generated',
+      createdBy: req.user.id,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Experience letter generated successfully',
+      data: record,
+      downloadUrl: pdfResult.publicUrl,
+      pdfBase64: pdfResult.pdfBuffer.toString('base64'),
+    });
+  } catch (error) {
+    console.error('Error generating experience letter:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate experience letter',
+    });
+  }
+};
+
+export const generateRelievingLetter = async (req, res) => {
+  try {
+    const {
+      employeeName,
+      role,
+      relievingDate,
+      lastWorkingDate,
+      letterDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+      companyName = 'Taruna Technology',
+      location = 'Vadodara',
+      signatoryName = 'MIHIR MAKWANA',
+      signatoryRole = 'Operational Manager',
+      employeeId,
+      candidateId,
+      joiningDate,
+    } = req.body;
+
+    if (!employeeName?.trim()) {
+      return res.status(400).json({ success: false, message: 'Employee name is required' });
+    }
+    if (!role?.trim()) {
+      return res.status(400).json({ success: false, message: 'Role / Position is required' });
+    }
+    if (!relievingDate?.trim()) {
+      return res.status(400).json({ success: false, message: 'Relieving date is required' });
+    }
+    if (!lastWorkingDate?.trim()) {
+      return res.status(400).json({ success: false, message: 'Last working date is required' });
+    }
+
+    const safeName = employeeName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const fileName = `Relieving_Letter_${safeName}_${Date.now()}.pdf`;
+
+    const pdfResult = await generateRelievingLetterPDF(
+      {
+        employeeName: employeeName.trim(),
+        role: role.trim(),
+        relievingDate: relievingDate.trim(),
+        lastWorkingDate: lastWorkingDate.trim(),
+        letterDate: (letterDate || '').trim() || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+        companyName: companyName.trim(),
+        location: location.trim(),
+        signatoryName: signatoryName.trim(),
+        signatoryRole: signatoryRole.trim(),
+      },
+      {
+        saveToFile: true,
+        fileName,
+      }
+    );
+
+    const record = await OfferLetter.create({
+      letterType: 'relieving',
+      employeeName: employeeName.trim(),
+      role: role.trim(),
+      joiningDate: joiningDate?.trim() || null,
+      relievingDate: relievingDate.trim(),
+      lastWorkingDate: lastWorkingDate.trim(),
+      letterDate: (letterDate || '').trim(),
+      companyName: companyName.trim(),
+      location: location.trim(),
+      signatoryName: signatoryName.trim(),
+      signatoryRole: signatoryRole.trim(),
+      employeeId: employeeId || null,
+      candidateId: candidateId || null,
+      pdfPath: pdfResult.publicUrl,
+      status: 'Generated',
+      createdBy: req.user.id,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Relieving letter generated successfully',
+      data: record,
+      downloadUrl: pdfResult.publicUrl,
+      pdfBase64: pdfResult.pdfBuffer.toString('base64'),
+    });
+  } catch (error) {
+    console.error('Error generating relieving letter:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate relieving letter',
+    });
+  }
+};
+
 export const getAllOfferLetters = async (req, res) => {
   try {
     const filter = req.user?.role === 'admin' ? {} : { createdBy: req.user.id };
@@ -227,7 +408,13 @@ export const downloadOfferLetter = async (req, res) => {
     }
 
     const isCompletion = letter.letterType === 'completion';
-    const prefix = isCompletion ? 'Completion_Letter' : 'Offer_Letter';
+    const isExperience = letter.letterType === 'experience';
+    const isRelieving = letter.letterType === 'relieving';
+    let prefix = 'Offer_Letter';
+    if (isCompletion) prefix = 'Completion_Letter';
+    else if (isExperience) prefix = 'Experience_Letter';
+    else if (isRelieving) prefix = 'Relieving_Letter';
+
     const safeName = (letter.employeeName || 'Employee').replace(/[^a-z0-9]/gi, '_');
     const fileName = letter.pdfPath ? path.basename(letter.pdfPath) : `${prefix.toLowerCase()}_${letter.id}.pdf`;
     const filePath = path.join(offerLettersDir, fileName);
@@ -248,6 +435,37 @@ export const downloadOfferLetter = async (req, res) => {
           joiningDate: letter.joiningDate,
           completionDate: letter.completionDate,
           employmentType: letter.employmentType || 'Internship',
+          letterDate: letter.letterDate,
+          companyName: letter.companyName,
+          location: letter.location,
+          signatoryName: letter.signatoryName,
+          signatoryRole: letter.signatoryRole,
+        },
+        { saveToFile: true, fileName }
+      );
+    } else if (isExperience) {
+      pdfResult = await generateExperienceLetterPDF(
+        {
+          employeeName: letter.employeeName,
+          role: letter.role,
+          department: letter.department || 'Engineering',
+          joiningDate: letter.joiningDate,
+          lastWorkingDate: letter.lastWorkingDate,
+          letterDate: letter.letterDate,
+          companyName: letter.companyName,
+          location: letter.location,
+          signatoryName: letter.signatoryName,
+          signatoryRole: letter.signatoryRole,
+        },
+        { saveToFile: true, fileName }
+      );
+    } else if (isRelieving) {
+      pdfResult = await generateRelievingLetterPDF(
+        {
+          employeeName: letter.employeeName,
+          role: letter.role,
+          relievingDate: letter.relievingDate,
+          lastWorkingDate: letter.lastWorkingDate,
           letterDate: letter.letterDate,
           companyName: letter.companyName,
           location: letter.location,

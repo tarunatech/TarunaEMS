@@ -464,7 +464,7 @@ const EmployeeLayout = ({ children, onOpenTeamChat, onOpenGroupChats, employeeDa
     purchaseOrders: { name: "Purchase Orders", icon: ShoppingCart, path: "/employee/purchase-orders" },
     finance: { name: "Finance Management", icon: Landmark, path: "/employee/finance" },
     hrInterviews: { name: "Interview Schedule", icon: ClipboardList, path: "/employee/hr-interviews" },
-    offerLetters: { name: "Offer & Completion Letters", icon: FileCheck, path: "/employee/offer-letters" },
+    offerLetters: { name: "Letters", icon: FileCheck, path: "/employee/offer-letters" },
     payslip: { name: "View Payslip", icon: CreditCard, isAction: true },
   };
 

@@ -79,14 +79,14 @@ export const ensurePostgresExtensions = async () => {
       "letterType" varchar(64) NOT NULL DEFAULT 'offer',
       "employeeName" varchar(255) NOT NULL,
       "role" varchar(255) NOT NULL,
-      "joiningDate" varchar(128) NOT NULL,
+      "joiningDate" varchar(128),
       "completionDate" varchar(128),
       "employmentType" varchar(128) DEFAULT 'Internship',
       "letterDate" varchar(128),
       "companyName" varchar(255) NOT NULL DEFAULT 'Taruna Technology',
       "location" varchar(255) NOT NULL DEFAULT 'Vadodara',
-      "duration" varchar(128) NOT NULL DEFAULT 'three (3) months',
-      "workingHours" varchar(255) NOT NULL DEFAULT '10:00 AM to 7:00 PM, Monday to Saturday',
+      "duration" varchar(128) DEFAULT 'three (3) months',
+      "workingHours" varchar(255) DEFAULT '10:00 AM to 7:00 PM, Monday to Saturday',
       "signatoryName" varchar(255) NOT NULL DEFAULT 'MIHIR MAKWANA',
       "signatoryRole" varchar(255) NOT NULL DEFAULT 'Operational Manager',
       "employeeId" varchar(128),
@@ -98,10 +98,16 @@ export const ensurePostgresExtensions = async () => {
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
+  await pool.query('ALTER TABLE "offer_letters" ALTER COLUMN "joiningDate" DROP NOT NULL');
+  await pool.query('ALTER TABLE "offer_letters" ALTER COLUMN "duration" DROP NOT NULL');
+  await pool.query('ALTER TABLE "offer_letters" ALTER COLUMN "workingHours" DROP NOT NULL');
   await pool.query('ALTER TABLE "offer_letters" ADD COLUMN IF NOT EXISTS "letterType" varchar(64) DEFAULT \'offer\'');
   await pool.query('ALTER TABLE "offer_letters" ADD COLUMN IF NOT EXISTS "completionDate" varchar(128)');
   await pool.query('ALTER TABLE "offer_letters" ADD COLUMN IF NOT EXISTS "employmentType" varchar(128) DEFAULT \'Internship\'');
   await pool.query('ALTER TABLE "offer_letters" ADD COLUMN IF NOT EXISTS "letterDate" varchar(128)');
+  await pool.query('ALTER TABLE "offer_letters" ADD COLUMN IF NOT EXISTS "department" varchar(128)');
+  await pool.query('ALTER TABLE "offer_letters" ADD COLUMN IF NOT EXISTS "lastWorkingDate" varchar(128)');
+  await pool.query('ALTER TABLE "offer_letters" ADD COLUMN IF NOT EXISTS "relievingDate" varchar(128)');
   await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "isHalfDay" boolean DEFAULT false');
   await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "halfDayType" varchar(32) DEFAULT \'full\'');
   await pool.query('ALTER TABLE "dayBooks" ADD COLUMN IF NOT EXISTS "includeBreak" boolean DEFAULT true');

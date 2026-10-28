@@ -4,6 +4,8 @@ import { requireDepartment } from '../middleware/departmentAccess.js';
 import {
   generateOfferLetter,
   generateCompletionLetter,
+  generateExperienceLetter,
+  generateRelievingLetter,
   getAllOfferLetters,
   getOfferLetterById,
   downloadOfferLetter,
@@ -23,6 +25,8 @@ router.use(requireDepartment(['hr', 'human resources', 'humanresources']));
 router.get('/candidates-and-employees', getCandidatesAndEmployees);
 router.post('/generate', generateOfferLetter);
 router.post('/generate-completion', generateCompletionLetter);
+router.post('/generate-experience', generateExperienceLetter);
+router.post('/generate-relieving', generateRelievingLetter);
 router.get('/', getAllOfferLetters);
 router.get('/:id', getOfferLetterById);
 router.get('/:id/download', downloadOfferLetter);

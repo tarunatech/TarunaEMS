@@ -496,4 +496,351 @@ export const generateCompletionLetterPDF = async (data, { saveToFile = true, fil
   });
 };
 
-export default { generateOfferLetterPDF, generateCompletionLetterPDF };
+/**
+ * Generate Experience Letter PDF buffer or save to file
+ */
+export const generateExperienceLetterPDF = async (data, { saveToFile = true, fileName = null } = {}) => {
+  const {
+    employeeName    = 'Employee Name',
+    role            = 'Software Engineer',
+    department      = 'Engineering',
+    joiningDate     = '01 January 2025',
+    lastWorkingDate = '31 December 2025',
+    letterDate      = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+    companyName     = 'Taruna Technology',
+    location        = 'Vadodara',
+    signatoryName   = 'MIHIR MAKWANA',
+    signatoryRole   = 'Operational Manager',
+  } = data;
+
+  const doc = new PDFDocument({
+    size: 'A4',
+    margin: 0,
+    info: {
+      Title:   `Experience Letter - ${employeeName}`,
+      Author:  companyName,
+      Subject: `Experience Letter – ${role}`,
+      Creator: 'Taruna EMS',
+    },
+  });
+
+  const buffers = [];
+  doc.on('data', buffers.push.bind(buffers));
+
+  // 1. Draw geometric decorations + watermark
+  drawBackgroundDecorations(doc);
+
+  // 2. Company Logo (top-left header)
+  const logo = getLogoPath();
+  if (logo) {
+    try {
+      doc.image(logo, 50, 28, { width: 215 });
+    } catch (err) {
+      console.warn('Could not render logo image in experience letter:', err.message);
+    }
+  }
+
+  // 3. Document Title
+  doc.fillColor('#0F172A')
+    .font('Helvetica-Bold')
+    .fontSize(19)
+    .text('EXPERIENCE LETTER', 50, 155, {
+      width: doc.page.width - 100,
+      align: 'center',
+    });
+
+  const textX = 52;
+  const contentWidth = 491;
+
+  // 4. Date
+  doc.fillColor('#0F172A')
+    .font('Helvetica')
+    .fontSize(11)
+    .text(`Date: ${letterDate}`, textX, 195);
+
+  // 5. TO WHOM IT MAY CONCERN
+  doc.fillColor('#0F172A')
+    .font('Helvetica-Bold')
+    .fontSize(12)
+    .text('TO WHOM IT MAY CONCERN', textX, 230);
+
+  // 6. Body Paragraphs
+  const bodyStyle = { width: contentWidth, align: 'left', lineGap: 4.5 };
+
+  // Paragraph 1
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `This is to certify that ${employeeName} was employed with ${companyName}, ${location}, as a ${role} in the ${department} department from ${joiningDate} to ${lastWorkingDate}.`,
+      textX, 265, bodyStyle
+    );
+
+  // Paragraph 2
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `During their tenure with the organization, they were responsible for duties and responsibilities associated with their position. Their role involved contributing to assigned projects, collaborating with team members, and supporting the organization's operational objectives.`,
+      textX, 335, bodyStyle
+    );
+
+  // Paragraph 3
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `We appreciate their contributions during their association with ${companyName} and wish them success in their future professional endeavors.`,
+      textX, 420, bodyStyle
+    );
+
+  // Paragraph 4
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `This letter is issued upon request for official and professional reference purposes.`,
+      textX, 480, bodyStyle
+    );
+
+  // 7. Signatory Block (right-aligned)
+  const signX = 350;
+  const signWidth = 195;
+  let currentY = 550;
+
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#0F172A')
+    .text('Best Regards,', signX, currentY, { width: signWidth, align: 'left' });
+
+  currentY += 16;
+  doc.font('Helvetica-Bold').fontSize(11.5).fillColor('#0F172A')
+    .text(signatoryName.toUpperCase(), signX, currentY, { width: signWidth, align: 'left' });
+
+  const signPath = getSignPath();
+  if (signPath) {
+    try {
+      doc.image(signPath, signX + 25, currentY - 6, { width: 100 });
+      currentY += 46;
+    } catch (err) {
+      console.warn('Could not render signature image:', err.message);
+      currentY += 24;
+    }
+  } else {
+    currentY += 24;
+  }
+
+  doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0F172A')
+    .text(signatoryRole, signX, currentY, { width: signWidth, align: 'left' });
+
+  currentY += 15;
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#0F172A')
+    .text(companyName, signX, currentY, { width: signWidth, align: 'left' });
+
+  currentY += 14;
+  doc.font('Helvetica').fontSize(10.5).fillColor('#0F172A')
+    .text('Vadodara, Gujarat, India', signX, currentY, { width: signWidth, align: 'left' });
+
+  // 8. Footer
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#0F172A')
+    .text('www.tarunatech.com', 50, 802, {
+      width: doc.page.width - 100,
+      align: 'center',
+    });
+
+  doc.end();
+
+  return new Promise((resolve, reject) => {
+    doc.on('end', () => {
+      const pdfBuffer = Buffer.concat(buffers);
+
+      if (saveToFile) {
+        fs.mkdirSync(offerLettersDir, { recursive: true });
+        const finalFileName = fileName || `experience_letter_${Date.now()}_${employeeName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+        const filePath = path.join(offerLettersDir, finalFileName);
+        fs.writeFileSync(filePath, pdfBuffer);
+        const publicUrl = uploadPublicPath('offer-letters', finalFileName);
+        resolve({ pdfBuffer, filePath, publicUrl, fileName: finalFileName });
+      } else {
+        resolve({ pdfBuffer });
+      }
+    });
+
+    doc.on('error', reject);
+  });
+};
+
+/**
+ * Generate Relieving Letter PDF buffer or save to file
+ */
+export const generateRelievingLetterPDF = async (data, { saveToFile = true, fileName = null } = {}) => {
+  const {
+    employeeName    = 'Employee Name',
+    role            = 'Software Engineer',
+    relievingDate   = '31 December 2025',
+    lastWorkingDate = '31 December 2025',
+    letterDate      = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+    companyName     = 'Taruna Technology',
+    location        = 'Vadodara',
+    signatoryName   = 'MIHIR MAKWANA',
+    signatoryRole   = 'Operational Manager',
+  } = data;
+
+  const doc = new PDFDocument({
+    size: 'A4',
+    margin: 0,
+    info: {
+      Title:   `Relieving Letter - ${employeeName}`,
+      Author:  companyName,
+      Subject: `Relieving Letter – ${role}`,
+      Creator: 'Taruna EMS',
+    },
+  });
+
+  const buffers = [];
+  doc.on('data', buffers.push.bind(buffers));
+
+  // 1. Draw geometric decorations + watermark
+  drawBackgroundDecorations(doc);
+
+  // 2. Company Logo (top-left header)
+  const logo = getLogoPath();
+  if (logo) {
+    try {
+      doc.image(logo, 50, 28, { width: 215 });
+    } catch (err) {
+      console.warn('Could not render logo image in relieving letter:', err.message);
+    }
+  }
+
+  // 3. Document Title
+  doc.fillColor('#0F172A')
+    .font('Helvetica-Bold')
+    .fontSize(19)
+    .text('RELIEVING LETTER', 50, 155, {
+      width: doc.page.width - 100,
+      align: 'center',
+    });
+
+  const textX = 52;
+  const contentWidth = 491;
+
+  // 4. Date
+  doc.fillColor('#0F172A')
+    .font('Helvetica')
+    .fontSize(11)
+    .text(`Date: ${letterDate}`, textX, 195);
+
+  // 5. To Block
+  doc.fillColor('#0F172A')
+    .font('Helvetica-Bold')
+    .fontSize(11)
+    .text('To,', textX, 222);
+
+  doc.font('Helvetica-Bold')
+    .fontSize(11.5)
+    .text(employeeName, textX, 237);
+
+  // 6. Subject
+  doc.font('Helvetica-Bold')
+    .fontSize(11.5)
+    .text('Subject: Relieving Letter', textX, 265);
+
+  // 7. Salutation
+  doc.font('Helvetica-Bold')
+    .fontSize(11.5)
+    .text(`Dear ${employeeName},`, textX, 295);
+
+  // 8. Body Paragraphs
+  const bodyStyle = { width: contentWidth, align: 'left', lineGap: 4.5 };
+
+  // Paragraph 1
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `This is to confirm that your resignation from the position of ${role} at ${companyName}, ${location}, has been accepted, and you are hereby formally relieved from your duties with effect from ${relievingDate}.`,
+      textX, 325, bodyStyle
+    );
+
+  // Paragraph 2
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `Your last working day with the organization was ${lastWorkingDate}. We acknowledge your association with the company and appreciate your contributions during your tenure.`,
+      textX, 395, bodyStyle
+    );
+
+  // Paragraph 3
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `We wish you success in your future professional and personal endeavors.`,
+      textX, 465, bodyStyle
+    );
+
+  // Paragraph 4
+  doc.font('Helvetica').fontSize(11.2).fillColor('#0F172A')
+    .text(
+      `Thank you for your association with ${companyName}.`,
+      textX, 515, bodyStyle
+    );
+
+  // 9. Signatory Block (right-aligned)
+  const signX = 350;
+  const signWidth = 195;
+  let currentY = 560;
+
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#0F172A')
+    .text('Best Regards,', signX, currentY, { width: signWidth, align: 'left' });
+
+  currentY += 16;
+  doc.font('Helvetica-Bold').fontSize(11.5).fillColor('#0F172A')
+    .text(signatoryName.toUpperCase(), signX, currentY, { width: signWidth, align: 'left' });
+
+  const signPath = getSignPath();
+  if (signPath) {
+    try {
+      doc.image(signPath, signX + 25, currentY - 6, { width: 100 });
+      currentY += 46;
+    } catch (err) {
+      console.warn('Could not render signature image:', err.message);
+      currentY += 24;
+    }
+  } else {
+    currentY += 24;
+  }
+
+  doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0F172A')
+    .text(signatoryRole, signX, currentY, { width: signWidth, align: 'left' });
+
+  currentY += 15;
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#0F172A')
+    .text(companyName, signX, currentY, { width: signWidth, align: 'left' });
+
+  currentY += 14;
+  doc.font('Helvetica').fontSize(10.5).fillColor('#0F172A')
+    .text('Vadodara, Gujarat, India', signX, currentY, { width: signWidth, align: 'left' });
+
+  // 10. Footer
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#0F172A')
+    .text('www.tarunatech.com', 50, 802, {
+      width: doc.page.width - 100,
+      align: 'center',
+    });
+
+  doc.end();
+
+  return new Promise((resolve, reject) => {
+    doc.on('end', () => {
+      const pdfBuffer = Buffer.concat(buffers);
+
+      if (saveToFile) {
+        fs.mkdirSync(offerLettersDir, { recursive: true });
+        const finalFileName = fileName || `relieving_letter_${Date.now()}_${employeeName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+        const filePath = path.join(offerLettersDir, finalFileName);
+        fs.writeFileSync(filePath, pdfBuffer);
+        const publicUrl = uploadPublicPath('offer-letters', finalFileName);
+        resolve({ pdfBuffer, filePath, publicUrl, fileName: finalFileName });
+      } else {
+        resolve({ pdfBuffer });
+      }
+    });
+
+    doc.on('error', reject);
+  });
+};
+
+export default {
+  generateOfferLetterPDF,
+  generateCompletionLetterPDF,
+  generateExperienceLetterPDF,
+  generateRelievingLetterPDF,
+};
+
